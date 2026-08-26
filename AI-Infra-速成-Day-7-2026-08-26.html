@@ -1,0 +1,1372 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra 速成 Day 7</title>
+</head>
+<body>
+<title>AI Infra 速成 Day 7</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#faf6ef; --panel:#fffdf8; --ink:#2f2a24; --ink-soft:#5c5348; --line:#e6ddcd;
+  --accent:#a8622a; --accent-soft:#f2e5d6;
+  --recall:#4c7a5a; --recall-bg:#eef5ef;
+  --predict:#8a5a9e; --predict-bg:#f3edf6;
+  --key:#b4552a; --key-bg:#fbeee4;
+  --five:#2f6f86; --five-bg:#e9f2f5;
+  --code-bg:#262019; --code-ink:#f0e6d8; --code-dim:#a89b86;
+  --term-bg:#f4e3cf; --term-ink:#8a4a17;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#191713; --panel:#211e19; --ink:#ece4d8; --ink-soft:#b6ab9b; --line:#3a342b;
+    --accent:#e0995c; --accent-soft:#3a2d21;
+    --recall:#7fb894; --recall-bg:#1f2a22;
+    --predict:#c4a0d6; --predict-bg:#282130;
+    --key:#e8955f; --key-bg:#33251a;
+    --five:#7fb8cf; --five-bg:#1c2a30;
+    --code-bg:#12100d; --code-ink:#eee3d3; --code-dim:#8e836f;
+    --term-bg:#3d2f1f; --term-ink:#f0b57c;
+  }
+}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  line-height:1.78;font-size:16.5px;overflow-x:hidden}
+.bar{position:sticky;top:0;z-index:50;background:var(--panel);border-bottom:1px solid var(--line);
+  padding:.55rem 1rem;display:flex;gap:.9rem;flex-wrap:wrap;align-items:baseline;font-size:.82rem;color:var(--ink-soft)}
+.bar b{color:var(--accent);font-size:.9rem}
+.bar .track{flex:1 1 120px;min-width:90px;height:5px;background:var(--accent-soft);border-radius:3px;overflow:hidden}
+.bar .fill{display:block;height:100%;width:25%;background:var(--accent);border-radius:3px}
+.wrap{max-width:820px;margin:0 auto;padding:1.6rem 1.1rem 4rem}
+h1{font-size:1.72rem;line-height:1.45;margin:1.4rem 0 .5rem;letter-spacing:.01em}
+h2{font-size:1.26rem;margin:2.9rem 0 .7rem;padding-bottom:.35rem;border-bottom:2px solid var(--accent-soft)}
+h3{font-size:1.06rem;margin:2.1rem 0 .5rem;color:var(--accent)}
+h4{font-size:.98rem;margin:1.5rem 0 .4rem}
+p{margin:.75rem 0}
+.lead{color:var(--ink-soft);font-style:normal;border-left:3px solid var(--accent-soft);padding-left:.8rem;margin:.6rem 0 1.1rem}
+.sub{color:var(--ink-soft);font-size:.92rem;margin-top:-.2rem}
+.card{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);
+  border-radius:8px;padding:.9rem 1.1rem;margin:1.4rem 0}
+.card h4{margin-top:.2rem}
+.card.recall{border-left-color:var(--recall);background:var(--recall-bg)}
+.card.predict{border-left-color:var(--predict);background:var(--predict-bg)}
+.card.warn{border-left-color:var(--key);background:var(--key-bg)}
+.card.five{border-left-color:var(--five);background:var(--five-bg)}
+.tag{display:inline-block;font-size:.72rem;letter-spacing:.08em;padding:.1rem .5rem;border-radius:4px;
+  background:var(--accent-soft);color:var(--accent);margin-bottom:.3rem}
+.term{background:var(--term-bg);color:var(--term-ink);padding:0 .25rem;border-radius:3px;font-weight:600}
+code{font-family:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:.88em;
+  background:var(--accent-soft);padding:.08rem .3rem;border-radius:3px;overflow-wrap:anywhere;word-break:break-word}
+pre{background:var(--code-bg);color:var(--code-ink);padding:.9rem 1rem;border-radius:8px;
+  overflow-x:auto;line-height:1.62;font-size:.83rem;margin:1rem 0;max-width:100%}
+pre code{background:none;padding:0;color:inherit;font-size:1em;white-space:pre;word-break:normal;overflow-wrap:normal}
+.scroll{overflow-x:auto;margin:1rem 0;max-width:100%;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:.89rem;min-width:min(520px,100%)}
+th,td{border:1px solid var(--line);padding:.42rem .6rem;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table td:first-child{white-space:nowrap}
+table td:first-child code{white-space:normal}
+tr.hi td{background:var(--key-bg);font-weight:600}
+details{border:1px solid var(--line);border-radius:8px;padding:.55rem .9rem;margin:.7rem 0;background:var(--panel)}
+details[open]{padding-bottom:.9rem}
+summary{cursor:pointer;font-weight:600;color:var(--accent)}
+.blank{border:1px dashed var(--line);border-radius:6px;background:var(--bg);min-height:3.1rem;margin:.45rem 0 .9rem}
+.blank.sm{min-height:2.2rem}
+ul,ol{padding-left:1.35rem;margin:.7rem 0}
+li{margin:.3rem 0}
+hr{border:none;border-top:1px solid var(--line);margin:2.6rem 0}
+footer{color:var(--ink-soft);font-size:.83rem;border-top:1px solid var(--line);margin-top:3rem;padding-top:1rem}
+b.k{color:var(--key)}
+.scroll svg{display:block;width:100%;min-width:560px;height:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.scroll svg text{font-family:inherit}
+p.sub+p{margin-top:1.05rem}
+sub{font-size:.76em}
+</style>
+
+<div class="bar">
+  <b>AI Infra 速成</b><span>Day 7 / 28</span><span class="track"><span class="fill" style="width:25%"></span></span>
+  <span>阶段一 · CPU 侧系统工程</span><span>2026-08-26</span>
+</div>
+
+<div class="wrap">
+
+<h1>内存不是一块平地：同一条读指令，有时 1.9 纳秒，有时 198 纳秒</h1>
+<p class="sub">阶段一 · CPU 侧系统工程：先学会看见 · 第 7 天</p>
+
+<div class="card recall">
+<span class="tag">温故 · 闭卷</span>
+<h4>先不要往下翻，把这两道题在心里答一遍</h4>
+
+<p><b>第 1 题（Day 6）</b>　你给线上服务加了一个健康探针，每 100 毫秒发一次请求并记录耗时。这个服务每 500 毫秒会卡顿一次，每次卡 200 毫秒。跑了一整天，探针报出来的 P99 只有 8 毫秒。探针没坏，请求也真的发出去了。为什么它测不到那 200 毫秒的卡顿？</p>
+<details><summary>看答案</summary>
+<p>因为探针的周期和故障的周期对上了拍子。探针每 100 毫秒发一次，故障每 500 毫秒来一次，500 是 100 的整数倍。于是探针的发送时刻和故障窗口之间的相对位置是固定的：要么每次都恰好错开，要么每次都恰好撞上。跑一整天也不会自己漂移过去。</p>
+<p>这就是 Day 6 讲的<b>锁相</b>。两个周期只要成整数倍关系，采样点就永远落在被采样信号的同一个相位上，样本再多也补不上这个洞。</p>
+<p>怎么破：把探针间隔改成一个跟服务周期不成整数倍的值（比如 97 毫秒），或者每次在间隔上加一点随机抖动。抖动不是为了好看，是为了让采样点在被测周期上慢慢扫过去。</p>
+<p>今天会用到同一种警惕。当一个量的波动本身有结构时，采多少次不重要，采在哪里才重要。</p>
+</details>
+
+<p><b>第 2 题（Day 4）</b>　一个 FastAPI 服务里有一段耗时 40 毫秒的同步函数堵住了事件循环。你把它改成 <code>await loop.run_in_executor(None, f)</code> 丢进线程池。什么情况下尾延迟会被修好，什么情况下几乎没变化？给出判断依据。</p>
+<details><summary>看答案</summary>
+<p>取决于那 40 毫秒里，这段代码有没有把 GIL 放开。</p>
+<p>如果它是纯 Python 的计算（循环、字典操作、字符串拼接），它全程握着 GIL。丢进线程池之后，那个线程照样要拿 GIL 才能跑，事件循环所在的线程就还是抢不到 GIL。请求依然被堵住，只是堵在了另一个地方。尾延迟基本不变。</p>
+<p>如果它是一次文件读写、一次网络调用，或者一次进入 C 扩展的计算（比如 numpy 的矩阵乘法、gzip 压缩、hashlib 求摘要），这些实现会在进入耗时段之前主动放开 GIL。这时线程池里那个线程干活的同时，事件循环拿得到 GIL，能继续接别的请求。尾延迟真的会好。</p>
+<p>判断依据就一条：<b>这段代码在干活的那段时间里，持有 GIL 吗？</b>持有就搬不动，放开才搬得动。搬不动的那类只能换进程。</p>
+<p>今天会看到一个结构相同、但发生在硬件层的现象：CPU 有时候不是在算，而是在等一个还没回来的东西。它在等的时候，利用率看上去照样是满的。</p>
+</details>
+</div>
+
+<h2>今日概览</h2>
+<div class="scroll">
+<table>
+<tr><th>项目</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 7 / 28 · 阶段一最后一天</td></tr>
+<tr><td>今日主题</td><td>内存层级：一次访问到底要等多久、这个时间从哪来、以及为什么它决定了大模型服务的上限</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读 1.5 小时，动手 2 小时）</td></tr>
+<tr><td>今天不讲</td><td><b>NUMA 与跨节点访问惩罚。</b>跨节点访问的开销要有多个 NUMA 节点才存在，而这台机器只有一个节点，讲了也没法当场验。等你手上有真机，它值得单独占一整天，而不是今天塞进来半页。<br><b>内存分配器（glibc malloc / jemalloc / tcmalloc）的行为差异。</b>今天先把"内存为什么慢"讲透；"谁在管这块内存"是另一层问题，硬塞进来会让今天的 13 个词变成 19 个。</td></tr>
+</table>
+</div>
+
+<p>今天结束后你应该能做到这三件事：</p>
+<ol>
+<li>拿到一台陌生机器，能在 5 分钟内说出它每一级缓存有多大、一次跑到内存的读要等多少纳秒。这些数字是你自己测出来的，不是抄的。</li>
+<li>看到一个服务"CPU 占满了但吞吐上不去"，能判断它是在算还是在等，并说出下一步该看什么。</li>
+<li>给出一台机器的内存带宽和一个模型的权重大小，能在纸上算出这台机器每秒最多能吐多少个 token，用来判断一个方案的数量级靠不靠谱。</li>
+</ol>
+<hr>
+<h2>核心讲解</h2>
+
+<h3>1. 你现在心里的内存模型，大概是错的</h3>
+<p class="lead">这一节回答：为什么"读一个变量"这件事，不能当成一个固定成本？</p>
+
+<p>你写后端代码的时候，心里的内存模型大概是这样：变量在内存里，读它就是一次内存访问，很快，快到不用管。真正慢的是数据库、是网络、是磁盘。</p>
+
+<p>这个模型让你在 Day 1 到 Day 6 一路都用得挺好。因为前六天看的都是毫秒级的事情：一次 HTTP 请求 40 毫秒，一次卡顿 200 毫秒。在毫秒的尺度上，内存访问确实可以当成免费的。</p>
+
+<p>但从今天起你要处理的东西不在那个尺度上。一个 7B 模型的权重是 14 GB。生成一个 token，这 14 GB 要被完整读一遍。这时候"一次内存访问多快"就不是可以忽略的常数了，它直接决定了这台机器每秒能吐多少个字。</p>
+
+<p>先建一个直觉。假设你在写一份材料：</p>
+<ul>
+<li>你手边摊开的那一页纸，伸手就够到。</li>
+<li>抽屉里的文件夹，要拉开抽屉找一下。</li>
+<li>楼下档案室的箱子，要下楼、登记、找柜号、搬上来。</li>
+</ul>
+<p>三种"拿资料"在你的工作日志里都写作"查了一份资料"，但耗时差着好几个数量级。真实的机器就是这么组织的：CPU 旁边有几层容量越来越大、速度越来越慢的临时存放区，最外面才是内存条。</p>
+
+<p>类比到此为止，接下来要把真实机制补上。而在讲机制之前，先把这个时间量出来。你自己量出来的数字，比任何一张网上抄来的"延迟数量级表"都有用。</p>
+
+<h3>2. 怎么把"一次访问要等多久"单独量出来</h3>
+<p class="lead">这一节回答：为什么不能写个循环读一遍数组然后除一下？</p>
+
+<p>最自然的想法是：开一个大数组，循环读一遍，用总时间除以次数。这个数字是错的，而且会错得特别离谱。</p>
+
+<p>原因是现代 CPU 不会老老实实一次读一个。它会同时把十几个读请求发出去，谁先回来先处理谁。所以你测到的不是"一次读要等多久"，而是"同时发出去一堆读、平均多久回来一个"。这两件事差十倍以上。</p>
+
+<p>要测前者，必须让 CPU 没有别的活可干、只能干等着。办法是：<b>让下一次读的地址，藏在上一次读回来的数据里。</b></p>
+
+<p>把一块内存切成一个个格子，每个格子里写着下一个要去的格子编号。程序从 0 号格子开始，读出里面的数字，跳到那个格子，再读，再跳。CPU 不知道下一步去哪，只能等这一步的数据回来。于是每一步的耗时，就是一次访问的真实等待时间。</p>
+
+<p>这个手法叫<span class="term">指针追逐（pointer chasing）</span>。</p>
+
+<p>下面这段 C 程序就是干这个的。为什么用 C 而不是 Python：这里要测的东西在 1 到 200 纳秒之间，而 Python 解释器执行一次 <code>a[i]</code> 本身就要 26 纳秒左右，会把前几级完全盖住。这一点在动手任务里会让你亲眼看到。</p>
+
+<p>代码分三块：<code>line_t</code> 定义格子；<code>build()</code> 把格子串成一个环；<code>main()</code> 对一串工作集大小各跑一遍。</p>
+
+<pre><code>typedef struct { size_t next; char pad[56]; } line_t;   // 恰好 64 字节，正好占满一个 cache line
+
+// mode 0 = 顺序：每步跳到下一个格子
+// mode 1 = 随机：把所有格子打乱后串成一个环
+static void build(line_t *a, size_t m, int mode){
+    if(mode==0){ for(size_t i=0;i&lt;m;i++) a[i].next=(i+1)%m; return; }
+    size_t *p = malloc(m*sizeof(size_t));
+    for(size_t i=0;i&lt;m;i++) p[i]=i;
+    for(size_t i=m-1;i&gt;0;i--){ size_t j=xr()%(i+1); size_t t=p[i]; p[i]=p[j]; p[j]=t; }
+    for(size_t i=0;i&lt;m;i++) a[p[i]].next = p[(i+1)%m];   // 串成单一的环，保证每个格子都被走到
+    free(p);
+}
+
+memset(a,0,bytes);                            // 先把每一页写一遍，把缺页开销挡在计时之外
+for(size_t i=0;i&lt;m;i++) idx=a[idx].next;      // 预热：该进缓存的先进去
+double t0=now_s();
+for(size_t i=0;i&lt;iters;i++) idx=a[idx].next;  // 计时段：唯一的一次内存访问
+double t1=now_s();</code></pre>
+
+<p>两个细节值得停一下。<code>pad[56]</code> 不是随手加的：它让每个格子恰好 64 字节，这样每跳一次就一定落到一块新的、之前没碰过的区域上，两种模式踩到的区域数量完全一样。<code>memset</code> 和预热循环放在计时之外，是因为这两步的开销属于别的问题（下一节就会讲它们），混进来会污染结果。</p>
+
+<p>跑起来你应该看到一张两列的表：一列是顺序模式的耗时，一列是随机模式的。如果两列几乎一样，说明环没串对（多半退化成了几个小圈，实际工作集比你以为的小得多）；如果随机那一列的数字随工作集单调上升、顺序那一列基本不动，就对了。</p>
+
+<h3>3. 阶梯</h3>
+<p class="lead">这一节回答：同一段代码，只把数据量改大，耗时会怎么变？</p>
+
+<p>下面这张表就是上面那段程序的输出。左边是工作集大小，从 16 KB 一路涨到 512 MB。中间一列是顺序跳，右边一列是随机跳。两列的代码、指令条数、跳的次数完全一样，唯一的差别是跳的顺序。</p>
+
+<div class="scroll">
+<table>
+<tr><th>工作集</th><th class="num">顺序跳（纳秒/次）</th><th class="num">随机跳（纳秒/次）</th></tr>
+<tr><td>16 KB</td><td class="num">1.89</td><td class="num">1.88</td></tr>
+<tr><td>32 KB</td><td class="num">1.96</td><td class="num">1.92</td></tr>
+<tr><td>64 KB</td><td class="num">4.04</td><td class="num">5.25</td></tr>
+<tr><td>256 KB</td><td class="num">4.03</td><td class="num">5.28</td></tr>
+<tr><td>1 MB</td><td class="num">4.11</td><td class="num">6.99</td></tr>
+<tr class="hi"><td>2 MB</td><td class="num">5.38</td><td class="num">37.25</td></tr>
+<tr><td>8 MB</td><td class="num">6.34</td><td class="num">60.10</td></tr>
+<tr><td>64 MB</td><td class="num">5.54</td><td class="num">68.30</td></tr>
+<tr><td>128 MB</td><td class="num">4.94</td><td class="num">98.86</td></tr>
+<tr class="hi"><td>256 MB</td><td class="num">7.15</td><td class="num">198.25</td></tr>
+<tr><td>512 MB</td><td class="num">8.32</td><td class="num">216.22</td></tr>
+</table>
+</div>
+
+<p>这张表重点看<b>「随机跳」那一列，以及它在哪两行之间突然跳了一级</b>。因为那两个位置不是随机出现的，它们标出了这台机器内部的物理边界。</p>
+
+<p>随机那一列不是平滑上升的，是有台阶的：1.9 → 5.3 → 37 → 198。有两级跳得特别陡。从 1 MB 到 2 MB，从 6.99 涨到 37.25，翻了五倍多。从 128 MB 到 256 MB，从 98.86 涨到 198.25，翻了一倍。</p>
+
+<p>现在把这台机器自己报的缓存配置调出来对一下。这些文件在任何 Linux 上都有：</p>
+
+<pre><code>$ for i in /sys/devices/system/cpu/cpu0/cache/index*; do
+    echo "L$(cat $i/level) $(cat $i/type) $(cat $i/size) 行长=$(cat $i/coherency_line_size) 共享给=$(cat $i/shared_cpu_list)"
+  done
+L1 Data 48K        行长=64  共享给=0
+L1 Instruction 32K 行长=64  共享给=0
+L2 Unified 2048K   行长=64  共享给=0
+L3 Unified 266240K 行长=64  共享给=0-1</code></pre>
+
+<p>这四行是这样读的：<code>level</code> 是第几级，数字越小离 CPU 越近；<code>size</code> 是容量；<code>coherency_line_size</code> 是最小搬运单位；<code>shared_cpu_list</code> 是哪几个逻辑核共用这一块。<code>0</code> 表示 0 号核自己独占，<code>0-1</code> 表示两个核共用。</p>
+
+<p>对一下：</p>
+<ul>
+<li>48 KB：表里 16 KB 和 32 KB 是 1.9 纳秒，64 KB 就变成 5 纳秒了。台阶落在 32 KB 和 64 KB 之间。</li>
+<li>2048 KB：表里 1 MB 还是 6.99，2 MB 就变成 37.25。台阶正好落在 2048 KB 上。</li>
+<li>266240 KB（260 MB）：表里 128 MB 是 98.86，256 MB 变成 198.25，512 MB 到 216.22。这一级开始得比 260 MB 略早，然后在 512 MB 上稳住。</li>
+</ul>
+
+<p>前两级对得非常准，第三级只对到"附近"。这不是巧合。机器自报的这三个容量，说的是它在 CPU 和内存条之间放了三层<span class="term">缓存（cache）</span>：L1 最小最快、L2 中等、L3 最大最慢。你的数据落在哪一层，就是哪一层的速度。工作集一旦超过某一层的容量，那一层就装不下了，访问只能往下一层走，耗时立刻跳一级。</p>
+
+<p>那个 <code>coherency_line_size=64</code> 也很重要。缓存不是按字节搬运的，最小单位是 64 字节，这个单位叫<span class="term">缓存行（cache line）</span>。你只读了 1 个字节，硬件也会把包含它的那 64 字节整块搬进来。这就是为什么上面的格子要凑成 64 字节：只有这样才能保证每跳一次都真的换一行，而不是在同一行里原地打转。</p>
+
+<div class="card warn">
+<h4>关键结论</h4>
+<p><b>同一条读指令的耗时，在这台机器上跨越 100 倍：命中 L1 是 1.9 纳秒，跑到内存条是 198 纳秒。决定落在哪一档的，不是你读了多少数据，而是你正在反复访问的那块数据总共有多大。</b></p>
+</div>
+
+<h3>4. 顺序那一列为什么一直是平的</h3>
+<p class="lead">这一节回答：同样是超出缓存 100 倍的工作集，为什么顺序跳完全不受影响？</p>
+
+<p>回头看那张表的中间一列。工作集从 16 KB 涨到 512 MB，涨了三万倍，顺序跳的耗时从 1.89 纳秒只涨到 8.32 纳秒。在 512 MB 那一行，随机跳要 216 纳秒，顺序跳只要 8.32 纳秒——相差 26 倍。</p>
+
+<p>两种模式踩到的缓存行数量一模一样，工作集一模一样，指令一模一样。唯一的差别是顺序。所以慢的原因不可能是"数据太多装不下"，只能是"下一次要读哪儿，事先猜不猜得到"。</p>
+
+<p>硬件里有一个专门干这件事的部件。它盯着最近几次访问的地址，发现你在按固定间隔往前走，就自动把后面几块提前搬进缓存。等你的程序真的读到那里，数据已经在了，不用等。这个部件叫<span class="term">硬件预取器（hardware prefetcher）</span>。</p>
+
+<p>顺序跳的地址是 0、1、2、3……，规律明显，预取器每次都猜中，所以工作集再大也无所谓，数据总是提前到位。随机跳的地址毫无规律，预取器猜不中，每一步都得真的去等。</p>
+
+<p>这里有一个竞争解释要排掉：顺序访问同时也更"省页"，会不会快是因为地址翻译更轻松，跟预取无关？第 7 节那组大页数据正好能回答。在 256 MB 的工作集上换成 2 MB 的大页之后，整块内存只占 128 个页，翻译的压力基本消失了。那一组里顺序跳仍然是 5.8 ~ 8.0 纳秒，随机跳仍然是 161 ~ 169 纳秒，差距还是二十多倍。<b>把翻译的因素拿掉，顺序和随机的差距一点没变小。</b>所以这个差距不是翻译造成的。</p>
+
+<p>这条结论对你写服务的意义比看上去大得多：</p>
+<ul>
+<li>一个 Python 的 <code>list</code> 存了一百万个对象，遍历它的时候，list 本身是连续的，但那一百万个对象散落在堆的各个角落。你以为在做顺序扫描，硬件看到的是随机跳。</li>
+<li>同样一百万个数字，装在 numpy 数组里是一整块连续内存，遍历就是顺序访问。这是 numpy 比 list 快的原因之一，而且是很多人不会想到的那一条。</li>
+<li>KV cache 用一个个固定大小的块存储、再用一张表把块串起来（这是 Day 10 的主题），换来的是内存不浪费，代价就是访问从顺序变成了跳跃。这个代价具体有多大，你今天已经有能力自己测了。</li>
+</ul>
+
+<h3>5. 接住 Day 3 留下的那个问题</h3>
+<p class="lead">这一节回答：为什么"CPU 利用率 100%"不等于"CPU 在干活"？</p>
+
+<p>Day 3 讲 <code>perf stat</code> 的时候留了一句话没展开：IPC 低于 1 通常说明 CPU 在等内存。现在可以把它讲完了。</p>
+
+<p>IPC 是 instructions per cycle，每个时钟周期平均完成几条指令。现代 x86 核心一个周期能同时推进四条左右，所以 IPC 越高越好。Brendan Gregg 给的判据很简单：IPC 大于 1，说明瓶颈在指令本身，该去优化代码；IPC 小于 1，说明系统卡在内存上，该去想办法减少内存访问、改善数据的局部性。他文章里举的例子是 0.78 的 IPC，在一个一周期能走四条的核心上，只用掉了 19.5% 的能力。</p>
+
+<p>没干成的时候它在干什么？Gregg 那篇文章里的说法是：「stalled 的意思是处理器没有在推进指令，通常是因为它在等内存 I/O。」</p>
+
+<p>把今天的两个数字放一起就知道等得有多久了。在这台机器上跑一条纯粹的整数加法依赖链，每一步都必须等上一步的结果。测出来是每秒 32.2 亿步，也就是 0.31 纳秒一步。而一次跑到内存条的随机读是 198 纳秒。</p>
+
+<p><b>198 ÷ 0.31 ≈ 640。</b>等一次内存的工夫，这个核本来可以往前推进 640 步串行计算。如果指令之间互相独立，还能更多。</p>
+
+<p>而在这 198 纳秒里，操作系统眼中这个核是"忙"的。它没有让出 CPU，也没有去睡。Gregg 那篇文章的核心论点正是这个：「如今 CPU 已经比主存快得多，等内存这件事，主导了那个仍然被叫做 CPU 利用率的东西。」Day 4 你见过一次类似的错觉：事件循环被堵住的时候，CPU 也是满的。今天这个更深一层：<b>这次连指令都没在执行，只是硬件在等。</b></p>
+
+<p>所以看到"CPU 打满但吞吐上不去"，下一步不是加机器，是先分清楚这三种情况：</p>
+<div class="scroll">
+<table>
+<tr><th>现象</th><th>CPU 看起来</th><th>下一步该看</th></tr>
+<tr><td>真的在算</td><td>100%，IPC &gt; 1</td><td>火焰图找最宽的平台，减少计算量</td></tr>
+<tr><td>在等内存</td><td>100%，IPC &lt; 1</td><td>看数据结构和访问模式，让工作集变小或变连续</td></tr>
+<tr><td>在等锁或 IO</td><td>不一定 100%</td><td>off-CPU 分析（Day 3 那套）</td></tr>
+</table>
+</div>
+<p>这张表最该记住的是<b>中间那一行</b>：它是唯一一种"CPU 满了但优化代码逻辑没用"的情况。要改的是数据放在哪、怎么排，不是算法有几层循环。</p>
+<h3>6. 你申请到的内存，其实还不存在</h3>
+<p class="lead">这一节回答：进程说它要了 1 GB，机器上真的少了 1 GB 吗？</p>
+
+<p>换一个角度。前面五节都在问"访问一块已经存在的内存要多久"。这一节问的是"这块内存是什么时候变出来的"。</p>
+
+<p>操作系统不是按字节管理内存的，是按块。每一块的大小是固定的，x86 上默认 4096 字节，这个块叫<span class="term">内存页（page）</span>。每个进程看到的是一套自己的虚拟地址，硬件靠一张页表把虚拟地址翻译成真正的物理地址。</p>
+
+<p>关键在于：申请内存的时候，内核只是在页表上记了一笔"这段地址归你了"，并没有真的划出物理内存。<b>物理内存要等到你第一次真正碰这块地址的时候才分配。</b></p>
+
+<p>下面这段 Python 把这件事直接摆出来。它申请 1 GB，然后每隔 4096 字节写一个字节，也就是每一页碰一次。同时盯着两个数：进程占用的物理内存（<code>VmRSS</code>），和累计的<span class="term">缺页（page fault）</span>次数。缺页就是"程序碰到了一个还没有物理内存撑着的页，硬件把控制权交给内核，内核现场分配一页再让程序继续"这个动作。</p>
+
+<pre><code>import mmap, time, resource
+
+SIZE = 1 &lt;&lt; 30   # 1 GB
+
+def rss_kb():                                  # 进程当前真正占了多少物理内存
+    with open("/proc/self/status") as f:
+        for l in f:
+            if l.startswith("VmRSS:"): return int(l.split()[1])
+
+def minflt():                                  # 累计缺页次数（不需要读磁盘的那种）
+    return resource.getrusage(resource.RUSAGE_SELF).ru_minflt
+
+def sweep(m):
+    t0 = time.perf_counter()
+    for off in range(0, SIZE, 4096):
+        m[off] = 1                             # 每一页碰一下，正好一次
+    return time.perf_counter() - t0
+
+m = mmap.mmap(-1, SIZE)                        # 申请 1 GB
+print(f"刚 mmap 完: RSS={rss_kb()/1024:.0f} MB, 缺页={minflt()}")
+for i in (1, 2, 3):
+    print(f"第{i}遍: {sweep(m)*1e3:.1f} ms  RSS={rss_kb()/1024:.0f} MB  缺页={minflt()}")</code></pre>
+
+<p>运行它，你应该看到 <code>mmap</code> 那一行的 RSS 几乎没动，而第一遍和第二遍的耗时差着十倍以上。如果第一遍和第二遍差不多快，说明你的系统预先把页填上了，往下看对照组那一段。实测输出是这样的：</p>
+
+<div class="scroll">
+<table>
+<tr><th>时刻</th><th class="num">耗时</th><th class="num">进程占用物理内存</th><th class="num">累计缺页</th></tr>
+<tr><td>程序刚启动</td><td class="num">—</td><td class="num">8 MB</td><td class="num">902</td></tr>
+<tr><td>申请完 1 GB</td><td class="num">—</td><td class="num">8 MB</td><td class="num">902</td></tr>
+<tr class="hi"><td>第一遍扫过 1 GB</td><td class="num">462 ~ 476 ms</td><td class="num">1032 MB</td><td class="num">263 049</td></tr>
+<tr><td>第二遍扫过 1 GB</td><td class="num">34.3 ~ 39.0 ms</td><td class="num">1032 MB</td><td class="num">263 050</td></tr>
+<tr><td>第三遍扫过 1 GB</td><td class="num">33.6 ~ 35.7 ms</td><td class="num">1032 MB</td><td class="num">263 050</td></tr>
+</table>
+</div>
+
+<p>这张表要横着读两遍。第一遍看<b>「物理内存」那一列</b>：申请完 1 GB 之后，进程占用还是 8 MB，一点没涨。1 GB 是记在账上的，不是拿到手的。第二遍看<b>「累计缺页」那一列</b>：第一次扫过去，缺页从 902 涨到 263049，增加了 262 147 次。而 1 GB ÷ 4096 字节 = 262 144。数字对得上。每一页恰好缺一次。第二遍再扫，只多了 1 次。</p>
+
+<p>那么第一遍那多出来的四百多毫秒，到底是"内存本身慢"，还是"缺页处理慢"？光看这张表分不开。所以要做一件事：<b>把缺页从计时段里挪走，其他什么都不改。</b></p>
+
+<p>Linux 提供了这个开关。<code>mmap</code> 的时候加上 <code>MAP_POPULATE</code>，内核会在 <code>mmap</code> 返回之前就把所有页都建好。</p>
+
+<pre><code>m2 = mmap.mmap(-1, SIZE, flags=mmap.MAP_PRIVATE | mmap.MAP_ANONYMOUS | mmap.MAP_POPULATE)</code></pre>
+
+<div class="scroll">
+<table>
+<tr><th>加了 MAP_POPULATE 之后</th><th class="num">耗时</th><th class="num">进程占用物理内存</th><th class="num">这一步产生的缺页</th></tr>
+<tr><td>mmap 返回时</td><td class="num">—</td><td class="num">1032 MB</td><td class="num">262 144</td></tr>
+<tr class="hi"><td>第一遍扫过 1 GB</td><td class="num">36 ~ 65 ms</td><td class="num">1032 MB</td><td class="num">0</td></tr>
+<tr><td>第二遍扫过 1 GB</td><td class="num">34 ~ 41 ms</td><td class="num">1032 MB</td><td class="num">0</td></tr>
+</table>
+</div>
+
+<p>对照组把问题回答了：262 144 次缺页原封不动地搬到了 <code>mmap</code> 那一步，于是第一遍立刻从四百多毫秒掉到和第二遍同一个量级（36 ~ 65 毫秒对 34 ~ 41 毫秒）。<b>慢的不是内存，是缺页。</b>把它挪走，第一遍就不慢了。</p>
+
+<div class="card warn">
+<h4>关键结论</h4>
+<p><b>进程报出来的内存占用，是它碰过多少页，不是它申请了多少。一个刚起来的服务 RSS 很小，不代表它不会在第一批请求打进来的时候突然吃掉几个 G。那几个 G 是被第一次访问"变"出来的，而变的过程要花掉实打实的几百毫秒。</b></p>
+</div>
+
+<p>这条直接对上你四周后要做的事。一个推理服务启动时给 KV cache 预留了 40 GB，如果不预先碰一遍，这 40 GB 的缺页开销会分摊到最早那批请求头上。它们的首字延迟会莫名其妙地高，而你在代码里找不到任何一行慢的逻辑。Day 26 讲沙箱冷启动的时候，这件事会再出现一次。</p>
+
+<h3>7. 页多起来之后，翻译地址本身成了瓶颈</h3>
+<p class="lead">这一节回答：页表已经建好了，为什么访问还会慢？</p>
+
+<p>页表解决了"虚拟地址怎么变成物理地址"。但每一次访问内存，都要先查一次页表。如果查页表本身也要跑一趟内存，那每次访问就变成两次，得不偿失。</p>
+
+<p>所以 CPU 里有一小块专门缓存"最近翻译过的地址"的硬件，叫 <span class="term">TLB</span>（translation lookaside buffer，地址翻译缓存）。一个 TLB 条目记住一页的翻译结果。</p>
+
+<p>它的条目数是很有限的，而每个条目只管 4 KB。所以一个进程能被 TLB 完整覆盖的地址范围，就是"条目数 × 4 KB"这么大，远小于一个大模型权重的尺寸。超出这个范围之后，每次访问都要额外走一遍页表才能拿到物理地址。Linux 内核文档对此的说法是：「TLB 通常是相当稀缺的资源，工作集很大的应用会因为 TLB miss 而受到性能损失。」</p>
+
+<p>对策是把页做大。x86 支持 2 MB 的页，同样一个 TLB 条目，覆盖范围一下子变成原来的 512 倍。内核文档给的理由是：「使用大页显著降低 TLB 压力，提高 TLB 命中率，从而提升整体系统性能。」这种页叫<span class="term">大页（huge page）</span>。Linux 里这套机制叫 THP（transparent huge page，透明大页）："透明"的意思是你不用申请什么特殊内存，只要对一段普通内存打声招呼就行。</p>
+
+<p>先看这台机器现在是什么状态：</p>
+
+<pre><code>$ cat /sys/kernel/mm/transparent_hugepage/enabled
+always [madvise] never</code></pre>
+
+<p>方括号标的是当前值。三个选项的意思是：<code>always</code> 全局都用大页；<code>never</code> 全局都不用；<code>madvise</code> 是默认值，意思是只对主动开口要的那些内存区域用大页。怎么开口？调 <code>madvise(地址, 长度, MADV_HUGEPAGE)</code>。反过来 <code>MADV_NOHUGEPAGE</code> 是明确拒绝。</p>
+
+<p>这两个开关正好构成一组干净的对照：同一段代码、同一块 256 MB、同一个随机环，只改页的大小。而且改没改成还能验证。<code>/proc/self/smaps</code> 里有一行 <code>AnonHugePages</code>，会告诉你这段区域里有多少字节真的被大页撑着。</p>
+
+<p>四种组合各自单独起一个进程跑，互不干扰；每个进程内部重复 5 轮取最快的一轮，每种组合跑 3 个进程。下面每一格是这 3 个进程各自结果的范围：</p>
+
+<div class="scroll">
+<table>
+<tr><th>256 MB 工作集</th><th class="num">4 KB 小页</th><th class="num">2 MB 大页</th></tr>
+<tr><td>AnonHugePages 实测</td><td class="num">0 kB</td><td class="num">262 144 kB</td></tr>
+<tr><td>顺序跳</td><td class="num">7.6 ~ 9.6 ns</td><td class="num">5.8 ~ 8.0 ns</td></tr>
+<tr class="hi"><td>随机跳</td><td class="num">185 ~ 193 ns</td><td class="num">161 ~ 169 ns</td></tr>
+</table>
+</div>
+
+<p>先看第一行，它是这张表能不能信的前提：<code>AnonHugePages</code> 一个是 0，一个是 262144 kB，正好是全部 256 MB。说明开关真的生效了，不是白改。</p>
+
+<p>然后重点看<b>「顺序跳」和「随机跳」这两行的对比</b>，因为这才是把原因钉死的地方。顺序那一行，两列的范围是重叠的（7.6~9.6 对 5.8~8.0），分不出快慢。随机那一行，两列的范围完全不沾边，大页稳定快 20 到 30 纳秒。把两种页大小的先后顺序对调再跑一遍，快慢关系不变。</p>
+
+<p>为什么这个对比是关键：两行踩到的页数完全一样，都是 65 536 个 4 KB 页或 128 个 2 MB 页；换页大小的同时还换了物理内存的连续程度，而这个连续程度对两行也是一样的。如果大页的好处来自"页数变少"或者"物理上更连续"这类跟访问顺序无关的原因，顺序那一行也该跟着受益。它没有跟着受益。差别只出现在随机访问上，而随机访问是唯一让翻译失手的代价藏不住的模式。<b>所以大页省下来的，是地址翻译的钱。</b></p>
+
+<p>大页不是白给的。同样是写满 1 GB，两种页大小要处理的缺页次数是这样的：</p>
+
+<div class="scroll">
+<table>
+<tr><th>写满 1 GB</th><th class="num">缺页次数</th><th>每次缺页内核要干的事</th></tr>
+<tr><td>4 KB 小页</td><td class="num">262 144</td><td>找一页 4 KB 的空闲物理内存，清零，填页表</td></tr>
+<tr><td>2 MB 大页</td><td class="num">512</td><td>找<b>连续的</b> 2 MB 空闲物理内存，清零 2 MB，填页表</td></tr>
+</table>
+</div>
+
+<p>缺页次数正好差 512 倍（2 MB ÷ 4 KB = 512），这一点是确定的。但要清零的总字节数一模一样，都是 1 GB。而且大页要求物理上连续的 2 MB。内核文档提到，为了凑出大页，内核会进入直接回收（direct reclaim）；文档也直接点明了另一个代价：页错误里的清页和拷贝页变大，这是一个潜在的负面效应。</p>
+
+<p>所以大页的正确用法不是全局打开，是对着<b>那些又大又被随机访问的区域</b>单独开。模型权重和 KV cache 正是这种区域。所以下次看到一条"建议开启 THP"的部署说明，你知道该问什么：这块内存有多大，访问它的模式是随机的还是顺序的。</p>
+<h3>8. 延迟之外的另一个数：一秒钟能搬多少字节</h3>
+<p class="lead">这一节回答：前面测的 198 纳秒，能不能直接换算成"这台机器读 14 GB 要多久"？</p>
+
+<p>不能，而且差得很远。这是两个不同的量，必须分开。</p>
+
+<p><b>延迟</b>是"发出一次请求到数据回来要等多久"，前面七节测的都是它。<b>带宽</b>是"持续搬运时每秒能过多少字节"。它们不能互相换算，因为 CPU 可以同时让很多次访问在路上跑。这正是第 2 节里为了测延迟要费劲避开的东西。</p>
+
+<p>用日常场景对一下：延迟是"一个包裹从下单到送到要三天"，带宽是"这条运输线一天能发一万个包裹"。三天是延迟，一万是带宽。它们没有换算关系，取决于路上能同时跑多少辆车。</p>
+
+<p>Day 1 你已经见过一模一样的一对概念：一次请求的延迟，和整个服务每秒能处理多少请求。当时是在服务层面，现在是在硬件层面。同一件事换了个尺度。</p>
+
+<p>测带宽的办法和测延迟正相反：要让访问尽可能互相独立、越多越好。做法就是顺序把一大块内存加起来，让编译器用多个累加器同时推进。</p>
+
+<p>每个尺寸都反复扫到累计 2 GB 才停表，免得小尺寸那几行因为计时太短而不可信。</p>
+
+<div class="scroll">
+<table>
+<tr><th>顺序读一块内存</th><th class="num">1 线程</th><th class="num">2 线程</th></tr>
+<tr><td>16 MB</td><td class="num">25.6 GB/s</td><td class="num">51.8 GB/s</td></tr>
+<tr><td>64 MB</td><td class="num">23.0 GB/s</td><td class="num">51.7 GB/s</td></tr>
+<tr><td>128 MB</td><td class="num">26.1 GB/s</td><td class="num">52.1 GB/s</td></tr>
+<tr><td>256 MB</td><td class="num">22.8 GB/s</td><td class="num">50.7 GB/s</td></tr>
+<tr><td>320 MB</td><td class="num">17.6 GB/s</td><td class="num">—</td></tr>
+<tr class="hi"><td>512 MB</td><td class="num">13.5 GB/s</td><td class="num">28.5 GB/s</td></tr>
+<tr class="hi"><td>1024 MB</td><td class="num">13.2 GB/s</td><td class="num">27.6 GB/s</td></tr>
+<tr class="hi"><td>2048 MB</td><td class="num">13.7 GB/s</td><td class="num">26.9 GB/s</td></tr>
+</table>
+</div>
+
+<p>这张表重点看<b>从 256 MB 到 512 MB 那一段</b>：单线程 22.8 → 17.6 → 13.5，两个线程 50.7 → 28.5。掉下去的位置，和机器自报的 260 MB L3 对得上。256 MB 那块还能整个待在 L3 里，测的是缓存的带宽；512 MB 待不下，测的才是内存条的带宽。</p>
+
+<p>所以这台机器有两个带宽数字：<b>缓存里单线程约 25 GB/s、两线程约 52 GB/s；真正到内存条单线程约 13 GB/s、两线程约 27 GB/s。</b></p>
+
+<p>再横着看一眼两列的关系。不管是在缓存里（25.6 对 51.8）还是在内存条上（13.5 对 28.5），第二个线程都让带宽翻了倍。这说明两个核还远没有把任何一条路压满。<b>所以那道从 22.8 掉到 13.5 的坎，跟你开几个线程无关，只跟数据住在哪有关。</b>这台机器只有两个核，压不到饱和的那个点；真机上核多得多，能压出多少带宽要在真机上量。</p>
+
+<h3>9. 现在轮到你猜了</h3>
+
+<p>先把场景说清楚。神经网络的一层，本质上是一个矩阵乘法：一个权重矩阵 W 乘上输入。如果一次只处理一个 token，输入就是一列；一次处理一批 32 个 token，输入就是 32 列。</p>
+
+<p>关键的结构性事实是：<b>不管这一批有几个 token，W 都只需要从头到尾读一遍。</b>读进来的 W 可以给这一批里的每一列都用上。所以批量变大，读进来的字节数一个都没多，只有算术量变多了。</p>
+
+<p>下面这个实验用一个 16384 × 16384 的 float32 权重矩阵，正好 1 GB。按上一节的表，这个尺寸装不进 L3，每次都得从内存条上捞。批量从 1 扫到 64，用 numpy 做矩阵乘法（底下调的是 OpenBLAS，限定单线程）。</p>
+
+<pre><code># 跑之前先设 OPENBLAS_NUM_THREADS=1，把"用了几个核"这个变量固定住
+import time, numpy as np
+
+N = 16384
+W = np.random.rand(N, N).astype(np.float32)          # 1 GB 的权重，装不进 L3
+wb = W.nbytes
+for B in (1, 2, 4, 8, 16, 32, 64):
+    X = np.random.rand(N, B).astype(np.float32)      # 这一批 B 个 token 的输入
+    W @ X                                            # 预热一次，别把第一次的开销算进去
+    best = 1e9
+    for _ in range(5):                               # 跑 5 次取最快的一次
+        t0 = time.perf_counter(); W @ X; t1 = time.perf_counter()
+        best = min(best, t1 - t0)
+    print(f"{B}\t{best*1e3:8.2f} ms\t{best*1e3/B:8.2f} ms/列\t"
+          f"{wb/best/1e9:6.2f} GB/s\t{2*N*N*B/best/1e9:6.2f} GFLOP/s")</code></pre>
+
+<p>取 5 次里最快的那一次，是为了把偶发的调度干扰挤出去；这里要问的是"最好情况下要多久"，不是"平均多久"。</p>
+<p>那行 <code>print</code> 吐出五列：批量、总耗时、<b>每列耗时</b>（总耗时 ÷ 批量，也就是摊到每个 token 头上的时间）、<b>读 W 的速率</b>（按"W 只读一遍"算出来的）、以及<b>算术速率</b>。最后一列的单位 <code>GFLOP/s</code> 是"每秒十亿次浮点运算"，一次浮点加、一次浮点乘各算一次。这五列下一节会全部用上，到时候再逐个定义。</p>
+
+<p>批量为 1 时，实测总耗时 <b>87.7 毫秒</b>。</p>
+
+<div class="card predict">
+<span class="tag">预测 · 先写下来再往下看</span>
+<h4>把批量从 1 加到 64，算术量涨了 64 倍。</h4>
+<p><b>问题一：</b>总耗时会从 87.7 毫秒变成多少毫秒？</p>
+<div class="blank sm"></div>
+<p><b>问题二：</b>平均每一列（每个 token）要多少毫秒？</p>
+<div class="blank sm"></div>
+<p><b>问题三：</b>你的理由是什么？写一句话。</p>
+<div class="blank"></div>
+<p style="margin-bottom:0;color:var(--ink-soft);font-size:.9rem">写完再往下翻。下一节不会直接给表：它会先补一把尺子、把两个数数清楚，让你自己把答案算出来，最后才对实测。</p>
+</div>
+
+<h3>10. 揭晓：把答案算出来，再看实测</h3>
+<p class="lead">这一节回答：为什么"多算一点"几乎不要钱，而"多读一遍"贵得要命？</p>
+
+<p>上一节让你凭直觉猜。这一节不直接给表。</p>
+
+<p>因为这台机器上会发生什么，是可以<b>提前算出来</b>的，用不着看实测。而要算，需要四样东西，其中三样你现在还没有：</p>
+
+<ol>
+<li>这台机器<b>搬字节</b>的能力有多强 —— 第 8 节量过了，13.2 GB/s。</li>
+<li>这台机器<b>做运算</b>的能力有多强 —— 还没量。10.1 补上。</li>
+<li>这个负载<b>要搬多少字节</b> —— 还没数。10.2 数一遍。</li>
+<li>这个负载<b>要做多少次运算</b> —— 还没数。10.2 一起数。</li>
+</ol>
+
+<p>四个数到手，10.3 只需要做两次除法，就能得到一个可以证伪的预测。10.4 把预测写下来，10.5 才跑实测去对答案。后面几节处理对不上的地方。</p>
+
+<h4>10.1 补上第二把尺子：这台机器每秒最多能做多少次运算</h4>
+
+<p>第 8 节量带宽的时候用了一个原则：<b>要量哪条路，就设计一个只压这条路的程序。</b>量带宽用的是顺序求和，因为它每秒能吃进的字节数最多、算得最少。现在要量另一条路，原则一样，方向相反：<b>设计一个几乎不碰内存、只做运算的程序。</b></p>
+
+<p>先把单位说清楚。<span class="term">浮点运算（FLOP，floating-point operation）</span>就是一次浮点加法或一次浮点乘法，各算一次。<code>GFLOP/s</code> 是每秒十亿次浮点运算。上一节那段代码最后打印的那一列就是它，当时没解释，现在补上。</p>
+
+<p>要把算术单元压满，程序得满足两个条件：</p>
+<ul>
+<li><b>数据必须一直待在寄存器里。</b>只用几十个变量反复算（下面用 64 个，正好装得进 CPU 的向量寄存器），一个字节都不往内存跑。这样量到的就是纯粹的算术能力。</li>
+<li><b>算式之间不能互相等。</b>这一点和第 2 节量延迟时的要求正好相反。那时候要"下一步必须等上一步"，才能量出等待时间；现在要"谁也不等谁"，才能把流水线填满。一条乘加指令从发出到出结果要等几个周期，如果所有算式串成一条链，CPU 大部分时间都在等自己。所以这里开 64 条互不相干的链。</li>
+</ul>
+
+<pre><code>/* peakflop.c —— 量这台机器每秒最多能做多少次浮点运算。
+   不用矩阵乘法、不用 numpy、不碰任何库，只有一串谁也不等谁的乘加。*/
+#include &lt;stdio.h&gt;
+#include &lt;time.h&gt;
+
+#define NACC 64            /* 64 条互不依赖的链，保证流水线不会因为等结果而空转 */
+#define ITER 200000000L
+
+static double now_s(void){
+    struct timespec t; clock_gettime(CLOCK_MONOTONIC, &amp;t);
+    return t.tv_sec + t.tv_nsec * 1e-9;
+}
+
+int main(void){
+    float a[NACC], b = 1.0000001f, c = 0.0000001f;
+    for (int k = 0; k &lt; NACC; k++) a[k] = 1.0f + 0.001f * k;
+
+    double t0 = now_s();
+    for (long i = 0; i &lt; ITER; i++)
+        for (int k = 0; k &lt; NACC; k++)
+            a[k] = a[k] * b + c;      /* 一次乘 + 一次加 = 2 次浮点运算 */
+    double t1 = now_s();
+
+    float sink = 0;                   /* 把结果用掉，否则编译器会把整个循环删干净 */
+    for (int k = 0; k &lt; NACC; k++) sink += a[k];
+    printf("%.1f GFLOP/s   (校验和 %.3f)\n",
+           2.0 * NACC * ITER / (t1 - t0) / 1e9, sink);
+    return 0;
+}</code></pre>
+
+<p>那个 <code>sink</code> 不是装饰。<code>-O3</code> 会发现 <code>a[]</code> 的结果没人用，然后把整个循环删掉，你会量到一个好几万 GFLOP/s 的假数字。<b>凡是量算力的微基准，第一件要检查的事就是循环还在不在。</b>校验和打印出来是个合理的数，就说明它还在。</p>
+
+<pre><code>$ gcc -O3 -march=native -funroll-loops -o peakflop peakflop.c
+$ ./peakflop
+103.0 GFLOP/s   (校验和 66.049)
+
+$ perf stat -e cycles ./peakflop        # 顺便数一下用了多少个时钟周期
+103.0 GFLOP/s   (校验和 66.049)
+       800,412,553      cycles</code></pre>
+
+<p>这个数字可以从两个方向验一遍，两边都对上才敢用。</p>
+
+<p><b>第一验：每周期做了几次运算。</b>总运算量是 2 × 64 × 2 亿 = 256 亿次，用掉 8.00 亿个周期，<b>每周期 32.0 次</b>。这个 32 是可以从指令集推出来的：这台机器支持 AVX2，一条 FMA（乘加）指令一次处理 8 个 float，每个 float 做一次乘一次加，就是 16 次运算；CPU 每个周期能发两条 FMA，<b>8 × 2 × 2 = 32</b>。实测 32.0，纸面 32，严丝合缝。</p>
+
+<p><b>第二验：和第 5 节的时钟对一下。</b>103.0 GFLOP/s ÷ 32 次每周期 = <b>3.22 GHz</b>。第 5 节量整数依赖链时得到每秒 32.2 亿步，一步一个周期，也是 3.22 GHz。两个完全不同的程序量出同一个时钟。</p>
+
+<p>所以这台机器的第二个能力数字是：<b>单线程算力天花板 103.0 GFLOP/s</b>。它和第 8 节那个 13.2 GB/s 一样，是独立量出来的，跟接下来要分析的矩阵乘法没有任何关系 —— 这一点很重要，否则后面就成了拿结论证明结论。</p>
+
+<div class="card recall">
+<h4>顺带记一条排查经验</h4>
+<p>如果你的机器支持 AVX-512，纸面上每周期能到 64 次，但很多型号跑 512 位指令时会降频，实测未必翻倍。<b>纸面推算只用来验证实测的量级对不对，永远不要拿纸面数字代进后面的式子。</b>要用就用你自己量出来的那个。</p>
+</div>
+
+<h4>10.2 数一遍：这个矩阵乘法要搬多少字节、要做多少次运算</h4>
+
+<p>两把尺子有了。现在轮到负载：这个矩阵乘法往两条路上各压了多少东西？这一步不需要跑任何程序，数出来就行。</p>
+
+<p>先把矩阵乘法写开。权重 W 是 N 行 N 列，输入 X 是 N 行 B 列（B 就是批量，一次处理几个 token），输出 Y 也是 N 行 B 列。输出的每一格是这么来的：</p>
+
+<p style="text-align:center;margin:1.1rem 0"><b>Y<sub>ij</sub> = W<sub>i1</sub>·X<sub>1j</sub> + W<sub>i2</sub>·X<sub>2j</sub> + … + W<sub>iN</sub>·X<sub>Nj</sub></b></p>
+
+<p>也就是"W 的第 i 行"和"X 的第 j 列"对应位置相乘再全部加起来。拿 N=3、B=2 看一眼：</p>
+
+<div class="scroll">
+<svg viewBox="0 0 700 262" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="3乘3的W乘以3乘2的X得到3乘2的Y，高亮一行一列和对应的输出格">
+  <!-- W -->
+  <rect x="90" y="70" width="132" height="44" fill="var(--accent-soft)"/>
+  <g stroke="var(--ink-soft)" stroke-width="1.2" fill="none">
+    <rect x="90" y="70" width="132" height="132"/>
+    <line x1="134" y1="70" x2="134" y2="202"/><line x1="178" y1="70" x2="178" y2="202"/>
+    <line x1="90" y1="114" x2="222" y2="114"/><line x1="90" y1="158" x2="222" y2="158"/>
+  </g>
+  <text x="156" y="228" font-size="13.5" fill="var(--ink-soft)" text-anchor="middle">W　N×N = 3×3</text>
+  <text x="156" y="248" font-size="12.5" fill="var(--accent)" text-anchor="middle">9 个数，每个 4 字节</text>
+  <text x="240" y="143" font-size="20" fill="var(--ink)" text-anchor="middle">×</text>
+
+  <!-- X -->
+  <rect x="262" y="70" width="44" height="132" fill="var(--five-bg)"/>
+  <g stroke="var(--ink-soft)" stroke-width="1.2" fill="none">
+    <rect x="262" y="70" width="88" height="132"/>
+    <line x1="306" y1="70" x2="306" y2="202"/>
+    <line x1="262" y1="114" x2="350" y2="114"/><line x1="262" y1="158" x2="350" y2="158"/>
+  </g>
+  <text x="306" y="228" font-size="13.5" fill="var(--ink-soft)" text-anchor="middle">X　N×B = 3×2</text>
+  <text x="368" y="143" font-size="20" fill="var(--ink)" text-anchor="middle">=</text>
+
+  <!-- Y -->
+  <rect x="390" y="70" width="44" height="44" fill="var(--key-bg)"/>
+  <g stroke="var(--ink-soft)" stroke-width="1.2" fill="none">
+    <rect x="390" y="70" width="88" height="132"/>
+    <line x1="434" y1="70" x2="434" y2="202"/>
+    <line x1="390" y1="114" x2="478" y2="114"/><line x1="390" y1="158" x2="478" y2="158"/>
+  </g>
+  <text x="434" y="228" font-size="13.5" fill="var(--ink-soft)" text-anchor="middle">Y　N×B = 3×2</text>
+
+  <line x1="492" y1="92" x2="522" y2="92" stroke="var(--ink-soft)" stroke-width="1.4"/>
+  <g font-size="13.5" fill="var(--ink)">
+    <text x="532" y="82">高亮的一行 × 高亮的一列</text>
+    <text x="532" y="103">= 高亮的那一格</text>
+    <text x="532" y="130" fill="var(--key)">3 次乘 + 2 次加</text>
+    <text x="532" y="156" fill="var(--ink-soft)">输出一共 3×2 = 6 格</text>
+    <text x="532" y="180" fill="var(--ink-soft)">W 的每个格子被读 1 次，</text>
+    <text x="532" y="200" fill="var(--ink-soft)">被用了 B=2 次</text>
+  </g>
+</svg>
+</div>
+
+<p>现在把两件事分别数清楚。</p>
+
+<p><b>要做多少次运算。</b>输出一共 N×B 格。每一格是 N 次乘法加上 N−1 次加法，共 2N−1 次运算，惯例上直接记作 <b>2N</b>（差的那一次在 N 大的时候可以忽略，而且硬件上乘加是一条指令）。所以：</p>
+
+<p style="text-align:center;margin:1.1rem 0"><b>总运算次数 = 2N × N × B = 2N²B</b></p>
+
+<p>3×3 那个例子代进去：2×9×2 = 36 次。手数一遍也是 36（6 格 × 每格 6 次）。</p>
+
+<p><b>要搬多少字节。</b>W 有 N² 个数。这里用的是 float32，<b>每个数占 4 字节</b>（float64 占 8 字节，推理里常用的 float16 占 2 字节，这个数后面还会再用到）。所以 W 一共 4N² 字节。而<b>不管 B 是几，W 都只需要从头读一遍</b>——这就是上一节那个结构性事实，在图上就是"每个格子被读 1 次、被用了 B 次"。X 和 Y 各只有 N×B 个数，B 很小的时候比 N² 小好几个数量级，忽略掉。所以：</p>
+
+<p style="text-align:center;margin:1.1rem 0"><b>总字节数 = 4N²（与 B 无关）</b></p>
+
+<p>3×3 那个例子：4×9 = 36 字节。</p>
+
+<p>四个数齐了。下一节把它们两两相除。</p>
+
+<h4>10.3 两次除法：负载的运算强度，机器的平衡点</h4>
+
+<p>10.1 和 10.2 分别给了机器的能力和负载的需求，现在把它们各自化成同一种单位，才能直接比较。这个共同单位就是<b>"每一个字节配几次运算"</b>。</p>
+
+<p><b>第一次除法，负载这一侧。</b>把 10.2 的两个结果相除：</p>
+
+<p style="text-align:center;margin:1.1rem 0"><b>2N²B ÷ 4N² = B / 2</b></p>
+
+<p>N 消掉了。<b>这个负载每搬进来一个字节能配上的运算次数，只由批量决定，跟矩阵多大完全无关。</b>这个数叫<span class="term">运算强度（arithmetic intensity）</span>，是负载的属性。批量 1 时是 0.5，批量 64 时是 32。</p>
+
+<p><b>第二次除法，机器这一侧。</b>把 10.1 和第 8 节的两个结果相除：</p>
+
+<p style="text-align:center;margin:1.1rem 0"><b>103.0 GFLOP/s ÷ 13.2 GB/s ≈ 7.8 次运算每字节</b></p>
+
+<p>单位是这么消掉的：每秒 1030 亿次运算 ÷ 每秒 132 亿字节 = 每字节 7.8 次运算。它的含义是：<b>这台机器每从内存条上拉进来一个字节，你得能配上大约 7.8 次运算，两条路才刚好一样忙。</b>配不满，算术单元干等着，多出来的算力白扔；配超了，内存条闲着，多出来的带宽白扔。这个数叫这台机器的<span class="term">机器平衡点（machine balance）</span>，是硬件的属性，跟你跑什么程序无关，量一次可以反复用。</p>
+
+<p><b>两个数一比，拐点就出来了：</b></p>
+
+<p style="text-align:center;font-size:1.12rem;margin:1.2rem 0"><b>B / 2 = 7.8　→　B ≈ 16</b></p>
+
+<p>批量小于 16，这个负载配不满这台机器的算力，时间由字节数说了算；批量大于 16，算力先用完，时间由运算次数说了算。</p>
+
+<p>把这件事画出来，就是性能工程里用得最多的一张图。横轴是负载的运算强度，纵轴是它能达到的算术速率。斜的那段是带宽给的上限（每秒能拉进 13.2 GB，每个字节配 I 次运算，所以最多 13.2×I），平的那段是算力给的上限（103.0，再多的运算强度也没用）。两段相交处就是刚算出来的 B≈16。这张图叫<span class="term">屋顶线模型（roofline model）</span>。</p>
+
+<div class="scroll">
+<svg viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="屋顶线模型：横轴运算强度，纵轴算术速率，实测点与两条屋顶线">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="80" y1="350" x2="660" y2="350"/>
+    <line x1="80" y1="229.2" x2="660" y2="229.2" stroke-dasharray="2 4"/>
+    <line x1="80" y1="108.3" x2="660" y2="108.3" stroke-dasharray="2 4"/>
+    <line x1="80" y1="60" x2="80" y2="350"/>
+  </g>
+  <g stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4">
+    <line x1="152.5" y1="60" x2="152.5" y2="350"/><line x1="225" y1="60" x2="225" y2="350"/>
+    <line x1="297.5" y1="60" x2="297.5" y2="350"/><line x1="370" y1="60" x2="370" y2="350"/>
+    <line x1="442.5" y1="60" x2="442.5" y2="350"/><line x1="515" y1="60" x2="515" y2="350"/>
+    <line x1="587.5" y1="60" x2="587.5" y2="350"/>
+  </g>
+
+  <g font-size="13" fill="var(--ink-soft)" text-anchor="end">
+    <text x="72" y="355">1</text><text x="72" y="234">10</text><text x="72" y="113">100</text>
+  </g>
+  <text x="26" y="205" font-size="14" fill="var(--ink-soft)" text-anchor="middle" transform="rotate(-90 26 205)">实测算术速率 GFLOP/s</text>
+
+  <g font-size="13" fill="var(--ink-soft)" text-anchor="middle">
+    <text x="152.5" y="370">0.5</text><text x="225" y="370">1</text><text x="297.5" y="370">2</text>
+    <text x="370" y="370">4</text><text x="442.5" y="370">8</text><text x="515" y="370">16</text><text x="587.5" y="370">32</text>
+  </g>
+  <g font-size="12.5" fill="var(--accent)" text-anchor="middle">
+    <text x="152.5" y="389">B=1</text><text x="225" y="389">B=2</text><text x="297.5" y="389">B=4</text>
+    <text x="370" y="389">B=8</text><text x="442.5" y="389">B=16</text><text x="515" y="389">B=32</text><text x="587.5" y="389">B=64</text>
+  </g>
+  <text x="370" y="413" font-size="14" fill="var(--ink-soft)" text-anchor="middle">运算强度（每搬一个字节配上几次运算）</text>
+
+  <g stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="3 3" opacity=".7">
+    <line x1="439.9" y1="88" x2="439.9" y2="350"/>
+    <line x1="512.4" y1="88" x2="512.4" y2="350"/>
+  </g>
+  <text x="436" y="80" font-size="13" fill="var(--ink-soft)" text-anchor="end">10.3 预测的拐点 B≈16</text>
+  <text x="516" y="80" font-size="13" fill="var(--ink-soft)" text-anchor="start">10.6 修正后 B≈31</text>
+
+  <polyline points="80,287.4 439.9,106.8 660,106.8" fill="none" stroke="var(--accent)" stroke-width="2.6"/>
+  <polyline points="80,323.7 512.4,106.8 660,106.8" fill="none" stroke="var(--five)" stroke-width="2.2" stroke-dasharray="7 5"/>
+  <text x="658" y="98" font-size="13" fill="var(--accent)" text-anchor="end">算力天花板 103.0 GFLOP/s（10.1 独立量出）</text>
+
+  <g stroke="var(--key)" stroke-width="1.6" color="var(--key)">
+    <line x1="297.5" y1="180" x2="297.5" y2="213" marker-end="url(#ah)"/>
+  </g>
+  <text x="289" y="202" font-size="13" fill="var(--key)" text-anchor="end">差 2 倍</text>
+
+  <g fill="var(--key)">
+    <circle cx="152.5" cy="254.9" r="6"/><circle cx="225" cy="249.1" r="6"/><circle cx="297.5" cy="215.4" r="6"/>
+    <circle cx="370" cy="182.6" r="6"/><circle cx="442.5" cy="154.1" r="6"/><circle cx="515" cy="132.7" r="6"/>
+    <circle cx="587.5" cy="116.8" r="6"/>
+  </g>
+
+  <g font-size="13" fill="var(--ink-soft)">
+    <line x1="30" y1="437" x2="62" y2="437" stroke="var(--accent)" stroke-width="2.6"/>
+    <text x="70" y="441">屋顶线（W 读一遍）</text>
+    <line x1="222" y1="437" x2="254" y2="437" stroke="var(--five)" stroke-width="2.2" stroke-dasharray="7 5"/>
+    <text x="262" y="441">读两遍时的有效屋顶</text>
+    <circle cx="447" cy="437" r="6" fill="var(--key)"/>
+    <text x="461" y="441">10.5 的实测（1 GB 权重）</text>
+  </g>
+</svg>
+</div>
+<p class="sub">两根轴都是对数轴。斜段的斜率就是内存带宽，平段的高度就是算力天花板 —— 两个数都是独立量出来的，画这张图的时候还没跑过任何矩阵乘法。图上的圆点是 10.5 才会跑出来的实测，这里先放上去让你看清全貌；虚线那条屋顶是 10.6 的事。</p>
+
+<h4>10.4 把预测写下来</h4>
+
+<p>屋顶线不是一张示意图，它能出数。下面三条全部来自上一节那两个除法，一个实测值都没用到，所以它们是真正的预测，可以被实测推翻。</p>
+
+<div class="card predict">
+<span class="tag">预测 · 跑实测之前先写下来</span>
+<p><b>预测一：批量 1 时只用得上 6.4% 的算力。</b><br>
+运算强度 0.5，平衡点 7.8，两者之比 0.5 ÷ 7.8 = 6.4%。也就是说算术单元有 93.6% 的时间在干等字节到货。</p>
+
+<p><b>预测二：每列耗时最多能改善 15.6 倍。</b><br>
+批量 1 时每列的时间是"把 W 读一遍"，即 4N² ÷ 带宽。批量大到吃满算力时，每列的时间是"做完这一列的运算"，即 2N² ÷ 算力。两者相除：<br>
+<span style="display:block;text-align:center;margin:.6rem 0">(4N² ÷ 带宽) ÷ (2N² ÷ 算力) = <b>2 × 算力 ÷ 带宽</b></span>
+N 又消掉了，只剩机器的两个数：2 × 103.0 ÷ 13.2 ≈ <b>15.6</b>。注意这正好是平衡点的两倍，因为负载的运算强度是 B/2 而不是 B。</p>
+
+<p style="margin-bottom:0"><b>预测三：拐点在批量 16 附近。</b><br>
+之前每加一个 token 几乎不要钱，之后每加一个都要真金白银地多花时间。</p>
+</div>
+
+<h4>10.5 跑实测，对答案</h4>
+
+<p>实测用的就是上一节那段代码，原样跑，把它打印的五列全部收下来：</p>
+
+<pre><code>$ OPENBLAS_NUM_THREADS=1 python3 batchsweep.py
+批量   总耗时        每列耗时      读 W 的速率     算术速率
+1      87.70 ms      87.69 ms      12.25 GB/s      6.12 GFLOP/s
+2     157.00 ms      78.50 ms       6.84 GB/s      6.84 GFLOP/s
+4     165.40 ms      41.36 ms       6.49 GB/s     12.98 GFLOP/s
+8     177.10 ms      22.14 ms       6.06 GB/s     24.25 GFLOP/s
+16    205.80 ms      12.86 ms       5.22 GB/s     41.74 GFLOP/s
+32    273.50 ms       8.55 ms       3.93 GB/s     62.81 GFLOP/s
+64    403.90 ms       6.31 ms       2.66 GB/s     85.07 GFLOP/s</code></pre>
+
+<p>三列的定义，免得看串了：<b>每列耗时</b>是总耗时 ÷ 批量，也就是平摊到每个 token 上的时间；<b>读 W 的速率</b>是 1 GB ÷ 总耗时，按"W 只读一遍"算出来的表面速率（这个"表面"是有讲究的，10.6 会说明）；<b>算术速率</b>是 2N²B ÷ 总耗时。</p>
+
+<p>把 10.4 的预测并进去。倒数第三列是屋顶线给的预测值，也就是 <code>min(13.2 × 运算强度, 103.0)</code>：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="num">批量</th><th class="num">运算强度</th><th class="num">屋顶线预测</th><th class="num">实测算术速率</th><th class="num">实测÷预测</th><th class="num">总耗时</th><th class="num">每列耗时</th><th class="num">读 W 的速率</th></tr>
+<tr class="hi"><td class="num">1</td><td class="num">0.5</td><td class="num">6.6</td><td class="num">6.12</td><td class="num">0.93</td><td class="num">87.7 ms</td><td class="num">87.69 ms</td><td class="num">12.25 GB/s</td></tr>
+<tr><td class="num">2</td><td class="num">1</td><td class="num">13.2</td><td class="num">6.84</td><td class="num">0.52</td><td class="num">157.0 ms</td><td class="num">78.50 ms</td><td class="num">6.84 GB/s</td></tr>
+<tr><td class="num">4</td><td class="num">2</td><td class="num">26.4</td><td class="num">12.98</td><td class="num">0.49</td><td class="num">165.4 ms</td><td class="num">41.36 ms</td><td class="num">6.49 GB/s</td></tr>
+<tr><td class="num">8</td><td class="num">4</td><td class="num">52.8</td><td class="num">24.25</td><td class="num">0.46</td><td class="num">177.1 ms</td><td class="num">22.14 ms</td><td class="num">6.06 GB/s</td></tr>
+<tr><td class="num">16</td><td class="num">8</td><td class="num">103.0</td><td class="num">41.74</td><td class="num">0.41</td><td class="num">205.8 ms</td><td class="num">12.86 ms</td><td class="num">5.22 GB/s</td></tr>
+<tr><td class="num">32</td><td class="num">16</td><td class="num">103.0</td><td class="num">62.81</td><td class="num">0.61</td><td class="num">273.5 ms</td><td class="num">8.55 ms</td><td class="num">3.93 GB/s</td></tr>
+<tr class="hi"><td class="num">64</td><td class="num">32</td><td class="num">103.0</td><td class="num">85.07</td><td class="num">0.83</td><td class="num">403.9 ms</td><td class="num">6.31 ms</td><td class="num">2.66 GB/s</td></tr>
+</table>
+</div>
+
+<p><b>预测一，命中。</b>批量 1 实测 6.12 GFLOP/s，是算力天花板 103.0 的 <b>5.9%</b>，预测 6.4%。这个数不是"观察到的一个小得可怜的数字"，是提前算出来的。批量 1 时这台机器的算术单元有 94% 的时间在空转，而操作系统眼里它是满载的 —— 第 5 节那个错觉，在这里有了具体的数字。</p>
+
+<p><b>预测二，命中，而且差的那一点能说清去处。</b>每列耗时从 87.69 掉到 6.31，改善 <b>13.9 倍</b>，预测 15.6 倍。差的 11% 来自两处，都是"实测没跑到纸面能力"：</p>
+<ul>
+<li>式子里的"带宽"我代的是 13.2（第 8 节顺序求和量到的），而批量 1 那一行实际只跑到 12.25 —— 矩阵乘法的访存不如一个纯求和循环规整。</li>
+<li>式子里的"算力"我代的是 103.0（10.1 量到的硬件峰值），而批量 64 那一行实际只跑到 85.07 —— 库没把硬件榨干。</li>
+</ul>
+<p>把这两个<b>实测值</b>代回同一条式子：2 × 85.07 ÷ 12.25 = <b>13.89</b>，和实测的 13.9 对到小数点后一位。<b>式子没错，只是纸面能力和实际达到的能力之间有一道口子。</b>这道口子有多宽，最后一列的 0.83 就是答案，10.7 会用到它。</p>
+
+<p><b>预测三，差了一倍。</b>式子说拐点在 16，而实测的总耗时是批量 16 之后才开始明显往上走，32 到 64 那一步直接多了 130 毫秒，拐点实际落在 20 到 30 之间。</p>
+
+<p>还有一处没被预测覆盖、但一眼扎眼的：<b>「实测÷预测」这一列，批量 2、4、8 连着三行是 0.52、0.49、0.46</b>，而批量 1 那一行是 0.93。三行连着精确地停在一半上，不是噪声该有的样子。</p>
+
+<p>两处异常 —— 拐点差一倍、中间三行整齐地矮一半 —— 数值上都是同一个"2"。下一节说明它们确实是同一件事。</p>
+
+<h4>10.6 那个 2 是什么：批量 ≥2 之后，W 被读了两遍</h4>
+
+<p>先看这个"2"能落在哪儿。屋顶线的四个输入里，带宽和算力是 10.1 和第 8 节独立量出来的，运算次数 2N²B 是 10.2 数出来的，都不太可能整体差一倍。剩下唯一可疑的是<b>字节数 4N²</b> —— 它假定 W 从内存条到算术单元只走一趟。</p>
+
+<p>假设它实际走了两趟，会发生什么：运算强度减半（一个字节要被搬两次才顶一次用）→ 斜段的有效高度整体降一半（中间三行矮一半）→ 拐点右移一倍（16 变 31）。<b>一个假设，两处异常同时消失。</b>屋顶线图上那条虚线就是这么来的。</p>
+
+<p>为什么会走两趟，是有具体机制的。这里要引入三个你上岗后天天会看到的缩写：<span class="term">BLAS</span>（basic linear algebra subprograms，基础线性代数子程序库，numpy 底下调的 OpenBLAS 就是它的一个实现），<span class="term">GEMV</span>（general matrix-vector multiply，矩阵乘向量），<span class="term">GEMM</span>（general matrix-matrix multiply，矩阵乘矩阵）。批量为 1 时 X 只有一列，走的是 GEMV；批量 ≥2 时 X 是个矩阵，走的是 GEMM。这是两条完全不同的代码路径：</p>
+
+<div class="scroll">
+<svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GEMV 与 GEMM 两条路径的内存流量对比">
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-soft)"/>
+    </marker>
+  </defs>
+  <line x1="350" y1="18" x2="350" y2="232" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 4"/>
+
+  <text x="175" y="36" font-size="15" fill="var(--accent)" text-anchor="middle" font-weight="600">批量 1 · 走 GEMV</text>
+  <rect x="40" y="66" width="76" height="94" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="78" y="106" font-size="15" fill="var(--ink)" text-anchor="middle">W</text>
+  <text x="78" y="128" font-size="13" fill="var(--ink-soft)" text-anchor="middle">1 GB</text>
+  <line x1="122" y1="113" x2="222" y2="113" stroke="var(--ink-soft)" stroke-width="1.6" marker-end="url(#ah2)"/>
+  <text x="172" y="102" font-size="12.5" fill="var(--ink-soft)" text-anchor="middle">流过一遍</text>
+  <rect x="230" y="90" width="80" height="46" rx="6" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1.5"/>
+  <text x="270" y="118" font-size="13.5" fill="var(--ink)" text-anchor="middle">算术单元</text>
+  <text x="175" y="196" font-size="14" fill="var(--key)" text-anchor="middle" font-weight="600">内存流量合计 1 GB</text>
+  <text x="175" y="220" font-size="12.5" fill="var(--ink-soft)" text-anchor="middle">10.2 数出来的字节数成立</text>
+
+  <text x="525" y="36" font-size="15" fill="var(--accent)" text-anchor="middle" font-weight="600">批量 ≥2 · 走 GEMM</text>
+  <rect x="372" y="66" width="66" height="94" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="405" y="106" font-size="15" fill="var(--ink)" text-anchor="middle">W</text>
+  <text x="405" y="128" font-size="13" fill="var(--ink-soft)" text-anchor="middle">1 GB</text>
+  <line x1="444" y1="113" x2="486" y2="113" stroke="var(--ink-soft)" stroke-width="1.6" marker-end="url(#ah2)"/>
+  <text x="465" y="60" font-size="12.5" fill="var(--ink-soft)" text-anchor="middle">拷进去</text>
+  <text x="465" y="76" font-size="12.5" fill="var(--ink-soft)" text-anchor="middle">1 GB</text>
+  <rect x="492" y="66" width="82" height="94" rx="6" fill="var(--five-bg)" stroke="var(--five)" stroke-width="1.5"/>
+  <text x="533" y="100" font-size="13" fill="var(--ink)" text-anchor="middle">打包</text>
+  <text x="533" y="120" font-size="13" fill="var(--ink)" text-anchor="middle">缓冲区</text>
+  <line x1="580" y1="113" x2="614" y2="113" stroke="var(--ink-soft)" stroke-width="1.6" marker-end="url(#ah2)"/>
+  <text x="597" y="60" font-size="12.5" fill="var(--ink-soft)" text-anchor="middle">再读</text>
+  <text x="597" y="76" font-size="12.5" fill="var(--ink-soft)" text-anchor="middle">1 GB</text>
+  <rect x="620" y="90" width="64" height="46" rx="6" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1.5"/>
+  <text x="652" y="118" font-size="13" fill="var(--ink)" text-anchor="middle">算术</text>
+  <text x="525" y="196" font-size="14" fill="var(--key)" text-anchor="middle" font-weight="600">内存流量合计 2 GB</text>
+  <text x="525" y="220" font-size="12.5" fill="var(--ink-soft)" text-anchor="middle">运算强度减半，屋顶降一半</text>
+</svg>
+</div>
+<p class="sub">GEMM 之所以要打包，是因为它要把 W 切成小块、按算术单元喜欢的顺序重排，这样内层循环才能全程命中缓存 —— 本质上是在为第 4 节讲的"顺序访问"买单。这个重排对大批量很划算；对批量 2 这种细长的输入，摊不回来。</p>
+
+<p>这个假设可以当场用表里已有的数字验一遍，不用写新代码。如果真实流量是 2 GB 而不是 1 GB，那么"读 W 的速率"那一列全都算小了一半，<b>乘以 2 才是这条路上真实跑出来的带宽</b>。乘完是这样：</p>
+
+<div class="scroll">
+<svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="把表面读取速率乘以二之后落在实测内存带宽区间上">
+  <rect x="563.8" y="46" width="17.1" height="230" fill="var(--key)" opacity=".18"/>
+  <text x="572" y="40" font-size="12.5" fill="var(--key)" text-anchor="middle">第 8 节实测带宽 13.2~13.7</text>
+
+  <g font-size="13" fill="var(--ink-soft)" text-anchor="end">
+    <text x="100" y="75">批量 2</text><text x="100" y="111">批量 4</text><text x="100" y="147">批量 8</text>
+    <text x="100" y="183">批量 16</text><text x="100" y="219">批量 32</text><text x="100" y="255">批量 64</text>
+  </g>
+
+  <g>
+    <rect x="110" y="60" width="235.1" height="20" fill="var(--accent)"/><rect x="345.1" y="60" width="235.1" height="20" fill="var(--accent)" opacity=".32"/>
+    <rect x="110" y="96" width="223.1" height="20" fill="var(--accent)"/><rect x="333.1" y="96" width="223.1" height="20" fill="var(--accent)" opacity=".32"/>
+    <rect x="110" y="132" width="208.3" height="20" fill="var(--accent)"/><rect x="318.3" y="132" width="208.3" height="20" fill="var(--accent)" opacity=".32"/>
+    <rect x="110" y="168" width="179.4" height="20" fill="var(--accent)"/><rect x="289.4" y="168" width="179.4" height="20" fill="var(--accent)" opacity=".32"/>
+    <rect x="110" y="204" width="135.1" height="20" fill="var(--accent)"/><rect x="245.1" y="204" width="135.1" height="20" fill="var(--accent)" opacity=".32"/>
+    <rect x="110" y="240" width="91.4" height="20" fill="var(--accent)"/><rect x="201.5" y="240" width="91.4" height="20" fill="var(--accent)" opacity=".32"/>
+  </g>
+  <g font-size="12.5" fill="var(--ink)" text-anchor="start">
+    <text x="592" y="75">13.68</text><text x="564" y="111">12.98</text><text x="534" y="147">12.12</text>
+    <text x="476" y="183">10.43</text><text x="388" y="219">7.85</text><text x="300" y="255">5.32</text>
+  </g>
+
+  <line x1="110" y1="276" x2="660" y2="276" stroke="var(--line)" stroke-width="1"/>
+  <g font-size="12.5" fill="var(--ink-soft)" text-anchor="middle">
+    <text x="110" y="295">0</text><text x="247.5" y="295">4</text><text x="385" y="295">8</text><text x="522.5" y="295">12</text><text x="660" y="295">16</text>
+  </g>
+  <text x="385" y="314" font-size="13.5" fill="var(--ink-soft)" text-anchor="middle">GB/s　　深色 = 表面速率（÷1 GB）　浅色 = 补上第二遍（÷2 GB）</text>
+</svg>
+</div>
+
+<p>批量 2、4、8 三行乘完是 <b>13.68、12.98、12.12 GB/s</b>，连着三行落进第 8 节量出的 13.2~13.7 那条带子里，误差 8% 以内。原来那三个"莫名其妙只有带宽一半"的数字，全部还原成了这台机器的内存带宽本身。<b>它们从来就不是跑得慢，是分母写错了。</b></p>
+
+<p>批量 16 往后开始往下掉（10.43、7.85、5.32），而且越掉越多。这也在意料之中：越靠近拐点，运算时间在总时间里占的比重越大，再拿"总时间"去除字节数，得到的当然不再是纯粹的带宽。<b>屋顶线在拐点附近一向偏乐观</b>，因为它假定搬运和运算完全重叠，真实硬件做不到。所以能干净还原带宽的只有批量 2、4、8 那三行 —— 恰好就是那三行。</p>
+
+<p>再回头看拐点。加上这一遍之后，运算强度变成 B/4，拐点应该在 4 × 7.8 ≈ <b>31</b>。如果不用硬件峰值 103.0 而用这个库在这个矩阵上实际跑到的 85.07，那就是 4 × 85.07 ÷ 13.2 ≈ <b>26</b>。实测的过渡区在 20 到 30 之间，夹在这两个数中间。<b>拐点本来就是一段而不是一个点</b>，因为两条路不会完美重叠，而且实现达不到峰值。</p>
+
+<p>把话说严谨：<b>"W 被读了两遍"目前是一个假设，不是已经证实的结论。</b>它的分量在于它是先做出预测、预测再命中的 —— 一个"2"同时解释了拐点位置、中间三行的高度、和三个还原成带宽的数字，而这三件事我们并没有拿来拟合它。要真正钉死它，得直接去数内存流量，动手任务的加分题里给了三条互相独立的验法。</p>
+
+<h4>10.7 还剩一个竞争解释：会不会只是"库在大批量下效率高"</h4>
+
+<p>到这里所有证据都指向内存。但有一个解释同样说得通，而且跟内存毫无关系：<b>也许批量大了之后，只是 BLAS 的内核写得更高效了。</b>10.6 那张图里 GEMM 要打包，正好也支持这个说法 —— 打包这件事本身就是为了让内核跑得更快。</p>
+
+<p>屋顶线对这件事有一个很硬的表态。预测二那条式子是：</p>
+
+<p style="text-align:center;margin:1.1rem 0"><b>每列耗时的改善倍数 = 2 × 算力 ÷ 批量 1 时的读取速率</b></p>
+
+<p>里面只有机器的两个能力数，<b>没有任何跟"库效率"有关的项</b>。所以只要换一台"机器"，预测值就必须跟着变。而"换机器"不一定要换硬件：<b>把权重换成装得进缓存的尺寸，那条路的带宽立刻从内存条的 12 变成缓存的 26</b>（第 8 节量过：缓存里单线程约 25 GB/s，内存条上约 13 GB/s）。同一个库、同一段代码、同一串批量，唯一变的是 W 住在哪。</p>
+
+<pre><code># 只换权重矩阵的尺寸，别的什么都不动
+import time, numpy as np
+
+def best_of(f, n=5):
+    f()                                          # 预热
+    return min((lambda t0=time.perf_counter(): (f(), time.perf_counter()-t0)[1])()
+               for _ in range(n))
+
+for N in (2048, 4096, 16384):
+    W = np.random.rand(N, N).astype(np.float32); wb = W.nbytes
+    t = {}
+    for B in (1, 64):
+        X = np.random.rand(N, B).astype(np.float32)
+        t[B] = best_of(lambda: W @ X)
+    print(f"N={N:<6}{wb/2**20:>6.0f} MB   "
+          f"批量1读速率 {wb/t[1]/1e9:6.2f} GB/s   "
+          f"批量64算力 {2*N*N*64/t[64]/1e9:6.1f} GFLOP/s   "
+          f"每列改善 {t[1]/(t[64]/64):5.1f} 倍")</code></pre>
+
+<pre><code>$ OPENBLAS_NUM_THREADS=1 python3 sizesweep.py
+N=2048       16 MB   批量1读速率  26.62 GB/s   批量64算力   99.8 GFLOP/s   每列改善   7.5 倍
+N=4096       64 MB   批量1读速率  26.09 GB/s   批量64算力   99.1 GFLOP/s   每列改善   7.6 倍
+N=16384    1024 MB   批量1读速率  12.25 GB/s   批量64算力   85.1 GFLOP/s   每列改善  13.9 倍</code></pre>
+
+<p>每一行的预测值只用这一行自己的两个实测数，公式里没有一个可调参数：</p>
+
+<div class="scroll">
+<table>
+<tr><th>权重矩阵</th><th class="num">大小</th><th>W 住在哪</th><th class="num">批量 1 读速率</th><th class="num">批量 64 实际算力</th><th class="num">式子预测的改善</th><th class="num">实测改善</th></tr>
+<tr><td>2048 × 2048</td><td class="num">16 MB</td><td>缓存里</td><td class="num">26.62 GB/s</td><td class="num">99.8</td><td class="num">2×99.8÷26.62 = 7.5</td><td class="num">7.5 倍</td></tr>
+<tr><td>4096 × 4096</td><td class="num">64 MB</td><td>缓存里</td><td class="num">26.09 GB/s</td><td class="num">99.1</td><td class="num">2×99.1÷26.09 = 7.6</td><td class="num">7.6 倍</td></tr>
+<tr class="hi"><td>16384 × 16384</td><td class="num">1024 MB</td><td>内存条上</td><td class="num">12.25 GB/s</td><td class="num">85.1</td><td class="num">2×85.1÷12.25 = 13.9</td><td class="num">13.9 倍</td></tr>
+</table>
+</div>
+
+<p>三行全中，最大误差 1%。<b>竞争解释到此结束：</b>"库效率"这个说法里没有带宽这一项，它没法解释为什么换个尺寸预测值会跟着变，更没法解释为什么变的幅度正好是带宽比。</p>
+
+<p>这张表还顺手回答了两个别的问题。</p>
+
+<p><b>一，为什么两个小矩阵的改善"只有"7.5 倍？</b>不是因为缓存里"没有可摊的东西"。缓存带宽同样有限，26 GB/s 对 103.0 GFLOP/s，平衡点是 4.0 次运算每字节，拐点提前到批量 8 附近（同样算上打包那一遍就是 16 附近）。<b>屋顶线还在，只是屋顶抬高了、拐点左移了。</b>规律一点没变，代进去的两个数变了。</p>
+
+<p><b>二，10.5 里那个 0.83 是什么？</b>看"批量 64 实际算力"这一列：小矩阵能跑到 99.8 和 99.1，是硬件峰值 103.0 的 97%；而 1 GB 那个只有 85.1，是 83%。少掉的那 17% 就是"即使批量 64，这个矩阵乘法仍然要从内存条上流 1 GB"的代价 —— 它<b>始终没有真正变成纯计算</b>。这也是为什么它的实测点在屋顶线图上永远差一点够不到平段。</p>
+
+<h4>10.8 反方向再验一次：运算量不变，只让字节数翻倍</h4>
+
+<p>到这里所有实验都是同一个方向：固定字节数、增加运算量，看到时间几乎不动。一个结论如果只在一个方向上被验证过，很容易是巧合。所以反过来做一次：<b>固定运算量、增加字节数。</b></p>
+
+<p>做法是把权重从 float32 换成 float64，矩阵形状和批量都不动。回到 10.2 数的那两个数：运算次数 2N²B 里没有"每个数占几字节"这一项，所以<b>乘加次数一次都没多</b>；而字节数 4N² 里的 4 要换成 8，<b>字节数翻倍</b>。</p>
+
+<p>先出预测。float64 的运算强度变成 2N²B ÷ 8N² = <b>B/4</b>，批量 1 就是 0.25，比原来又低一半，更深地陷在斜段里。斜段上时间 = 字节数 ÷ 带宽，所以：<b>耗时翻倍，读取速率不变。</b></p>
+
+<pre><code># 形状不动、批量不动，只换数据类型
+import time, numpy as np
+N = 16384
+for dt in (np.float32, np.float64):
+    W = np.random.rand(N, N).astype(dt)
+    X = np.random.rand(N, 1).astype(dt)
+    W @ X
+    best = min((lambda t0=time.perf_counter(): (W @ X, time.perf_counter()-t0)[1])()
+               for _ in range(5))
+    print(f"{np.dtype(dt).name:>8}   权重 {W.nbytes/2**30:.2f} GB   "
+          f"乘加次数 {2*N*N} (不变)   耗时 {best*1e3:6.1f} ms   "
+          f"读取速率 {W.nbytes/best/1e9:5.2f} GB/s")</code></pre>
+
+<pre><code>$ OPENBLAS_NUM_THREADS=1 python3 dtypeflip.py        # 跑了两轮
+ float32   权重 1.00 GB   乘加次数 536870912 (不变)   耗时   75.6 ms   读取速率 14.20 GB/s
+ float64   权重 2.00 GB   乘加次数 536870912 (不变)   耗时  169.9 ms   读取速率 12.64 GB/s
+
+ float32   权重 1.00 GB   乘加次数 536870912 (不变)   耗时   81.7 ms   读取速率 13.14 GB/s
+ float64   权重 2.00 GB   乘加次数 536870912 (不变)   耗时  167.1 ms   读取速率 12.85 GB/s</code></pre>
+
+<p>耗时涨到 2.05 ~ 2.25 倍，读取速率四个数落在 12.6 ~ 14.2 GB/s 之间基本没动。<b>预测命中。</b>时间跟着字节数走，跟乘加次数没关系。</p>
+
+<p>这里也有一个竞争解释要排掉：float64 的算术吞吐通常只有 float32 的一半（AVX2 一条 FMA 只能装 4 个 double 而不是 8 个 float），会不会时间变长是因为算得慢了？<b>式子可以直接回答，不用再做实验。</b>算力天花板砍半，平衡点从 7.8 变成 3.9；而运算强度也同时砍半，从 0.5 变成 0.25。两边同步减半，<b>这个点在屋顶线上的相对位置一动没动</b>，还是在斜段上离拐点 15.6 倍远的地方。斜段上的时间只由字节数和带宽决定，天花板降到哪儿都不参与。所以砍掉一半算力，对耗时不会有任何影响。</p>
+
+<p>两个方向合起来：加运算量，时间几乎不动；加字节数，时间跟着翻倍。这条路上收费的是字节，不是运算。</p>
+
+<div class="card warn">
+<h4>关键结论</h4>
+<p><b>原因是这台机器的两条路收费不对等：算力 103.0 GFLOP/s，带宽 13.2 GB/s，比值 7.8 —— 每拉进一个字节，得配上 7.8 次运算才算不浪费。而批量 B 的 float32 矩阵乘法只能配上 B/2 次。批量 1 时配的是 0.5，差了 15.6 倍，于是算术单元 94% 的时间在等字节到货，耗时完全由"把权重读一遍要多久"决定。</b></p>
+<p><b>批量处理做的事，是把运算强度从 B/2 一路抬到平衡点。它一次乘法都没省，也一个字节都没少读；它让同一次昂贵的读，服务于更多的 token。抬到平衡点就到头了，再抬就是算力先用完 —— 那才是拐点的来历。</b></p>
+</div>
+
+<h4>10.9 拿这台机器算一笔账</h4>
+
+<p>前面八小节都在一层矩阵上打转。现在把它推到整个模型上，回答标题里那个"为什么内存是大模型服务的第一约束"。</p>
+
+<p>一个模型是几十层这样的矩阵串起来的，算一次前向要走完所有层，每层的权重都要读一遍。所以<b>"生成一个 token"底下就是"把全部权重完整读一遍"</b>。</p>
+
+<p>把这件事代进 10.2 那套数法。设模型有 P 个参数，权重每个占 <b>s</b> 字节（float32 是 4，推理里常用的 float16 是 2，int8 是 1），批量为 B：</p>
+<ul>
+<li>一次前向要读的字节：<b>s·P</b></li>
+<li>一次前向要做的运算：约 <b>2·P·B</b>（每个参数一次乘一次加，乘以批量 —— 和 10.2 完全一样的数法）</li>
+</ul>
+
+<p style="text-align:center;margin:1.1rem 0"><b>运算强度 = 2PB ÷ sP = 2B / s</b></p>
+
+<p>P 消掉了。<b>推理时的运算强度只由批量和权重精度决定，跟模型多大、多少层、什么结构统统无关。</b>代进去看：float32 是 B/2（正好和 10.3 那个矩阵乘法一致），float16 是 B，int8 是 2B。</p>
+
+<p>这条式子一次说清了两件本来看着不相干的事：</p>
+<ul>
+<li><b>批量该开多大？</b>开到运算强度够着平衡点为止。float16 权重时运算强度就是 B，所以<b>批量直接等于平衡点</b>。这台机器上是 8。</li>
+<li><b>量化在省什么？</b>把权重从 16 位压到 8 位，乘法一次都没少 —— s 从 2 变成 1，运算强度直接翻倍，相当于免费把你在横轴上的位置往右推一格。只要你还在斜段上，字节减半就是时间减半。</li>
+</ul>
+
+<p>顺便也解释了为什么 CPU 和 GPU 上"合适的批量"差了两个数量级：</p>
+
+<div class="scroll">
+<table>
+<tr><th>硬件</th><th class="num">算力</th><th class="num">带宽</th><th class="num">平衡点</th><th class="num">float16 权重时该开的批量</th></tr>
+<tr class="hi"><td>本页这台机器（10.1 与第 8 节实测，单线程）</td><td class="num">103 GFLOP/s</td><td class="num">13.2 GB/s</td><td class="num">约 8</td><td class="num">约 8</td></tr>
+<tr><td>一块 H100 SXM（官方标称，BF16）</td><td class="num">约 990 TFLOP/s</td><td class="num">3.35 TB/s</td><td class="num">约 300</td><td class="num">约 300</td></tr>
+</table>
+</div>
+
+<p>右边那一栏就是 Day 8 之后所有 batching 手段的根本动机：GPU 的算力涨得比带宽快得多，平衡点被推到了几百，所以单请求推理在 GPU 上会浪费掉 99% 以上的算力。<b>这不是框架写得不好，是硬件的两条路本来就不对等。</b>这张表只是量级示意 —— H100 那一行是标称值，真机上要按 10.1 和第 8 节那两套办法自己量。</p>
+
+<p>最后回到时间。在斜段上（也就是批量还没到平衡点时），有一个只需要两个输入的式子：</p>
+
+<p style="text-align:center;font-size:1.12rem;margin:1.2rem 0"><b>每个 token 的时间下限 = 权重字节数 ÷ 内存带宽</b></p>
+
+<p>代数之前先说清楚用哪个带宽。第 8 节量到两个：<b>单线程约 13 GB/s，两线程约 27.6 GB/s</b>。前面所有矩阵乘法实验为了把"用了几个核"这个变量固定住，全程锁了单线程，所以用的是 13。但真实的推理服务不会只用一个核，所以下面这笔账用<b>两线程的 27.6</b>。<b>换带宽口径的时候必须说出来</b>，这是自己做估算时最容易出错、也最容易被别人抓住的地方。</p>
+
+<p>一个 30 亿参数的模型，float16 权重就是 6 GB。6 ÷ 27.6 ≈ <b>0.22 秒一个 token</b>，每秒 4.6 个字。换成 70 亿参数是 14 GB，14 ÷ 27.6 ≈ <b>0.51 秒一个 token</b>，每秒不到 2 个字。这台机器只有 8 GB 内存，装不下 14 GB 的权重，所以后一个数是把式子外推到一台带宽相同、内存更大的机器上。</p>
+
+<p>注意式子里没有"框架"，也没有"代码写得好不好"。核数确实影响结果，但它只通过带宽这一项起作用：加核能压出更多带宽，那就把更大的带宽代进去。所以真正要量的一直是同一个东西 —— <b>你在自己那台机器上实际能压出多少带宽</b>。</p>
+
+<p>这两把尺子就是你四周后要天天用的：<b>权重字节 ÷ 带宽</b>给出单请求的时间下限，<b>算力 ÷ 带宽</b>给出批量该开到多大。两个都是几十行代码就能量出来的。任何一个跑不到这个量级的实现都有优化空间；任何一个声称远远超过它的说法，要么用了批量，要么用了缓存复用，要么在骗你。</p>
+
+<p>而 Day 8 到 Day 14 要讲的东西，几乎全都是在跟这条屋顶线较劲：批量处理把运算强度从 B/2 抬到平衡点；KV cache 把已经算过的中间结果存下来别再算；prefix caching 让不同请求共用同一段已经算好的东西。它们的共同点是：<b>都不是在让计算变快，都是在提高运算强度 —— 让每一个搬进来的字节，干更多的活。</b></p>
+<hr>
+<h2>动手任务</h2>
+
+<h3>任务 A（必做，约 60 分钟）：把你自己机器的阶梯量出来</h3>
+<p class="lead">这一节的目标：你手上多一张只属于你这台机器的延迟表，以后所有关于内存的判断都从它出发。</p>
+
+<p>下面这段是纯标准库的 Python 版指针追逐，不需要装任何东西。它做的事和第 2 节那段 C 一样：把内存切成一个个 64 字节的格子，串成一个环，然后沿着环跳。</p>
+
+<p>文件分三块：<code>make_cycle()</code> 造环，<code>chase()</code> 计时，最后的循环把工作集从 16 KB 扫到 256 MB。</p>
+
+<pre><code>"""用纯标准库量出内存延迟的阶梯。
+每一步读出来的值就是下一步要读的下标，CPU 没法提前发起下一次读。"""
+import array, random, time
+
+STEP = 8          # 相邻两个下标隔 8 个元素 = 64 字节 = 一个 cache line
+ELEM = 8          # array('q') 每个元素 8 字节
+
+def make_cycle(n_lines, shuffled):
+    order = list(range(n_lines))
+    if shuffled:
+        random.Random(42).shuffle(order)       # 固定种子，保证两次跑的是同一个环
+    a = array.array('q', [0]) * (n_lines * STEP)
+    for k in range(n_lines):
+        a[order[k] * STEP] = order[(k + 1) % n_lines] * STEP
+    return a
+
+def chase(a, iters):
+    i = 0
+    t0 = time.perf_counter()
+    for _ in range(iters):
+        i = a[i]                               # 全程唯一的一次内存访问
+    t1 = time.perf_counter()
+    return (t1 - t0) / iters * 1e9, i
+
+print("工作集KB\t顺序ns\t随机ns")
+for kb in (16, 32, 64, 256, 1024, 2048, 8192, 32768, 131072, 262144):
+    n_lines = kb * 1024 // (STEP * ELEM)
+    row = []
+    for shuffled in (False, True):
+        a = make_cycle(n_lines, shuffled)
+        chase(a, min(n_lines, 200000))         # 预热
+        best = min(chase(a, 400000)[0] for _ in range(3))   # 三次取最快
+        row.append(best)
+    print(f"{kb}\t{row[0]:.1f}\t{row[1]:.1f}")</code></pre>
+
+<p>在写这一页的机器上跑出来是这样，你的机器数字会不同，但形状应该一样：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="num">工作集 KB</th><th class="num">顺序 ns</th><th class="num">随机 ns</th></tr>
+<tr><td class="num">16</td><td class="num">25.0</td><td class="num">26.5</td></tr>
+<tr><td class="num">32</td><td class="num">27.0</td><td class="num">25.8</td></tr>
+<tr><td class="num">64</td><td class="num">25.6</td><td class="num">27.0</td></tr>
+<tr><td class="num">256</td><td class="num">26.5</td><td class="num">25.9</td></tr>
+<tr><td class="num">1024</td><td class="num">25.8</td><td class="num">26.8</td></tr>
+<tr class="hi"><td class="num">2048</td><td class="num">27.3</td><td class="num">40.3</td></tr>
+<tr><td class="num">8192</td><td class="num">26.3</td><td class="num">54.5</td></tr>
+<tr><td class="num">32768</td><td class="num">28.1</td><td class="num">78.1</td></tr>
+<tr><td class="num">131072</td><td class="num">29.0</td><td class="num">83.6</td></tr>
+<tr><td class="num">262144</td><td class="num">27.8</td><td class="num">112.5</td></tr>
+</table>
+</div>
+
+<p><b>验收标准</b></p>
+<ol>
+<li>顺序那一列从头到尾在同一个数量级内浮动，不随工作集增长。</li>
+<li>随机那一列在某一行开始明显往上走，并且这一行的位置和你 <code>/sys/devices/system/cpu/cpu0/cache/index2/size</code> 里读到的 L2 容量对得上。上面这台机器 L2 是 2048 KB，表里正是 2048 那一行开始跳。</li>
+<li>你能说出为什么前两级台阶（L1 和 L2 之间）在这张表里看不见。</li>
+</ol>
+
+<p><b>常见坑</b></p>
+<ul>
+<li><b>两列数字几乎一样。</b>多半是环没串成一个圈，退化成了若干小圈，实际工作集远小于标称值。把 <code>chase()</code> 改成走 <code>n_lines</code> 步并检查最后能不能回到 0，可以验证环的完整性。</li>
+<li><b>最后一行跑不动或者被系统杀掉。</b>262144 KB 那一行要 256 MB 数组加上一个同样大小的中间 list，内存紧张的机器直接把最后一两行删掉即可。</li>
+<li><b>数字每次跑差很多。</b>机器上有别的负载。关掉浏览器，或者把重复次数从 3 提到 5。</li>
+</ul>
+
+<p>第 3 条验收标准就是这个任务真正的考点：C 版本量出来 L1 是 1.9 纳秒、L2 是 5.3 纳秒，而这张表里 16 KB 到 1024 KB 全是 26 纳秒左右。因为 Python 解释器执行一次 <code>a[i]</code> 本身就要 26 纳秒上下，这个固定开销比前两级台阶的高度还大，直接把它们盖住了。这不是 Python 的错，是任何测量工具都有的问题：<b>当你的尺子的刻度比要量的东西还粗时，量出来的是尺子。</b></p>
+
+<h3>任务 B（约 45 分钟）：给你自己的服务做一次内存画像</h3>
+<p class="lead">这一节的目标：把今天的三个观察点接到你 Day 5、Day 6 一直在改的那个服务上。</p>
+
+<p>下面这个脚本对一个正在运行的进程做三件事：读它真正占了多少物理内存、读它有多少内存是被大页撑着的、看它还在不在持续缺页。</p>
+
+<pre><code>"""给一个正在跑的进程做一次内存画像。用法: python3 memprofile.py &lt;pid&gt;"""
+import sys, time
+
+pid = sys.argv[1]
+
+def read_kv(path, keys):
+    out = {}
+    with open(path) as f:
+        for line in f:
+            k = line.split(":")[0]
+            if k in keys: out[k] = int(line.split()[1])
+    return out
+
+# smaps_rollup 是内核把这个进程所有内存区域汇总好的一份，比自己遍历 smaps 快得多
+r = read_kv(f"/proc/{pid}/smaps_rollup", {"Rss", "Anonymous", "AnonHugePages"})
+print(f"物理内存占用 RSS      : {r.get('Rss',0)/1024:9.1f} MB")
+print(f"其中匿名内存(堆/栈)    : {r.get('Anonymous',0)/1024:9.1f} MB")
+print(f"其中由大页撑着的部分   : {r.get('AnonHugePages',0)/1024:9.1f} MB"
+      f"   ({100*r.get('AnonHugePages',0)/max(r.get('Anonymous',1),1):.1f}% 的匿名内存)")
+
+def flt():
+    with open(f"/proc/{pid}/stat") as f: p = f.read().split()
+    return int(p[9]), int(p[11])          # 第 10 个字段是 minflt，第 12 个是 majflt
+
+a = flt(); time.sleep(5); b = flt()       # 隔 5 秒采两次，看缺页还在不在长
+print(f"5 秒内新增缺页(不读盘) : {b[0]-a[0]:9d} 次")
+print(f"5 秒内新增缺页(要读盘) : {b[1]-a[1]:9d} 次")</code></pre>
+
+<p>跑起来应该看到四五行数字。如果报 <code>FileNotFoundError</code>，说明 pid 写错了或者进程已经退出；如果 <code>smaps_rollup</code> 不存在（较老的内核上没有这个文件），改成读 <code>/proc/&lt;pid&gt;/status</code> 里的 <code>VmRSS</code>。</p>
+
+<p>拿它做三次测量，回答三个问题：</p>
+<ol>
+<li><b>服务刚启动、还没打过流量时</b>跑一次；<b>压测跑满 30 秒之后</b>再跑一次。RSS 涨了多少？涨的那部分是在什么时候被"变"出来的？</li>
+<li>第二次测量时，「5 秒内新增缺页」还在不在明显增长？如果还在长，说明你的服务在稳态下仍然不断在碰新的页。这通常意味着它在反复分配和释放大块内存。</li>
+<li>「由大页撑着的部分」是多少？绝大多数 Python 服务这一项是 0，因为没人替它调 <code>madvise</code>。记下这个数，Day 14 讲 KV cache 卸载的时候会用到。</li>
+</ol>
+
+<p><b>验收标准</b>：你能用一句话说清楚这个服务的内存是"启动时一次性吃进去的"还是"随请求慢慢长出来的"，并且有数字支撑。</p>
+
+<h3>加分题（做不完不影响明天）</h3>
+<ol>
+<li><b>量出这台机器的 TLB 覆盖范围。</b>第 7 节只在 256 MB 一个尺寸上比了小页和大页。把工作集从 4 MB 扫到 512 MB，每个尺寸都跑一遍小页和大页的随机访问，画出"大页比小页快多少"这条曲线。这个差值从接近 0 变成明显大于 0 的那个拐点，就是这台机器的 TLB 用 4 KB 页覆盖不住的边界。</li>
+<li><b>解释一个数字对不上的地方。</b>C 版本在 256 MB 随机访问上量到 198 纳秒，Python 版本在同样尺寸上只量到 112 纳秒，而 Python 的解释器开销本身还有 26 纳秒。112 明显小于 26 + 198。这说明解释器那 26 纳秒的活，和那次还没回来的内存读，并不是排队做的。设计一个实验证实或推翻这个猜测。提示：往循环里加一点跟内存无关的计算，看总耗时涨不涨。</li>
+<li><b>把批量拐点扫出来。</b>第 10.5 节只给了 7 个批量点。把批量从 1 扫到 256，画出"每列耗时"和"总耗时"两条曲线。总耗时那条线的拐点在哪，和 10.6 给的 26~31 对得上吗？把权重换成 64 MB 再画一次：按 10.7 那条式子，拐点应该左移到 8 到 16 之间，实测移到哪了？</li>
+<li><b>把"W 被读了两遍"这个假设钉死或者推翻。</b>第 10.6 节给的解释是：批量 ≥2 时 BLAS 走 GEMM 路径，会先把 W 拷进打包缓冲区再乘，于是 1 GB 的 W 实际被过了两遍。它同时解释了三件事（拐点在 26~31 而不是 16、中间三行整齐地矮一半、三个读取速率乘 2 之后正好还原成带宽），但还没有被直接测过。三条互相独立的验法：<b>(a)</b> 直接数内存流量——用 <code>perf stat -e LLC-load-misses</code> 分别抓批量 1 和批量 2 那两次调用，缺失数乘以 64 字节就是从内存条上真正搬了多少，看是不是 1 GB 对 2 GB；<b>(b)</b> 把批量 2 的 <code>W @ X</code> 换成两次独立的单列 <code>W @ x</code>，如果两次单列反而更快，说明合起来算那一步确实付了额外的搬运钱；<b>(c)</b> 用 <code>py-spy --native</code> 或 <code>ltrace</code> 抓这两次调用，看它们是不是落在库里不同的函数上（<code>sgemv</code> 对 <code>sgemm</code>）。三条做完，你要么把它钉死，要么找到真正的原因。两种结果都值得写下来——这是你第一次自己审判一个性能假设。</li>
+<li><b>量出你自己机器的算力天花板和平衡点。</b>把 10.1 那段 <code>peakflop.c</code> 拿去跑，先确认校验和打印出来了（循环没被编译器删掉），再用 <code>perf stat -e cycles</code> 算出每周期多少次运算，看能不能和你机器的指令集（<code>lscpu | grep -o 'avx[^ ]*' | sort -u</code>）对上。然后除以你在任务 A 里量到的带宽，得到你自己那台机器的平衡点。把这个数写在笔记的第一页，后面三周会反复用到它。</li>
+</ol>
+
+<hr>
+<h2>上岗关联</h2>
+
+<p><b>场景一：有人报"服务变慢了"，但 CPU、内存、网络看上去都正常。</b></p>
+<p>你在监控上看到 CPU 100%，内存没满，网络没满，磁盘没动。按 Day 3 的方法抓火焰图，最宽的平台是一个遍历大字典的函数。按老办法你会去优化那个函数的逻辑。今天你多了一个动作：先看这个字典有多大。如果它已经远超 L3，那么这个函数慢不是因为它的逻辑，是因为它每次访问都在等内存。改逻辑没用，要改的是数据布局，比如把散落的对象换成连续的数组，或者把热数据和冷数据分开存。</p>
+
+<p><b>场景二：给一台新机器定容量，要回答"这台机器能扛多少路推理"。</b></p>
+<p>不要从"它有多少核"开始，从两个数开始。用第 8 节那段顺序求和量出<b>带宽</b>，用 10.1 那段 <code>peakflop.c</code> 量出<b>算力天花板</b>。然后：<b>权重字节数 ÷ 带宽</b>给出批量 1 时每个 token 的时间下限；<b>算力 ÷ 带宽</b>给出这台机器的平衡点，也就是批量至少要开到多大才不浪费算力。两个数一起，就能算出这台机器在最划算的批量下平均吐一个 token 要多久。拿它和你要承诺的字间等待上限一比，就知道这台机器撑不撑得起你要的并发。这个指标明天会正式命名。整个估算不需要真的把模型部署上去，两段几十行的代码就能跑完，足够用来判断"这个方案根本不可能"还是"值得实际测一测"。扫批量曲线是用来验这个估算的，不是用来代替它的——你应该先知道拐点该在哪，再去扫。</p>
+
+<p><b>场景三：一个服务重启后前几十秒明显慢，稳态之后就好了。</b></p>
+<p>这是第 6 节那张表的现实版本。服务启动时申请了大块内存，但那些页要等第一批请求碰到它们才真的被分配。几十万次缺页的开销全压在最早那批请求上。排查手段是用任务 B 的脚本在启动后立刻采一次、稳态再采一次，看 RSS 和缺页计数的走向。解法是启动时主动把这块内存碰一遍（预热），或者在申请时就要求内核填好。注意这个解法只是把成本从"第一批请求"挪到了"启动过程"，总时间没变。但对用户来说差别很大。</p>
+
+<h4>同事和面试官常问的</h4>
+<ul>
+<li>「你怎么判断一个服务是 CPU-bound 还是 memory-bound？」——期待你说出 IPC 这个指标，以及"两者在 top 里看起来一模一样"这件事。</li>
+<li>「为什么推理要做 batching？」——如果只答"提高吞吐"，那是复读文档。答"因为权重读一遍的成本是固定的，batch 让这次读服务更多 token"，就说明你知道底下发生了什么。追问"那 batch 是不是越大越好"，答拐点，并且说出拐点等于这台硬件的算力除以带宽——这是能算的，不是只能扫的。</li>
+<li>「THP 该不该开？」——期待你反问"哪块内存、什么访问模式"。全局 always 和对特定区域 madvise 是两个完全不同的决定。</li>
+<li>「进程 RSS 2 GB，是不是真的用了 2 GB？」——是，RSS 是碰过的页。但反过来不成立：申请了 10 GB 而 RSS 只有 2 GB 是完全正常的。</li>
+</ul>
+
+<hr>
+<h2>自检问题</h2>
+
+<details><summary>1. 你的服务用一个一百万条目的 Python dict 做本地缓存，命中率 95%。同事说命中率这么高，缓存肯定没问题。从今天学的东西看，还有什么可能让这个缓存本身变成瓶颈？</summary>
+<p>命中率只说明"要找的东西在不在这个 dict 里"，不说明"找到它要多久"。</p>
+<p>一百万条目的 dict，光是哈希表本身就有几十 MB，加上一百万个键对象和值对象散落在堆上，实际工作集轻松超过 L2。而哈希查找的访问模式天生是随机的。哈希的作用本来就是把键打散。这意味着预取器完全帮不上忙。</p>
+<p>所以每一次"命中"，底下可能是两三次随机访问：一次读哈希桶，一次读键对象比较，一次读值对象。几十 MB 的工作集对应今天那张表里 8 MB 到 64 MB 那一档，每次约 60 纳秒，三次就是 180 纳秒。如果这个缓存长到几百 MB，同样三次就变成 600 纳秒。差别不在命中率上，在工作集掉进了哪一档。而这段时间 CPU 一直显示为满载。</p>
+<p>怎么验证：把 dict 的条目数砍到十分之一（让工作集掉进 L3），命中率会下降，但如果整体延迟反而改善了，就说明瓶颈在访问成本而不在命中率。</p>
+</details>
+
+<details><summary>2. 一个进程稳态 RSS 是 2 GB。你把它 kill 掉重启，第一批请求的 P99 比稳态高 10 倍。给出两个可能的原因，并说明怎么分别验证。</summary>
+<p><b>原因一：缺页。</b>那 2 GB 在稳态下是碰过的页，重启后全没了，要重新一页一页地缺出来。2 GB 对应约 52 万次缺页。</p>
+<p><b>原因二：缓存是空的。</b>这里的"缓存"指的是进程自己的业务缓存（连接池、模板、编译好的正则、预热过的模型），不是硬件缓存。第一批请求要走完整的冷路径。</p>
+<p>怎么分开：用任务 B 的脚本在重启后立刻采样，看「5 秒内新增缺页」这个数。如果它是几十万量级并且随着请求打进来持续增长，原因一成立。如果缺页很快归零、但延迟还是高，那就是原因二。</p>
+<p>两个原因也可能同时存在。想彻底确认原因一的贡献有多大，就在服务启动时主动把那块内存整个碰一遍，再看第一批请求的 P99 掉了多少。这就是第 6 节那个 <code>MAP_POPULATE</code> 对照组的线上版本。</p>
+</details>
+
+<details><summary>3. 运维建议把整台机器的 THP 设成 always 来提速。什么情况下这有效，什么情况下会帮倒忙？</summary>
+<p>有效的情况：机器上跑的是少数几个占用大块内存、并且对这块内存做随机访问的进程。推理服务的模型权重和 KV cache 正是这种。第 7 节的数据显示，256 MB 工作集上随机访问快了 20 到 30 纳秒，大约 13%。</p>
+<p>帮倒忙的情况有两类。</p>
+<p>第一类是凑大页本身的开销。内核文档写明，为了拿到大页，内核会进入直接回收；文档也点出页错误里的清页和拷贝页会变大，这是一个潜在的负面效应。always 模式意味着全机器所有内存都要付这份钱，而不只是那几块真正需要的。</p>
+<p>第二类是内存浪费。内核文档直接提到，全局开启大页之后，应用可能占用更多内存资源；如果一大片地址被映射了却只被碰了一点点，这些内存就是白占的。</p>
+<p>所以稳妥的做法是保持 madvise 模式，让真正需要的那几块内存自己开口要。内核文档里 madvise 也正是默认值。</p>
+</details>
+
+<details><summary>4. 同一个 batch=1 的矩阵乘法，把权重从 float32 换成 float16（假设精度可接受）。乘法次数一次都没变。耗时会怎么变？</summary>
+<p>时间会大致跟着字节数走，也就是大约减半。前提是权重装不进缓存。</p>
+<p>推理链是这样的：batch=1 时，耗时由"把权重读一遍要多久"决定。读一遍的时间 = 字节数 ÷ 带宽。float16 的字节数是 float32 的一半，带宽不变，所以时间减半。乘法次数完全不参与这个式子。</p><p>用屋顶线说是同一件事：运算强度 = 2B ÷ 每个权重占几字节。float32 时 batch=1 是 0.5，换成 float16 是 1，而这台机器的平衡点是 7.8。1 仍然远小于 7.8，所以这个点依旧稳稳落在斜段上，时间仍然只由字节数和带宽决定。<b>判断“减半成不成立”的标准就是这个：换完之后运算强度有没有越过平衡点。</b>没越过，减半就成立。</p>
+<p>今天有一组数据正好是这条推理的反方向验证：同样的形状、同样的乘法次数，把 float32 换成 float64，字节数从 1 GB 变成 2 GB，耗时从 76 毫秒变成 170 毫秒，读取速率两边都在 13 GB/s 上下。字节翻倍，时间涨到 2 倍出头。往减半的方向走的是同一条式子。</p>
+<p>什么情况下这条推理不成立：如果权重已经装得进缓存，那批量 1 就未必是带宽受限的，减半字节数的收益会小得多。另外如果这块硬件对 float16 的支持是"先转成 float32 再算"，那还会多出一步转换开销。所以这个判断的前提要说清楚：<b>权重远大于缓存，且计算不是瓶颈。</b></p>
+</details>
+<hr>
+<h2>今日新词</h2>
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>CPU 和内存条之间的几层临时存放区，L1 最小最快、L3 最大最慢；数据落在哪一层，就是哪一层的速度</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>缓存搬运的最小单位，这台机器是 64 字节；只读 1 个字节，硬件也会把整 64 字节搬进来</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>发现你在按规律往前读，就提前把后面几块搬进缓存的硬件；顺序访问之所以快，主要靠它</td></tr>
+<tr><td>内存页</td><td>page</td><td>操作系统管理内存的固定大小单位，x86 上默认 4096 字节</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>碰到一个还没有物理内存撑着的页时触发的动作，内核现场分配一页再让程序继续；申请内存不花钱，第一次碰它才花</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>CPU 里缓存"虚拟地址→物理地址"翻译结果的小块硬件；工作集一大就装不下，每次访问都要多走一趟页表</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>2 MB 的页，同一个 TLB 条目覆盖 512 倍的范围；只对又大又被随机访问的区域有用</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>持续搬运时每秒能过多少字节；和延迟是两个数，不能互相换算</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>一次浮点加或一次浮点乘各算一次；GFLOP/s 是每秒十亿次，用来衡量算力</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>负载的属性：每搬一个字节配上多少次运算；float32 矩阵乘法是 B/2，推理时是 2B ÷ 每个权重占几字节</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>硬件的属性：算力除以带宽，本页这台约 7.8 次运算每字节；运算强度低于它就是带宽受限</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>把上面两个数画成一张图：斜段是带宽给的上限，平段是算力给的上限，交点就是拐点</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>基础线性代数库（numpy 底下就是它）；GEMV 是矩阵乘向量，GEMM 是矩阵乘矩阵，两条代码路径完全不同</td></tr>
+</table>
+</div>
+
+<h2>已学词表</h2>
+<details>
+<summary>Day 1 到今天的全部术语（点开）</summary>
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th class="num">引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td class="num">Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td class="num">Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td class="num">Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td class="num">Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td class="num">Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td class="num">Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td class="num">Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td class="num">Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td class="num">Day 2</td></tr>
+<tr><td>排队时间</td><td>queueing time</td><td class="num">Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td class="num">Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little's Law</td><td class="num">Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td class="num">Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td class="num">Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td class="num">Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td class="num">Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td class="num">Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td class="num">Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td class="num">Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td class="num">Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td class="num">Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td class="num">Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td class="num">Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td class="num">Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td class="num">Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td class="num">Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td class="num">Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td class="num">Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td class="num">Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td class="num">Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td class="num">Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td class="num">Day 5</td></tr>
+<tr><td>排队延迟</td><td>queueing delay</td><td class="num">Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td class="num">Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td class="num">Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td class="num">Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td class="num">Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td class="num">Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td class="num">Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td class="num">Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td class="num">Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td class="num">Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td class="num">Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td class="num">Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td class="num">Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td class="num">Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td class="num">Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td class="num">Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td class="num">Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td class="num">Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td class="num">Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td class="num">Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td class="num">Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td class="num">Day 7</td></tr>
+</table>
+</div>
+</details>
+
+<hr>
+<h2>延伸材料</h2>
+<ol>
+<li><b>CPU Utilization is Wrong</b>（Brendan Gregg, 2017）—— <a href="https://www.brendangregg.com/blog/2017-05-09/cpu-utilization-is-wrong.html">brendangregg.com</a><br>
+今天第 5 节引的两句话都出自这里。文章的主张是：如今等内存这件事主导了那个仍被称作 CPU 利用率的数字。文里给了 IPC 小于 1 该往哪个方向查、大于 1 该往哪个方向查。<b>难度：低。</b>一篇博客的长度，今天读完。</li>
+
+<li><b>Transparent Hugepage Support</b>（Linux 内核官方文档）—— <a href="https://docs.kernel.org/admin-guide/mm/transhuge.html">docs.kernel.org</a><br>
+第 7 节那三个开关（always / madvise / never）的权威说明，以及大页为什么能降低 TLB 压力、代价在哪。今天页面上引的两处内核原话都出自这里和下面那篇。上岗后你八成要在某个部署脚本里改这些值，改之前把这页扫一遍。<b>难度：中。</b></li>
+
+<li><b>Concepts overview</b>（Linux 内核内存管理文档）—— <a href="https://docs.kernel.org/admin-guide/mm/concepts.html">docs.kernel.org</a><br>
+页、页表、TLB、大页这几个概念的一页纸总览，比任何二手教程都准确。今天第 6、7 节的机制在这里有完整的官方表述。<b>难度：低。</b>半小时。</li>
+
+<li><b>madvise(2)</b> 手册页 —— <a href="https://man7.org/linux/man-pages/man2/madvise.2.html">man7.org</a><br>
+今天第 7 节那两个开关的权威定义就在这里。这个系统调用还有一长串别的用途，做 KV cache 卸载和沙箱内存回收时你会天天打开它。<b>难度：低。</b>当字典查。</li>
+
+<li><b>What every programmer should know about memory</b>（Ulrich Drepper, 2007）—— <a href="https://lwn.net/Articles/250967/">lwn.net</a>，分多篇连载<br>
+这个领域的经典长文。第一篇从最底层讲起：SRAM 和 DRAM 的区别、DRAM 的访问协议、芯片组的结构，也就是今天那个 198 纳秒到底花在哪些环节上。写于 2007 年，具体数字过时了，讲的机制没有过时。<b>难度：高，而且很长。</b>不要试图一次读完。建议先只读讲缓存的那几篇，把今天这一页的内容对着它再过一遍；剩下的等你真的碰到对应问题那天再回来。</li>
+</ol>
+
+<hr>
+<div class="card five">
+<span class="tag">费曼式复述</span>
+<h4>今日五句话</h4>
+<p>合上这一页，用自己的话回答下面五个问题。每题写一到三句，写完对照后面的自查标准。</p>
+
+<p><b>1. 为什么同一条读指令的耗时会差 100 倍？</b></p>
+<div class="blank"></div>
+
+<p><b>2. 顺序访问和随机访问，慢的那个到底慢在哪一步？</b></p>
+<div class="blank"></div>
+
+<p><b>3. 一个进程申请了 10 GB 内存，为什么 RSS 只有 200 MB？</b></p>
+<div class="blank"></div>
+
+<p><b>4. 大页省下来的是什么？</b></p>
+<div class="blank"></div>
+
+<p><b>5. 为什么批量处理能让推理服务快十几倍，而它一次乘法都没省？批量该开到多大，这个数怎么算出来？</b></p>
+<div class="blank"></div>
+
+<h4>逐句自查标准</h4>
+<ul>
+<li><b>第 1 句</b>如果写成"因为读的数据量不一样"，那就错了。数据量是一样的，每次都只读 8 个字节。差别在于你正在反复访问的那块区域总共多大，决定了它住在 L1、L2、L3 还是内存条上。</li>
+<li><b>第 2 句</b>如果只写到"随机访问慢"，还差一层。要说出慢在"硬件猜不到下一个地址，所以没法提前把数据搬进来"。如果你写的是"随机访问的数据更分散所以缓存装不下"，那也不对。两种模式的工作集完全一样。</li>
+<li><b>第 3 句</b>如果写成"操作系统超售了内存"，方向对但不准确。准确的说法是：申请只是在页表上记账，物理内存要等第一次访问那个页时才真的分配。RSS 统计的是碰过的页。</li>
+<li><b>第 4 句</b>如果写成"减少了缺页次数"，只答对了表面。缺页次数确实从 26 万降到 512，但每次要清零的字节数变大了，总的清零工作量没变。真正省下来的是<b>地址翻译</b>的开销：同样多的 TLB 条目覆盖了 512 倍的地址范围。判断标准在今天的数据里：顺序访问下大页几乎没有收益，只有随机访问有。如果省的是缺页，顺序访问也该跟着受益。</li>
+<li><b>第 5 句</b>如果写成"批量能更好地利用 CPU 的并行能力"，那是在复述一句正确但空洞的话。要说出：权重读一遍的成本是固定的，跟这一批有几个 token 无关；批量大了，这次读被摊到更多 token 头上。还应该补一句拐点。<b>能把拐点算出来，才算真的答对。</b>两步：先算机器平衡点 = 算力 ÷ 带宽，本页这台是 103.0 ÷ 13.2 ≈ 7.8；再看负载的运算强度怎么随批量长，它是 2B ÷ 每个权重占几字节。两者相等处就是拐点：float32 矩阵乘法（强度 B/2）拐点在 16，float16 权重的推理（强度 B）拐点就在 8。</li>
+</ul>
+</div>
+
+<hr>
+<h2>明日预告</h2>
+<p>今天算出了这台机器的理论上限：权重读一遍要多久，就是一个 token 最快能多快；运算强度低于平衡点，时间就只由字节数说了算。但真实的推理服务里，有一个阶段完全不受这个上限约束。它读一遍权重能同时算出几百个 token，快得跟今天讲的规律好像不是一回事。</p>
+<p>明天把这两个阶段拆开，给它们各自的名字，并且把"这个服务快不快"这件事，拆成四个必须分开测的数字。你会发现其中有一个数，几乎所有人第一次都会测错。</p>
+
+<footer>
+AI Infra 速成 · Day 7 / 28 · 2026-08-26 · 阶段一 · CPU 侧系统工程<br>
+本页数字全部来自同一台机器：2 个逻辑核的 Intel Xeon，机器自报 L1d 48 KB 每核、L2 2 MB 每核、L3 260 MB 两核共享，8 GB 内存，单 NUMA 节点，Linux 6.18，THP 处于 madvise 模式。指针追逐类的数字来自千万次量级的循环；其余各项都是多次重复取最快的一次。第 6 节那组缺页数据按定义不能预热，第一遍的耗时会随机器状态大幅波动，表里给的是机器已经用过这块内存之后的稳定区间。第 10.1 的算力天花板 103.0 GFLOP/s 来自一个独立的 FMA 微基准，不用矩阵乘法也不用任何库，并已用每周期运算数（32.0）和第 5 节的时钟（3.22 GHz）双向校验。10.6 关于"W 被读了两遍"的解释是一个尚未直接测量的假设，页面上已标注，验法见加分题。10.9 那张硬件对照表里 H100 一行是官方标称值，不是本页实测。你在自己机器上跑出的绝对值会不同，要对照的是形状和台阶的位置。
+</footer>
+
+</div>
+
+</body>
+</html>
