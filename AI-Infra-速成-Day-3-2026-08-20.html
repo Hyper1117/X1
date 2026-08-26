@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra 速成 · Day 3 · 用采样剖析器看见时间去哪了</title>
+<style>
+:root{
+  --bg:#fbfaf8; --bg2:#ffffff; --fg:#23201c; --fg2:#5b544c; --fg3:#8a8178;
+  --line:#e6e1d8; --accent:#9a5b2b; --accent-soft:#f3ece3;
+  --recall:#c08a2e; --recall-bg:#fdf6e7;
+  --predict:#5a6ecb; --predict-bg:#eef0fb;
+  --feynman:#3f8f6b; --feynman-bg:#ecf6f1;
+  --warn:#b5482f; --warn-bg:#fdeeea;
+  --code-bg:#22262e; --code-fg:#dfe4ec; --code-cmt:#8fa2b8; --code-hl:#e2b478;
+  --term-bg:#f6e7d5; --term-line:#d9a86e;
+}
+@media (prefers-color-scheme: dark){
+:root{
+  --bg:#16181c; --bg2:#1c1f25; --fg:#e6e3de; --fg2:#b0aaa2; --fg3:#847d75;
+  --line:#2e333b; --accent:#e0a06a; --accent-soft:#262a31;
+  --recall:#d3a44b; --recall-bg:#232019;
+  --predict:#8b9bea; --predict-bg:#1b1e2b;
+  --feynman:#68b791; --feynman-bg:#182420;
+  --warn:#e0806a; --warn-bg:#2a1d1a;
+  --code-bg:#0f1216; --code-fg:#d7dce4; --code-cmt:#7d8ea6; --code-hl:#e2b478;
+  --term-bg:#3a2f22; --term-line:#a87b45;
+}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px; line-height:1.78; letter-spacing:.01em;
+}
+.progress-wrap{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--line)}
+.progress-inner{max-width:820px;margin:0 auto;padding:10px 22px 12px}
+.progress-meta{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--fg2);gap:12px;flex-wrap:wrap}
+.progress-meta b{color:var(--fg);font-size:14px}
+.bar{height:6px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden}
+.bar>i{display:block;height:100%;width:10.71%;background:linear-gradient(90deg,var(--accent),var(--recall));border-radius:99px}
+main{max-width:820px;margin:0 auto;padding:34px 22px 90px}
+h1{font-size:30px;line-height:1.35;margin:.2em 0 .1em;letter-spacing:-.01em}
+.sub{color:var(--fg2);font-size:15px;margin:0 0 26px}
+h2{font-size:22px;margin:52px 0 6px;padding-top:16px;border-top:1px solid var(--line);letter-spacing:-.005em}
+h3{font-size:17.5px;margin:32px 0 6px;color:var(--fg)}
+h4{font-size:15.5px;margin:24px 0 4px;color:var(--fg2);font-weight:600}
+p{margin:.85em 0}
+ul,ol{padding-left:1.4em;margin:.7em 0}
+li{margin:.42em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(154,91,43,.35)}
+a:hover{border-bottom-color:var(--accent)}
+.lead{color:var(--fg2);font-size:15.5px;border-left:3px solid var(--accent);padding-left:14px;margin:10px 0 18px;background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0}
+.term{background:var(--term-bg);border-bottom:1.5px solid var(--term-line);padding:0 3px;border-radius:3px;font-weight:600}
+.card{border-radius:10px;padding:18px 20px;margin:24px 0;border:1px solid var(--line);border-left-width:5px;background:var(--bg2)}
+.card>h3,.card>h2{margin-top:0;border-top:none;padding-top:0}
+.card .tag{display:inline-block;font-size:12px;letter-spacing:.08em;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.recall{border-left-color:var(--recall);background:var(--recall-bg)}
+.recall .tag{color:var(--recall)}
+.predict{border-left-color:var(--predict);background:var(--predict-bg)}
+.predict .tag{color:var(--predict)}
+.feynman{border-left-color:var(--feynman);background:var(--feynman-bg)}
+.feynman .tag{color:var(--feynman)}
+.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+.warn .tag{color:var(--warn)}
+.note{border-left-color:var(--fg3)}
+pre{background:var(--code-bg);color:var(--code-fg);padding:15px 16px;border-radius:9px;overflow-x:auto;font-size:13.5px;line-height:1.68;margin:12px 0;
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;-webkit-overflow-scrolling:touch}
+pre .c{color:var(--code-cmt)}
+pre .k{color:var(--code-hl)}
+code{background:var(--accent-soft);padding:1px 5px;border-radius:4px;font-size:.9em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--fg)}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14.5px;display:block;overflow-x:auto;white-space:normal}
+th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600;font-size:14px}
+tbody tr:nth-child(even){background:rgba(127,127,127,.045)}
+details{margin:12px 0;border:1px solid var(--line);border-radius:8px;background:var(--bg2);padding:0 16px}
+details[open]{padding-bottom:6px}
+summary{cursor:pointer;padding:11px 0;font-weight:600;font-size:15px;color:var(--accent);list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:before{content:"▸ ";color:var(--fg3)}
+details[open] summary:before{content:"▾ "}
+.qa{border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+.write-area{border:1.5px dashed var(--fg3);border-radius:8px;min-height:34px;margin:8px 0 14px;padding:10px 12px;color:var(--fg3);font-size:14px;background:rgba(127,127,127,.04)}
+.write-area.tall{min-height:56px}
+.kicker{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);font-weight:700}
+.big-num{font-size:15px;font-weight:700;color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:40px 0}
+.footer{color:var(--fg3);font-size:13px;text-align:center;margin-top:60px}
+@media (max-width:600px){
+  body{font-size:16px}
+  main{padding:24px 16px 70px}
+  .progress-inner{padding:9px 16px 11px}
+  h1{font-size:24px} h2{font-size:20px}
+  pre{font-size:12.5px}
+  .card{padding:15px 16px}
+}
+</style>
+</head>
+<body>
+
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <div class="progress-meta">
+      <b>Day 3 / 28</b>
+      <span>阶段一 · CPU 侧系统工程：先学会看见</span>
+      <span>2026-08-20 周四</span>
+    </div>
+    <div class="bar"><i></i></div>
+  </div>
+</div>
+
+<main>
+
+<h1>看见时间去哪了：采样剖析器、火焰图，以及 on-CPU 的那个大盲区</h1>
+<p class="sub">AI Infra 速成 · Day 3 · 预计 3.5 小时（讲解 1.5h + 动手 2h）</p>
+
+<!-- ============ 温故 ============ -->
+<div class="card recall">
+  <div class="tag">温故 · 闭卷回忆</div>
+  <h3 style="margin-bottom:4px">先凭记忆答，答不出再展开</h3>
+  <p style="margin-top:6px;color:var(--fg2);font-size:14.5px">不要翻昨天的页面。答不出来是正常的，那正好说明这个点需要再看一遍。今天只有两道，因为课程 8/18 才开始，还没有"3 天前"和"7 天前"的内容。</p>
+
+  <h4>Q1 · 1 天前（Day 2 · 延迟的解剖学）</h4>
+  <p>一个服务稳定地每秒进来 100 个请求，实测平均延迟是 200 毫秒。请问：任意一个瞬间，系统内部平均有多少个请求正在被处理？你用的是哪条关系式？<br>
+  接着：如果运维为了"保护系统"，把最大并发数配置成了 10，会发生什么？</p>
+  <details><summary>展开答案</summary>
+  <div class="qa">
+    <p>用 Little's Law（利特尔法则）：<strong>L = λ × W</strong>。L 是系统里同时存在的请求数，λ 是到达速率，W 是每个请求在系统里待的总时间。</p>
+    <p>代进去：λ = 100 个/秒，W = 0.2 秒，所以 L = 100 × 0.2 = <strong>20</strong>。也就是说，任意瞬间平均有 20 个请求同时在系统内部。</p>
+    <p>第二问要倒过来算。并发上限是 10，意味着 L 最多只能是 10。每个请求仍然需要 0.2 秒才能做完。那么这个系统每秒最多能处理 L ÷ W = 10 ÷ 0.2 = <strong>50 个请求</strong>。</p>
+    <p>但外面每秒来 100 个。进得比出得快一倍。多出来的请求只能在并发上限外面排队，队列会一直变长，不会自己稳定下来。表现出来就是：延迟从 200ms 开始往上飘，飘到几秒、几十秒，永远不收敛。如果队列长度有上限，那么队满之后就开始直接拒绝请求。</p>
+    <p>这里的关键认识是：<strong>并发上限不是一个安全阀，它是一个吞吐量上限</strong>。你设的并发数除以单个请求的耗时，就是这台机器的吞吐天花板，跟你希望它是多少没关系。</p>
+  </div>
+  </details>
+
+  <h4>Q2 · 2 天前（Day 1 · 全景与基线）</h4>
+  <p>你在周报里写「服务平均延迟 30 毫秒」，你的 leader 说这个数没有意义，要看 P99。P99 = 200ms 这句话，逐字翻译成中文是什么意思？为什么平均值会掩盖问题？如果一个 agent 任务要串行调用这个服务 15 次，情况会更好还是更坏？</p>
+  <details><summary>展开答案</summary>
+  <div class="qa">
+    <p>P99 的逐字翻译：把这段时间内所有请求的延迟，从小到大排成一队，站在 99% 那个位置上的请求，它的延迟是 200 毫秒。换句话说，<strong>每 100 个请求里，有 1 个比 200 毫秒还慢</strong>。</p>
+    <p>平均值为什么掩盖问题，举个具体的数：99 个请求各花 10ms，1 个请求花了 2000ms。平均延迟 = (99×10 + 2000) ÷ 100 = 29.9ms。周报上写「平均 30ms」，看起来非常健康。但确实有一个用户干等了 2 秒。平均值把这个人平摊没了。</p>
+    <p>第三问是反直觉的地方，结论是<strong>更坏</strong>。单次调用踩到慢请求的概率是 1%，也就是不踩到的概率是 99%。串行调用 15 次，一次都不踩到的概率是 0.99<sup>15</sup> ≈ 86%。反过来，<strong>至少踩到一次慢请求的概率 ≈ 14%</strong>。</p>
+    <p>也就是说，一个 P99 看起来还行的底层服务，被 agent 串 15 次之后，大约每 7 个 agent 任务就有 1 个会明显变慢。<strong>调用链越长，尾部延迟被放大得越厉害</strong>。这正是后面阶段三做 agent runtime 时会反复回到的问题。</p>
+  </div>
+  </details>
+</div>
+
+<!-- ============ 今日概览 ============ -->
+<h2>今日概览</h2>
+
+<table>
+<tbody>
+<tr><th style="width:110px">进度</th><td>Day 3 / 共 28 天 · 阶段一（CPU 侧系统工程）· 主题驱动</td></tr>
+<tr><th>今日主题</th><td>采样剖析器的原理与用法；如何读火焰图；on-CPU 分析与 off-CPU 分析的分工</td></tr>
+<tr><th>时间预算</th><td>约 3.5 小时。讲解读完约 1.5 小时，动手两个任务约 2 小时</td></tr>
+<tr><th>今天不讲</th><td>perf record 采内核栈、off-CPU 火焰图的完整制作流程、strace 的深入用法。这些等你把 py-spy 用熟了再说，硬塞进今天只会变成一堆记不住的命令</td></tr>
+</tbody>
+</table>
+
+<h3>今天结束后你应该能做到这三件事</h3>
+<ol>
+<li><strong>不改一行代码、不重启服务</strong>，对着一个正在跑的 Python 进程，30 秒内说出它此刻在执行哪个函数、以及过去这一分钟里它把 CPU 时间主要花在了哪几个函数上。</li>
+<li>拿到一张火焰图，你能指着它说清楚三件事：横轴代表什么（以及它<em>不</em>代表什么）、应该先看图上的哪个位置、为什么先看那里。</li>
+<li>面对一个「变慢了」的服务，你能判断它是<strong>算得太多</strong>还是<strong>等得太久</strong>，并且能说出你是靠哪个具体的观察结果做出这个判断的——而不是靠猜。</li>
+</ol>
+
+<!-- ============ 核心讲解 ============ -->
+<h2>核心讲解</h2>
+
+<h3>1. 今天这一节要回答的问题</h3>
+<p class="lead">服务慢了，你怎么知道它慢在哪一行代码上？</p>
+
+<p>昨天 Day 2 把一次请求的延迟拆成了两大块：一块是<strong>排队等着</strong>，一块是<strong>真正在被处理</strong>。今天要往"真正在被处理"这一块里面继续钻。请求进了函数以后，那几十毫秒到底花在哪儿了？</p>
+
+<p>你作为后端工程师，第一反应大概是：加日志、打时间戳。像这样：</p>
+
+<pre><code>t0 = time.time()
+result = do_something(req)
+log.info("do_something 耗时 %.1fms", (time.time()-t0)*1000)</code></pre>
+
+<p>这个办法能用，但它有四个问题，而且每一个都很致命。</p>
+
+<p><strong>第一，你得先猜对位置。</strong>你在 <code>do_something</code> 外面埋了时间戳，可真正慢的是它内部调用的第 7 层的某个函数。你测出来"这里花了 80ms"，然后呢？你还得往里面再埋一层，再跑一次，再看。慢的地方越深，你要来回猜的次数越多。</p>
+
+<p><strong>第二，你得改代码然后重新部署。</strong>线上服务半夜出问题，你不可能改一行代码、发一次版、等它复现。</p>
+
+<p><strong>第三，埋得越细，测量本身越贵。</strong><code>time.time()</code> 这个调用本身要花掉几十到几百纳秒。如果你在一个每秒被调用一百万次的函数里埋点，光是测量就吃掉了可观的 CPU。测量行为改变了被测量的对象。</p>
+
+<p><strong>第四，你只能看见你想到要看的地方。</strong>如果时间花在了一个你压根没想到的地方——比如某个库在偷偷做正则编译、比如 JSON 序列化——你永远埋不到那儿。</p>
+
+<p>所以我们需要一个完全不同的思路。</p>
+
+<h3>2. 剖析器：换一种问法</h3>
+<p class="lead">这一节回答：有没有一种办法，不改代码、不用猜，就能知道时间花在哪？</p>
+
+<p><span class="term">剖析器（profiler）</span>就是干这件事的工具。名字听着抽象，它做的事其实很朴素：<strong>它不去测"某个函数花了多久"，它去问"随便挑一个时刻，程序此刻在干什么"</strong>。</p>
+
+<p>换个日常场景你就明白了。假设你想搞清楚一个工厂工人一天八小时都花在哪些事情上。</p>
+
+<p><em>笨办法</em>：给他每一个动作都掐秒表，拧螺丝按一次表，搬箱子按一次表。累死，而且他被你盯着，动作都变形了。这就是上面说的埋点计时。</p>
+
+<p><em>聪明办法</em>：每隔一分钟，你远远地给他拍一张照。一天下来你有 480 张照片。数一数：210 张照片里他在拧螺丝，96 张在搬箱子，48 张在等零件送过来。那你就知道了，他大约 44% 的时间在拧螺丝。你从头到尾没打扰过他，也没提前假设他在干什么。</p>
+
+<p>这个"每隔一段时间拍一张照"的做法，就叫<span class="term">采样（sampling）</span>。每秒拍多少张，叫<span class="term">采样频率（sampling rate）</span>，单位是赫兹（Hz）。99 Hz 就是每秒采 99 次，大约每 10 毫秒一次。</p>
+
+<h4>为什么剖析器分成两类，以及为什么生产环境只敢用一类</h4>
+
+<p>剖析器有两个流派。</p>
+
+<p>一类叫<span class="term">插桩式剖析器（instrumenting profiler）</span>。它在每个函数的进入和退出处都插一段计时代码。Python 自带的 <code>cProfile</code> 就是这一类。它给你的数字非常精确——每个函数被调用了几次、总共花了多久，一清二楚。代价是每次函数调用都变贵了。对于函数调用密集的 Python 代码，程序整体可能慢上一倍到几倍。</p>
+
+<p>另一类叫<span class="term">采样式剖析器（sampling profiler）</span>，就是上面说的"拍照"。<code>py-spy</code>、<code>perf</code> 都属于这一类。</p>
+
+<p>下面这张表把两者放在一起对比，重点是对比它们的<strong>开销</strong>和<strong>能否用在线上</strong>——因为这两点决定了你上岗以后实际会用哪一个。</p>
+
+<table>
+<thead><tr><th>对比项</th><th>插桩式（如 cProfile）</th><th>采样式（如 py-spy）</th></tr></thead>
+<tbody>
+<tr><td>怎么工作</td><td>每次函数进出都记一笔账</td><td>每隔几毫秒看一眼程序在哪</td></tr>
+<tr><td>开销来自</td><td>程序自身的函数调用次数</td><td>只跟采样频率有关</td></tr>
+<tr><td>典型开销</td><td>程序慢 2～10 倍</td><td>1% 以下</td></tr>
+<tr><td>要改代码吗</td><td>要，得包一层跑</td><td>不用，可以挂到已经跑着的进程上</td></tr>
+<tr><td>结果性质</td><td>精确计数</td><td>统计估计，样本少了不可信</td></tr>
+<tr><td>能用在线上吗</td><td>不能</td><td>能</td></tr>
+</tbody>
+</table>
+
+<p>这张表你重点看<strong>「开销来自」这一行</strong>，它是两者最本质的差别。插桩式的开销跟着程序的忙碌程度走：程序调用的函数越多，账记得越多，越拖慢。采样式的开销是你自己定死的：不管程序在跑什么，每秒就采 99 次，一次采样的成本是固定的。</p>
+
+<p>这条差别直接决定了结论：<strong>线上服务只能用采样式</strong>。因为你不能接受一个诊断工具把线上服务拖慢一倍。而插桩式的价值在本地——当你已经锁定了一小段代码，想知道里面某个函数到底被调用了 10 次还是 10 万次的时候，它给的精确计数是采样式给不了的。</p>
+
+<h4>采样式的两个性质，你得记住</h4>
+
+<p><strong>性质一：结果是统计意义上的，样本太少就不能信。</strong></p>
+<p>算笔账。以 99 Hz 采样 30 秒，你会拿到大约 3000 个样本。假设某个函数真实占用了 1% 的 CPU 时间，那它大约会出现在 30 个样本里——这个数还算能看。但如果一个函数只占 0.1%，它大约只出现 3 次，这跟随机噪声没法区分了。</p>
+<p>所以有个实用的判断标准：<strong>火焰图上占比小于 1% 的东西，不要花时间去分析它</strong>。它可能是真的，也可能是采样抖出来的。要看清更细的东西，你得采更久或者采更密。</p>
+
+<p><strong>性质二：采样频率常见值是 99 而不是 100，这不是笔误。</strong></p>
+<p>假设你的程序里有个后台任务每 10 毫秒醒来一次。你用 100 Hz 采样，也是每 10 毫秒一次。两个周期一样长，采样点就可能每次都恰好落在那个任务醒着的瞬间（或者恰好每次都错过它）。结果就是这个任务的占比被严重高估或者严重低估。这种两个周期性行为对齐的情况叫锁步。选 99 这种质数，就是让采样周期跟程序里任何常见的周期都对不齐。</p>
+
+<h3>3. 调用栈和火焰图：几千个样本怎么看</h3>
+<p class="lead">这一节回答：采了 3000 个样本，是一堆散乱的函数名，怎么变成一张能看懂的图？</p>
+
+<p>先补一个细节。剖析器每次"拍照"，拿到的<strong>不是一个函数名，而是整条<strong>调用栈（call stack）</strong>——这个词你写后端时应该已经见过，就是报错时打印出来的那一长串</strong>。也就是从程序入口一路调下来的完整链条，比如：</p>
+
+<pre><code>main → handle_request → tokenize → normalize_text → re.sub</code></pre>
+
+<p>这很重要。因为知道"20% 的时间在 <code>re.sub</code> 里"用处有限——正则替换可能被十几个地方调用。但知道"20% 的时间在 <code>main → handle_request → tokenize → normalize_text → re.sub</code> 这条路径上"，你就知道该去改哪里了。</p>
+
+<p>现在你有 3000 条这样的栈。<span class="term">火焰图（flame graph）</span>就是把它们合并显示的一种画法。合并规则很简单：<strong>前缀相同的栈，画成同一个方块</strong>。3000 条栈里有 2800 条都以 <code>main → handle_request</code> 开头，那 <code>handle_request</code> 就画成一个占总宽度 93% 的方块。</p>
+
+<h4>读火焰图的三条规则</h4>
+
+<p><strong>规则一：横轴不是时间轴。</strong></p>
+<p>这是新手最容易搞错的一点，值得单独强调。火焰图上从左到右的顺序，通常就是按函数名的字母序排的，没有任何时间含义。左边的方块<strong>不是</strong>先执行的，右边的<strong>不是</strong>后执行的。</p>
+<p>横轴上唯一有意义的是<strong>宽度</strong>。一个方块占总宽度的百分之几，就代表它出现在了百分之几的样本里，也就是大约占了百分之几的时间。</p>
+
+<p><strong>规则二：纵轴是调用深度，下面的调用上面的。</strong></p>
+<p>最底下那一层是程序入口，往上一层是它调用的函数，再往上是更深的调用。所以一根很高的"火苗"只是意味着调用链很深，本身不代表有问题。深层调用在现代软件里很常见。</p>
+
+<p><strong>规则三：先看图顶部的宽平台。</strong></p>
+<p>这是最实用的一条。在最顶端的那一层方块，代表的是采样那一刻<strong>真正在 CPU 上执行的那个函数</strong>，它没有再调用别人。这部分时间叫<span class="term">自身耗时（self time）</span>——函数自己烧掉的时间，不含它调用的子函数。</p>
+<p>所以你的目光要落在<strong>顶部又宽又平的那些块</strong>上。宽，说明占的时间多；在顶部，说明时间是它自己烧掉的，不是它的下游烧的。这两条同时满足的地方，就是你该动手优化的地方。</p>
+
+<p>反过来说一个常见的误读：看到一个很宽的方块就以为找到瓶颈了。如果这个宽方块在图的<em>中间层</em>，它上面还叠着好几层，那它只是"路过"——时间是它的子函数花掉的，改它本身没有任何意义。</p>
+
+<!-- ============ 预测框 ============ -->
+<div class="card predict">
+  <div class="tag">预测 · 先写答案，再往下看</div>
+  <h3 style="margin-bottom:4px">一个你八成会猜错的实验</h3>
+
+  <p>先把实验说清楚，所有用到的概念上面都讲过了。</p>
+  <p>有这么一个 Python 脚本 <code>workload.py</code>。它循环 200 轮，每一轮做两件事：</p>
+  <ul>
+    <li>调用 <code>cpu_heavy(0.05)</code>：不停地做 SHA-256 哈希，持续 50 毫秒。这 50 毫秒里 CPU 一直在满负荷算。</li>
+    <li>调用 <code>waiting_for_someone_else(0.05)</code>：执行 <code>time.sleep(0.05)</code>，干等 50 毫秒。这 50 毫秒里进程完全不消耗 CPU（这是在模拟等数据库、等下游 HTTP 接口返回）。</li>
+  </ul>
+  <p>整个脚本跑完刚好 20.0 秒。<strong>真实的时间分配是：一半在算，一半在等。</strong></p>
+
+  <p>现在你用 <code>py-spy</code>（一个采样式剖析器）以默认参数给它录一张火焰图。</p>
+
+  <p><strong>请预测：这两个函数在火焰图上各占多宽？</strong></p>
+  <div class="write-area tall">我的预测：cpu_heavy 约 ____%，waiting_for_someone_else 约 ____%。<br>我的理由：</div>
+
+  <p style="margin-bottom:4px"><strong>再多问一句</strong>：如果你的预测是 50% / 50%，请具体说说，你认为采样器在那 50 毫秒的 <code>time.sleep</code> 期间，是怎么把"程序正待在 sleep 里"这件事记录下来的？</p>
+  <div class="write-area">我的想法：</div>
+
+  <p style="color:var(--fg2);font-size:14.5px;margin-bottom:0">写完了再往下翻。这个实验我在写这份材料时真跑过，下面给的是实测数字。</p>
+</div>
+
+<h3>4. 揭晓：一半的时间凭空消失了</h3>
+
+<p>我用一个自己写的最小采样器跑了这个负载（原理和 py-spy 默认行为一致，30 行代码，等下动手环节你会亲手跑一遍）。默认参数下，结果是这样的：</p>
+
+<pre><code>=== 只统计"正在 CPU 上跑"的样本（py-spy 默认行为）===
+  99.4%   318 个样本   cpu_burn
+   0.6%     2 个样本   io_wait</code></pre>
+
+<p><strong>那一半的等待时间，在火焰图上几乎完全不存在。</strong>不是被低估了，是压根没出现。图上会显示 <code>cpu_heavy</code> 占了 99% 以上，看起来这个程序是个纯计算密集型程序。</p>
+
+<p>可你明明知道，它有一半时间在干等。</p>
+
+<h4>为什么会这样</h4>
+
+<p>因为采样器在拍照之前，还多做了一步：<strong>它先看一眼这个线程当前是什么状态，如果这个线程不在 CPU 上跑，它就直接跳过，这张照片不拍。</strong></p>
+
+<p>Linux 给每个线程都记录了一个状态字母，放在 <code>/proc/&lt;pid&gt;/task/&lt;tid&gt;/stat</code> 这个文件里。你关心两个值：</p>
+
+<table>
+<thead><tr><th>状态</th><th>含义</th><th>这个线程此刻在……</th></tr></thead>
+<tbody>
+<tr><td><code>R</code></td><td>Running / Runnable</td><td>正在 CPU 上执行，或者已经准备好了正排队等 CPU</td></tr>
+<tr><td><code>S</code></td><td>Sleeping</td><td>在等某件事发生：等定时器、等网络包、等锁、等磁盘</td></tr>
+</tbody>
+</table>
+
+<p>这张表看第三列。我们的脚本在 <code>time.sleep(0.05)</code> 期间，线程状态是 <code>S</code>。采样器看到 <code>S</code> 就跳过了。所以那 10 秒钟的等待，一个样本都没留下。</p>
+
+<p>这个默认行为不是 bug，是有意为之。因为大多数时候你打开剖析器，问的问题是"我的 CPU 被谁吃了"，这时候把干等的线程混进来只会稀释信号——想象一个有 200 个连接的服务器，其中 195 个连接在闲着等新请求，如果全算进去，火焰图上 97% 都是"在等待"，你什么都看不出来。</p>
+
+<h4>现在给这个现象一个名字</h4>
+
+<p>只统计"线程真的在 CPU 上跑"的那部分时间做剖析，这种做法叫 <span class="term">on-CPU 分析</span>。</p>
+<p>研究"线程为什么不在 CPU 上、它在等谁、等了多久"，这个方向叫 <span class="term">off-CPU 分析</span>。</p>
+
+<p>这两个词是今天最重要的收获。它们对应两个完全不同的问题：</p>
+
+<table>
+<thead><tr><th></th><th>on-CPU 分析</th><th>off-CPU 分析</th></tr></thead>
+<tbody>
+<tr><td>回答的问题</td><td>CPU 忙的时候，在忙什么？</td><td>时间没在 CPU 上的时候，卡在等什么？</td></tr>
+<tr><td>什么时候用</td><td>CPU 跑满了，想知道被谁吃了</td><td>CPU 没跑满，但服务就是慢</td></tr>
+<tr><td>能抓到的问题</td><td>低效算法、序列化开销、正则、无谓的拷贝</td><td>锁竞争、磁盘 IO、等下游服务、线程池排队</td></tr>
+<tr><td>工具</td><td>py-spy（默认）、perf record</td><td>py-spy <code>--idle</code>、strace、off-CPU 火焰图</td></tr>
+</tbody>
+</table>
+
+<p>这张表最该看的是<strong>「什么时候用」这一行</strong>。它给了你一条现场可用的判断路径：先看机器的 CPU 使用率。跑满了，用 on-CPU 分析。没跑满但服务慢，那你要找的东西在 on-CPU 火焰图上根本不会出现，别在那儿盯着浪费时间，得换 off-CPU 的思路。</p>
+
+<p>顺带说一句，这条判断路径能直接接上昨天 Day 2 讲的「利用率与 P99 的非线性关系」：CPU 才 40% 但 P99 已经很难看，这种情况在真实服务里非常常见，而它的原因几乎从来不在 on-CPU 火焰图上。</p>
+
+<h4>把等待也算进来是什么样</h4>
+
+<p>py-spy 提供了 <code>--idle</code> 这个开关，意思是"闲着的线程也一起统计"。同一个负载，打开之后：</p>
+
+<pre><code>=== 统计全部样本（相当于 py-spy --idle）===
+  54.8%   387 个样本   io_wait
+  45.2%   319 个样本   cpu_burn</code></pre>
+
+<p>现在是 55% / 45%，跟真实的一半一半基本对上了。剩下的几个百分点的偏差来自采样本身的抖动，以及采样线程自己要抢 CPU 造成的轻微干扰。</p>
+
+<p>看到这两组数字的对比，你要拿走的结论是这一条：</p>
+
+<div class="card warn">
+<div class="tag">关键结论</div>
+<p style="margin-bottom:0"><strong>on-CPU 火焰图回答的是"CPU 忙的时候在忙什么"，不是"时间花在哪"。</strong>这是两个不同的问题。一个服务如果大部分时间在等，你拿 on-CPU 火焰图去看，会得到一个完全正确但完全没用的答案。<br>
+所以每次打开一张火焰图，先问自己一句：这张图里的 100% 指的是墙上时钟走过的时间，还是 CPU 忙碌的时间？</p>
+</div>
+
+<p>顺便说，这个坑对你四周后的岗位特别要命。AI 推理服务、agent runtime、sandbox 服务，这三样东西的共同点就是<strong>大量时间花在等待上</strong>：等模型返回、等工具调用完成、等容器起来。默认的 on-CPU 火焰图对这类服务的诊断能力非常有限。</p>
+
+<h3>5. 三个工具，各管一段</h3>
+<p class="lead">这一节回答：py-spy、perf、strace 这三个名字，分别该在什么时候拿出来用？</p>
+
+<p>下面这张表在对比这三个工具<strong>各自能看见什么、以及各自的盲区在哪</strong>。之所以要这样对比，是因为新手最容易犯的错是拿一个工具死磕到底——比如 py-spy 上什么都没看出来，就以为服务没问题了。实际上你只是用错了工具。</p>
+
+<table>
+<thead><tr><th>工具</th><th>能看见</th><th>看不见</th><th>一句话用法</th></tr></thead>
+<tbody>
+<tr><td><code>py-spy</code></td><td>Python 函数级的调用栈</td><td>默认看不见等待的时间；看不见 C 扩展内部（除非加 <code>--native</code>）</td><td>Python 服务慢了，第一个掏出来的工具</td></tr>
+<tr><td><code>perf</code></td><td>整台机器：内核、C/C++ 库、CPU 硬件计数器</td><td>看不懂 Python 的函数名，只能看到解释器的 C 函数</td><td>怀疑问题在 Python 之下（库、内核、硬件）时用</td></tr>
+<tr><td><code>strace</code></td><td>进程发出的每一个系统调用，以及每个调用花了多久</td><td>用户态的计算完全看不见；开销大，不能用在高流量线上</td><td>进程卡住了，想知道它到底在等谁</td></tr>
+</tbody>
+</table>
+
+<p>这张表重点看<strong>「看不见」这一列</strong>，因为它决定了什么时候你该换工具。三者的盲区正好互补：py-spy 看得懂 Python 但看不到底层；perf 看得到底层但读不懂 Python；strace 两个都不管，专门回答"在等谁"。</p>
+
+<p>实际工作里的顺序几乎总是：<strong>先 py-spy</strong>（成本最低，信息最直接）。py-spy 显示热点在某个 C 扩展或者根本没热点，<strong>再上 perf</strong>。如果进程完全卡死不动了，<strong>直接 strace</strong>。</p>
+
+<h4>perf stat：一条命令看机器视角</h4>
+
+<p><code>perf</code> 的完整用法很大，今天只给你一个最小的、马上能用的入口：<code>perf stat</code>。它不采栈，只统计一段时间内的一些计数器。</p>
+
+<pre><code><span class="c"># 跑这个脚本，同时统计几个计数器</span>
+perf stat -e task-clock,context-switches,page-faults,cycles,instructions python3 workload.py</code></pre>
+
+<p>输出里你只需要看懂这几个字段：</p>
+
+<table>
+<thead><tr><th>字段</th><th>意思</th><th>你该从中看出什么</th></tr></thead>
+<tbody>
+<tr><td><code>task-clock</code></td><td>进程真正占用 CPU 的毫秒数</td><td>把它除以总运行时间。我们这个脚本跑 20 秒，task-clock 大约 10 秒，比值 0.5 —— 一眼看出有一半时间没在用 CPU</td></tr>
+<tr><td><code>context-switches</code></td><td>被操作系统换下 CPU 的次数</td><td>数值异常大，说明线程在频繁地睡下、醒来，通常意味着锁竞争或者线程开太多</td></tr>
+<tr><td><code>instructions</code> / <code>cycles</code></td><td>相除得到 IPC（每周期执行几条指令）</td><td>IPC 低于 1，通常说明 CPU 大量时间在等内存。这个话题 Day 7 讲内存与 NUMA 时会展开</td></tr>
+</tbody>
+</table>
+
+<p>这张表你先只掌握第一行就够了。<strong><code>task-clock</code> 除以墙上时钟时间</strong>，这一个比值就能立刻告诉你，该走 on-CPU 路线还是 off-CPU 路线。这是本节最实用的一句话。</p>
+
+<p><code>perf record</code> 采栈、生成 native 火焰图这部分，今天不讲，留到你把 py-spy 用顺手之后。</p>
+
+<h4>strace：只学一个用法</h4>
+
+<p>场景：一个进程完全没反应了，CPU 也是 0，你想知道它卡在哪。</p>
+
+<pre><code><span class="c"># -p 挂到已经在跑的进程上；-T 显示每个系统调用花了多久</span>
+<span class="c"># -f 跟踪它创建的所有子线程</span>
+sudo strace -f -T -p 12345</code></pre>
+
+<p>你会看到一行行系统调用。如果屏幕上停在这么一行不动了：</p>
+
+<pre><code>futex(0x7f8a2c000b60, FUTEX_WAIT_PRIVATE, 2, NULL</code></pre>
+
+<p>没有右括号和返回值，说明这个调用还没返回——进程正卡在这里。<code>futex</code> 是 Linux 实现锁的底层机制，卡在这里通常意味着在等一把锁。如果卡在 <code>recvfrom</code> 或 <code>read</code>，那是在等网络或者磁盘。</p>
+
+<p>今天 strace 就到这里，够你应付"进程卡死"这一种情况了。</p>
+
+<!-- ============ 动手任务 ============ -->
+<h2>动手任务</h2>
+
+<p>两个任务，预计一共 2 小时。任务 A 是必做，任务 B 是把今天的方法用到真实服务上。</p>
+
+<h3>任务 A · 亲手复现 on-CPU 盲区（约 1 小时）</h3>
+
+<h4>第 1 步：装工具并解决权限</h4>
+
+<p>py-spy 要读另一个进程的内存，这需要操作系统授权。Linux 上默认只允许读自己的子进程，所以直接挂到一个已经在跑的进程上通常会失败。</p>
+
+<pre><code><span class="c"># 安装。py-spy 是个 Rust 写的独立程序，装在哪个 Python 环境里都行</span>
+pip install py-spy
+
+<span class="c"># 检查当前的 ptrace 权限策略。1 = 只能看自己的子进程（默认），0 = 同用户的进程都能看</span>
+cat /proc/sys/kernel/yama/ptrace_scope
+
+<span class="c"># 如果上面输出是 1，用下面任一种方式解决：</span>
+<span class="c"># 方式一（推荐，临时）：每次用 sudo 跑 py-spy</span>
+<span class="c"># 方式二（省事，重启后失效）：放开策略</span>
+sudo sysctl -w kernel.yama.ptrace_scope=0</code></pre>
+
+<p>如果你在 Docker 容器里做这个实验，容器默认禁用了 ptrace，需要在启动时加上 <code>--cap-add=SYS_PTRACE</code>。这一点后面阶段四做 sandbox 的时候还会遇到，那时候你会从另一个角度重新理解它：<strong>正因为 ptrace 能读别的进程的内存，它才是沙箱必须封掉的能力之一。</strong></p>
+
+<h4>第 2 步：准备负载脚本</h4>
+
+<p>这个脚本就是前面预测环节用的那个。它故意做成"一半算、一半等"，因为这是最能暴露 on-CPU 盲区的形状。</p>
+
+<pre><code><span class="c"># workload.py</span>
+import time, hashlib
+
+def cpu_heavy(seconds: float):
+    <span class="c">"""纯计算：不停做哈希，全程占着 CPU 不放。"""</span>
+    end = time.perf_counter() + seconds
+    <span class="c"># 用 perf_counter 而不是 time.time()，因为它单调递增，</span>
+    <span class="c"># 不会被系统时钟调整影响，测时间必须用它</span>
+    data = b"x" * 4096
+    while time.perf_counter() &lt; end:
+        <span class="c"># 反复哈希，制造真实的 CPU 负载。乘 128 是为了让每轮的活儿大一点，</span>
+        <span class="c"># 免得循环里 perf_counter 的调用本身占了大头</span>
+        data = hashlib.sha256(data).digest() * 128
+
+def waiting_for_someone_else(seconds: float):
+    <span class="c">"""纯等待：用 sleep 模拟等数据库 / 等下游 HTTP / 等磁盘。</span>
+<span class="c">    关键在于这段时间进程完全不消耗 CPU。"""</span>
+    time.sleep(seconds)
+
+def handle_one_request():
+    cpu_heavy(0.05)                 <span class="c"># 50ms 真算</span>
+    waiting_for_someone_else(0.05)  <span class="c"># 50ms 干等</span>
+
+if __name__ == "__main__":
+    t0 = time.perf_counter()
+    for _ in range(200):  <span class="c"># 200 轮 ≈ 20 秒，够采样器攒够样本</span>
+        handle_one_request()
+    print(f"总耗时 {time.perf_counter()-t0:.1f}s")</code></pre>
+
+<p>先单独跑一遍确认它正常：<code>python3 workload.py</code>。你应该看到 <code>总耗时 20.0s</code>。如果明显超过 20 秒，说明你的机器上 <code>cpu_heavy</code> 里的循环开销偏大，把 <code>* 128</code> 调小一点。</p>
+
+<h4>第 3 步：三条命令，看三种视角</h4>
+
+<pre><code><span class="c"># 【视角一】实时看：像 top 一样滚动显示哪个函数最费 CPU</span>
+<span class="c"># 先在一个终端跑 python3 workload.py，另开一个终端执行下面这条</span>
+sudo py-spy top --pid $(pgrep -f workload.py)
+
+<span class="c"># 【视角二】默认录制：生成 on-CPU 火焰图</span>
+<span class="c"># -o 指定输出文件，-d 20 表示采样 20 秒</span>
+sudo py-spy record -o oncpu.svg -d 20 --pid $(pgrep -f workload.py)
+
+<span class="c"># 【视角三】把等待也算进来：加 --idle</span>
+sudo py-spy record -o all.svg -d 20 --idle --pid $(pgrep -f workload.py)</code></pre>
+
+<p>录完之后，用浏览器打开这两个 <code>.svg</code> 文件（火焰图是可交互的，点方块可以放大）。</p>
+
+<p><strong>验收标准：</strong></p>
+<ul>
+<li><code>oncpu.svg</code> 里，<code>cpu_heavy</code> 应该占到 <strong>95% 以上</strong>，<code>waiting_for_someone_else</code> 几乎看不见。</li>
+<li><code>all.svg</code> 里，两者应该大致<strong>各占一半</strong>（45%～55% 都算正常）。</li>
+<li>你能指着 <code>oncpu.svg</code>，说出为什么那一半等待时间不见了。</li>
+</ul>
+
+<p><strong>常见坑：</strong></p>
+<ul>
+<li><code>Permission denied</code> 或 <code>Failed to open process</code>：ptrace 权限问题，回到第 1 步。</li>
+<li><code>pgrep</code> 返回空：脚本已经跑完了。把 <code>range(200)</code> 改大，或者先启动脚本再执行 py-spy。</li>
+<li>火焰图上全是 <code>&lt;module&gt;</code> 之类看不懂的名字：说明采样时程序还在启动阶段，等它进入主循环再采。</li>
+<li>两张图看起来一模一样：确认 <code>--idle</code> 真的加上了，并且拼写正确。</li>
+</ul>
+
+<h4>第 4 步（选做，但很值）：自己写一个 30 行的采样器</h4>
+
+<p>用别人的工具是一回事，知道它怎么实现的是另一回事。下面这个脚本把采样器的原理完整展示了一遍：一个线程干活，另一个线程定期偷看它的调用栈和线程状态。这就是 py-spy 的核心逻辑，只是 py-spy 用 Rust 从进程外面做，能挂到别的进程上。</p>
+
+<p>文件分三块：<code>worker</code> 是被观察的负载；<code>thread_state</code> 负责读线程状态；主循环负责采样和统计。</p>
+
+<pre><code><span class="c"># mini_sampler.py</span>
+import sys, threading, time, collections
+sys.setswitchinterval(0.0002)  <span class="c"># 调小 GIL 切换间隔，否则采样线程抢不到 CPU，</span>
+                               <span class="c"># 会严重低估计算阶段的样本数（GIL 是 Day 4 的主题）</span>
+
+def cpu_burn(seconds):
+    end = time.perf_counter() + seconds
+    while time.perf_counter() &lt; end: pass
+
+def io_wait(seconds):
+    time.sleep(seconds)
+
+def worker():
+    for _ in range(20):
+        cpu_burn(0.1); io_wait(0.1)   <span class="c"># 真实比例：一半一半</span>
+
+def thread_state(tid):
+    <span class="c"># Linux 把线程状态放在 /proc 里。第二个字段是进程名，可能含空格和括号，</span>
+    <span class="c"># 所以从最后一个 ')' 之后开始切，这是读 /proc/stat 的标准做法</span>
+    with open(f"/proc/self/task/{tid}/stat", "rb") as f:
+        rest = f.read().decode()
+    return rest[rest.rindex(")") + 2:].split()[0]
+
+t = threading.Thread(target=worker); t.start()
+on_cpu, all_s = collections.Counter(), collections.Counter()
+while t.is_alive():
+    <span class="c"># sys._current_frames() 返回所有线程当前的栈帧，这就是"拍照"</span>
+    f = sys._current_frames().get(t.ident)
+    if f is not None:
+        name = f.f_code.co_name          <span class="c"># 只取栈顶函数名，够说明问题了</span>
+        all_s[name] += 1
+        if thread_state(t.native_id) == "R":   <span class="c"># R = 正在 CPU 上跑</span>
+            on_cpu[name] += 1                  <span class="c"># 只有 R 状态才计入 on-CPU</span>
+    time.sleep(0.005)                          <span class="c"># 200 Hz</span>
+t.join()
+
+for title, c in [("on-CPU 视角", on_cpu), ("全部样本", all_s)]:
+    total = sum(c.values())
+    print(f"\n=== {title}（{total} 个样本）===")
+    for k, v in c.most_common(): print(f"{100*v/total:6.1f}%  {k}")</code></pre>
+
+<p>跑 <code>python3 mini_sampler.py</code>，你应该看到类似这样的输出：on-CPU 视角下 <code>cpu_burn</code> 接近 100%（我实测是 320 个样本全部落在它身上），全部样本视角下两者各占一半上下（我实测 54.6% / 45.4%）。如果两个视角的结果差不多，检查 <code>thread_state</code> 是不是一直返回同一个字母——多半是 <code>native_id</code> 取错了线程。</p>
+
+<h3>任务 B · 用到真实服务上（约 1 小时）</h3>
+
+<p>把 Day 1 搭的那个最小服务重新跑起来（如果没留着，用任何一个 FastAPI 服务都行）。用你 Day 1 写的压测脚本给它加上负载，然后：</p>
+
+<ol>
+<li>在压测跑着的时候，<code>py-spy record -d 30</code> 录一张 on-CPU 火焰图。</li>
+<li>同一段时间，另开终端跑 <code>py-spy record -d 30 --idle</code> 录第二张。</li>
+<li>对比两张图，写下 <strong>3 句话</strong>：这个服务是算得多还是等得多？on-CPU 图上最宽的顶部平台是哪个函数？这个函数是你写的，还是某个库里的？</li>
+</ol>
+
+<h4>顺带练一个方法：从热点反查源码</h4>
+
+<p>这是"能读懂别人的代码库"这项能力的第一步，后面 Day 12 走读 vLLM 源码时你会大量用到。步骤是固定的：</p>
+
+<pre><code><span class="c"># 1. 从火焰图上抄下热点函数名和它所在的文件路径（火焰图方块上会显示）</span>
+<span class="c"># 2. 直接打开那个文件的那一行</span>
+sed -n '120,150p' /usr/lib/python3/dist-packages/somelib/core.py
+
+<span class="c"># 3. 往上追一层：谁调用了这个函数？在整个包里搜函数名</span>
+grep -rn "def suspicious_func\|suspicious_func(" /usr/lib/python3/dist-packages/somelib/
+
+<span class="c"># 4. 火焰图本身已经告诉你完整调用链了，用它来验证你 grep 的结论对不对</span></code></pre>
+
+<p>关键在第 4 步。火焰图给的是<strong>运行时真实发生过的调用链</strong>，而读源码只能看到<em>可能</em>的调用关系。两者互相印证，你才不会追错分支。这是读陌生代码库最省时间的入口——不要从 <code>main</code> 函数开始一行行读，从热点往上追。</p>
+
+<!-- ============ 上岗关联 ============ -->
+<h2>上岗关联</h2>
+
+<p>今天这些东西，在你四周后的工作里具体长什么样。</p>
+
+<p><strong>场景一：线上告警，P99 涨了三倍。</strong>你 ssh 上去，机器上跑着一个你没写过的推理服务。你不能重启它（重启现场就没了），不能改代码。这时候 <code>py-spy dump --pid</code> 和 <code>py-spy record</code> 就是你唯一能立刻用上的东西。能不能在 5 分钟内给出一个有依据的初判，这几乎就是这类岗位的日常考核。</p>
+
+<p><strong>场景二：同事问你"你怎么知道瓶颈在这儿"。</strong>这是一个态度问题也是一个能力问题。你说"我觉得是这里"，和你说"30 秒采样 3000 个样本，这个函数占了 42% 的 on-CPU 时间，改完之后降到 6%，P99 从 180ms 降到 95ms"，是两种完全不同的工程师。整个阶段一都在训练你说第二种话。</p>
+
+<p><strong>场景三：面试里几乎必问的一道题</strong>——"一个服务 CPU 只用了 30%，但延迟很高，你怎么排查？"标准的糟糕回答是罗列一堆工具名。好的回答是给出判断路径：CPU 没跑满说明时间不在计算上，所以 on-CPU 火焰图大概率看不出东西；应该走 off-CPU 方向，看线程在等什么——锁、下游服务、磁盘、还是线程池排队。今天的内容正好覆盖了这个回答的骨架。</p>
+
+<p><strong>和后面几周的关系</strong>：Day 5～6 的项目日就是拿今天的工具去剖析一个真实的 vLLM 或 FastAPI 服务。阶段二调 KV cache 参数、阶段三给 agent runtime 定位瓶颈、阶段四测 sandbox 冷启动，用的都是今天这套东西。今天练不熟，后面每一天都会更吃力。</p>
+
+<!-- ============ 自检 ============ -->
+<h2>自检问题</h2>
+
+<details>
+<summary>1. 采样式剖析器的开销"跟程序的快慢无关"，这句话为什么成立？</summary>
+<div class="qa">
+<p>先看开销从哪来。采样式剖析器每秒固定采 N 次，每次做的事是一样的：暂停一下目标线程、读出它的调用栈、记一笔、放开。这一套动作的成本是个常数，跟目标程序此刻在跑什么、跑得多快，一点关系都没有。</p>
+<p>所以总开销 ≈ 采样频率 × 单次采样成本。你把采样频率定成 99 Hz，那不管目标程序每秒调用 100 次函数还是 1 亿次函数，剖析器都只干 99 次活。</p>
+<p>对比一下插桩式就清楚了。插桩式的开销 = 函数调用次数 × 每次记账的成本。函数调用次数是<em>程序自己决定的</em>，你控制不了。一个调用密集的程序，插桩式的开销就爆炸。</p>
+<p>这条性质的实际意义是：<strong>采样式剖析器的开销是你能预算的</strong>。你可以在上线前说"我开 99 Hz 采样，开销大约 0.5%"，并且这个数在任何负载下都成立。这就是它敢用在生产环境的根本原因。</p>
+</div>
+</details>
+
+<details>
+<summary>2. 你拿到一张火焰图，最底下一层是 <code>main</code>，占 100% 的宽度。有人说"看，瓶颈在 main 函数"。他错在哪？</summary>
+<div class="qa">
+<p>他把"经过"当成了"消耗"。</p>
+<p>火焰图上一个方块的宽度，代表<strong>这条调用路径</strong>出现在多少比例的样本里，不代表这个函数自己烧了多少 CPU。<code>main</code> 占 100%，只是因为每一个样本的调用栈都从 <code>main</code> 开始——它当然要出现在所有样本里。</p>
+<p>要看一个函数自己烧了多少时间，得看它<strong>没有被其他方块盖住的那部分宽度</strong>，也就是它露在最顶上的部分。这部分叫自身耗时（self time）。<code>main</code> 上面几乎肯定叠满了别的方块，它自己露出来的部分接近于零，所以它的自身耗时接近零。</p>
+<p>正确的看法是：忽略底层的宽方块，把目光移到<strong>图的顶部</strong>，找那些又宽又平的块。那才是 CPU 真正在执行的代码。</p>
+</div>
+</details>
+
+<details>
+<summary>3. 一个 FastAPI 服务，CPU 使用率只有 25%，但 P99 高达 2 秒。你先用 py-spy 默认参数录了一张火焰图，图上最宽的是 <code>epoll_wait</code> 之类的等待函数，看不出什么。接下来该怎么办？</summary>
+<div class="qa">
+<p>先做一个判断：CPU 只有 25%，说明这台机器四分之三的时间是闲的。请求慢，但慢在不需要 CPU 的地方。这直接指向 off-CPU 方向。</p>
+<p>所以 on-CPU 火焰图看不出东西，<strong>这本身就是一条重要信息</strong>，不是"工具没用"。它排除掉了"算法太慢"这一整类可能。</p>
+<p>接下来至少有三条路可以走，从便宜到贵：</p>
+<ol>
+<li><strong>加 <code>--idle</code> 重新录一张。</strong>这样等待中的栈也会出现，你能看到线程具体阻塞在哪个 Python 函数上——是在等下游 HTTP，还是在等数据库，还是在等一把锁。</li>
+<li><strong>用 <code>perf stat</code> 算 task-clock ÷ 墙钟时间。</strong>确认"确实大部分时间没在用 CPU"这个判断，而不是被 CPU 使用率这个指标误导（比如服务是多进程的，你只看了一个）。</li>
+<li><strong>strace 挂上去，加 <code>-T</code> 看每个系统调用的耗时。</strong>找那些动辄几百毫秒才返回的调用，看它们是 <code>recvfrom</code>（等网络）、<code>futex</code>（等锁）还是 <code>read</code>（等磁盘）。</li>
+</ol>
+<p>还有一种情况要特别留意，因为它在 FastAPI 里极其常见：某个 <code>async</code> 函数里调用了一个同步阻塞的库，把事件循环整个卡住了。这时候 CPU 使用率很低，所有请求一起变慢。这个具体形态是明天 Day 4 的主要内容。</p>
+</div>
+</details>
+
+<details>
+<summary>4. 为什么剖析器要采集整条调用栈，而不是只记录"当前在哪个函数"？只记函数名不是更省事吗？</summary>
+<div class="qa">
+<p>省事，但很多时候没法用。</p>
+<p>举个具体例子。你只记函数名，得到的结果是「<code>json.dumps</code> 占 18%」。这个信息你拿去干什么？<code>json.dumps</code> 在整个服务里可能被十几个地方调用——请求日志里调一次、返回响应时调一次、往消息队列里发事件时调一次。你不知道该优化哪一处，甚至不知道该不该优化（有些是必要的）。</p>
+<p>有了调用栈就不一样了。你看到「<code>handle_request → log_request → json.dumps</code> 占 15%」，剩下 3% 分散在别处。结论立刻就清楚了：绝大部分开销来自记日志，而日志是可以改成异步的，或者干脆降低日志级别。</p>
+<p>还有第二个理由：调用栈自带上下文，让你能看懂陌生的代码库。你在别人的项目里看到一个没见过的函数占了 30%，只有函数名的话你还得去 grep 半天。有了完整的栈，从上到下读一遍，这条路径是干什么的基本就清楚了。这也是任务 B 里那个"从热点反查源码"方法能成立的前提。</p>
+</div>
+</details>
+
+<!-- ============ 新词 ============ -->
+<h2>今日新词</h2>
+
+<p>今天引入 8 个新术语，全部在上面出现过。以后忘了可以回来查。</p>
+
+<table>
+<thead><tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>剖析器</td><td>profiler</td><td>用来搞清楚程序把时间花在哪些代码上的工具</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling rate</td><td>每隔一小段时间看一眼程序在干什么，用出现频率估算时间占比；每秒采几次叫采样频率，单位 Hz，常用 99 Hz（选质数是为了避开和程序自身的周期对齐）</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>靠定期采样工作的剖析器，开销固定且很低，能用在生产环境，如 py-spy、perf</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>在每个函数进出处插计时代码，数字精确但开销大，如 cProfile，只适合本地用</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>把几千条调用栈按公共前缀合并画出来的图；宽度是时间占比，横轴不是时间轴</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>一个函数自己烧掉的时间，不含它调用的子函数；在火焰图上就是它露在顶部的那部分宽度</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>只统计线程真正在 CPU 上执行的时间，回答"CPU 忙的时候在忙什么"</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>研究线程为什么不在 CPU 上、在等什么，回答"CPU 没满但为什么慢"</td></tr>
+</tbody>
+</table>
+
+<!-- ============ 延伸 ============ -->
+<h2>延伸材料</h2>
+
+<p>不用全看。前两条建议今天就看，剩下的可以留着以后查。</p>
+
+<ol>
+<li><a href="https://www.brendangregg.com/flamegraphs.html">Flame Graphs — Brendan Gregg</a><br>
+<span style="color:var(--fg2)">火焰图的发明者本人写的介绍页。想确认自己有没有读懂火焰图，看这一页就够。<strong>难度：新手友好</strong>，图多，可以只看前半部分。</span></li>
+
+<li><a href="https://github.com/benfred/py-spy">py-spy — GitHub 项目主页</a><br>
+<span style="color:var(--fg2)">README 本身就是一份完整的使用说明，把 <code>top</code> / <code>record</code> / <code>dump</code> 三个子命令和常用参数都讲了。<strong>难度：新手友好</strong>，今天做任务 A 时对照着看。</span></li>
+
+<li><a href="https://www.brendangregg.com/offcpuanalysis.html">Off-CPU Analysis — Brendan Gregg</a><br>
+<span style="color:var(--fg2)">今天讲的 off-CPU 概念的原始出处，讲了完整的 off-CPU 火焰图怎么做。<strong>难度：需要一点基础</strong>，涉及内核调度器和 eBPF，第一遍读只抓概念，不用跟着做。</span></li>
+
+<li><a href="https://www.brendangregg.com/perf.html">perf Examples — Brendan Gregg</a><br>
+<span style="color:var(--fg2)">perf 各种用法的速查表，不是教程，是以后忘了命令时回来抄的地方。<strong>难度：查阅型</strong>，不要从头读。</span></li>
+
+<li>《Systems Performance: Enterprise and the Cloud》(2nd Edition) — Brendan Gregg<br>
+<span style="color:var(--fg2)">这个领域的标准参考书。第 6 章讲 CPU、第 5 章讲应用程序性能，跟今天的内容直接对应。<strong>难度：需要基础</strong>，当工具书按章查，不要当教材从头读。</span></li>
+</ol>
+
+<!-- ============ 五句话 ============ -->
+<div class="card feynman">
+  <div class="tag">今日五句话 · 费曼式复述</div>
+  <h3 style="margin-bottom:4px">合上这一页，不看笔记</h3>
+  <p>想象你要把今天这块讲给一个刚入职的同事听。他会写 Python，但从来没做过性能分析。用五句话讲给他听，每句话都要是完整的中文句子，不能只写关键词。</p>
+
+  <p style="margin-bottom:4px"><strong>第 1 句</strong>——剖析器和"加日志打时间戳"最根本的区别是什么？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 2 句</strong>——采样为什么开销这么低，低到能开在生产环境上？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 3 句</strong>——看火焰图时，眼睛应该先落在图上的什么位置，为什么是那里？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 4 句</strong>——on-CPU 火焰图有一个大盲区，它是什么，为什么会有这个盲区？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 5 句</strong>——现场看到一个慢服务，你用什么线索决定走 on-CPU 还是 off-CPU 路线？</p>
+  <div class="write-area"></div>
+
+  <h4 style="margin-top:20px">自查标准</h4>
+  <ul style="margin-bottom:0">
+    <li><strong>第 1 句</strong>写不出来 → 回去重读「2. 剖析器：换一种问法」，特别是工厂工人那个例子。</li>
+    <li><strong>第 2 句</strong>里如果没提到"开销只跟采样频率有关，跟程序在跑什么无关"，就还没抓住重点。</li>
+    <li><strong>第 3 句</strong>如果写成了"看最宽的方块"，不完整——必须同时说到"顶部"。少了这个词就会把 <code>main</code> 当成瓶颈。</li>
+    <li><strong>第 4 句</strong>如果只说了"看不到等待时间"，但说不出<em>为什么</em>看不到（线程状态是 S 就跳过不采），说明只记住了结论没记住机制。这种记忆过两周就没了。</li>
+    <li><strong>第 5 句</strong>是今天最实用的一条。标准答案很短：看 CPU 用满没有，或者算 <code>task-clock</code> ÷ 墙钟时间。如果你写了一长段，说明还没提炼出来。</li>
+  </ul>
+</div>
+
+<!-- ============ 明日 ============ -->
+<h2>明日预告</h2>
+<p>Day 4 讲 Python 特有的性能陷阱：GIL 到底锁住了什么，以及 asyncio 的事件循环被阻塞时是什么样子。今天你学会了"看见"，明天你会第一次看见一个只在 Python 世界里存在、但在 AI 服务里极其常见的现象——<strong>CPU 明明没满，请求却全都变慢了</strong>。今天任务 A 第 4 步里那行 <code>sys.setswitchinterval</code>，明天你就会知道它为什么必须加。</p>
+
+<p class="footer">AI Infra 速成 · Day 3 / 28 · 2026-08-20（周四）· 阶段一 · CPU 侧系统工程</p>
+
+</main>
+</body>
+</html>

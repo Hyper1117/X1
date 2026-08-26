@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra 速成 · Day 5 · 95% 都是 select</title>
+<style>
+
+:root{
+  --bg:#fbfaf8; --bg2:#ffffff; --fg:#23201c; --fg2:#5b544c; --fg3:#8a8178;
+  --line:#e6e1d8; --accent:#9a5b2b; --accent-soft:#f3ece3;
+  --recall:#c08a2e; --recall-bg:#fdf6e7;
+  --predict:#5a6ecb; --predict-bg:#eef0fb;
+  --feynman:#3f8f6b; --feynman-bg:#ecf6f1;
+  --warn:#b5482f; --warn-bg:#fdeeea;
+  --code-bg:#22262e; --code-fg:#dfe4ec; --code-cmt:#8fa2b8; --code-hl:#e2b478;
+  --term-bg:#f6e7d5; --term-line:#d9a86e;
+}
+@media (prefers-color-scheme: dark){
+:root{
+  --bg:#16181c; --bg2:#1c1f25; --fg:#e6e3de; --fg2:#b0aaa2; --fg3:#847d75;
+  --line:#2e333b; --accent:#e0a06a; --accent-soft:#262a31;
+  --recall:#d3a44b; --recall-bg:#232019;
+  --predict:#8b9bea; --predict-bg:#1b1e2b;
+  --feynman:#68b791; --feynman-bg:#182420;
+  --warn:#e0806a; --warn-bg:#2a1d1a;
+  --code-bg:#0f1216; --code-fg:#d7dce4; --code-cmt:#7d8ea6; --code-hl:#e2b478;
+  --term-bg:#3a2f22; --term-line:#a87b45;
+}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px; line-height:1.78; letter-spacing:.01em;
+}
+.progress-wrap{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--line)}
+.progress-inner{max-width:820px;margin:0 auto;padding:10px 22px 12px}
+.progress-meta{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--fg2);gap:12px;flex-wrap:wrap}
+.progress-meta b{color:var(--fg);font-size:14px}
+.bar{height:6px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden}
+.bar>i{display:block;height:100%;width:17.86%;background:linear-gradient(90deg,var(--accent),var(--recall));border-radius:99px}
+main{max-width:820px;margin:0 auto;padding:34px 22px 90px}
+h1{font-size:30px;line-height:1.35;margin:.2em 0 .1em;letter-spacing:-.01em}
+.sub{color:var(--fg2);font-size:15px;margin:0 0 26px}
+h2{font-size:22px;margin:52px 0 6px;padding-top:16px;border-top:1px solid var(--line);letter-spacing:-.005em}
+h3{font-size:17.5px;margin:32px 0 6px;color:var(--fg)}
+h4{font-size:15.5px;margin:24px 0 4px;color:var(--fg2);font-weight:600}
+p{margin:.85em 0}
+ul,ol{padding-left:1.4em;margin:.7em 0}
+li{margin:.42em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(154,91,43,.35)}
+a:hover{border-bottom-color:var(--accent)}
+.lead{color:var(--fg2);font-size:15.5px;border-left:3px solid var(--accent);padding-left:14px;margin:10px 0 18px;background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0}
+.term{background:var(--term-bg);border-bottom:1.5px solid var(--term-line);padding:0 3px;border-radius:3px;font-weight:600}
+.card{border-radius:10px;padding:18px 20px;margin:24px 0;border:1px solid var(--line);border-left-width:5px;background:var(--bg2)}
+.card>h3,.card>h2{margin-top:0;border-top:none;padding-top:0}
+.card .tag{display:inline-block;font-size:12px;letter-spacing:.08em;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.recall{border-left-color:var(--recall);background:var(--recall-bg)}
+.recall .tag{color:var(--recall)}
+.predict{border-left-color:var(--predict);background:var(--predict-bg)}
+.predict .tag{color:var(--predict)}
+.feynman{border-left-color:var(--feynman);background:var(--feynman-bg)}
+.feynman .tag{color:var(--feynman)}
+.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+.warn .tag{color:var(--warn)}
+.note{border-left-color:var(--fg3)}
+pre{background:var(--code-bg);color:var(--code-fg);padding:15px 16px;border-radius:9px;overflow-x:auto;font-size:13.5px;line-height:1.68;margin:12px 0;
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;-webkit-overflow-scrolling:touch}
+pre .c{color:var(--code-cmt)}
+pre .k{color:var(--code-hl)}
+code{background:var(--accent-soft);padding:1px 5px;border-radius:4px;font-size:.9em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--fg);
+  overflow-wrap:anywhere;word-break:break-word}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14.5px;display:block;overflow-x:auto;white-space:normal}
+th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600;font-size:14px}
+tbody tr:nth-child(even){background:rgba(127,127,127,.045)}
+details{margin:12px 0;border:1px solid var(--line);border-radius:8px;background:var(--bg2);padding:0 16px}
+details[open]{padding-bottom:6px}
+summary{cursor:pointer;padding:11px 0;font-weight:600;font-size:15px;color:var(--accent);list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:before{content:"▸ ";color:var(--fg3)}
+details[open] summary:before{content:"▾ "}
+.qa{border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+.write-area{border:1.5px dashed var(--fg3);border-radius:8px;min-height:34px;margin:8px 0 14px;padding:10px 12px;color:var(--fg3);font-size:14px;background:rgba(127,127,127,.04)}
+.write-area.tall{min-height:56px}
+.kicker{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);font-weight:700}
+.big-num{font-size:15px;font-weight:700;color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:40px 0}
+.footer{color:var(--fg3);font-size:13px;text-align:center;margin-top:60px}
+@media (max-width:600px){
+  body{font-size:16px}
+  main{padding:24px 16px 70px}
+  .progress-inner{padding:9px 16px 11px}
+  h1{font-size:24px} h2{font-size:20px}
+  pre{font-size:12.5px}
+  .card{padding:15px 16px}
+}
+
+</style>
+</head>
+<body>
+
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <div class="progress-meta">
+      <b>Day 5 / 28</b>
+      <span>阶段一 · CPU 侧系统工程：先学会看见</span>
+      <span>2026-08-22 周六</span>
+    </div>
+    <div class="bar"><i></i></div>
+  </div>
+</div>
+
+<main>
+
+<h1>95% 都是 select：一张看起来毫无用处的火焰图，和藏在它后面的三段时间</h1>
+<p class="sub">AI Infra 速成 · Day 5 · 阶段一第一个项目日 · 预计 4.5 小时（讲解 1.5h + 动手 3h）</p>
+
+<!-- ============ 温故 ============ -->
+<div class="card recall">
+  <div class="tag">温故 · 闭卷回忆</div>
+  <h3 style="margin-bottom:4px">先凭记忆答，答不出再展开</h3>
+  <p style="margin-top:6px;color:var(--fg2);font-size:14.5px">今天两道，因为课程 8/18 才开始，还没有"7 天前"的内容。</p>
+
+  <h4>Q1 · 1 天前（Day 4 · 事件循环被阻塞）</h4>
+  <p>一个异步接口里有一句 <code>await call_model()</code>，你在它前后打了时间戳，监控上报"调用模型耗时 P99 = 300ms"。下游团队拿出他们的监控说"我们只有 80ms"。<br>
+  两边都没说谎。多出来的 220 毫秒去哪了？<strong>你要做哪一个实验来确认？</strong></p>
+  <details><summary>展开答案</summary>
+  <div class="qa">
+    <p>那 220 毫秒很可能根本没离开你的进程。</p>
+    <p><code>await</code> 做的是"发出请求，然后交还控制权"。下游 80 毫秒就把响应送回来了，操作系统也早把数据放好了，但要把你的协程重新唤醒，得等事件循环轮到它。而这时候事件循环<strong>正忙着给别的请求跑同步代码</strong>——比如序列化一个大 JSON。那段代码不交还控制权，你的协程只能排队。</p>
+    <p>你测到的"调用耗时"里，混进了别人的计算时间。</p>
+    <p><strong>确认实验（做任何一个都行）：</strong></p>
+    <ul>
+      <li><strong>降负载对照。</strong>把 rps 降到平时的四分之一再测同一个指标。下游不会因为你发得少就变快，所以这个数字如果大幅下降，凶手一定在本地。</li>
+      <li><strong>装事件循环延迟哨兵。</strong>看它的累计滞后，量级对得上就实锤了。</li>
+    </ul>
+    <p>→ <strong>今天你会亲手量到这个现象</strong>：一句写死 40 毫秒的等待，在高负载下测出 94 毫秒。而且你会发现，这件事火焰图完全看不出来。</p>
+  </div>
+  </details>
+
+  <h4>Q2 · 3 天前（Day 2 · 利用率与排队的非线性）</h4>
+  <p>一个单线程服务，每个请求占用 <strong>33 毫秒</strong> CPU，每秒进来 25 个请求。</p>
+  <ol style="margin:.4em 0">
+    <li>利用率是多少？</li>
+    <li>如果把单请求 CPU 优化到 20 毫秒（省 39%），利用率变多少？</li>
+    <li><strong>排队等待时间</strong>大约变成原来的几分之一？先猜一个，再算。</li>
+  </ol>
+  <details><summary>展开答案</summary>
+  <div class="qa">
+    <p><strong>一：</strong>ρ = 25 × 0.033 = <strong>0.825</strong>。　<strong>二：</strong>ρ = 25 × 0.020 = <strong>0.50</strong>。</p>
+    <p><strong>三：</strong>排队等待大致正比于 <code>ρ / (1 − ρ)</code>。</p>
+    <p style="padding-left:1.4em">优化前 0.825 ÷ 0.175 = <strong>4.71</strong>；优化后 0.50 ÷ 0.50 = <strong>1.00</strong>；比值 ≈ <strong>0.21</strong></p>
+    <p>排队降到原来的 <strong>21%</strong>，砍掉约八成。<strong>而你只把 CPU 省了 39%。</strong>放大来自分母：<code>1 − ρ</code> 是"还剩多少余量"，它从 0.175 涨到 0.50，涨了近 3 倍，整个比值就塌了。</p>
+    <p>→ <strong>今天最后一节会把这个算式和实测摆在一起对照</strong>，你会看到同一个改动在两种负载下省出来的绝对毫秒数差十六倍。</p>
+  </div>
+  </details>
+</div>
+
+<!-- ============ 今日概览 ============ -->
+<h2>今日概览</h2>
+
+<table>
+<tbody>
+<tr><th style="width:110px">进度</th><td>Day 5 / 共 28 天 · 阶段一 · <strong>本阶段第一个项目日</strong></td></tr>
+<tr><th>今日主题</th><td>把前四天的工具用在一个陌生服务上。今天不学新工具，学的是<strong>当火焰图给不出答案时，接下来该看哪里</strong></td></tr>
+<tr><th>时间预算</th><td>约 4.5 小时。讲解约 1.5 小时，动手三小时</td></tr>
+<tr><th>今天不讲</th><td>压测方法本身有没有骗你——闭环与开环、协调遗漏、预热、重复取范围。今天你会用到这些做法，但为什么必须这么做是明天 Day 6 的正题。先照做，明天讲透</td></tr>
+</tbody>
+</table>
+
+<h3>今天结束后你应该能做到这三件事</h3>
+<ol>
+<li>拿到一张火焰图，先<strong>看一眼 CPU 利用率再决定信不信它</strong>——并说得出这个判据背后的道理。</li>
+<li>面对一个 asyncio 服务，能说清楚<strong>"谁在等什么"为什么两种火焰图都答不了</strong>，以及该换用什么手段。</li>
+<li>把一次请求的延迟<strong>摊成四段</strong>（排队 / 算 / 等 / 算），说得出每一段各由什么工具负责，最后产出一张能拿去开会的<strong>瓶颈假设表</strong>。</li>
+</ol>
+
+<!-- ============ 数据来源 ============ -->
+<div class="card note">
+  <div class="tag">今天所有数字的来源</div>
+  <p style="margin-top:6px">下面每一个数字都来自同一套脚手架。先交代清楚，后面就不再重复说明了。</p>
+  <table style="margin-top:10px">
+  <tbody>
+  <tr><th style="width:96px">机器</th><td>2 个 vCPU，7.8 GiB 内存，Python 3.11.15，Linux 容器。<strong>没有 GPU</strong>——今天剖析的是网关那一层，不碰模型计算</td></tr>
+  <tr><th>被测服务</th><td>一个纯标准库写的 asyncio 推理网关，单进程。它模仿真实推理服务（vLLM、SGLang）前面那一层 HTTP 网关的形状。代码在动手任务里，一共不到一百行</td></tr>
+  <tr><th>怎么发压</th><td>另起一个进程当压测器，按预定时刻表发请求，不管上一个有没有回来。到达间隔取指数分布（也就是随机到达，不是整齐的节拍）。两个压测点不是拍脑袋定的，是按服务启动时实测的容量算出来的：低负载取容量的两成，高负载取容量的八成半。本文这台机器上就是 <strong>8 rps</strong> 和 <strong>35 rps</strong>。低负载跑 90 秒、高负载跑 45 秒，各重复三轮取范围</td></tr>
+  <tr><th>怎么记时间</th><td>客户端记「从计划发出到收到回复」的总延迟；服务端在处理函数首尾各打一个时间戳，把「服务时间」随响应回传。两个数一减就得到排队时间</td></tr>
+  <tr><th>怎么剖析</th><td>Day 3 那个迷你采样剖析器，每 2 毫秒给主线程拍一张调用栈快照。<strong>同时统计两种视角</strong>：只算线程状态为 R 的样本（on-CPU），和不管状态一律统计（wall-clock，相当于 <code>py-spy --idle</code>）</td></tr>
+  </tbody>
+  </table>
+  <p style="margin-bottom:0;color:var(--fg2);font-size:14.5px">为什么用自己写的服务和剖析器，而不是直接上 vLLM 和 py-spy：容器里装不了第三方包。<strong>这反而是好事</strong>——你不用装任何东西就能把今天全部结论复现一遍，而且能看清工具内部在做什么。</p>
+</div>
+
+<!-- ============ 核心讲解 ============ -->
+<h2>核心讲解</h2>
+
+<h3>1. 今天这一节要回答的问题</h3>
+<p class="lead">你按昨天学的录了一张火焰图，图上 95% 是一个叫 <code>select</code> 的函数。然后呢？</p>
+
+<p>Day 3 教了怎么用采样剖析器找热点，Day 4 教了怎么判断事件循环有没有被堵住。今天第一次把它们用在一个<strong>不是你写的、而且形状像真东西</strong>的服务上。</p>
+
+<p>然后你会立刻撞墙。</p>
+
+<p>这个服务在低负载下 P99 是 105 毫秒左右，把负载推上去就涨到六百毫秒以上。你照着 Day 3 的做法，挂上剖析器录一段，把等待也统计进来（Day 3 那个 <code>--idle</code> 的做法）。结果是这样：</p>
+
+<pre><code>select          95.8%
+tokenize_slow    2.0%
+iterencode       1.8%
+其他             0.4%</code></pre>
+
+<p><code>select</code> 是事件循环自己在等操作系统通知的那个调用。<strong>它占了 95%，剩下的加起来不到 5%。</strong></p>
+
+<p>这张图没有骗你——这个服务确实大部分时间在等。但它也没告诉你任何能动手的东西：等的是谁？哪个请求在等？那六百多毫秒的 P99 到底怎么来的？<strong>一个字都没有。</strong></p>
+
+<p>今天就是从这张废图开始，一层一层把时间挖出来。到最后你会发现，这个服务的延迟分成四段，而<strong>火焰图只看得见其中两段</strong>。</p>
+
+<h3>2. 先看看被剖析的是什么</h3>
+<p class="lead">这一节回答：这个网关每个请求都干了些什么。</p>
+
+<p>真实的推理服务前面都有一层 Python 写的网关。它不做模型计算，但每个请求都要过它。它的活儿是固定的四步：</p>
+
+<table>
+<thead><tr><th>步骤</th><th>在干什么</th><th>在算还是在等</th></tr></thead>
+<tbody>
+<tr><td>① 收请求</td><td>读 HTTP、解析</td><td>算（很少）</td></tr>
+<tr><td>② 分词</td><td>把一段长上下文切成 token</td><td><strong>算</strong></td></tr>
+<tr><td>③ 调模型</td><td>把 token 发给推理引擎，等它返回</td><td><strong>等</strong></td></tr>
+<tr><td>④ 序列化</td><td>把整轮响应转成 JSON 发回去</td><td><strong>算</strong></td></tr>
+</tbody>
+</table>
+
+<p>这张表<strong>重点看第三列</strong>。两步在算、一步在等——这个"算一半等一半"的形状，正是所有 AI 服务网关的共性，也是今天全部麻烦的来源。</p>
+
+<p>为了让它像真的：上下文用了 36000 个词（一个跑了很多轮的 agent 会话就是这个量级），响应带 650 条 choice 和 logprobs。</p>
+
+<p>第 ③ 步有个特殊安排：它不是真的去调下游，而是一句 <code>await asyncio.sleep(0.040)</code>。<strong>这样你手里就有了一个绝对准确的参照物</strong>——它必须是 40 毫秒，测出来的任何偏差都只能来自别的东西。第 6 节靠它抓到了一个很难发现的问题。</p>
+
+<p>至于每一步各花多久——<strong>先别急着知道</strong>。今天有一半的内容就是在回答"怎么把它量出来"，提前告诉你就没意思了。</p>
+
+<h3>3. 两张图打架了，该信哪一张</h3>
+<p class="lead">这一节回答：on-CPU 和 wall-clock 两张图给出了完全不同的答案，怎么判断？</p>
+
+<p>Day 3 讲过剖析器有两种记账方式。同一段采样，两种记账，得出的结论完全相反：</p>
+
+<table>
+<thead><tr><th>栈顶帧</th><th>on-CPU 视角<br><span style="font-weight:400;color:var(--fg2)">只统计线程真在 CPU 上的样本</span></th><th>wall-clock 视角<br><span style="font-weight:400;color:var(--fg2)">等待中的样本也统计</span></th></tr></thead>
+<tbody>
+<tr><td><code>select</code>（事件循环在等）</td><td>3.8%</td><td><strong>95.8%</strong></td></tr>
+<tr><td>计算步骤合计（分词 + 序列化）</td><td><strong>92.4%</strong></td><td>4.0%</td></tr>
+<tr><td>其他（accept、读写请求）</td><td>3.8%</td><td>0.2%</td></tr>
+</tbody>
+</table>
+<p style="color:var(--fg2);font-size:14px;margin-top:-6px">8 rps、90 秒、慢分词版本。计算步骤那一行是把分词和序列化的帧合起来的——为什么要合，第 8 节讲。</p>
+
+<p>这张表<strong>要横着读</strong>。左边说"CPU 上的时间九成都在做计算"，右边说"什么都没干，九成六卡在 <code>select</code> 上"。两个结论完全对不上，而它们来自<strong>同一批样本</strong>。</p>
+
+<p><strong>判断该信哪张图，有一个极其简单的判据：先看 CPU 利用率。</strong></p>
+
+<p>道理是这样的。on-CPU 视角只统计"线程真在 CPU 上跑"的那些瞬间，所以它描述的是"CPU 忙的那部分时间是怎么花的"。如果 CPU 本来就忙得不行，那这部分时间就是故事的主体，这张图值得信。如果 CPU 大部分时间闲着，那这张图覆盖的只是很小一块，<strong>它画得再漂亮也解释不了你的延迟</strong>。</p>
+
+<p>量一下这个服务的 CPU 利用率——用进程消耗的 CPU 时间除以墙上时钟走过的时间：</p>
+
+<table>
+<thead><tr><th>压测点</th><th>进程 CPU 时间</th><th>墙上时间</th><th>CPU 利用率</th></tr></thead>
+<tbody>
+<tr><td>8 rps</td><td>5.51 s</td><td>24.87 s</td><td><strong>22.2%</strong></td></tr>
+<tr><td>35 rps</td><td>21.25 s</td><td>25.22 s</td><td>84.2%</td></tr>
+</tbody>
+</table>
+
+<p>这张表<strong>重点看 8 rps 那一行的 22.2%</strong>。将近八成的时间，这个进程根本没在用 CPU。</p>
+
+<p>所以 on-CPU 那张图并没有说谎，它只是<strong>只覆盖了两成的时间</strong>。P99 那一百多毫秒的大头，不在它画的范围里。</p>
+
+<div class="card warn">
+<div class="tag">关键结论</div>
+<p style="margin-bottom:0"><strong>拿到火焰图，先看 CPU 利用率再决定信不信它。</strong><br>
+CPU 跑满了 → on-CPU 火焰图是主力，时间确实花在执行上。<br>
+CPU 很闲但延迟很高 → 你要找的东西<strong>不在 on-CPU 图上</strong>，别在那儿耗着，得走 off-CPU 的方向。<br>
+这条判据只要一条命令就能拿到，却能省掉你半小时的白工。</p>
+</div>
+
+<p>于是问题就变成：<strong>那将近八成的非 CPU 时间，到底在等什么？</strong></p>
+
+<p>右边那张 wall-clock 图倒是把等待统计进来了，可它给出的答案是"九成六卡在 <code>select</code>"。<code>select</code> 是事件循环自己在 epoll 上等事件——它是<strong>一整坨</strong>：所有请求的所有等待全被合并进了这一个方块。你看不出等的是模型、是网络、还是别的什么，也看不出是哪个请求在等。</p>
+
+<p>而按第 2 节的设计，每个请求有一步是明明白白的 40 毫秒等待。<strong>那一步在两张图上都找不到。</strong></p>
+
+<!-- ============ 预测框 ============ -->
+<div class="card predict">
+  <div class="tag">预测 · 先写答案，再往下看</div>
+  <h3 style="margin-bottom:4px">Day 3 那个救兵，在这里还管用吗？</h3>
+
+  <p>回忆一下 Day 3 的实验：一个脚本一半时间在 <code>cpu_heavy()</code> 里算、一半时间在 <code>time.sleep()</code> 里等。默认参数录出来的图，等待那一半<strong>几乎完全不存在</strong>（0.6%）。加上 <code>--idle</code> 之后，它立刻显示成 54.8%，和真实比例对上了。</p>
+
+  <p>今天这个服务，每个请求有 40 毫秒在第 ③ 步等着，占服务时间一半以上。而上面那张 wall-clock 视角的表，就是"等待也统计"的版本——相当于加了 <code>--idle</code>。</p>
+
+  <p><strong>请预测：那 40 毫秒的等待，在 wall-clock 那张表上应该占多少？</strong></p>
+  <div class="write-area tall">我预测「调模型」那一步在 wall-clock 视角下约占 ____%<br>我的理由：</div>
+
+  <p style="margin-bottom:4px"><strong>再多问一句</strong>：Day 3 的等待用的是 <code>time.sleep()</code>，今天用的是 <code>await asyncio.sleep()</code>。<strong>这个差别会不会影响结果？</strong>如果会，是往哪个方向影响？</p>
+  <div class="write-area">我的想法：</div>
+
+  <p style="color:var(--fg2);font-size:14.5px;margin-bottom:0">写完了再往下翻。</p>
+</div>
+
+<h3>4. 揭晓：那 40 毫秒，两张图上都是 0%</h3>
+
+<p>把上面那张表补完整——加上代表第 ③ 步的那一帧：</p>
+
+<table>
+<thead><tr><th>栈顶帧</th><th>on-CPU 视角</th><th>wall-clock 视角</th></tr></thead>
+<tbody>
+<tr><td><code>select</code></td><td>3.8%</td><td>95.8%</td></tr>
+<tr><td>计算步骤合计</td><td>92.4%</td><td>4.0%</td></tr>
+<tr><td>其他</td><td>3.8%</td><td>0.2%</td></tr>
+<tr><td><strong>③ 调模型（<code>handle</code> 里那句 await）</strong></td><td><strong>0%</strong></td><td><strong>0%</strong></td></tr>
+</tbody>
+</table>
+
+<p>on-CPU 是 0% 不奇怪——它不烧 CPU，本来就该被跳过。</p>
+
+<p><strong>可 wall-clock 视角也是 0%。</strong>那是"等待也统计"的版本，Day 3 里正是它把消失的一半救了回来。今天它一点用都没有。</p>
+
+<p>而且 <code>--idle</code> 不是"效果打折"，是<strong>压根不起作用</strong>。这两个实验差在一个很具体的机制上。</p>
+
+<h3>5. 为什么：挂起的协程不在任何线程的栈上</h3>
+<p class="lead">这一节回答：<code>time.sleep()</code> 和 <code>await asyncio.sleep()</code> 到底差在哪？</p>
+
+<p>这两件事看起来都是"等 40 毫秒"，机制完全不同。</p>
+
+<p><strong><code>time.sleep(0.04)</code>：线程真的睡过去了。</strong>调用栈原封不动地留在那个线程上：</p>
+<pre><code>worker → handle_request → time.sleep      <span class="c">← 栈还在，只是线程状态从 R 变成了 S</span></code></pre>
+<p>采样器去抓这个线程的栈，能抓到完整的一条。默认会因为状态是 <code>S</code> 而跳过，<code>--idle</code> 就是告诉它"睡着的也采"。<strong>Day 3 的救兵之所以管用，是因为栈一直都在，只差一个开关。</strong></p>
+
+<p><strong><code>await asyncio.sleep(0.04)</code>：协程被挂起了。</strong>控制权交还给事件循环，那个协程的栈帧被<strong>摘下来存进 Task 对象</strong>。这一刻线程正在跑的是事件循环自己：</p>
+<pre><code>run_forever → _run_once → select          <span class="c">← 线程当前的栈，业务函数一个都没有</span></code></pre>
+
+<p>而采样器用的 <code>sys._current_frames()</code>（py-spy 读进程内存也是同理）拿到的是"每个<strong>线程</strong>当前的栈"。<span class="term">挂起的协程（suspended coroutine）</span>不属于任何线程，<strong>所以它不在结果里。</strong></p>
+
+<p><code>--idle</code> 管的是"线程在睡要不要统计"，而这里的问题是"栈根本不在"。两个开关管的不是同一件事。</p>
+
+<p>这个说法可以直接验。让一个协程停在 <code>await</code> 上，然后从两个角度去找它：</p>
+
+<pre><code>async def handle_request():
+    await asyncio.sleep(0.30)          <span class="c"># 协程在这里被挂起</span>
+
+async def inspector():
+    await asyncio.sleep(0.10)          <span class="c"># 等它进入 await 之后再看</span>
+
+    <span class="c"># 角度一：线程当前的栈里，有没有 handle_request？</span>
+    fr = sys._current_frames().get(threading.get_ident())
+
+    <span class="c"># 角度二：问 asyncio 自己，它知不知道这个任务在哪？</span>
+    for t in asyncio.all_tasks():
+        if t.get_coro().__qualname__.startswith("handle_request"):
+            stack = t.get_stack()      <span class="c"># Task 对象里存着它挂起处的帧</span></code></pre>
+
+<p><strong>跑出来是这样：</strong></p>
+<pre><code>线程当前栈: &lt;module&gt; → run → run → run_until_complete → run_forever → _run_once → _run → main → inspector
+里面有 handle_request 吗: False
+
+all_tasks 找到了，它停在: ['handle_request']</code></pre>
+
+<p>线程栈上全是事件循环的机器零件，一个业务函数都没有。而 <code>asyncio.all_tasks()</code> 一找一个准。</p>
+
+<div class="card warn">
+<div class="tag">关键结论</div>
+<p><strong>在 asyncio 服务上，"谁在等什么"这个问题，两种火焰图都答不了。</strong>因为等待中的协程根本不在线程栈上。</p>
+<p style="margin-bottom:0">对应的正确工具是 <code>asyncio.all_tasks()</code> 加 <code>task.get_stack()</code>——它遍历的是<strong>任务</strong>，不是线程。线上排查时把它挂在一个调试接口或信号处理器上，需要时 dump 一次，就能看到此刻所有挂起的协程各自停在哪一行。<br>
+（<code>py-spy dump</code> 对 asyncio 服务也是同样的局限：它看得见线程，看不见挂起的任务。）</p>
+</div>
+
+<p>这一条对你四周后的岗位几乎每天都要用：推理网关、agent runtime、sandbox 调度服务，全是 asyncio 写的，全是"大部分时间在等"。<strong>指望火焰图告诉你它们在等谁，方向从一开始就错了。</strong></p>
+
+<h3>6. 那就自己打点：把一次请求摊成三段</h3>
+<p class="lead">这一节回答：既然剖析器答不了，用什么答？</p>
+
+<p>答案朴素得有点让人失望：<strong>在四步流水线的每一步前后各记一个时间戳。</strong></p>
+
+<p>这种做法叫 <span class="term">阶段计时（span timing）</span>，是分布式追踪（OpenTelemetry）的最小内核，阶段三给 agent runtime 加可观测性时你会正式用到它。</p>
+
+<pre><code>t0 = time.perf_counter()
+TOKENIZE(CONTEXT)                            <span class="c"># ② 分词（在算）</span>
+t1 = time.perf_counter()
+await asyncio.sleep(0.040)                   <span class="c"># ③ 调模型（在等）</span>
+t2 = time.perf_counter()
+n = len(json.dumps(RESPONSE))                <span class="c"># ④ 序列化（在算）</span>
+t3 = time.perf_counter()
+<span class="c"># 四个时间戳，三段耗时。这三段是火焰图给不了的：</span>
+<span class="c"># 它能告诉你"CPU 花在 tokenize 上"，但给不出"这个请求的 tokenize 花了多少毫秒"</span>
+STAGES.append({"tok": (t1-t0)*1000, "model": (t2-t1)*1000, "ser": (t3-t2)*1000})</code></pre>
+
+<p>量出来终于有了能动手的东西。<strong>这张表重点看 model 那一列</strong>，因为它是写死的 40 毫秒——任何偏差都不可能来自它自己。</p>
+
+<table>
+<thead><tr><th>压测点</th><th>② 分词</th><th>③ 调模型</th><th>④ 序列化</th><th>③ 比 40ms 多出</th></tr></thead>
+<tbody>
+<tr><td>8 rps</td><td>16.65 ms</td><td>42.17 ms</td><td>8.16 ms</td><td>+2.2 ms</td></tr>
+<tr><td><strong>35 rps</strong></td><td>16.70 ms</td><td><strong>94.33 ms</strong></td><td>7.84 ms</td><td><strong>+54.3 ms</strong></td></tr>
+</tbody>
+</table>
+
+<p>两件事一起浮出来了。</p>
+
+<p><strong>第一，时间的分配终于清楚了：</strong>分词 16.7、等模型 40、序列化 8.2，加起来约 67 毫秒——正好等于低负载下测到的 P50 总延迟（67.7 毫秒）。其中"在算"的部分是 25 毫秒；每秒进来 8 个请求，就是每秒 0.20 秒的 CPU，也就是两成利用率。第 3 节那个 22.2%，说的就是这件事。</p>
+
+<p><strong>第二，那句写死 40 毫秒的等待，在高负载下测出了 94.33 毫秒</strong>。多出来的 54 毫秒，比这句 await 自己声称的还多。</p>
+
+<p>第二点正是温故 Q1 那道题的实验室版本。<code>asyncio.sleep(0.040)</code> 登记了一个 40 毫秒后的闹钟，闹钟准时响了，但这时候事件循环正忙着给别的请求做分词和序列化——那是同步代码，不交还控制权。你的协程只能排在后面。</p>
+
+<p><strong>所以"调模型耗时"这个指标里混着别人的计算时间。</strong>如果第 ③ 步真的是调下游，你会在监控上看到"下游耗时 94 毫秒"，然后花一整天去查下游——而问题在你自己这一层。</p>
+
+<p>识破它的第一个办法就是<strong>对照低负载</strong>：同样一份代码，8 rps 下只多出 2.2 毫秒。下游不会因为你 rps 高就自己变慢，所以撑大的部分一定来自本地。第二个办法是装 Day 4 那个事件循环延迟哨兵。</p>
+
+<h3>7. 三段加起来 67 毫秒，可高负载下 P99 是 637 毫秒</h3>
+<p class="lead">这一节回答：剩下那五百多毫秒藏在哪？</p>
+
+<p>阶段计时是从"处理函数第一行"开始记的。可请求到达服务器之后、处理函数被调用之前，还有一段时间：连接躺在队列里，等事件循环轮到它。</p>
+
+<p>换个日常场景就明白了。你去餐厅吃饭，从进门到吃完九十分钟。这里面有两段完全不同的时间：<strong>门口等位</strong>，和<strong>坐下之后</strong>。等位太久说明店太小或客人太多；坐下之后太久说明后厨慢。<strong>你不分开量，就分不清该扩店还是该换厨子。</strong></p>
+
+<p>请求也一样。从"客户端打算发出"到"服务端真正开始处理"，这段叫 <span class="term">排队延迟（queueing delay）</span>；从开始处理到处理完，叫 <span class="term">服务时间（service time）</span>。</p>
+
+<p>怎么量？<strong>让服务端自己报。</strong>把处理函数首尾的时间差随响应带回去，客户端一减就得到排队：</p>
+
+<pre><code>排队延迟 = (客户端从"计划发出"起算的总延迟) − (服务端自报的服务时间)</code></pre>
+
+<p>这个办法的好处是<strong>两个时间戳都取自服务端自己的时钟，不需要两边对表</strong>。跨机器压测时这一点尤其重要。</p>
+
+<p>拆开之后，P99 就不再是一个笼统的数字了。三轮重复，报范围：</p>
+
+<table>
+<thead><tr><th>压测点</th><th>P99 总延迟</th><th>其中：排队</th><th>其中：服务</th><th>排队占比</th></tr></thead>
+<tbody>
+<tr><td>8 rps</td><td>103 ~ 110 ms</td><td>11 ~ 37 ms</td><td>66 ~ 100 ms</td><td>约 10 ~ 35%</td></tr>
+<tr><td><strong>35 rps</strong></td><td><strong>592 ~ 852 ms</strong></td><td><strong>391 ~ 496 ms</strong></td><td>200 ~ 355 ms</td><td><strong>约 60 ~ 70%</strong></td></tr>
+</tbody>
+</table>
+
+<p>这张表<strong>重点看"其中：排队"这一列</strong>。35 rps 下它占了 P99 的三分之二——而这一段，<strong>on-CPU 火焰图看不见、wall-clock 火焰图看不见、连阶段计时也看不见</strong>，因为那时候处理函数还没被调用。</p>
+
+<h4>排队是怎么来的：有效容量</h4>
+
+<p>为什么 8 rps 下排队只有几十毫秒，35 rps 下就涨到四百多？</p>
+
+<p>算一下这个服务能扛多少。第 ② 和 ④ 步是"在算"，它们占着事件循环：16.7 + 8.2 ≈ <strong>25 毫秒</strong>。第 ③ 步是"在等"，用的是 <code>await</code>，<strong>不占事件循环</strong>。</p>
+
+<p>所以这个单进程服务每秒最多处理 <strong>1 ÷ 0.025 ≈ 40 个</strong>请求。这个数叫 <span class="term">有效容量（effective capacity）</span>。注意它<strong>只由"在算"的部分决定</strong>——那 40 毫秒的等待完全不影响容量，这正是异步服务值得存在的理由。</p>
+
+<p>有了容量就能算利用率：8 rps 是 0.20，35 rps 是 0.86。而第 3 节用<code>/proc</code> 直接量到的是 22.2% 和 84.2%——两条完全独立的路子，结果差不到三个百分点。（量到的略高一点，因为读 HTTP 头、写响应这些活儿没被算进那三段里。）</p>
+<p>温故 Q2 那个算式说排队正比于 <code>ρ/(1−ρ)</code>。按实测利用率代进去：0.22 时是 0.28，0.84 时是 5.25，<strong>差十九倍</strong>。实测排队的中位数从 32 毫秒涨到 436 毫秒，差十四倍。量级对得上。<strong>ρ 越靠近 1，这个式子越陡，也越不准</strong>——所以它是用来判断方向和量级的，不是用来报小数点后两位的。</p>
+
+<div class="card warn">
+<div class="tag">关键结论</div>
+<p style="margin-bottom:0">这也解释了一个很常见的线上事故：<strong>测试环境用 5 rps 压，一切正常；上线 200 rps，P99 炸了。</strong>不是测得不够久，是测试环境的利用率太低，<strong>排队根本没产生</strong>，而线上问题九成来自排队。<br>
+所以压测的目标不是"跑通"，是<strong>把利用率打到接近生产的水平</strong>。顺序应该是：先量容量 → 算利用率 → 再定压测点。</p>
+</div>
+
+<h4>现在这笔账终于合上了</h4>
+
+<p>把 35 rps 下一次<strong>中位</strong>请求的 190 毫秒摊开，是这么四段（P99 那一条的区别只有一处：第 ① 段涨到四百多毫秒，其余三段基本不变）：</p>
+
+<table>
+<thead><tr><th>这一段</th><th>大约多久</th><th>谁看得见它</th></tr></thead>
+<tbody>
+<tr><td>① 排队等着被接待</td><td>~71 ms</td><td><strong>只有</strong>「总延迟 − 服务时间」</td></tr>
+<tr><td>② 分词（在算）</td><td>~17 ms</td><td>on-CPU 火焰图 ✓　阶段计时 ✓</td></tr>
+<tr><td>③ 等模型（含被撑大的部分）</td><td>~94 ms</td><td><strong>只有</strong>阶段计时（两张火焰图都看不见）</td></tr>
+<tr><td>④ 序列化（在算）</td><td>~8 ms</td><td>on-CPU 火焰图 ✓　阶段计时 ✓</td></tr>
+</tbody>
+</table>
+
+<p>这张表<strong>重点看最后一列</strong>，它就是今天整套方法的地图：<strong>三种手段各管一段，缺一段你就会诊断错方向。</strong>而新手最容易做的事，恰恰是只用其中最花哨的那一种。</p>
+
+<h3>8. 读火焰图还有一个坑：一个步骤会被拆成好几帧</h3>
+<p class="lead">这一节回答：为什么栈顶排行榜会低估一个函数的真实占比？</p>
+
+<p>第 3 节那张表把分词和序列化的帧合成了一行"计算步骤合计"，当时留了一句"为什么要合，第 8 节讲"。原因就是这一节：<strong>如果不合，排行榜会给你一个错的答案。</strong></p>
+
+<p>分词函数最后一行是这个：</p>
+<pre><code>return [hash(t) % 50000 for t in toks]   <span class="c"># 一个列表推导式</span></code></pre>
+
+<p>Python 把列表推导式编译成一个<strong>独立的代码对象</strong>，名字就叫 <code>&lt;listcomp&gt;</code>。采样器抓到栈顶时看到的是它，不是 <code>tokenize_slow</code>。</p>
+
+<p>这件事有多严重，用一个只有两个函数的小实验就能量清楚：反复交替跑分词和序列化，一边用 <code>perf_counter</code> 记下各自的真实耗时，一边用同一个采样器统计栈顶。<strong>真实答案是已知的</strong>，正好用来给排行榜打分。（脚本就是把网关那份代码里的采样器和 <code>tokenize_slow</code> 抄出来、去掉网络部分，二十行。）</p>
+
+<pre><code>for _ in range(120):
+    a = time.perf_counter(); tok(CONTEXT);      b = time.perf_counter()
+    json.dumps(RESPONSE);                       d = time.perf_counter()
+    T["tok"] += b - a;  T["ser"] += d - b       <span class="c"># 真实耗时，作为标准答案</span></code></pre>
+
+<p>跑出来：</p>
+<pre><code>真实耗时: tok 1.87s  ser 0.91s  -&gt; 67.1% / 32.9%
+采样份额: tok 34.4%   iterencode 31.6%   &lt;listcomp&gt; 31.3%   &lt;module&gt; 2.5%</code></pre>
+
+<p>真实比例是 <strong>2 : 1</strong>，分词是序列化的两倍。可栈顶排行榜的第一名是 <code>tok</code> 34.4%，第二名 <code>iterencode</code> 31.6%——<strong>看起来两者半斤八两</strong>。你照着这张榜去做决策，很可能先去优化序列化。</p>
+
+<p>把 <code>&lt;listcomp&gt;</code> 认回它的父函数，34.4% + 31.3% = <strong>65.7%</strong>，对 31.6%，正好是 2 : 1。采样器一直是准的，<strong>错的是"按栈顶函数名排行"这个读法。</strong></p>
+
+<p><strong>这正是 Day 3 强调"必须采集整条调用栈、而不是只记栈顶函数名"的实战理由。</strong>有了完整的栈，<code>&lt;listcomp&gt;</code> 会挂在 <code>handle → tokenize_slow → &lt;listcomp&gt;</code> 这条路径下，火焰图上它就画在 <code>tokenize_slow</code> 方块的正上方，一眼看得出是一伙的。排行榜没有这个信息，火焰图有——这就是为什么要看图，不要只看榜。</p>
+
+<p>同类的还有生成器表达式（<code>&lt;genexpr&gt;</code>）、被装饰器包了一层的函数（栈顶显示成 <code>wrapper</code>）、C 扩展内部的函数（<code>iterencode</code> 其实就是 <code>json.dumps</code>）。<strong>读排行榜之前，先把属于同一个逻辑步骤的帧合并起来。</strong></p>
+
+<h3>9. 该改哪儿：收益取决于你在利用率曲线的哪一段</h3>
+<p class="lead">这一节回答：热点找到了，改它能换来多少？</p>
+
+<p>按第 6 节的阶段计时，分词 16.7 毫秒、序列化 8.2 毫秒，分词占单请求 CPU 的三分之二——它就是那个热点。而且它只是个纯 Python 的逐字符循环，换成内建 <code>split()</code> 语义完全一样：实测从 16.4 毫秒降到 4.7 毫秒，单请求 CPU 从 25 降到 13.5 毫秒。</p>
+
+<p>那 P99 会改善多少？<strong>这个问题没有唯一答案。</strong>同一个改动，两种负载各测三轮：</p>
+
+<table>
+<thead><tr><th>压测点</th><th>慢分词 P99</th><th>快分词 P99</th><th>改善</th></tr></thead>
+<tbody>
+<tr><td>8 rps（利用率 0.22）</td><td>103 ~ 110 ms</td><td>69 ~ 75 ms</td><td><strong>约 31%</strong></td></tr>
+<tr><td>35 rps（利用率 0.84）</td><td>592 ~ 852 ms</td><td>94 ~ 100 ms</td><td><strong>约 84%</strong></td></tr>
+</tbody>
+</table>
+
+<p>这张表<strong>重点看最后一列</strong>：同一份代码、同一个改动，低负载下改善三成，高负载下改善八成半。换成绝对值差得更狠——一个省了约 33 毫秒，一个省了约 <strong>537 毫秒</strong>，十六倍。</p>
+
+<p>为什么？因为你省下的 12 毫秒计算，真正换来的是<strong>排队的塌陷</strong>。单请求 CPU 从 25 降到 13.5 毫秒，容量就从 40 涨到 74 rps，35 rps 下的利用率从 0.84 掉到 0.47（实测 46.5%）。<code>ρ/(1−ρ)</code> 从 5.25 降到 0.89，模型说排队该降到原来的 <strong>17%</strong> 左右；实测中位数从 436 毫秒降到 26 毫秒，是 <strong>6%</strong>——比模型预计的还狠一些，方向和量级都对上了。</p>
+
+<p><strong>所以"预期收益"这个数，脱离负载就没有意义。</strong>一份只写"优化分词可提升性能"的报告，等于什么都没说。</p>
+
+<h3>10. 交付物：top 3 瓶颈假设表</h3>
+<p class="lead">这一节回答：今天做完，交出去的东西该长什么样？</p>
+
+<p>剖析的产出不是"我找到瓶颈了"，而是一张 <span class="term">瓶颈假设表（bottleneck hypothesis table）</span>。</p>
+
+<p>为什么叫"假设"？因为在你真的改完并量出收益之前，你手里只有相关性。第 9 节就是证据：同一个热点，在两种负载下值不值得改，答案完全不同。<strong>只有把预期收益算出来、并且事后验证，假设才升级成结论。</strong></p>
+
+<p>五栏，一栏都不能少：</p>
+
+<table>
+<thead><tr><th>#</th><th>假设</th><th>证据</th><th>怎么验</th><th><span class="term">预期收益（expected gain）</span></th></tr></thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>分词是最大 CPU 热点，它把有效容量压到了 40 rps</td>
+<td>阶段计时 16.7 ms，占单请求 CPU 的三分之二。（栈顶排行榜会低估它，原因见第 8 节，所以证据栏写的是阶段计时的数）</td>
+<td>换成 <code>split()</code>，语义不变；在 8 和 35 两种 rps 下各测三轮</td>
+<td><strong>取决于负载</strong>：利用率 0.22 时 P99 改善约 31%；利用率 0.84 时约 84%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>响应序列化是第二热点，且它不放 GIL，扔线程池无效</td>
+<td>阶段计时 8.2 ms，占单请求 CPU 的另外三分之一；它不放 GIL 是 Day 4 测过的</td>
+<td>缩小 logprobs，或改成流式分块发送；同样两种负载各测</td>
+<td>单请求 CPU 再降约 8 ms；改完假设 1 之后，35 rps 的利用率还能从 0.47 降到 0.19，排队再砍一大截</td>
+</tr>
+<tr>
+<td>3</td>
+<td>"调模型 94 ms"不是下游慢，是本进程的事件循环被自己的同步代码占住了</td>
+<td>同样一份代码在 8 rps 下只有 42.2 ms；而这一段是写死的 <code>sleep(40ms)</code>，下游不可能随本地 rps 变慢</td>
+<td>装 Day 4 的事件循环延迟哨兵，看读数是否和"多出的 54 ms"对得上</td>
+<td>不需要单独修——假设 1 和 2 修好之后它会自己消失</td>
+</tr>
+</tbody>
+</table>
+
+<p>这张表<strong>重点看最后一列</strong>。它是把"我猜是它"变成"数据指着它"的那一栏，也是最容易被跳过的一栏。</p>
+
+<p>还有一条实用的排序规则：<strong>先做能提高有效容量的改动。</strong>容量一涨，利用率就降，排队会自己塌掉，你什么都不用做就白赚一大截——第 3 条假设就是这么被顺手治好的。</p>
+
+<p>这张表就是今天的交付物。<strong>明天 Day 6 会挑其中一条真的改掉，然后你会发现"量出收益"这件事本身还有一堆坑。</strong></p>
+
+<!-- ============ 动手任务 ============ -->
+<h2>动手任务</h2>
+
+<p>两个任务，共约 3 小时。任务 A 复现今天全部结论，纯标准库不用装包。任务 B 用到你自己的服务上。</p>
+
+<h3>任务 A · 复现这四段时间（约 1.5 小时）</h3>
+
+<h4>第 1 步：网关服务（含迷你剖析器）</h4>
+
+<p>这个文件分四块：<strong>第一块</strong>造真实尺寸的请求和响应，给出快慢两版分词；<strong>第二块</strong>是采样剖析器，同时统计 on-CPU 和 wall-clock；<strong>第三块</strong>是四步流水线加阶段计时；<strong>第四块</strong>启动时自报两步耗时。分词版本用环境变量切，这样两次实验跑的是同一份代码，只差一个开关。</p>
+
+<pre><code><span class="c"># d5_gateway.py</span>
+import asyncio, json, time, random, os, sys, threading, collections, resource
+
+MODE = os.environ.get("TOKENIZER", "slow")      <span class="c"># slow / fast，用环境变量切换</span>
+
+<span class="c"># ---- 第一块：造真实尺寸的请求与响应 ----</span>
+random.seed(0)                                  <span class="c"># 固定种子，保证你我的数据量一致</span>
+WORDS = [f"tok{i}" for i in range(3000)]
+CONTEXT = " ".join(random.choice(WORDS) for _ in range(36000))
+RESPONSE = {"id": "cmpl-1", "choices": [
+    {"text": "y"*40, "logprobs": [random.random() for _ in range(24)]} for _ in range(650)]}
+
+def tokenize_slow(text):          <span class="c"># 逐字符扫描的纯 Python 循环。真实代码库里很常见，</span>
+    toks, cur = [], []            <span class="c"># 因为一开始上下文只有几百个词，没人觉得它是问题</span>
+    for ch in text:
+        if ch == " ":
+            if cur: toks.append("".join(cur)); cur = []
+        else: cur.append(ch)
+    if cur: toks.append("".join(cur))
+    return [hash(t) % 50000 for t in toks]      <span class="c"># ← 这个列表推导式在火焰图上会单独成一帧</span>
+
+def tokenize_fast(text):          <span class="c"># 完全相同的语义，交给内建 split</span>
+    return [hash(t) % 50000 for t in text.split()]
+
+TOKENIZE = tokenize_slow if MODE == "slow" else tokenize_fast
+
+<span class="c"># ---- 第二块：采样剖析器，两种视角一起统计 ----</span>
+MAIN_TID  = threading.get_ident()        <span class="c"># Python 层线程 id，用来抓栈</span>
+MAIN_NTID = threading.get_native_id()    <span class="c"># 操作系统线程 id，用来读 /proc</span>
+oncpu, wall = collections.Counter(), collections.Counter()
+SAMPLING = [False]
+
+def thread_state(ntid):
+    <span class="c"># Linux 把线程状态放在 /proc 里。第二个字段是进程名，可能含空格和括号，</span>
+    <span class="c"># 所以从最后一个 ')' 之后开始切。R = 在 CPU 上跑，S = 在等。</span>
+    with open(f"/proc/self/task/{ntid}/stat", "rb") as f:
+        rest = f.read().decode()
+    return rest[rest.rindex(")") + 2:].split()[0]
+
+def fold(frame):                         <span class="c"># 把整条调用栈拼成 "a;b;c"</span>
+    names = []                           <span class="c"># 必须采整条栈，不能只记栈顶 —— 见第 8 节</span>
+    while frame is not None and len(names) &lt; 24:
+        names.append(frame.f_code.co_name); frame = frame.f_back
+    return ";".join(reversed(names))
+
+def sampler():
+    while True:
+        time.sleep(0.002)                                  <span class="c"># 约 500 Hz</span>
+        if not SAMPLING[0]: continue
+        fr = sys._current_frames().get(MAIN_TID)           <span class="c"># 给主线程拍一张快照</span>
+        if fr is None: continue
+        st = fold(fr)
+        wall[st] += 1                                      <span class="c"># 无条件计数 = wall-clock 视角</span>
+        try:
+            if thread_state(MAIN_NTID) == "R":             <span class="c"># 只有 R 才计入 on-CPU 视角</span>
+                oncpu[st] += 1
+        except OSError:
+            pass
+threading.Thread(target=sampler, daemon=True).start()
+
+<span class="c"># ---- 第三块：四步流水线 + 阶段计时 ----</span>
+T_START = time.perf_counter()
+STAGES = []
+async def handle(reader, writer):
+    try:
+        line = await reader.readline()
+        if not line: writer.close(); return
+        while True:                             <span class="c"># 把 HTTP 头读干净，否则下次读会串</span>
+            h = await reader.readline()
+            if h in (b"\r\n", b"\n", b""): break
+        path = line.split()[1].decode()
+
+        if path == "/cpu":                      <span class="c"># 第 3 节那个判据：进程 CPU 时间 ÷ 墙上时间</span>
+            ru = resource.getrusage(resource.RUSAGE_SELF)
+            body = json.dumps({"cpu_s": round(ru.ru_utime + ru.ru_stime, 3),
+                               "wall_s": round(time.perf_counter() - T_START, 3)}).encode()
+        elif path == "/stats":
+            def top(c, k=5):
+                tot = sum(c.values()) or 1
+                return [{"pct": round(100*v/tot, 1), "frame": s.split(";")[-1]}
+                        for s, v in c.most_common(k)]
+            n = max(1, len(STAGES))
+            body = json.dumps({"mode": MODE, "requests": len(STAGES),
+                "stage_ms": {k: round(sum(x[k] for x in STAGES)/n, 2) for k in ("tok","model","ser")},
+                "oncpu_top": top(oncpu), "wall_top": top(wall)}).encode()
+        elif path == "/ctl/on":
+            SAMPLING[0] = True; STAGES.clear(); oncpu.clear(); wall.clear(); body = b'{"on":true}'
+        elif path == "/ctl/off":
+            SAMPLING[0] = False; body = b'{"on":false}'
+        else:
+            t0 = time.perf_counter()
+            TOKENIZE(CONTEXT)                    <span class="c"># ② 分词（在算）</span>
+            t1 = time.perf_counter()
+            await asyncio.sleep(0.040)           <span class="c"># ③ 调模型（在等）。写死 40ms，</span>
+                                                 <span class="c">#    这样任何偏差都只能来自别处 —— 第 6 节靠它</span>
+            t2 = time.perf_counter()
+            n = len(json.dumps(RESPONSE))        <span class="c"># ④ 序列化（在算）</span>
+            t3 = time.perf_counter()
+            STAGES.append({"tok": (t1-t0)*1000, "model": (t2-t1)*1000, "ser": (t3-t2)*1000})
+            <span class="c"># svc_ms 随响应回传。客户端用"总延迟 − svc_ms"就得到排队延迟，</span>
+            <span class="c"># 两个时间戳都取自服务端自己的时钟，两边不用对表</span>
+            body = json.dumps({"n": n, "svc_ms": round((t3-t0)*1000, 2)}).encode()
+
+        writer.write(b"HTTP/1.1 200 OK\r\nContent-Length: %d\r\nConnection: close\r\n\r\n"%len(body)+body)
+        await writer.drain()
+    except Exception: pass
+    finally:
+        try: writer.close()
+        except: pass
+
+<span class="c"># ---- 第四块：启动，先自报两步的实测耗时 ----</span>
+async def main():
+    <span class="c"># 这两个数是后面一切推算的基础（有效容量 = 1 / 它们之和），</span>
+    <span class="c"># 而它们取决于当天这台机器，所以每次启动现场量，别写死</span>
+    for f, arg, name in ((TOKENIZE, CONTEXT, f"tokenize({MODE})"),
+                         (json.dumps, RESPONSE, "serialize")):
+        for _ in range(3): f(arg)
+        xs = []
+        for _ in range(5):
+            t = time.perf_counter(); f(arg); xs.append((time.perf_counter()-t)*1000)
+        xs.sort(); print(f"  {name:20s}: {xs[len(xs)//2]:.1f} ms", flush=True)
+    srv = await asyncio.start_server(handle, "127.0.0.1", 8861, backlog=512)
+    print(f"gateway up (TOKENIZER={MODE})", flush=True)
+    async with srv: await srv.serve_forever()
+
+asyncio.run(main())</code></pre>
+
+<p><strong>跑起来该看到什么</strong>：先打印两行实测耗时（本文这台机器上是 16.4 和 7.5 毫秒，你那台大概率不一样），然后 <code>gateway up</code>。<strong>先把这两个数记下来</strong>——有效容量 = 1 ÷ 它们之和，两个压测点也由它决定，第 7 节全靠它。<code>curl -s localhost:8861/v1/completions</code> 试一发，应该 70 毫秒左右返回。</p>
+
+<h4>第 2 步：会拆两段的压测器</h4>
+
+<pre><code><span class="c"># d5_load.py</span>
+import asyncio, time, sys, random, json
+
+async def one(path, t_due, res):
+    now = time.perf_counter()
+    if t_due > now: await asyncio.sleep(t_due - now)
+    try:
+        r, w = await asyncio.open_connection("127.0.0.1", 8861)
+        w.write(f"GET {path} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n".encode())
+        await w.drain(); data = await r.read(); w.close()
+        total = (time.perf_counter() - t_due) * 1000       <span class="c"># 从"计划发出"起算，不是从"连上"起算。</span>
+                                                           <span class="c"># 为什么必须这样，明天 Day 6 讲</span>
+        svc = json.loads(data.split(b"\r\n\r\n",1)[1])["svc_ms"]
+        res.append((total, svc))                           <span class="c"># 两个数一起存，才拆得出排队</span>
+    except Exception: pass
+
+async def run(rps, secs):
+    rnd = random.Random(99); res = []; t0 = time.perf_counter()
+    ts, t = [], 0.0
+    for _ in range(int(rps*secs)):
+        t += rnd.expovariate(rps)                          <span class="c"># 指数间隔 = 随机到达。</span>
+        ts.append(t0 + t)                                  <span class="c"># 均匀节拍几乎测不出排队</span>
+    await asyncio.gather(*[asyncio.create_task(one("/v1/completions", x, res)) for x in ts])
+    res.sort(key=lambda x: x[0])
+    def p(q): return res[min(len(res)-1, int(len(res)*q))]
+    t50, s50 = p(.50); t99, s99 = p(.99)
+    print(json.dumps({"rps": rps, "n": len(res),
+        "p50_total": round(t50,1), "p99_total": round(t99,1),
+        "p99_svc": round(s99,1), "p99_queue": round(t99-s99,1)}))
+
+if __name__ == "__main__":
+    asyncio.run(run(float(sys.argv[1]), float(sys.argv[2])))</code></pre>
+
+<h4>第 3 步：按今天的顺序走一遍</h4>
+
+<pre><code><span class="c"># ① 起服务。它打印的两步耗时决定一切：容量 = 1 ÷ 两者之和，</span>
+<span class="c">#    低负载点取容量的两成，高负载点取八成半。本文这台机器打印 16.4 + 7.5，</span>
+<span class="c">#    加上服务端自己的开销，单请求 CPU 约 25 ms，容量 ≈ 40 rps，于是取 8 和 35。</span>
+<span class="c">#    <strong>用你自己打印出来的数去算，别照抄这两个 rps。</strong></span>
+TOKENIZER=slow python3 d5_gateway.py &amp;  sleep 6
+
+<span class="c"># ② 预热：头几个请求要建连接、要让解释器把代码路径跑热，慢是正常的，结果丢弃</span>
+python3 d5_load.py 8 3 &gt; /dev/null
+
+<span class="c"># ③ 先拿判据：CPU 利用率。压测前后各取一次，两次相减</span>
+curl -s localhost:8861/cpu
+python3 d5_load.py 8 25
+curl -s localhost:8861/cpu     <span class="c"># (cpu_s 之差) ÷ (wall_s 之差) 就是利用率</span>
+
+<span class="c"># ④ 再开采样，录两张图 + 阶段账</span>
+curl -s localhost:8861/ctl/on &gt; /dev/null
+python3 d5_load.py 8 90
+curl -s localhost:8861/ctl/off &gt; /dev/null
+curl -s localhost:8861/stats | python3 -m json.tool
+
+<span class="c"># ⑤ 换高负载那档再走一遍（跑 45 秒就够）；再把 TOKENIZER 换成 fast，两档各走一遍</span>
+<span class="c">#    每种组合跑三轮取范围 —— 一轮的数字里混着噪声</span></code></pre>
+
+<p><strong>验收标准：</strong></p>
+<ul>
+<li>启动打印的两个耗时之和落在 20～35 毫秒之间。太小的话两个压测点会挤在一起，太大的话高负载那档直接过载——调 <code>range(36000)</code> 和 <code>range(650)</code> 把它拉回这个区间。</li>
+<li>低负载那档 CPU 利用率在两成上下，高负载那档在八成上下。<strong>这是"该信哪张图"的判据。</strong></li>
+<li><code>oncpu_top</code> 的头两名是计算函数（<code>tokenize_slow</code> 和 <code>iterencode</code>），<code>wall_top</code> 的第一名是 <code>select</code> 且占九成以上。<strong>两张榜的第一名不是同一个函数</strong>，这是今天最该亲眼看到的一幕。</li>
+<li>两张榜里都<strong>找不到</strong>代表"调模型"的帧。</li>
+<li><code>stage_ms.model</code>：低负载那档接近 40，高负载那档明显超过 80。</li>
+<li>高负载那档 <code>p99_queue</code> 占 <code>p99_total</code> 的一半以上。</li>
+<li>换 fast 之后，低负载那档 P99 改善三成上下，高负载那档八成以上；换成绝对毫秒数，两者<strong>至少差一个数量级</strong>。</li>
+</ul>
+
+<p><strong>常见坑：</strong></p>
+<ul>
+<li><strong>忘了预热</strong>：第一批请求会把 P99 拉高一大截，两组都被污染。</li>
+<li><strong>忘了 <code>/ctl/on</code> 会清空计数</strong>：如果正式测量之后又打了几发 curl，会混进 <code>/stats</code> 的均值里。</li>
+<li><strong>用均匀节拍代替随机到达</strong>：每个请求都来得刚刚好，排队几乎测不出来，第 7 节整节就没了。</li>
+<li><strong>只跑一轮</strong>：低负载那格三轮的 P99 是 102.8 / 105.1 / 110.2，抖动近 10%；高负载那格更大，592 / 637 / 852。</li>
+<li><strong>压测器和网关抢 CPU</strong>：核少时绝对数值偏大，高负载那格尤其明显。先 <code>nproc</code> 看看，结论方向不受影响。</li>
+</ul>
+
+<h4>第 4 步（选做，但很值）：亲手确认协程"消失"</h4>
+
+<p>第 5 节那个结论可以自己验一遍，二十行就够。</p>
+
+<pre><code><span class="c"># probe_stack.py</span>
+import asyncio, sys, threading
+
+async def handle_request():
+    await asyncio.sleep(0.30)              <span class="c"># 协程在这里被挂起</span>
+
+async def inspector():
+    await asyncio.sleep(0.10)              <span class="c"># 等它进入 await 之后再看</span>
+    fr = sys._current_frames().get(threading.get_ident())
+    names = []
+    while fr is not None:                  <span class="c"># 把线程当前的栈整条拿下来</span>
+        names.append(fr.f_code.co_name); fr = fr.f_back
+    print("线程当前栈:", " → ".join(reversed(names)))
+    print("里面有 handle_request 吗:", any("handle_request" in n for n in names))
+
+    for t in asyncio.all_tasks():          <span class="c"># 换个角度：问 asyncio 自己</span>
+        if t.get_coro().__qualname__.startswith("handle_request"):
+            print("all_tasks 找到了，它停在:", [f.f_code.co_name for f in t.get_stack()])
+
+async def main():
+    t = asyncio.create_task(handle_request())
+    await inspector()
+    await t
+asyncio.run(main())</code></pre>
+
+<p><strong>你应该看到</strong>：线程当前栈里全是 <code>run_forever → _run_once → select</code> 这类事件循环零件，<code>handle_request</code> 不在其中；而 <code>all_tasks</code> 一找一个准。<strong>如果线程栈里能看到 <code>handle_request</code></strong>，检查你是不是把 <code>await asyncio.sleep</code> 写成了 <code>time.sleep</code>——那样协程没被挂起，栈当然还在。</p>
+
+<h3>任务 B · 用到你自己的服务上，产出一张假设表（约 1.5 小时）</h3>
+
+<p>把 Day 1 那个最小服务（或任何一个你手上的 FastAPI 服务）跑起来，按这个顺序走。<strong>顺序很重要，每一步都在为下一步排除可能性。</strong></p>
+
+<ol>
+<li><strong>先量 CPU 利用率。</strong>一条命令的事，但它决定你该主看哪张图。</li>
+<li><strong>先拆两段，还不要开剖析器。</strong>在处理函数首尾打时间戳，把服务时间回传，算出排队占比。三分钟，但它决定了后面所有工作的方向。</li>
+<li><strong>如果排队占了大头</strong>，问题是容量不够。这时候才去开剖析器找 CPU 热点，因为砍 CPU 就是在涨容量。</li>
+<li><strong>如果排队很小但延迟还是高</strong>，问题在服务时间内部。看阶段计时哪一段最长。如果最长的是"等"的那一段，<strong>别去翻火焰图</strong>——第 4、5 节讲了原因。</li>
+<li><strong>用 <code>asyncio.all_tasks()</code> dump 一次挂起的任务</strong>，看它们停在哪些行。</li>
+<li><strong>装上 Day 4 的事件循环延迟哨兵。</strong>如果读数很大，那你阶段计时里"等待"那一段的数字全都不可信——里面混着别人的计算。</li>
+<li><strong>产出假设表</strong>，五栏一栏都不能少，尤其是预期收益和它的负载条件。</li>
+</ol>
+
+<p><strong>验收标准</strong>：你能拿着这张表跟人说清三件事——为什么先改这条而不是那条；改完预期能拿到多少；以及在什么流量下这个预期才成立。</p>
+
+<h4>加分题</h4>
+<p>今天只压了两个点。<strong>把 rps 从容量的一成扫到九成、每档加两个，画出"P99 改善幅度 vs 利用率"这条曲线。</strong>它应该在利用率接近 1 的地方急剧上翘。找到开始上翘的那个利用率——那就是你的服务"值得优化"的门槛，也是容量规划该盯的那条线。</p>
+
+<!-- ============ 上岗关联 ============ -->
+<h2>上岗关联</h2>
+
+<p><strong>场景一：线上告警，一个 asyncio 写的推理网关 P99 涨了三倍。</strong>你 ssh 上去，第一反应如果是 <code>py-spy record</code>，那你大概率会盯着一张 90% 都是 <code>select</code> 的图发呆半小时。今天这套顺序能省下这半小时：先看 CPU 利用率、先拆排队和服务，图是最后才开的。</p>
+
+<p><strong>场景二：误诊下游。</strong>监控上"调用推理引擎耗时 P99 = 300ms"，你去找推理团队，对方说"我们这边只有 80ms"。两边都没说谎——多出来的是你自己的事件循环在忙别人的活。今天第 6 节那张表就是这个场景的实验室版本，<strong>判据是：同样的代码在低负载下还多不多。</strong></p>
+
+<p><strong>场景三：压测环境测不出来的问题。</strong>团队用 5 rps 压，一切正常；上线 200 rps，P99 炸了。原因就是第 7 节：测试环境的利用率太低，排队根本没出现，而线上问题九成来自排队。</p>
+
+<p><strong>面试常问</strong>：</p>
+<ul>
+<li>"你怎么给一个陌生服务做性能分析？"——说顺序：看 CPU 利用率、拆排队与服务、定压测点、再开剖析器、最后产出假设表。<strong>能说出顺序和每步的理由，比会用十个工具更值钱。</strong></li>
+<li>"py-spy 对 asyncio 服务有什么局限？"——它看得见线程，看不见挂起的任务。要回答"谁在等什么"，得用 <code>asyncio.all_tasks()</code> 或者自己打点。</li>
+<li>"压测应该压到多少 rps？"——压到接近生产的利用率。用低于生产的负载压测，等于换了一个系统在测。</li>
+</ul>
+
+<!-- ============ 自检 ============ -->
+<h2>自检问题</h2>
+
+<details>
+<summary>1. 一个服务 CPU 利用率只有 30%，但 P99 很高。火焰图和 off-CPU 分析，哪个更可能告诉你原因？为什么？</summary>
+<div class="qa">
+<p><strong>off-CPU 分析。</strong></p>
+<p>关键在采样剖析器的工作方式：它只在线程<strong>正在 CPU 上跑</strong>的那些瞬间才能抓到栈。CPU 利用率 30% 意味着，线程有 70% 的时间根本不在 CPU 上——它在等锁、等网络回包、等磁盘、等被调度器选中。</p>
+<p>所以火焰图能告诉你的，只是那 30% 的时间是怎么花的。它画得再漂亮，覆盖的也只是三成的故事。而"P99 高、CPU 却闲"这个组合本身就在指向剩下那 70%。</p>
+<p>反过来，如果 CPU 已经跑到 95% 而 P99 很高，那火焰图就是主力工具，因为时间确实都花在执行上了。</p>
+<p><strong>选哪张图，先看 CPU 利用率。</strong>今天这个服务在低负载下实测 22.2%，所以第一张 on-CPU 图必然解释不了它的延迟。</p>
+</div>
+</details>
+
+<details>
+<summary>2. Day 3 那个实验里，加上 <code>--idle</code> 之后等待时间立刻从 0.6% 变成 54.8%。今天同样统计等待，那 40 毫秒还是 0%。两个实验差在哪一个具体的机制上？</summary>
+<div class="qa">
+<p>差在<strong>栈还在不在</strong>。</p>
+<p>Day 3 用的是 <code>time.sleep()</code>。这是让<strong>线程</strong>睡过去，调用栈原封不动地留在那个线程上，只是状态从 <code>R</code> 变成 <code>S</code>。采样器默认看到 <code>S</code> 就跳过，<code>--idle</code> 就是告诉它"睡着的也采"。栈一直都在，所以一采就有。</p>
+<p>今天用的是 <code>await asyncio.sleep()</code>。这是让<strong>协程</strong>挂起：控制权交还给事件循环，协程的栈帧被摘下来存进 Task 对象，线程转头去跑事件循环自己的代码。这一刻线程的栈是 <code>run_forever → _run_once → select</code>，业务函数一个都没有。</p>
+<p>而采样器（<code>sys._current_frames()</code>，py-spy 读进程内存也一样）拿的是"每个<strong>线程</strong>当前的栈"。<strong>被挂起的协程不属于任何线程，所以它不在结果里。</strong></p>
+<p><code>--idle</code> 解决的是"线程在睡要不要统计"，这里的问题是"栈根本不在"。两个开关管的不是同一件事。</p>
+<p><strong>正确工具是 <code>asyncio.all_tasks()</code> 加 <code>task.get_stack()</code></strong>，因为它遍历的是任务而不是线程。任务 A 第 4 步可以亲手验一遍。</p>
+</div>
+</details>
+
+<details>
+<summary>3. 你按今天的方法拆完某服务，发现排队只占 P99 的 5%，服务时间占 95%，而服务时间里 90% 是"在等下游"。这时候该做什么？<strong>不</strong>该做什么？</summary>
+<div class="qa">
+<p><strong>不该做的：不要去优化 CPU 热点。</strong></p>
+<p>排队只占 5%，说明容量非常充裕、利用率很低。这时候就算把 CPU 砍掉一半，利用率从比如 0.15 降到 0.08，<code>ρ/(1−ρ)</code> 从 0.18 降到 0.09，绝对值本来就小到可以忽略。</p>
+<p>更关键的是上限：服务时间里 90% 是等待，也就是 on-CPU 部分只占整体不到 10%。<strong>就算你把所有计算优化到零，P99 也只能改善不到 10%。</strong>这是上限，不是估计。</p>
+<p><strong>该做的：去查"在等谁"。</strong>而且今天学到了，在 asyncio 服务上这件事<strong>不能靠火焰图</strong>：</p>
+<ul>
+<li>先用 <code>asyncio.all_tasks()</code> dump 一次，看挂起的任务停在哪些行。这一步直接给出"等的是哪个调用"。</li>
+<li>再用阶段计时确认每一段各占多久。</li>
+<li><strong>然后必须做一件事</strong>：装 Day 4 的事件循环延迟哨兵，或者降负载对照一次。因为你测到的"等待"里可能混着自己的事件循环没来得及唤醒的时间——今天第 6 节那多出来的 54 毫秒就是这么来的。<strong>先排除这一项，再去找下游。</strong></li>
+</ul>
+</div>
+</details>
+
+<details>
+<summary>4. 假设表里"预期收益"那一栏，为什么必须带上负载条件？举一个不带会出事的具体例子。</summary>
+<div class="qa">
+<p>因为同一个改动的收益可以相差三倍以上，而差别不在代码里，在流量里。</p>
+<p><strong>今天的实测：</strong>把分词从 16.4 毫秒优化到 4.7 毫秒——8 rps（利用率 0.22）下 P99 改善约 <strong>31%</strong>；35 rps（利用率 0.84）下改善约 <strong>84%</strong>。</p>
+<p><strong>会出什么事：</strong>假设团队在测试环境用 8 rps 评估，看到"只能改善 31%"，判定"收益一般，排到下个季度"。而生产跑在 0.84 的利用率上，这个改动实际值 84%——换成绝对值是每条尾请求省掉半秒。<strong>不带负载条件的收益估计，会让你把最该做的事排到最后。</strong></p>
+<p>反过来也会出事：在高负载下测出 78%，写进报告说"这个优化能提升 78%"，然后团队扩容之后利用率降到 0.3，实际只拿到 20%，你的估计就成了空头支票。</p>
+<p><strong>正确写法</strong>是把条件写进去：「利用率 &lt; 0.5 时约 22%，利用率 &gt; 0.8 时约 78%」。多写十个字，这一栏才有意义。</p>
+</div>
+</details>
+
+<!-- ============ 新词 ============ -->
+<h2>今日新词</h2>
+
+<p>今天引入 6 个新术语。项目日的重点是把前四天的东西串起来用，所以新概念不多。</p>
+
+<table>
+<thead><tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>停在 <code>await</code> 上的协程。它的栈被摘下来存进 Task 对象，<strong>不在任何线程的当前栈上</strong>，所以两种火焰图都看不见它。要找它用 <code>asyncio.all_tasks()</code></td></tr>
+<tr><td>阶段计时</td><td>span timing</td><td>在关键位置打时间戳，把一次处理切成几段分别记录。异步服务上"在等谁"这个问题的唯一答案来源。分布式追踪（OpenTelemetry）的最小内核</td></tr>
+<tr><td>排队延迟</td><td>queueing delay</td><td>从"客户端打算发出"到"服务端真正开始处理"之间的时间。<strong>火焰图和阶段计时都看不见它</strong>，只能用"总延迟 − 服务时间"算</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>服务端自己从"开始处理"到"处理完"花掉的时间，不含排队。它是服务端唯一能自报的那一半；剖析器和阶段计时看的都只是它内部的构成</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>单进程每秒最多处理几个请求 = 1 ÷ 单请求占用事件循环的时间。<strong>只由"在算"的部分决定</strong>，"在等"的部分不影响它</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>剖析的交付物。每条五栏：假设、证据、怎么验、预期收益（expected gain）、以及这个收益在什么负载下成立</td></tr>
+</tbody>
+</table>
+
+<!-- ============ 延伸 ============ -->
+<h2>延伸材料</h2>
+
+<ol>
+<li><strong>Python 官方文档 · <code>asyncio.Task</code> 那一页</strong><br>
+<span style="color:var(--fg2)">今天用到的 <code>all_tasks()</code> / <code>get_stack()</code> 的正式说明就在这里。配合 asyncio 章节里《Developing with asyncio》的 Debug Mode 一节看。<strong>难度：新手友好</strong>，做任务 A 第 4 步时对照着看。</span></li>
+
+<li><strong>Brendan Gregg，《Systems Performance》第 2 章（Methodologies）</strong><br>
+<span style="color:var(--fg2)">今天任务 B 那个七步顺序，本质上是这一章 USE 方法和 Workload Characterization 的简化版。看完你会发现今天做的事有个正式名字。<strong>难度：中等</strong>，当方法论读，不用记命令。</span></li>
+
+<li><strong>OpenTelemetry 官方文档 · Traces 概念页</strong><br>
+<span style="color:var(--fg2)">今天手写的阶段计时在工业界的标准形态。重点看 span、parent span、attributes 三个概念怎么对应今天那四个时间戳。<strong>难度：新手友好</strong>，阶段三给 agent runtime 加可观测性时会正式用到。</span></li>
+
+<li><strong>Gil Tene，《How NOT to Measure Latency》（演讲）</strong><br>
+<span style="color:var(--fg2)">今天压测器里"延迟从计划发出时刻起算"那个细节出自这里的思路。<strong>难度：中等</strong>，是明天 Day 6 的正题，今天先记住名字，明天会正式拆。</span></li>
+</ol>
+
+<!-- ============ 五句话 ============ -->
+<div class="card feynman">
+  <div class="tag">今日五句话 · 费曼式复述</div>
+  <h3 style="margin-bottom:4px">合上这一页，不看笔记</h3>
+  <p>想象你要把今天这块讲给一个刚入职的同事听。他会写 Python，也知道火焰图怎么看，但没剖析过异步服务。用五句话讲给他听，每句都要是完整的中文句子。</p>
+
+  <p style="margin-bottom:4px"><strong>第 1 句</strong>——拿到一张火焰图，你要先看哪个数字才决定信不信它？为什么是那个数？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 2 句</strong>——为什么 <code>--idle</code> 在 Day 3 管用、今天却失效了？差在哪个机制上？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 3 句</strong>——在 asyncio 服务上，"谁在等什么"该用什么手段回答？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 4 句</strong>——一次请求的时间分成哪四段，各自谁看得见？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 5 句</strong>——一条瓶颈假设要写全必须包含哪几项？少了哪一项它就没用？</p>
+  <div class="write-area"></div>
+
+  <h4 style="margin-top:20px">自查标准</h4>
+  <ul style="margin-bottom:0">
+    <li><strong>第 1 句</strong>如果没答出"CPU 利用率"，回去看第 3 节。这是今天最便宜也最值钱的一条判据，一条命令就能拿到。</li>
+    <li><strong>第 2 句</strong>如果只答"因为是异步的"，还没到机制。准确说法是：<code>time.sleep</code> 让线程睡、<strong>栈还在</strong>；<code>await</code> 让协程挂起、<strong>栈被摘走存进 Task</strong>，而采样器拿的是线程的栈。</li>
+    <li><strong>第 3 句</strong>如果只写了"打点"，答了一半。另一半是 <code>asyncio.all_tasks()</code>——它是唯一能<em>不改代码</em>就看到挂起任务停在哪的手段。</li>
+    <li><strong>第 4 句</strong>要能一口气数出四段（排队 / 分词 / 等模型 / 序列化），并且说得出<strong>排队谁都看不见、等模型只有阶段计时看得见</strong>。少一段就会诊断错方向。</li>
+    <li><strong>第 5 句</strong>少了"在什么负载下成立"，整张表就退化成一句正确的废话。第 9 节和自检 4 都在证明这一点。</li>
+  </ul>
+</div>
+
+<!-- ============ 明日 ============ -->
+<h2>明日预告</h2>
+<p>今天你交出了一张假设表。明天 Day 6 做很自然的下一步：<strong>挑一条，改掉它，再测一遍，看数字变好了多少。</strong></p>
+<p>听起来是最简单的一天，其实是坑最多的一天。今天压测器里有几处写法你可能觉得多余——延迟为什么从"计划发出的时刻"算起而不是从"连上"算起？为什么到达间隔要用指数分布而不是整齐的节拍？为什么探针要单独一个进程？为什么每组都要跑三轮？<strong>这四个问题，每一个背后都对应一种能让你把真实故障判成"服务很健康"的错误。</strong></p>
+<p>明天会给你看一个具体的数字：同一个服务、同一段故障，换一种压测方式，P99 从 395 毫秒变成 <strong>6.7 毫秒</strong>。这个陷阱有个名字，明天正式介绍它。</p>
+
+<p class="footer">AI Infra 速成 · Day 5 / 28 · 2026-08-22（周六）· 阶段一 · CPU 侧系统工程</p>
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Infra 速成 · Day 1 · 全景与基线</title>
+<style>
+:root{
+  --bg:#faf9f7; --bg-soft:#f2efe9; --fg:#1f2328; --fg-soft:#5b636e;
+  --line:#e2ddd4; --accent:#8a5a2b; --accent-soft:#f5ece0;
+  --recall:#3d7a5f; --recall-bg:#eaf4ee;
+  --predict:#a8621b; --predict-bg:#fdf0e2;
+  --feynman:#4a5fa8; --feynman-bg:#eceff9;
+  --warn:#b4442e; --warn-bg:#fbecea;
+  --code-bg:#22262c; --code-fg:#dfe3ea; --code-dim:#8b93a1; --code-key:#e0a679;
+  --term-bg:#fbe9cf; --term-fg:#7a4a10;
+  --table-head:#efeae1;
+}
+@media (prefers-color-scheme: dark){
+:root{
+  --bg:#15171a; --bg-soft:#1c1f23; --fg:#dfe3e8; --fg-soft:#98a1ac;
+  --line:#2c3138; --accent:#d9a066; --accent-soft:#2a2219;
+  --recall:#6dbb96; --recall-bg:#18251f;
+  --predict:#dda15e; --predict-bg:#2a2117;
+  --feynman:#8fa3e0; --feynman-bg:#1a1e2b;
+  --warn:#e4806a; --warn-bg:#2a1c19;
+  --code-bg:#0e1013; --code-fg:#dfe3ea; --code-dim:#767e8b; --code-key:#e0a679;
+  --term-bg:#3a2c15; --term-fg:#e8c48c;
+  --table-head:#23272c;
+}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  font-size:16.5px; line-height:1.78; letter-spacing:.01em;
+}
+.progress-wrap{position:sticky; top:0; z-index:50; background:var(--bg); border-bottom:1px solid var(--line);}
+.progress-bar{height:4px; background:var(--bg-soft);}
+.progress-fill{height:100%; width:3.57%; background:linear-gradient(90deg,var(--accent),var(--recall));}
+.progress-meta{max-width:820px; margin:0 auto; padding:7px 22px; display:flex; justify-content:space-between;
+  font-size:12.5px; color:var(--fg-soft); letter-spacing:.04em;}
+main{max-width:790px; margin:0 auto; padding:42px 22px 90px;}
+h1{font-size:30px; line-height:1.35; margin:.2em 0 .1em; letter-spacing:-.01em;}
+.sub{color:var(--fg-soft); font-size:15px; margin-bottom:34px;}
+h2{font-size:23px; margin:64px 0 6px; padding-top:22px; border-top:1px solid var(--line); letter-spacing:-.01em;}
+h3{font-size:18.5px; margin:40px 0 4px;}
+h4{font-size:16px; margin:26px 0 2px; color:var(--fg-soft);}
+p{margin:.85em 0}
+.lead{color:var(--accent); font-weight:600; margin:.5em 0 1.2em; font-size:16px;}
+ul,ol{padding-left:1.4em} li{margin:.42em 0}
+code{font-family:"SF Mono","JetBrains Mono","Fira Code",Consolas,"Liberation Mono",Menlo,monospace;
+  font-size:.875em; background:var(--bg-soft); padding:2px 5px; border-radius:4px; border:1px solid var(--line);}
+pre{background:var(--code-bg); color:var(--code-fg); padding:16px 18px; border-radius:9px;
+  overflow-x:auto; line-height:1.62; font-size:13.5px; margin:14px 0;
+  font-family:"SF Mono","JetBrains Mono","Fira Code",Consolas,"Liberation Mono",Menlo,monospace;}
+pre code{background:none;border:none;padding:0;font-size:inherit;color:inherit}
+pre .c{color:var(--code-dim)} pre .k{color:var(--code-key)}
+.term{background:var(--term-bg); color:var(--term-fg); padding:1px 5px; border-radius:4px;
+  font-weight:600; border-bottom:1.5px solid currentColor;}
+.card{border-left:4px solid var(--accent); background:var(--accent-soft);
+  padding:18px 20px; border-radius:0 9px 9px 0; margin:26px 0;}
+.card .tag{display:inline-block; font-size:12px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; margin-bottom:6px;}
+.card p:first-of-type{margin-top:0} .card p:last-child{margin-bottom:0}
+.recall{border-color:var(--recall); background:var(--recall-bg)} .recall .tag{color:var(--recall)}
+.predict{border-color:var(--predict); background:var(--predict-bg)} .predict .tag{color:var(--predict)}
+.feynman{border-color:var(--feynman); background:var(--feynman-bg)} .feynman .tag{color:var(--feynman)}
+.warn{border-color:var(--warn); background:var(--warn-bg)} .warn .tag{color:var(--warn)}
+details{margin:12px 0; border:1px solid var(--line); border-radius:8px; background:var(--bg); padding:0 16px;}
+details[open]{padding-bottom:8px}
+summary{cursor:pointer; padding:11px 0; font-weight:600; font-size:15px; color:var(--accent);}
+summary::marker{color:var(--fg-soft)}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14.5px;}
+th,td{border:1px solid var(--line); padding:8px 11px; text-align:left; vertical-align:top;}
+th{background:var(--table-head); font-weight:600;}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums;
+  font-family:"SF Mono",Consolas,monospace; font-size:13.5px;}
+tr.hl td{background:var(--accent-soft)}
+.write-area{border:1.5px dashed var(--line); border-radius:8px; background:var(--bg);
+  min-height:34px; padding:9px 13px; margin:8px 0; color:var(--fg-soft); font-size:14px;}
+.write-area.tall{min-height:120px}
+.meta-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:22px 0;}
+.meta-item{background:var(--bg-soft); border:1px solid var(--line); border-radius:8px; padding:11px 14px;}
+.meta-item .k{font-size:12px; color:var(--fg-soft); letter-spacing:.06em;}
+.meta-item .v{font-size:15.5px; font-weight:600; margin-top:2px;}
+.small{font-size:14px; color:var(--fg-soft)}
+hr{border:none; border-top:1px solid var(--line); margin:34px 0}
+a{color:var(--accent)}
+.tbl-note{font-size:14px; color:var(--fg-soft); margin-top:-6px}
+@media (max-width:640px){
+  body{font-size:16px} main{padding:28px 16px 70px} h1{font-size:25px} h2{font-size:20px}
+  pre{font-size:12.3px; padding:13px 14px} table{font-size:13.5px} th,td{padding:6px 8px}
+}
+</style>
+</head>
+<body>
+
+<div class="progress-wrap">
+  <div class="progress-bar"><div class="progress-fill"></div></div>
+  <div class="progress-meta"><span>Day 1 / 28</span><span>阶段一 · CPU 侧系统工程：先学会看见</span></div>
+</div>
+
+<main>
+
+<h1>Day 1 · 全景与基线</h1>
+<div class="sub">2026 年 8 月 18 日（周二）· AI Infra 四周速成 · 第 1 天，共 28 天</div>
+
+<div class="card">
+<p><strong>今天是第一天，所以没有「温故」环节。</strong>从 Day 2 开始，页面最上方会有三道闭卷回忆题，分别考 1 天前、3 天前、7 天前学过的东西。</p>
+</div>
+
+<h2>今日概览</h2>
+
+<div class="meta-grid">
+  <div class="meta-item"><div class="k">阶段</div><div class="v">阶段一 · 先学会看见</div></div>
+  <div class="meta-item"><div class="k">驱动方式</div><div class="v">主题驱动</div></div>
+  <div class="meta-item"><div class="k">今日主题</div><div class="v">全景与基线</div></div>
+  <div class="meta-item"><div class="k">预计耗时</div><div class="v">约 3.5 小时</div></div>
+</div>
+
+<p>今天要做三件事：搞清楚「AI 基础设施」这个岗位到底在跟什么打交道；学会用数字描述一个服务的快慢；然后亲手把这些数字量出来。</p>
+
+<h4>今天结束时，你应该能做到这三件事</h4>
+<ol>
+<li><strong>能说出自己这台机器有几个物理核、几个逻辑核、多少内存</strong>，并且能说出每个数字是从哪一条命令的哪一行读出来的。</li>
+<li><strong>能自己跑出一张表</strong>，表的每一行是一个并发数，每一列是 QPS、P50、P99 这些数字。表是你自己写的脚本打出来的，不是抄的。</li>
+<li><strong>能指着这张表说出两句话</strong>：这个服务的吞吐上限大概在哪里；超过这个上限之后，再加并发会发生什么。</li>
+</ol>
+
+<p class="small">今天只讲三个东西：怎么描述快慢、怎么测快慢、这台机器的物理上限是多少。像 NUMA、协调遗漏、GIL、prefill 这些词今天都不讲，各自有专门的一天。</p>
+
+<h2>核心讲解</h2>
+
+<h3>一、AI 服务里，CPU 那一半到底在干什么</h3>
+<p class="lead">这一节要回答的问题：你四周后的岗位叫「CPU 上的 AI 基础设施」，可模型不是跑在 GPU 上吗？CPU 在这里干什么活，多到要专门设一个岗位？</p>
+
+<p>先把一次「用户问了个问题，模型回答了」拆开看。假设用户在一个聊天框里发了一句话，服务端从收到这句话，到把第一个字回给用户，中间实际发生了这些事：</p>
+
+<ol>
+<li>网卡收到 TCP 包，操作系统把它交给你的进程。</li>
+<li>HTTP 框架把字节流解析成一个请求对象。</li>
+<li>把请求体里的 JSON 反序列化成 Python 对象。</li>
+<li>鉴权、限流、日志、埋点。</li>
+<li>把用户那句话切成模型能吃的小块（这一步叫 tokenize，Day 8 会展开讲，今天不用管细节）。</li>
+<li>把这个请求塞进一个队列，等调度器决定什么时候轮到它。</li>
+<li>调度器把它和别的请求拼成一批，交给计算部分。</li>
+<li>——<em>这一步，也只有这一步，是矩阵乘法在跑。</em></li>
+<li>算出来的结果要采样出一个 token，转回文字。</li>
+<li>把这个字通过流式响应写回给用户。</li>
+<li>写日志、写 trace、更新指标。</li>
+</ol>
+
+<p>十一步里，只有第 8 步是「算」。其余十步全部是 CPU 在干活。</p>
+
+<p>再看你未来要负责的三块产出，它们和这十一步的关系是：</p>
+
+<ul>
+<li><strong>推理服务与 KV Cache</strong> —— 第 6、7 步。谁先算、谁后算、怎么拼批、算过的中间结果存哪里、内存不够了先扔谁。这全是 CPU 侧的决策逻辑。</li>
+<li><strong>Agent 运行时 / 平台</strong> —— 把上面这整套流程套进一个循环里跑十几遍，中间还要调工具、存状态、处理失败。这一层几乎没有 GPU 的事。</li>
+<li><strong>Sandbox（代码执行隔离）</strong> —— 模型生成的代码要在一个隔离环境里跑起来。这是纯粹的 Linux 系统工程。</li>
+</ul>
+
+<p>所以这个岗位的核心不是「让矩阵乘法更快」，而是「让第 8 步之外的那十步不要成为瓶颈，并且让第 8 步始终有活干、不空转」。</p>
+
+<p>要做到这件事，第一步是<strong>能看见</strong>。看不见就只能猜，猜出来的优化方向十次有八次是错的。所以阶段一整整七天，都在练「看见」。</p>
+
+<h3>二、快和慢，其实是两个不同的问题</h3>
+<p class="lead">这一节要回答的问题：说一个服务「快」，到底是在说什么？</p>
+
+<p>日常说话里，「这个服务快」是一句含糊的话。它可能指两件完全不同的事，而这两件事经常是矛盾的。</p>
+
+<p>第一件事：<strong>一个用户发一条请求，要等多久才拿到结果。</strong>这个等待时间，专业说法叫<span class="term">延迟</span>（英文 latency）。单位通常是毫秒（ms）。它描述的是<em>单次体验</em>。</p>
+
+<p>第二件事：<strong>这个服务一秒钟能处理完多少条请求。</strong>这个叫<span class="term">吞吐</span>（英文 throughput）。当被处理的东西是 HTTP 请求时，它的单位常写作 QPS（queries per second，每秒查询数）或者 RPS（requests per second，每秒请求数）。这两个词在实践中基本混用。它描述的是<em>整体产能</em>。</p>
+
+<p>拿超市收银来打个比方，这个比方后面还会反复用到：</p>
+
+<ul>
+<li>延迟 = 一个顾客从排到队尾，到拎着袋子走人，一共花了多少分钟。</li>
+<li>吞吐 = 这家超市一小时结账了多少个顾客。</li>
+</ul>
+
+<p>为什么说它们是两个问题？看一个具体情形：超市只开一个收银台，每个顾客结账要 1 分钟。</p>
+
+<ul>
+<li>店里只有 1 个顾客：他的延迟是 1 分钟，超市吞吐是 60 人/小时。</li>
+<li>店里同时来了 10 个顾客：最后那个人要等 10 分钟，延迟涨了 10 倍。但超市吞吐<em>还是</em> 60 人/小时，一点没变。</li>
+</ul>
+
+<p>这里就出现了第一个重要事实：<strong>当一个系统已经满负荷时，往里塞更多请求，不会让它处理得更多，只会让每个请求等得更久。</strong>这句话你现在读起来可能觉得是废话。今天下午你会亲手把它测出来，那时候感受会不一样。</p>
+
+<h3>三、平均值会骗人</h3>
+<p class="lead">这一节要回答的问题：手里有一万条请求的耗时，怎么用一个数字概括它？</p>
+
+<p>最自然的想法是算平均值。看一个例子。某个服务处理了 100 条请求：</p>
+
+<ul>
+<li>其中 99 条，每条花了 50 毫秒。</li>
+<li>剩下 1 条，花了 5000 毫秒（5 秒）。</li>
+</ul>
+
+<p>平均值 = (99 × 50 + 5000) / 100 = 99.5 毫秒。</p>
+
+<p>如果监控面板上只显示这个 99.5 ms，你会觉得这服务挺健康。但实际上有一个用户干等了 5 秒。平均值把他抹掉了。</p>
+
+<p>那用最大值？最大值又太敏感了——只要有一条请求因为某个偶然原因卡了 30 秒，整个指标就变成 30 秒，你根本看不出「大多数请求怎么样」。</p>
+
+<p>业界的做法是取中间路线：<strong>把所有请求的耗时从小到大排好序，然后看排在特定位置上的那个值。</strong>这个做法叫<span class="term">百分位</span>（英文 percentile）。</p>
+
+<p>具体怎么算。假设你有 N 条请求的耗时，排好序之后：</p>
+
+<ul>
+<li><strong>P50</strong>：取排在第 50% 位置的那一条。也就是中位数。它的含义是「一半的请求比这个快，一半比这个慢」。</li>
+<li><strong>P99</strong>：取排在第 99% 位置的那一条。含义是「99% 的请求比这个快，只有最慢的那 1% 比它还慢」。</li>
+<li><strong>P95、P999</strong> 同理。P999 写作 P99.9，指最慢的千分之一。</li>
+</ul>
+
+<p>代码上最常见的算法叫 nearest-rank：排好序后，取第 <code>ceil(p/100 × N)</code> 个。比如 N=100、p=99，就是第 99 个。下午的脚本里你会写到这一行。</p>
+
+<p>回到刚才那 100 条请求。三种概括方式给出的答案是：</p>
+
+<p class="tbl-note">下面这张表在对比：同一批数据，三种统计口径各自会告诉你什么。</p>
+
+<table>
+<tr><th>统计口径</th><th class="num">数值</th><th>它实际在说什么</th></tr>
+<tr><td>平均值 (mean)</td><td class="num">99.5 ms</td><td>被那一条 5 秒的请求拉高了，但又没高到引起警觉。它既不代表典型情况，也没暴露最坏情况。</td></tr>
+<tr class="hl"><td>P50</td><td class="num">50 ms</td><td>典型请求就是 50 ms。这个数字是诚实的。</td></tr>
+<tr class="hl"><td>P99</td><td class="num">50 ms</td><td>第 99 条请求还是 50 ms。</td></tr>
+<tr><td>P100（最大值）</td><td class="num">5000 ms</td><td>只有这个口径能看到那条 5 秒的请求。</td></tr>
+</table>
+
+<p><strong>重点看 P50 和 P100 这两行。</strong>P50 告诉你「正常情况是 50 ms」，P100 告诉你「最坏情况是 5 秒」，两个数字合起来才描述清楚了这批数据。而平均值那一行的 99.5 ms，既不代表任何一条真实请求（没有任何一条请求是 99.5 ms），也没能暴露出 5 秒那条。<strong>这就是为什么性能工程里几乎不看平均值。</strong></p>
+
+<p>顺便解释一下这张表里 P99 为什么是 50 ms：100 条数据里只有 1 条是慢的，它排在第 100 位，而 P99 取的是第 99 位。所以恰好差一位就漏掉了。这说明<strong>百分位取到哪一档，要看你的样本量和你关心的用户比例</strong>。如果一天有一亿次请求，P99 意味着一百万次慢请求，那绝对不是「可以忽略的少数」。</p>
+
+<div class="card predict">
+<div class="tag">预测 · 先写下答案再往下看</div>
+<p>现在做一道题。<strong>请先在纸上或者下面这个框里写下你的猜测和理由，然后再展开答案。</strong>不要跳过这一步。这道题的价值，全在「你的直觉错在哪里」上。</p>
+<p><strong>题目</strong>：有一个网页，打开的时候要向后端发 10 次请求（比如取用户信息、取列表、取配置……）。这 10 次请求是并发发出去的，但页面必须等<em>全部 10 条</em>都返回，才能渲染出来给用户看。</p>
+<p>现在假设每一条后端请求都有 <strong>1% 的概率</strong>耗时超过 1 秒（也就是说，单条请求的 P99 = 1 秒）。</p>
+<p><strong>问：用户打开这个页面，等待超过 1 秒的概率是多少？</strong></p>
+<div class="write-area">我的猜测：____________ ，理由：</div>
+<details>
+<summary>写完了，展开看答案</summary>
+<p><strong>答案是 9.6%，差不多是 1% 的十倍。</strong></p>
+<p>推导过程很短。页面要快，必须 10 条请求<em>全部</em>都不慢。单条请求不慢的概率是 99%，也就是 0.99。10 条互相独立，全部不慢的概率是：</p>
+<p style="text-align:center">0.99<sup>10</sup> = 0.9044</p>
+<p>所以「至少有一条慢」的概率就是 1 − 0.9044 = <strong>0.0956</strong>，约 9.6%。</p>
+<p>如果一次页面加载要发 100 次请求呢？1 − 0.99<sup>100</sup> = <strong>63.4%</strong>。三分之二的用户都会遇到卡顿。</p>
+<p><strong>为什么直觉会错。</strong>直觉说「1% 是小概率，忽略它」。但直觉忽略了一件事：<em>用户感受到的一次操作，往往由很多次请求拼起来，而只要其中任何一条慢，整个操作就慢。</em>慢的概率不是被平均掉，而是被累加起来的。</p>
+<p><strong>这件事有个名字，叫尾延迟放大</strong>（tail latency amplification），Dean 和 Barroso 那篇《The Tail at Scale》讲的就是这个，本页最后的延伸材料里有链接。</p>
+<p><strong>为什么这件事对你特别重要。</strong>你四周后要做的 agent 运行时，一次 agent 任务典型是这样跑的：调一次模型 → 调一个工具 → 把结果喂回去 → 再调一次模型 → ……这么循环十几到几十轮。这十几轮是<em>串行</em>的，而且每一轮都必须成功。这比上面那个页面的情况还要严苛。<strong>所以在 agent 场景里，P99 不是「极少数倒霉用户」的指标，而是「几乎每个任务都会撞上一次」的指标。</strong>这是你以后跟人讨论 agent 平台性能时，第一个要摆出来的论点。</p>
+</details>
+</div>
+
+<h3>四、怎么把这些数字量出来：压测器</h3>
+<p class="lead">这一节要回答的问题：P99 这些数字是怎么得到的？总不能等真实用户来给你贡献数据。</p>
+
+<p>要得到这些数字，你需要一个专门的程序：它按照你规定的方式向服务发请求，记录每一条请求花了多久，最后统计出 QPS、P50、P99。这种程序叫<span class="term">压测器</span>（英文 load generator，或者 benchmark client、load tester，说法很多）。</p>
+
+<p>压测器有一个关键的设计选择，这个选择会直接影响你测出来的数字对不对。</p>
+
+<h4>第一种：等上一条回来，再发下一条</h4>
+
+<p>你可以让压测器模拟「N 个虚拟用户」。每个虚拟用户的行为是：发一条请求 → 等它回来 → 立刻发下一条 → 等它回来 → ……如此循环。</p>
+
+<p>这种方式叫<span class="term">闭环压测</span>（英文 closed loop）。「闭环」的意思是：压测器发请求的节奏，被服务端的响应速度反过来控制着，形成了一个环。服务慢下来，压测器自动就发得少了。</p>
+
+<p>对应到超市：闭环相当于「店里始终恰好有 N 个顾客，一个人结完账走了，门口立刻补进来一个」。</p>
+
+<h4>第二种：不管服务回没回，按固定节奏发</h4>
+
+<p>另一种做法是：规定一个发送速率，比如每秒 25 条，然后严格按这个节奏发。第 0 毫秒发一条，第 40 毫秒发一条，第 80 毫秒发一条……<strong>完全不管前面的请求回来没有。</strong></p>
+
+<p>这种方式叫<span class="term">开环压测</span>（英文 open loop）。「开环」就是那个反馈环被剪断了：服务再慢，压测器也不减速。</p>
+
+<p>对应到超市：开环相当于「每分钟固定进来 1 个顾客，不管店里已经排了多长的队」。如果收银台处理不过来，队伍就会一直变长。</p>
+
+<h4>两种各在什么时候用</h4>
+
+<p class="tbl-note">下面这张表在对比这两种压测方式的行为差异。之所以要做这个对比，是因为选错了会导致你测出来的 P99 系统性偏乐观，而你自己看不出来。</p>
+
+<table>
+<tr><th>对比项</th><th>闭环 (closed loop)</th><th>开环 (open loop)</th></tr>
+<tr><td>发送节奏由谁决定</td><td>服务端的响应速度</td><td>你设定的固定速率</td></tr>
+<tr><td>服务变慢时</td><td>压测器自动降速，压力变小</td><td>压测器速率不变，请求堆积</td></tr>
+<tr><td>你能直接控制的量</td><td>并发数 N</td><td>到达速率（rps）</td></tr>
+<tr class="hl"><td>更像真实世界的哪种情况</td><td>固定数量的机器人客户端</td><td>真实的人类用户流量</td></tr>
+<tr><td>擅长回答的问题</td><td>「这个服务的吞吐上限是多少」</td><td>「在每秒 X 条的流量下，P99 是多少」</td></tr>
+</table>
+
+<p><strong>重点看倒数第二行。</strong>真实用户不会因为你的服务变慢就自觉少发请求——他们该点还是点，甚至因为没反应而多点几次。所以开环更贴近真实。</p>
+
+<p>而<strong>闭环有一个隐藏的坑</strong>：因为服务一慢它就自动降速，所以它相当于自动帮服务减了压。这样测出来的延迟，会系统性地比真实情况乐观。这个现象有个专门的名字，也有一套应对方法，<strong>明天（Day 2）会专门讲</strong>，今天先记住它存在就行。</p>
+
+<p><strong>今天用闭环。</strong>原因有两个：闭环实现起来简单得多（不需要处理请求堆积、超时、内存增长）；而且闭环最擅长回答的那个问题——「吞吐上限在哪」——正好是今天要测的东西。</p>
+
+<h3>五、先认清你脚下这台机器</h3>
+<p class="lead">这一节要回答的问题：所有性能数字都要跟物理上限对表，那这台机器的物理上限是多少？</p>
+
+<p>后面几周你会不断遇到「这个数字算高还是算低」的问题。判断的依据永远是：跟这台机器能做到的极限比。所以第一天就要把机器摸清楚。</p>
+
+<p>先跑这条命令：</p>
+
+<pre><code><span class="c"># lscpu = list CPU，把 CPU 的规格信息打出来。不需要 root 权限。</span>
+lscpu</code></pre>
+
+<p>输出会有几十行，今天只需要看下面这几行。这是我在一台测试机上跑出来的结果，你的数字会不一样：</p>
+
+<pre><code>Architecture:            x86_64
+CPU(s):                  2            <span class="c">← 逻辑核总数</span>
+Thread(s) per core:      1            <span class="c">← 每个物理核上跑几个逻辑核</span>
+Core(s) per socket:      2            <span class="c">← 每颗 CPU 芯片上有几个物理核</span>
+Socket(s):               1            <span class="c">← 主板上插了几颗 CPU 芯片</span>
+Model name:              Intel(R) Xeon(R) Processor @ 2.10GHz
+L1d cache:               96 KiB (2 instances)
+L2 cache:                4 MiB (2 instances)
+L3 cache:                260 MiB (1 instance)
+NUMA node(s):            1</code></pre>
+
+<p>逐行解释：</p>
+
+<p><strong><code>Socket(s)</code> 和 <code>Core(s) per socket</code>。</strong>一台服务器主板上可能插一颗或两颗 CPU 芯片，每一颗叫一个 socket。每颗芯片内部有多个独立的计算单元，每个叫一个<strong>物理核</strong>（physical core）。<br>
+物理核总数 = Socket(s) × Core(s) per socket。上面这台是 1 × 2 = 2 个物理核。</p>
+
+<p><strong><code>Thread(s) per core</code>。</strong>这一行如果是 2，说明开了<span class="term">超线程</span>（英文 hyper-threading，Intel 的叫法；通用叫法是 SMT，simultaneous multithreading）。</p>
+
+<p>超线程是这么回事：一个物理核里有一堆执行部件，但一个程序在跑的时候，经常用不满这些部件。比如程序正在等内存里的数据送过来，这段时间执行部件就闲着。超线程的做法是让<em>一个物理核对操作系统伪装成两个核</em>，这样操作系统会同时派两个任务过来，一个卡住时另一个可以顶上，把闲置的执行部件用起来。这两个伪装出来的核叫<strong>逻辑核</strong>（logical core / hardware thread）。</p>
+
+<p><strong>这里有个必须记住的事实：逻辑核数不等于算力倍数。</strong>如果你有 8 个物理核、开了超线程显示成 16 个逻辑核，那么在纯计算型的负载上，16 个线程的总吞吐大概只有 8 个线程的 <strong>1.1～1.3 倍</strong>，绝不是 2 倍。因为执行部件的总数没变，超线程只是把空隙填上了。</p>
+
+<p>很多人第一次做性能优化时会犯这个错：看到 <code>nproc</code> 输出 16，就开 16 个工作进程，然后困惑于为什么吞吐没有翻倍、延迟还变差了。<strong>下次看到核数，先问一句：这是物理核还是逻辑核。</strong></p>
+
+<p><strong><code>L1d / L2 / L3 cache</code>。</strong>CPU 旁边的高速缓存，从 L1 到 L3 一层比一层大、一层比一层慢。今天不展开，Day 7 会专门讲这些数字意味着什么。</p>
+
+<p><strong><code>NUMA node(s)</code>。</strong>如果这个值大于 1，说明内存被分成了几块，每块「离」某些 CPU 核更近。今天只要知道这一行存在，Day 7 专门讲。</p>
+
+<p>接下来看内存：</p>
+
+<pre><code><span class="c"># free 显示内存使用情况。-h 表示 human-readable，把字节数换算成 Gi/Mi。</span>
+free -h</code></pre>
+
+<pre><code>              total   used   free  shared  buff/cache  available
+Mem:           7.8Gi  583Mi  6.7Gi    4.8Mi      800Mi       7.3Gi
+Swap:             0B     0B     0B</code></pre>
+
+<p>这里有一个几乎人人都误读过的地方，说清楚：</p>
+
+<ul>
+<li><strong><code>total</code></strong>：这台机器一共多少内存。7.8 Gi。</li>
+<li><strong><code>used</code></strong>：进程实际占用的。583 Mi。</li>
+<li><strong><code>free</code></strong>：完全没被碰过的内存。6.7 Gi。</li>
+<li><strong><code>buff/cache</code></strong>：被内核拿去当磁盘缓存用的内存。800 Mi。<strong>这部分不是"被用掉了"</strong>——一旦有进程需要内存，内核会立刻把这部分让出来。</li>
+<li><strong><code>available</code></strong>：<strong>这才是你该看的数字。</strong>它的含义是「如果现在起一个新进程，它大概能拿到多少内存」。等于 free 加上可以被回收的 buff/cache。这里是 7.3 Gi。</li>
+</ul>
+
+<p><strong>所以：<code>free</code> 这一列的数字很小，不代表内存不够用。</strong>一台跑了很久的机器，free 接近 0 是完全正常的——内核把闲置内存都拿去做缓存了，这是好事。要判断内存是否吃紧，看 <code>available</code>。</p>
+
+<p><strong><code>Swap</code>。</strong>交换分区。如果这一行 used 不是 0，说明内存不够、系统在往磁盘上倒腾数据。对延迟敏感的服务来说，swap 一旦开始用，延迟会变得非常差。生产环境的推理服务通常直接关掉 swap。</p>
+
+<h3>六、什么是基线，为什么第一天就要建</h3>
+<p class="lead">这一节要回答的问题：为什么不直接开始优化，非要先花时间测一遍现状？</p>
+
+<p><span class="term">基线</span>（英文 baseline）的意思是：<strong>在你动手改任何东西之前，先把当前的性能数字完整地测一遍、记下来。</strong></p>
+
+<p>为什么必须有它，理由有三条：</p>
+
+<p><strong>第一，没有基线就没法说「我优化了多少」。</strong>「我感觉快了」不是工程结论。「P99 从 340 ms 降到 120 ms，吞吐从 45 QPS 升到 130 QPS」才是。你以后写周报、跟人评审方案、面试讲项目，靠的都是后面这种句子。</p>
+
+<p><strong>第二，没有基线就没法判断改动有没有副作用。</strong>性能优化经常是按下葫芦浮起瓢。你把 P50 压下去了，P99 反而变差了。你把吞吐提上去了，内存占用翻倍了。只有基线里各项数字都记全了，才能看出这些。</p>
+
+<p><strong>第三，也是最实际的一条：性能数字本身噪声很大。</strong>同一个服务，同一台机器，跑两遍结果能差 10%。如果你没有一个「什么都没改时它长什么样」的参照，你根本分不清眼前这个 5% 的变化是你的改动带来的，还是机器本身的随机波动。</p>
+
+<p>一份合格的基线记录，至少要包含这些：</p>
+
+<table>
+<tr><th>记什么</th><th>为什么要记</th></tr>
+<tr><td>机器信息（物理核数 / 逻辑核数 / 内存 / 型号）</td><td>换台机器测就不可比了，必须记下来</td></tr>
+<tr><td>软件版本（Python、框架、模型）</td><td>版本一变，数字可能整体平移</td></tr>
+<tr><td>负载形状（打的哪个接口、并发多少、跑多久）</td><td>这是最容易忘记记录、也最容易导致「两次数字对不上」的一项</td></tr>
+<tr class="hl"><td>QPS、P50、P95、P99、最大值、错误数</td><td>核心结果。只记平均值等于白记</td></tr>
+<tr><td>测的时候机器上还跑了什么别的</td><td>后台有个编译任务在跑，数字就废了</td></tr>
+</table>
+
+<p><strong>重点看高亮那一行。</strong>注意里面有「错误数」。一个常见的翻车方式是：压测跑完，QPS 特别漂亮，结果一看 90% 的请求返回了 500。<strong>失败的请求往往比成功的请求快得多</strong>，所以不看错误数的吞吐数字是没有意义的。今天的脚本里会带上这一列。</p>
+
+<h2>动手任务</h2>
+
+<h3>任务 1 · 摸清你的机器（约 20 分钟）</h3>
+
+<p>目标：把下面这张表填满，并且能说出每个数字是从哪条命令的哪一行来的。</p>
+
+<pre><code><span class="c"># 1) CPU 规格。用 grep 只挑出今天关心的几行，省得在几十行输出里找。</span>
+<span class="c">#    -E 表示用扩展正则；竖线是"或"。</span>
+lscpu | grep -E '^(Architecture|CPU\(s\)|Thread\(s\)|Core\(s\)|Socket\(s\)|Model name|NUMA node\(s\)|L[123])'
+
+<span class="c"># 2) 逻辑核总数。这条命令只输出一个数字，脚本里常用它。</span>
+<span class="c">#    注意它给的是逻辑核，不是物理核 —— 上面刚讲过的坑。</span>
+nproc
+
+<span class="c"># 3) 内存。重点看最后一列 available。</span>
+free -h
+
+<span class="c"># 4) 内核版本和发行版，记基线时要写上。</span>
+uname -r
+cat /etc/os-release | head -2
+
+<span class="c"># 5) 【可选】更直观的拓扑图。这个工具默认没装：</span>
+<span class="c">#    Ubuntu/Debian: sudo apt install hwloc</span>
+<span class="c">#    macOS 上没有，跳过即可</span>
+<span class="c">#    -no-graphics 表示输出纯文本而不是弹出图形窗口</span>
+lstopo-no-graphics</code></pre>
+
+<p><strong>跑完之后你应该看到：</strong>lscpu 输出里 <code>Core(s) per socket</code> × <code>Socket(s)</code> 得到物理核数，它乘以 <code>Thread(s) per core</code> 应该正好等于 <code>CPU(s)</code> 那一行，也等于 <code>nproc</code> 的输出。<strong>如果这三个数对不上，说明你读错行了，回去再看一遍。</strong></p>
+
+<p>把结果填进这张表，后面几周都要用：</p>
+
+<table>
+<tr><th>项目</th><th>我的机器</th><th>从哪来</th></tr>
+<tr><td>物理核数</td><td class="num">______</td><td>lscpu: Core(s) per socket × Socket(s)</td></tr>
+<tr><td>逻辑核数</td><td class="num">______</td><td>lscpu: CPU(s)，或 nproc</td></tr>
+<tr><td>超线程开了吗</td><td class="num">______</td><td>lscpu: Thread(s) per core 是否 &gt; 1</td></tr>
+<tr><td>内存总量 / available</td><td class="num">______</td><td>free -h</td></tr>
+<tr><td>NUMA 节点数</td><td class="num">______</td><td>lscpu: NUMA node(s)</td></tr>
+<tr><td>L3 缓存大小</td><td class="num">______</td><td>lscpu: L3 cache</td></tr>
+<tr><td>CPU 型号</td><td class="num">______</td><td>lscpu: Model name</td></tr>
+</table>
+
+<h3>任务 2 · 搭起服务和压测器，测出第一份基线（约 2.5 小时）</h3>
+
+<p>这个任务分三步：写一个最小的服务，写一个压测器，然后跑一组实验。实验设计得很刻意。它会让一个很朴素的直觉当场被证伪。</p>
+
+<h4>第一步：最小服务</h4>
+
+<p>先装依赖。用一个虚拟环境，别污染系统 Python：</p>
+
+<pre><code>python3 -m venv ~/aiinfra-venv
+source ~/aiinfra-venv/bin/activate
+pip install fastapi 'uvicorn[standard]'</code></pre>
+
+<p>下面这个文件是我们的靶子服务。它故意做得很小，因为今天要测的不是某个真实服务有多快，而是要看清「负载类型」和「并发数」这两个东西怎么影响结果。</p>
+
+<p><strong>文件导读</strong>：这个文件有三个接口。<code>/health</code> 什么都不干，用来确认服务活着。<code>/sleep</code> 睡 50 毫秒，模拟「在等外部的东西」（等数据库、等下游服务、等 GPU 算完）。<code>/work</code> 老老实实算 50 毫秒的哈希，模拟「CPU 自己在算」（做序列化、做分词、拼请求）。这两个接口的单次耗时被刻意调成差不多，这样对比才干净。</p>
+
+<pre><code class="lang-python"><span class="c"># app.py</span>
+import asyncio, hashlib, os
+from fastapi import FastAPI
+
+app = FastAPI()
+
+BLOB = b"x" * 4096
+<span class="c"># 从环境变量读迭代次数，这样不改代码就能标定到 50ms。下面会讲怎么标定。</span>
+ROUNDS = int(os.environ.get("ROUNDS", "20000"))
+
+
+@app.get("/health")
+async def health():
+    <span class="c"># 什么都不做。用它可以量出：框架本身最少要花掉多少时间</span>
+    return {"ok": True}
+
+
+@app.get("/sleep")
+async def sleep_endpoint():
+    <span class="c"># asyncio.sleep 会把控制权交还给事件循环，让它去处理别的请求。</span>
+    <span class="c"># 这一点很关键：它模拟的是"在等，但没占着 CPU"。</span>
+    await asyncio.sleep(0.05)
+    return {"kind": "sleep"}
+
+
+@app.get("/work")
+async def work_endpoint():
+    <span class="c"># 这里是实打实的计算，全程占着 CPU 不放。</span>
+    <span class="c"># 注意用的是固定的迭代次数，不是"忙等 50 毫秒"。</span>
+    <span class="c"># 固定工作量才能看出真实的排队效应；忙等固定时间会把延迟人为压平。</span>
+    h = hashlib.sha256()
+    for _ in range(ROUNDS):
+        h.update(BLOB)
+    return {"kind": "work", "digest": h.hexdigest()[:8]}</code></pre>
+
+<p><strong>标定 ROUNDS。</strong>不同机器 CPU 快慢不同，20000 这个默认值在你机器上可能是 30 ms 也可能是 90 ms。先跑这个一次性的小脚本，找到让它接近 50 ms 的次数：</p>
+
+<pre><code>python3 -c "
+import time, hashlib
+BLOB = b'x'*4096
+for n in (5000, 10000, 20000, 40000):
+    t = time.perf_counter()
+    h = hashlib.sha256()
+    for _ in range(n): h.update(BLOB)
+    h.hexdigest()
+    print(n, round((time.perf_counter()-t)*1000, 1), 'ms')
+"</code></pre>
+
+<p>看哪个 n 最接近 50 ms（可以在中间插值估算）。<strong>在我的测试机上 20000 次约等于 50 ms。</strong>假设你算出来是 35000，那启动服务时就写 <code>ROUNDS=35000</code>。</p>
+
+<p>启动服务：</p>
+
+<pre><code><span class="c"># --workers 1 明确只开一个工作进程。今天要的就是单进程，</span>
+<span class="c"># 这样才能干净地看出"一个事件循环"的行为。多进程 Day 4 讲。</span>
+<span class="c"># --log-level warning 关掉每条请求的访问日志，否则日志本身会成为瓶颈。</span>
+ROUNDS=20000 uvicorn app:app --host 127.0.0.1 --port 8000 --workers 1 --log-level warning</code></pre>
+
+<p>另开一个终端确认它活着：</p>
+
+<pre><code>curl -s http://127.0.0.1:8000/health
+<span class="c"># 应该看到：{"ok":true}</span></code></pre>
+
+<h4>第二步：压测器</h4>
+
+<p>下面这个压测器只用 Python 标准库写，不需要再装任何东西。这是刻意的：<strong>压测器本身的开销会算进你测出来的延迟里</strong>，用一个自己能完全看懂的实现，比用一个黑盒工具更适合第一天。（成熟的压测工具后面会用到，比如 wrk、k6、vLLM 自带的 benchmark_serving。）</p>
+
+<p><strong>文件导读</strong>：这个文件不到 70 行，分五块。<code>one_request</code> 负责发一条请求并给它计时。<code>worker</code> 是一个「虚拟用户」，闭环的逻辑就在它那个 while 循环里。<code>percentile</code> 算百分位。<code>run_one</code> 开 N 个虚拟用户跑一轮，汇总成一行结果。<code>main</code> 把并发数从 1 扫到 32，打成一张表。</p>
+
+<pre><code class="lang-python"><span class="c"># bench.py —— 闭环压测器（closed loop load generator），只用标准库</span>
+import asyncio, math, statistics, sys, time
+
+HOST, PORT = "127.0.0.1", 8000
+
+
+async def one_request(path: str) -> float:
+    <span class="c"># 计时从"打算发请求"就开始，包含建立 TCP 连接的时间。</span>
+    <span class="c"># 这是有意的：用户等的就是这一整段，不该把建连接的时间藏起来。</span>
+    t0 = time.perf_counter()
+    reader, writer = await asyncio.open_connection(HOST, PORT)
+    <span class="c"># 手写最小 HTTP 请求。加 Connection: close 让服务端回完就断开，</span>
+    <span class="c"># 这样客户端读到 EOF 就知道读完了，不用去解析 Content-Length。</span>
+    writer.write(f"GET {path} HTTP/1.1\r\nHost: {HOST}\r\nConnection: close\r\n\r\n".encode())
+    await writer.drain()
+    await reader.read()          <span class="c"># 一直读到 EOF = 整个响应收完了</span>
+    writer.close()
+    return (time.perf_counter() - t0) * 1000.0   <span class="c"># 转成毫秒</span>
+
+
+async def worker(path: str, deadline: float, out: list, errs: list):
+    <span class="c"># 闭环的定义就在这个 while 里：上一条没回来，绝不发下一条。</span>
+    while time.perf_counter() &lt; deadline:
+        try:
+            out.append(await one_request(path))
+        except Exception as e:
+            errs.append(repr(e))
+
+
+def percentile(xs: list, p: float) -> float:
+    <span class="c"># nearest-rank 定义：排好序，取第 ceil(p/100 * N) 个。</span>
+    <span class="c"># max(1, ...) 是防止 p 特别小的时候索引变成 0 导致越界。</span>
+    s = sorted(xs)
+    return s[max(1, math.ceil(p / 100.0 * len(s))) - 1]
+
+
+async def run_one(path: str, conc: int, duration: float) -> dict:
+    <span class="c"># 预热：头几条请求要建连接、要让 Python 把代码路径跑热，明显偏慢。</span>
+    <span class="c"># 把它们扔掉不计入统计。Day 6 会讲预热到底该做多久才算够。</span>
+    for _ in range(3):
+        try:
+            await one_request(path)
+        except Exception:
+            pass
+
+    out, errs = [], []
+    t0 = time.perf_counter()
+    <span class="c"># 同时启动 conc 个虚拟用户，一起跑 duration 秒</span>
+    await asyncio.gather(*[worker(path, t0 + duration, out, errs) for _ in range(conc)])
+    elapsed = time.perf_counter() - t0
+
+    return dict(conc=conc, err=len(errs),
+                qps=len(out) / elapsed,          <span class="c"># 吞吐 = 完成条数 / 实际耗时</span>
+                mean=statistics.mean(out),
+                p50=percentile(out, 50), p95=percentile(out, 95),
+                p99=percentile(out, 99), mx=max(out))
+
+
+async def main():
+    path     = sys.argv[1] if len(sys.argv) &gt; 1 else "/sleep"
+    duration = float(sys.argv[2]) if len(sys.argv) &gt; 2 else 5.0
+    concs    = [int(x) for x in sys.argv[3].split(",")] if len(sys.argv) &gt; 3 else [1,2,4,8,16,32]
+
+    print(f"target={path}  duration={duration}s")
+    print(f"{'并发':&gt;4} {'QPS':&gt;8} {'平均':&gt;8} {'P50':&gt;8} {'P95':&gt;8} {'P99':&gt;8} {'最大':&gt;9} {'错误':&gt;5}")
+    for c in concs:
+        r = await run_one(path, c, duration)
+        print(f"{r['conc']:&gt;4} {r['qps']:&gt;8.1f} {r['mean']:&gt;8.1f} {r['p50']:&gt;8.1f} "
+              f"{r['p95']:&gt;8.1f} {r['p99']:&gt;8.1f} {r['mx']:&gt;9.1f} {r['err']:&gt;5}")
+
+
+asyncio.run(main())</code></pre>
+
+<p><strong>用法：</strong><code>python3 bench.py &lt;路径&gt; &lt;每档跑几秒&gt; [并发数列表]</code>。比如 <code>python3 bench.py /sleep 5</code>。</p>
+
+<p><strong>先做一次冒烟测试</strong>，确认压测器本身是通的：</p>
+
+<pre><code>python3 bench.py /health 2 1
+<span class="c"># 应该看到一行结果，QPS 是个比较大的数（几千到上万），P50 是零点几毫秒。</span>
+<span class="c"># 错误列必须是 0。如果不是 0，多半是服务没起来或者端口写错了。</span></code></pre>
+
+<div class="card predict">
+<div class="tag">预测 · 跑之前先画一下</div>
+<p>接下来要跑的实验是：对 <code>/sleep</code> 和 <code>/work</code> 各扫一遍并发数 1 → 2 → 4 → 8 → 16 → 32，每档跑 5 秒。</p>
+<p>已知的信息：这两个接口<strong>单条请求的耗时都是大约 50 毫秒</strong>；服务是<strong>单进程、单事件循环</strong>；<code>/sleep</code> 那 50 毫秒是「在等，没占 CPU」，<code>/work</code> 那 50 毫秒是「在算，全程占着 CPU」。</p>
+<p><strong>请在下面画两张草图</strong>（横轴是并发数 1→32，纵轴分别是 QPS 和 P99），一共四条曲线。<strong>只要形状，不要精确数值。</strong>画完写一句话说明你为什么这么画。</p>
+<div class="write-area tall">/sleep 的 QPS 曲线形状：<br><br>/sleep 的 P99 曲线形状：<br><br>/work 的 QPS 曲线形状：<br><br>/work 的 P99 曲线形状：<br><br>理由：</div>
+<p class="small">画完了再往下看。这一步别偷懒——预测错了才有收获，直接看答案等于什么都没发生。</p>
+</div>
+
+<h4>第三步：跑实验</h4>
+
+<pre><code><span class="c"># 每档跑 5 秒，两个接口各扫一遍</span>
+python3 bench.py /sleep 5
+python3 bench.py /work  5</code></pre>
+
+<p>下面是我在一台 <strong>2 物理核、未开超线程、7.8 GiB 内存</strong>的机器上跑出来的结果。你的绝对数字会不一样，但<strong>形状应该是一样的</strong>。</p>
+
+<p class="tbl-note">第一张表：<code>/sleep</code>（在等，不占 CPU）。看并发数从 1 涨到 32 的过程中，QPS 列和 P99 列分别怎么变。</p>
+
+<table>
+<tr><th class="num">并发</th><th class="num">QPS</th><th class="num">平均 ms</th><th class="num">P50</th><th class="num">P95</th><th class="num">P99</th><th class="num">错误</th></tr>
+<tr><td class="num">1</td><td class="num">19.7</td><td class="num">50.8</td><td class="num">50.7</td><td class="num">51.0</td><td class="num">52.0</td><td class="num">0</td></tr>
+<tr><td class="num">2</td><td class="num">39.2</td><td class="num">51.1</td><td class="num">50.9</td><td class="num">51.6</td><td class="num">51.7</td><td class="num">0</td></tr>
+<tr><td class="num">4</td><td class="num">77.8</td><td class="num">51.4</td><td class="num">51.2</td><td class="num">51.5</td><td class="num">69.8</td><td class="num">0</td></tr>
+<tr><td class="num">8</td><td class="num">154.8</td><td class="num">51.7</td><td class="num">51.6</td><td class="num">52.1</td><td class="num">53.3</td><td class="num">0</td></tr>
+<tr><td class="num">16</td><td class="num">303.5</td><td class="num">52.7</td><td class="num">52.5</td><td class="num">53.4</td><td class="num">56.9</td><td class="num">0</td></tr>
+<tr class="hl"><td class="num">32</td><td class="num">606.9</td><td class="num">52.5</td><td class="num">52.4</td><td class="num">53.8</td><td class="num">54.6</td><td class="num">0</td></tr>
+</table>
+
+<p><strong>重点看 QPS 列和 P99 列。</strong>QPS 从 19.7 一路涨到 606.9，几乎是并发数的严格倍数（每翻一倍，QPS 也翻一倍）。而 P99 从 52.0 变成 54.6，基本没动。</p>
+
+<p>为什么会这样：<code>/sleep</code> 在 <code>await asyncio.sleep(0.05)</code> 的那 50 毫秒里，<strong>把 CPU 让出来了</strong>。事件循环趁这个空档去处理别的请求。所以 32 个请求可以真正同时在「睡」，互不干扰，每个还是 50 毫秒睡完。整台机器的产能瓶颈根本没被碰到。</p>
+
+<p class="tbl-note">第二张表：<code>/work</code>（在算，全程占着 CPU）。同样看 QPS 列和 P99 列。</p>
+
+<table>
+<tr><th class="num">并发</th><th class="num">QPS</th><th class="num">平均 ms</th><th class="num">P50</th><th class="num">P95</th><th class="num">P99</th><th class="num">错误</th></tr>
+<tr><td class="num">1</td><td class="num">18.0</td><td class="num">55.4</td><td class="num">55.1</td><td class="num">57.1</td><td class="num">58.3</td><td class="num">0</td></tr>
+<tr><td class="num">2</td><td class="num">18.3</td><td class="num">108.3</td><td class="num">108.9</td><td class="num">110.3</td><td class="num">110.9</td><td class="num">0</td></tr>
+<tr><td class="num">4</td><td class="num">18.4</td><td class="num">215.1</td><td class="num">216.8</td><td class="num">219.3</td><td class="num">271.8</td><td class="num">0</td></tr>
+<tr><td class="num">8</td><td class="num">18.3</td><td class="num">427.5</td><td class="num">436.4</td><td class="num">438.1</td><td class="num">438.7</td><td class="num">0</td></tr>
+<tr><td class="num">16</td><td class="num">18.3</td><td class="num">832.0</td><td class="num">872.0</td><td class="num">874.9</td><td class="num">1472.8</td><td class="num">0</td></tr>
+<tr class="hl"><td class="num">32</td><td class="num">18.3</td><td class="num">1568.9</td><td class="num">1742.5</td><td class="num">1760.1</td><td class="num">2450.1</td><td class="num">0</td></tr>
+</table>
+
+<p><strong>重点看 QPS 列：它从头到尾都是 18.3，一动不动。</strong>并发数涨了 32 倍，吞吐一点没变。而 P50 从 55 毫秒涨到 1742 毫秒，正好也是 32 倍。</p>
+
+<p>为什么会这样：<code>/work</code> 在算的时候<strong>不释放 CPU</strong>。这个服务是单进程单事件循环，同一时刻只有一个请求能在算。第 2 条请求必须等第 1 条算完，第 32 条必须等前面 31 条全部算完。所以并发数增加，只是让队伍变长，队伍前进的速度一点没变。</p>
+
+<p><strong>这就是刚才那个超市收银台的例子，只不过现在是真的测出来了。</strong>如果你刚才预测「加并发 QPS 就会涨」，那么你的直觉刚刚被机器证伪了。这正是今天最重要的收获。</p>
+
+<h4>再看一个数字上的规律</h4>
+
+<p>把 <code>/work</code> 那张表里的 QPS 和平均延迟乘起来看看：</p>
+
+<ul>
+<li>并发 8：18.3 × 0.4275 秒 = <strong>7.8</strong>，约等于 8</li>
+<li>并发 16：18.3 × 0.832 秒 = <strong>15.2</strong>，约等于 16</li>
+</ul>
+
+<p>也就是说：<strong>并发数 ≈ 吞吐 × 平均延迟</strong>。这不是巧合，是一条对任何排队系统都成立的恒等式。它有个名字，明天（Day 2）会专门讲。今天先记住这个关系式，它有一个很实用的用法：<strong>三个量知道两个，第三个就能算出来。</strong></p>
+
+<p>比如以后有人跟你说「我们的服务扛得住 1000 并发」，你可以立刻反问：那 QPS 和 P50 分别是多少？如果他说 QPS 是 100、P50 是 50 毫秒，那 100 × 0.05 = 5，实际在跑的只有 5 个，剩下 995 个都在排队。「扛得住 1000 并发」这句话就没有意义了。</p>
+
+<h4>验收标准</h4>
+
+<ol>
+<li><code>/sleep</code> 的 QPS 随并发数近似线性增长，P99 基本不变。<strong>做到了打个勾。</strong></li>
+<li><code>/work</code> 的 QPS 在并发 ≥ 2 之后基本是个常数，P50 随并发数近似线性增长。<strong>做到了打个勾。</strong></li>
+<li>所有行的错误数都是 0。</li>
+<li>你能把 <code>/work</code> 表里任意一行的「并发 ≈ QPS × 平均延迟」验算一遍，误差在 15% 以内。</li>
+<li>你把这两张表存进了一个文件，文件里同时写着任务 1 里那张机器信息表。<strong>这就是你的第一份基线。</strong></li>
+</ol>
+
+<div class="card warn">
+<div class="tag">常见坑</div>
+<p><strong>坑 1：压测器和服务抢 CPU。</strong>你的机器如果只有 2 个核，压测器自己也要吃 CPU，测 <code>/work</code> 时两者会互相抢。表现是 QPS 比理论值低一截。今天可以接受，因为我们只看形状。Day 6 会讲怎么用绑核把它们隔开。</p>
+<p><strong>坑 2：忘了关访问日志。</strong>uvicorn 默认每条请求打一行日志。QPS 上千的时候，写日志本身就成了瓶颈，你测的是终端的刷新速度。所以上面的启动命令里加了 <code>--log-level warning</code>。</p>
+<p><strong>坑 3：每档跑得太短。</strong>如果每档只跑 1 秒，样本量太小，P99 会剧烈抖动（100 个样本的 P99 只由 1 条请求决定）。至少 5 秒，样本量最好在几百条以上。</p>
+<p><strong>坑 4：机器上还跑着别的东西。</strong>浏览器、编译任务、Docker 容器都会污染结果。测之前先看一眼 <code>top</code>，确认 CPU 是闲的。</p>
+<p><strong>坑 5：<code>/work</code> 高并发档位跑得很慢。</strong>并发 32 那一档，单条请求要 1.7 秒，压测器要等最后一条回来才能结束，所以那一档实际会跑到 6～7 秒。这是正常的，不是卡死了。</p>
+</div>
+
+<h2>上岗关联</h2>
+
+<p>今天这些东西在真实工作里怎么用：</p>
+
+<p><strong>场景一：有人报「服务变慢了」。</strong>第一个动作永远是问「慢在哪个百分位」。如果 P50 没变、P99 涨了，那多半是排队、GC、或者某类特定请求出了问题；如果 P50 整体上移，那是全局性的退化，比如某个依赖变慢了、或者某次发布引入了额外开销。这两种情况的排查方向完全不同。<strong>不区分百分位就开始查，等于在随机猜。</strong></p>
+
+<p><strong>场景二：容量规划。</strong>「我们要支持每秒 500 次 agent 调用，需要几台机器？」——这个问题的答案就是从今天这种并发扫描表里读出来的：找到吞吐开始饱和的那个点，那就是单机上限，再除一除。</p>
+
+<p><strong>场景三：评估一个优化值不值得做。</strong>如果一个改动能把某个环节从 5 毫秒降到 1 毫秒，但整条链路的 P50 是 800 毫秒，那这个优化最多带来 0.5% 的收益。<strong>先量再改，是这个岗位最基本的职业习惯。</strong></p>
+
+<h4>面试和同事通常怎么问</h4>
+
+<ul>
+<li>「为什么看 P99 不看平均？」——标准问题，答案就是本页第三节。加分点是能主动提到尾延迟放大和 agent 场景。</li>
+<li>「你们服务的 P99 是多少？」——这是个陷阱问题。<strong>正确的回答方式是先反问：在多大流量下的 P99？</strong>脱离负载谈 P99 是没有意义的，因为 P99 是负载的函数。今天那两张表就是最好的例子。</li>
+<li>「QPS 上不去，你会怎么查？」——先确认瓶颈在哪：是 CPU 打满了（那就是今天的 <code>/work</code> 情况），还是 CPU 没满但请求就是慢（那是 Day 4 的内容）。</li>
+<li>「压测怎么做的？」——如果你能说清楚闭环和开环的区别、以及为什么选了其中一个，基本上就超过大多数候选人了。</li>
+</ul>
+
+<h2>自检问题</h2>
+
+<details>
+<summary>问题 1 · 一个服务的 P50 是 20 毫秒，P99 是 900 毫秒。光凭这两个数字，你能推断出什么？又不能推断出什么？</summary>
+<p><strong>能推断出的：这个服务存在明显的长尾。</strong>P99 是 P50 的 45 倍，说明有一小撮请求走了一条和大多数请求完全不同的路径。「典型情况」和「不好的情况」之间差了一个数量级以上，这几乎一定有结构性原因，而不是随机波动。</p>
+<p>常见的结构性原因有几类：这批请求排队等了很久；碰上了垃圾回收或者某个周期性的后台任务；抢锁没抢到；走了缓存未命中的分支，去查了数据库；或者这批请求的输入本身就比别的大得多（在 LLM 场景里，一条 8000 token 的输入和一条 50 token 的输入耗时天差地别）。</p>
+<p><strong>不能推断出的，有三件事。</strong></p>
+<p>第一，<strong>不知道这是在多大流量下测的</strong>。P99 是负载的函数。同一个服务在 10 QPS 和 500 QPS 下的 P99 可能差几十倍。今天那两张表就是活例子。</p>
+<p>第二，<strong>不知道有多少请求失败了</strong>。如果 30% 的请求返回了 500，而失败得很快，那这两个百分位数字是被稀释过的。</p>
+<p>第三，<strong>不知道最坏能有多坏</strong>。P99 之上还有 1%。那 1% 可能是 950 毫秒，也可能是 30 秒。要看 P999 或者最大值。</p>
+</details>
+
+<details>
+<summary>问题 2 · 今天 <code>/work</code> 那张表里，并发从 1 加到 32，QPS 一直是 18.3 不动。现在把 uvicorn 的 --workers 从 1 改成 4（假设机器有 4 个物理核），重新跑一遍，你预期这张表会变成什么样？说出你的推理。</summary>
+<p><strong>预期：QPS 会涨到大约 4 倍，也就是 70 左右；而且吞吐饱和的那个并发数会从 1 挪到 4。</strong></p>
+<p>推理过程是这样的。<code>/work</code> 之所以卡在 18.3 QPS，根本原因是「同一时刻只有一个请求能在算」。这个 1 是怎么来的？uvicorn 开了 1 个工作进程，这个进程里跑着 1 个事件循环，事件循环是单线程的，而 <code>/work</code> 的计算全程不释放控制权。所以并行度 = 1。</p>
+<p>把 workers 改成 4，就是起 4 个独立的进程，各自有各自的事件循环，它们通过 SO_REUSEPORT 共享同一个监听端口。这样并行度变成 4。如果机器有 4 个空闲的物理核，这 4 个进程能真正同时跑，吞吐就是 4 倍。</p>
+<p><strong>关于表的形状，还有两个更细的预期：</strong></p>
+<p>并发 1、2 这两档的 QPS 也会变（1 档大概还是 18，2 档大概是 36），因为并发数没超过 4 之前，多出来的 worker 是闲着的。真正的饱和点在并发 4 附近。超过 4 之后，QPS 就锁定在 70 左右不动了，延迟开始线性涨。</p>
+<p><strong>还有一个容易被忽略的点：如果机器只有 4 个物理核，但你开了 8 个 worker，QPS 不会再涨，反而可能小幅下降。</strong>因为进程数超过核数之后，操作系统要在它们之间来回切换，切换本身是有开销的。这也是为什么今天要先花时间搞清楚自己有几个<em>物理</em>核。</p>
+</details>
+
+<details>
+<summary>问题 3 · 你用闭环压测器测出「并发 50 时 P99 是 200 毫秒」。同事用开环压测器，按每秒 250 条的速率打同一个服务，测出 P99 是 1800 毫秒。两个人都没测错。怎么解释这个差距？</summary>
+<p><strong>关键在于两种压测器面对「服务变慢」时的反应完全相反。</strong></p>
+<p>先看闭环这边。闭环的规则是：50 个虚拟用户，每人手里最多有 1 条未完成的请求。所以<strong>系统里同时存在的请求数被硬性锁死在 50</strong>，一条都不会多。如果服务某一瞬间卡住了，这 50 个虚拟用户就一起干等着，期间<em>一条新请求都不会发出去</em>。等服务缓过来，他们才继续。</p>
+<p>换句话说：服务越慢，闭环压测器发出去的请求就越少。它在服务最吃力的时候，自动降低了压力。</p>
+<p>再看开环这边。开环的规则是：每秒 250 条，雷打不动。如果服务某一瞬间只能处理 100 条，那这一秒就有 150 条堆在队列里。下一秒又来 250 条，队列继续变长。<strong>队列越长，后面每条请求要等的时间就越久</strong>，于是延迟被越推越高。</p>
+<p><strong>那到底哪个数字才是对的？</strong>看你要回答什么问题。</p>
+<p>如果你的客户端是固定数量的机器人、并且它们确实是「等上一条回来才发下一条」，那闭环的 200 毫秒是对的。</p>
+<p>如果流量来自真实用户——真实用户不会因为你卡了就自觉少点几次，甚至会因为没反应而多点几次——那开环的 1800 毫秒才反映了他们的真实体验。</p>
+<p><strong>对 AI 服务来说，通常开环更贴近真实。</strong>而且闭环那种「服务一慢就自动减压」的行为，导致它测出来的延迟系统性偏乐观。这个偏差有个专门的名字，明天会展开讲。</p>
+</details>
+
+<details>
+<summary>问题 4 · 一个 agent 任务要串行地调 20 次模型，每次调用必须成功、全部完成任务才算完。单次调用的 P99 延迟是 3 秒，P50 是 400 毫秒。粗略估计，整个任务大概要多久？</summary>
+<p>这题要分两步算，而且第二步是大多数人会漏掉的。</p>
+<p><strong>第一步：如果每次都走 P50，那就是 20 × 0.4 = 8 秒。</strong>这是最理想的情况。</p>
+<p><strong>第二步：算一下「20 次里至少撞上一次慢调用」的概率。</strong>单次不慢的概率是 99%，20 次全都不慢的概率是 0.99<sup>20</sup> = 0.818。所以至少撞上一次的概率是 1 − 0.818 = <strong>18.2%</strong>。</p>
+<p>撞上一次，那一次就要 3 秒而不是 0.4 秒，多出 2.6 秒。所以：</p>
+<ul>
+<li>约 82% 的任务：8 秒左右。</li>
+<li>约 18% 的任务：10.6 秒左右，也就是慢了三成。</li>
+<li>还有一小部分会撞上两次甚至更多，更慢。</li>
+</ul>
+<p><strong>这题真正想让你记住的结论是：单次调用的 P99 是"百里挑一"，但对一个要调 20 次的 agent 任务来说，它变成了"五个任务里就有一个会撞上"。</strong></p>
+<p>顺带一个工程上的推论：<strong>在 agent 平台上，优化 P99 的收益比优化 P50 大得多。</strong>因为 P50 是每次调用都摊到的固定成本，而 P99 是被链路长度放大的。这个视角以后在 Day 21 会正式接到 KV cache 命中率上——命中率上不去，最直接的后果就是 P99 变差。</p>
+<p class="small">（说明：这里假设 20 次调用的快慢互相独立。真实情况往往不独立——如果服务整体在过载，20 次会一起慢。所以上面这个估算是偏乐观的下界。）</p>
+</details>
+
+<h2>今日新词</h2>
+
+<p>今天一共引入 8 个新术语。以后忘了可以回这张表查。</p>
+
+<table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>延迟</td><td>latency</td><td>一条请求从发出到拿到结果，一共等了多久。单位通常是毫秒。</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / QPS (queries per second)</td><td>服务一秒钟能处理完多少条请求。描述整体产能，跟单条请求等多久是两回事。</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>把所有请求耗时排序后，取特定位置上的那个值。P99 = 99% 的请求比它快。</td></tr>
+<tr><td>压测器</td><td>load generator / load tester</td><td>专门给服务发请求、并记录每条耗时的程序，用来量出 QPS 和各百分位。</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>固定 N 个虚拟用户，每人等上一条回来才发下一条。发压速度受服务快慢反向控制。</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>按固定速率发请求，不管前面的回没回来。更接近真实用户流量。</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / SMT / logical core</td><td>一个物理核伪装成两个核给操作系统用。逻辑核数不等于算力倍数，实际增益只有 1.1～1.3 倍。</td></tr>
+<tr><td>基线</td><td>baseline</td><td>动手改任何东西之前，先完整测一遍并记录下来的性能数字。没有它就无法量化收益。</td></tr>
+</table>
+
+<p class="small"><strong>今天出现但故意没展开的词</strong>（各有专属的一天，不用现在查）：Little's Law 和协调遗漏（Day 2）、NUMA 和缓存层级（Day 7）、GIL 和事件循环阻塞（Day 4）、tokenize 和 prefill（Day 8）。</p>
+
+<h2>延伸材料</h2>
+
+<p>今天不需要全看。挑一到两个，其余的标记一下以后再说。</p>
+
+<ol>
+<li><p><strong><a href="https://bravenewgeek.com/everything-you-know-about-latency-is-wrong/">Everything You Know About Latency Is Wrong</a></strong> — Tyler Treat<br>
+<span class="small"><strong>难度：新手友好。</strong>今天第三节和第四节的加长版，用大白话讲透了「为什么不能看平均值」和「闭环压测的坑」。如果今天只看一个，看这个。</span></p></li>
+
+<li><p><strong><a href="https://www.youtube.com/watch?v=lJ8ydIuPFeU">How NOT to Measure Latency</a></strong> — Gil Tene（约 60 分钟视频）<br>
+<span class="small"><strong>难度：需要一点基础，但讲得非常清楚。</strong>性能测量领域最经典的一场演讲。明天讲协调遗漏之前看完前 30 分钟，会很有帮助。</span></p></li>
+
+<li><p><strong><a href="https://research.google/pubs/the-tail-at-scale/">The Tail at Scale</a></strong> — Jeffrey Dean &amp; Luiz André Barroso, CACM 2013（<a href="https://www.barroso.org/publications/TheTailAtScale.pdf">PDF 直链</a>）<br>
+<span class="small"><strong>难度：需要基础，但只有 7 页。</strong>今天预测框里那道题的理论来源。读第 1～2 节就够了，讲的正是尾延迟怎么被链路长度放大。这篇是这个领域被引用最多的文章之一，值得以后重读。</span></p></li>
+
+<li><p><strong><a href="https://sre.google/sre-book/monitoring-distributed-systems/">Site Reliability Engineering, Chapter 6: Monitoring Distributed Systems</a></strong> — Google（在线免费）<br>
+<span class="small"><strong>难度：新手友好。</strong>「四个黄金信号」（延迟、流量、错误、饱和度）就出自这一章。看「Latency」和「The Four Golden Signals」两个小节即可，十分钟。</span></p></li>
+
+<li><p><strong><a href="https://www.brendangregg.com/usemethod.html">The USE Method</a></strong> — Brendan Gregg<br>
+<span class="small"><strong>难度：中等，页面很短。</strong>一套「怀疑哪里有瓶颈就查哪三项」的排查方法论：利用率、饱和度、错误。Day 3 学观测工具时会大量用到这个框架，今天先扫一眼有个印象。</span></p></li>
+</ol>
+
+<h2>今日五句话</h2>
+
+<div class="card feynman">
+<div class="tag">费曼式复述</div>
+<p><strong>合上这个页面，不看笔记。</strong>假设你旁边坐了一位同事，他会写 Python、懂后端，但从来没做过性能这块。<strong>用五句话把今天学的东西讲给他听。</strong></p>
+<p>建议这五句话分别覆盖：</p>
+<ol>
+<li>延迟和吞吐分别是什么，为什么它们是两个问题</li>
+<li>为什么不看平均值而看 P99</li>
+<li>为什么在 agent 这种要调用很多次的场景里，P99 尤其要命</li>
+<li>闭环压测和开环压测的区别，各自适合回答什么问题</li>
+<li>今天那个实验测出了什么，它推翻了什么直觉</li>
+</ol>
+<div class="write-area tall">1.<br><br>2.<br><br>3.<br><br>4.<br><br>5.</div>
+
+<p><strong>写完了对照这几条自查：</strong></p>
+<ul>
+<li>有没有哪一句你写不出来，或者写出来自己都觉得含糊？<strong>那一条就是今天没学透的地方</strong>，回去把对应那一节重看一遍。</li>
+<li>第 2 句里，你有没有举出一个具体的数字例子？只说「平均值会被极端值影响」是不够的，那是背下来的，不是懂了。</li>
+<li>第 3 句里，你能不能不查公式就写出 0.99<sup>10</sup> 这个思路？能写出思路就算过。</li>
+<li>第 5 句里，你有没有说清楚「为什么 <code>/sleep</code> 能扩而 <code>/work</code> 不能」？如果你的解释里没出现「有没有释放 CPU」这层意思，就是还没抓到点上。</li>
+<li>五句话里如果出现了你自己也说不清的词，划掉它，换成大白话重写。<strong>能用大白话讲出来才是真的会了。</strong></li>
+</ul>
+</div>
+
+<h2>明日预告</h2>
+
+<p><strong>Day 2 · 延迟的解剖学。</strong>今天我们知道了 P99 很重要，明天要问的是：那 900 毫秒的 P99，时间到底花在哪儿了？会讲 Little's Law（今天已经用数字碰到过它了）、利用率和 P99 之间那条非线性曲线（为什么 CPU 用到 80% 就该紧张了），以及尾延迟的几个常见来源。还有今天欠下的那个词：闭环压测为什么会给出偏乐观的数字。</p>
+
+<hr>
+<p class="small" style="text-align:center">AI Infra 四周速成 · Day 1 / 28 · 2026-08-18</p>
+
+</main>
+</body>
+</html>

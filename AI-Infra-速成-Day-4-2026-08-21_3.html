@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra 速成 · Day 4 · CPU 没满，服务却慢</title>
+<style>
+
+:root{
+  --bg:#fbfaf8; --bg2:#ffffff; --fg:#23201c; --fg2:#5b544c; --fg3:#8a8178;
+  --line:#e6e1d8; --accent:#9a5b2b; --accent-soft:#f3ece3;
+  --recall:#c08a2e; --recall-bg:#fdf6e7;
+  --predict:#5a6ecb; --predict-bg:#eef0fb;
+  --feynman:#3f8f6b; --feynman-bg:#ecf6f1;
+  --warn:#b5482f; --warn-bg:#fdeeea;
+  --code-bg:#22262e; --code-fg:#dfe4ec; --code-cmt:#8fa2b8; --code-hl:#e2b478;
+  --term-bg:#f6e7d5; --term-line:#d9a86e;
+}
+@media (prefers-color-scheme: dark){
+:root{
+  --bg:#16181c; --bg2:#1c1f25; --fg:#e6e3de; --fg2:#b0aaa2; --fg3:#847d75;
+  --line:#2e333b; --accent:#e0a06a; --accent-soft:#262a31;
+  --recall:#d3a44b; --recall-bg:#232019;
+  --predict:#8b9bea; --predict-bg:#1b1e2b;
+  --feynman:#68b791; --feynman-bg:#182420;
+  --warn:#e0806a; --warn-bg:#2a1d1a;
+  --code-bg:#0f1216; --code-fg:#d7dce4; --code-cmt:#7d8ea6; --code-hl:#e2b478;
+  --term-bg:#3a2f22; --term-line:#a87b45;
+}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px; line-height:1.78; letter-spacing:.01em;
+}
+.progress-wrap{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--line)}
+.progress-inner{max-width:820px;margin:0 auto;padding:10px 22px 12px}
+.progress-meta{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--fg2);gap:12px;flex-wrap:wrap}
+.progress-meta b{color:var(--fg);font-size:14px}
+.bar{height:6px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden}
+.bar>i{display:block;height:100%;width:14.29%;background:linear-gradient(90deg,var(--accent),var(--recall));border-radius:99px}
+main{max-width:820px;margin:0 auto;padding:34px 22px 90px}
+h1{font-size:30px;line-height:1.35;margin:.2em 0 .1em;letter-spacing:-.01em}
+.sub{color:var(--fg2);font-size:15px;margin:0 0 26px}
+h2{font-size:22px;margin:52px 0 6px;padding-top:16px;border-top:1px solid var(--line);letter-spacing:-.005em}
+h3{font-size:17.5px;margin:32px 0 6px;color:var(--fg)}
+h4{font-size:15.5px;margin:24px 0 4px;color:var(--fg2);font-weight:600}
+p{margin:.85em 0}
+ul,ol{padding-left:1.4em;margin:.7em 0}
+li{margin:.42em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(154,91,43,.35)}
+a:hover{border-bottom-color:var(--accent)}
+.lead{color:var(--fg2);font-size:15.5px;border-left:3px solid var(--accent);padding-left:14px;margin:10px 0 18px;background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0}
+.term{background:var(--term-bg);border-bottom:1.5px solid var(--term-line);padding:0 3px;border-radius:3px;font-weight:600}
+.card{border-radius:10px;padding:18px 20px;margin:24px 0;border:1px solid var(--line);border-left-width:5px;background:var(--bg2)}
+.card>h3,.card>h2{margin-top:0;border-top:none;padding-top:0}
+.card .tag{display:inline-block;font-size:12px;letter-spacing:.08em;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.recall{border-left-color:var(--recall);background:var(--recall-bg)}
+.recall .tag{color:var(--recall)}
+.predict{border-left-color:var(--predict);background:var(--predict-bg)}
+.predict .tag{color:var(--predict)}
+.feynman{border-left-color:var(--feynman);background:var(--feynman-bg)}
+.feynman .tag{color:var(--feynman)}
+.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+.warn .tag{color:var(--warn)}
+.note{border-left-color:var(--fg3)}
+pre{background:var(--code-bg);color:var(--code-fg);padding:15px 16px;border-radius:9px;overflow-x:auto;font-size:13.5px;line-height:1.68;margin:12px 0;
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;-webkit-overflow-scrolling:touch}
+pre .c{color:var(--code-cmt)}
+pre .k{color:var(--code-hl)}
+code{background:var(--accent-soft);padding:1px 5px;border-radius:4px;font-size:.9em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--fg);
+  overflow-wrap:anywhere;word-break:break-word}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14.5px;display:block;overflow-x:auto;white-space:normal}
+th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);font-weight:600;font-size:14px}
+tbody tr:nth-child(even){background:rgba(127,127,127,.045)}
+details{margin:12px 0;border:1px solid var(--line);border-radius:8px;background:var(--bg2);padding:0 16px}
+details[open]{padding-bottom:6px}
+summary{cursor:pointer;padding:11px 0;font-weight:600;font-size:15px;color:var(--accent);list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:before{content:"▸ ";color:var(--fg3)}
+details[open] summary:before{content:"▾ "}
+.qa{border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+.write-area{border:1.5px dashed var(--fg3);border-radius:8px;min-height:34px;margin:8px 0 14px;padding:10px 12px;color:var(--fg3);font-size:14px;background:rgba(127,127,127,.04)}
+.write-area.tall{min-height:56px}
+.kicker{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);font-weight:700}
+.big-num{font-size:15px;font-weight:700;color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:40px 0}
+.footer{color:var(--fg3);font-size:13px;text-align:center;margin-top:60px}
+@media (max-width:600px){
+  body{font-size:16px}
+  main{padding:24px 16px 70px}
+  .progress-inner{padding:9px 16px 11px}
+  h1{font-size:24px} h2{font-size:20px}
+  pre{font-size:12.5px}
+  .card{padding:15px 16px}
+}
+
+</style>
+</head>
+<body>
+
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <div class="progress-meta">
+      <b>Day 4 / 28</b>
+      <span>阶段一 · CPU 侧系统工程：先学会看见</span>
+      <span>2026-08-21 周五</span>
+    </div>
+    <div class="bar"><i></i></div>
+  </div>
+</div>
+
+<main>
+
+<h1>CPU 明明没满，请求却全都变慢了：事件循环被堵住的那一刻</h1>
+<p class="sub">AI Infra 速成 · Day 4 · 预计 3.5 小时（讲解 1.5h + 动手 2h）</p>
+
+<!-- ============ 温故 ============ -->
+<div class="card recall">
+  <div class="tag">温故 · 闭卷回忆</div>
+  <h3 style="margin-bottom:4px">先凭记忆答，答不出再展开</h3>
+  <p style="margin-top:6px;color:var(--fg2);font-size:14.5px">不要翻前几天的页面。今天两道，因为课程 8/18 才开始，还没有"7 天前"的内容。</p>
+
+  <h4>Q1 · 1 天前（Day 3 · 采样剖析器与 on-CPU 盲区）</h4>
+  <p>你用 <code>py-spy record</code> 默认参数给一个服务录了 30 秒火焰图，图上最宽的是 <code>epoll_wait</code>，别的什么都看不出来。同事说"那说明服务挺健康的"。他这句话错在哪？你手上还有哪一条 30 秒内就能拿到的数据，可以立刻验证他是不是说反了？</p>
+  <details><summary>展开答案</summary>
+  <div class="qa">
+    <p>他把"on-CPU 火焰图上看不出东西"当成了"没有问题"。这两件事完全不同。</p>
+    <p>py-spy 默认只统计线程状态是 <code>R</code>（在 CPU 上跑）的那些样本，状态是 <code>S</code>（在等）的样本直接跳过不采。所以这张图回答的问题是"<strong>CPU 忙的时候在忙什么</strong>"，不是"时间花在哪"。如果一个服务九成时间在等，这张图会把那九成完全抹掉，剩下一成里最宽的那个函数被放大成主角。</p>
+    <p>图上最宽的是 <code>epoll_wait</code>，这本身就是信号：连"在 CPU 上"的那点时间都主要花在等事件上，说明真正在算的活儿少得可怜。</p>
+    <p>立刻能验证的数据：<code>perf stat</code> 输出里的 <code>task-clock</code>，除以墙上时钟走过的时间。这个比值就是"进程真正占用 CPU 的时间占比"。如果它只有 0.2，说明八成时间根本没在用 CPU，那就得走 off-CPU 方向。也可以直接加 <code>--idle</code> 重录一张，把等待中的栈也画进来。</p>
+    <p><strong>今天要讲的，正是这条 off-CPU 路线上最常见的一种灾难</strong>，而且它是 Python 独有的。</p>
+  </div>
+  </details>
+
+  <h4>Q2 · 3 天前（Day 1 · 全景与基线）</h4>
+  <p>你在周报里写「服务平均延迟 30 毫秒」，leader 说这个数没意义，要看 P99。P99 = 200ms 逐字翻译成中文是什么？为什么平均值会掩盖问题？如果一个 agent 任务要串行调用这个服务 15 次，情况会更好还是更坏？</p>
+  <details><summary>展开答案</summary>
+  <div class="qa">
+    <p>P99 的逐字翻译：把这段时间内所有请求的延迟从小到大排成一队，站在 99% 那个位置上的请求，它的延迟是 200 毫秒。也就是<strong>每 100 个请求里有 1 个比 200 毫秒还慢</strong>。</p>
+    <p>平均值为什么掩盖问题，举个具体的数：99 个请求各花 10ms，1 个花了 2000ms。平均 = (99×10 + 2000) ÷ 100 = 29.9ms。周报上写"平均 30ms"，看起来非常健康，但确实有一个用户干等了 2 秒。平均值把这个人平摊没了。</p>
+    <p>第三问结论是<strong>更坏</strong>。单次不踩到慢请求的概率是 99%，串行 15 次一次都不踩到的概率是 0.99<sup>15</sup> ≈ 86%，反过来<strong>至少踩到一次的概率 ≈ 14%</strong>。每 7 个 agent 任务就有 1 个会明显变慢。<strong>调用链越长，尾部延迟被放大得越厉害。</strong></p>
+    <p><strong>今天你会看到这条规律的一个极端版本</strong>：一个故障，它对中位数完全没有影响，只把尾巴掀翻——如果你的监控只有平均值和 P50，它在你面板上根本不存在。</p>
+  </div>
+  </details>
+</div>
+
+<!-- ============ 今日概览 ============ -->
+<h2>今日概览</h2>
+
+<table>
+<tbody>
+<tr><th style="width:110px">进度</th><td>Day 4 / 共 28 天 · 阶段一（CPU 侧系统工程）· 主题驱动</td></tr>
+<tr><th>今日主题</th><td>asyncio 的事件循环被同步代码堵住时是什么样子；GIL 到底锁住了什么，以及它为什么决定"把活扔进线程池"有没有用</td></tr>
+<tr><th>时间预算</th><td>约 3.5 小时。讲解约 1.5 小时，动手两个任务约 2 小时</td></tr>
+<tr><th>今天不讲</th><td>序列化库横向对比（orjson / msgpack）、多进程 worker、uvloop、GC 停顿。这些都是"解决办法"，而你现在连"问题长什么样、怎么把它测出来"都还没建立。先学会看见，下周再学怎么修</td></tr>
+</tbody>
+</table>
+
+<h3>今天结束后你应该能做到这三件事</h3>
+<ol>
+<li>看到一段 <code>async def</code> 里的代码，你能立刻判断它<strong>会不会把整个服务卡住</strong>，并说出判断依据是哪一个具体特征。</li>
+<li>拿到一段 CPU 密集的代码，你能判断"把它扔进线程池"到底有没有用。判据是一句话，不是"试一次看看"。</li>
+<li>给任意一个 Python 异步服务加上一个二十行的健康探针，并且知道它的读数<strong>哪个能看、哪个不能看</strong>——这里有一个盲区，和昨天火焰图那个盲区是同一个毛病。</li>
+</ol>
+
+<!-- ============ 核心讲解 ============ -->
+<h2>核心讲解</h2>
+
+<h3>1. 今天这一节要回答的问题</h3>
+<p class="lead">CPU 利用率只有 35%，机器看起来有的是余力，为什么有一部分用户要等好几秒？</p>
+
+<p>昨天你学会了"看见"：用采样剖析器把时间的去向摊开。昨天最后留了个尾巴——<strong>CPU 没跑满但服务就是慢</strong>，这类问题在 on-CPU 火焰图上根本不会出现，得走 off-CPU 方向。</p>
+
+<p>今天要拆的，就是这条路线上最常见、也最有 Python 特色的一种。它的现场长这样：</p>
+
+<ul>
+<li>监控面板上 CPU 35%，内存充裕，磁盘和网络都很闲。</li>
+<li>P50 延迟看起来完全正常，跟平时一样。</li>
+<li>但每十个请求里就有一个要等一百毫秒以上，健康检查偶尔超时，告警在响。</li>
+<li>你把机器扩容一倍，情况只好了一点点。</li>
+</ul>
+
+<p>这四条同时出现，几乎可以断定是同一件事。而它的根源，藏在 asyncio 的一个基本设定里。</p>
+
+<h3>2. 一个人的餐厅：事件循环是怎么回事</h3>
+<p class="lead">这一节回答：asyncio 凭什么能用一个线程同时招呼几百个请求？</p>
+
+<p>先把机制说清楚，不然后面的实验读不懂。</p>
+
+<p>Python 的异步框架（FastAPI、aiohttp，以及 vLLM 的 API 层）底下都是同一个东西：<span class="term">事件循环（event loop）</span>。它只有一条性质需要你记住——<strong>它是单线程的</strong>。整个服务，同一时刻只有一个执行流在往前推进。</p>
+
+<p>这听起来像个严重的限制，但它靠一个技巧绕开了。换成日常场景你就明白了。</p>
+
+<p>想象一家餐厅只雇了一个服务员。他要招呼十几桌客人，怎么忙得过来？</p>
+
+<p>关键在于他从不干等。走到 A 桌接下点单，把单子递进厨房——<strong>然后立刻转身去 B 桌</strong>，不在厨房门口等菜。接完 B 桌去 C 桌。等厨房喊"A 桌的菜好了"，他再回去端。</p>
+
+<p>只要"等待"这件事可以交给别人（厨房），一个服务员就能同时服务十几桌。事件循环干的就是这个：网络包在路上飞的时候、数据库在磁盘上找数据的时候，这些等待都不需要 CPU，事件循环就趁这段时间去处理别的请求。</p>
+
+<p>代码里，那个"立刻转身"的动作就是 <code>await</code>：</p>
+
+<pre><code><span class="c"># await 做两件事，缺一不可：</span>
+<span class="c">#   一、发起这次网络请求</span>
+<span class="c">#   二、把控制权交还给事件循环</span>
+<span class="c"># 第二件才是关键。交还之后，事件循环才能去处理别人。</span>
+data = <span class="k">await</span> http_client.get(url)</code></pre>
+
+<p>所以"异步"的本质不是"更快"，而是<strong>把等待的时间让出来给别人用</strong>。它对"在等"的活有效，对"在算"的活完全无效——因为算的时候没有等待可以让。</p>
+
+<p>这里正好补一对贯穿今天的词。一段代码耗时，时间只有两种去处：</p>
+
+<ul>
+<li><strong>在算。</strong>CPU 一刻不停执行指令，比如把大字典转成 JSON、算哈希、做矩阵乘。这叫 <span class="term">CPU 密集（CPU-bound）</span>。给它更多核，它能同时干更多份。</li>
+<li><strong>在等。</strong>CPU 什么都没干，在等外面回话，比如等数据库、等下游接口、等磁盘。这叫 <span class="term">IO 密集（IO-bound）</span>。给它更多核完全没用，它本来也不用 CPU。</li>
+</ul>
+
+<h3>3. 服务员自己炒菜：一行没有 await 的代码</h3>
+<p class="lead">这一节回答：在 <code>async def</code> 里写一段普通的同步计算，会发生什么？</p>
+
+<p>回到餐厅。假设有一道菜不用进厨房，服务员得在前台自己现做，做一次要 47 毫秒。</p>
+
+<p>这 47 毫秒里，他招呼不了任何人。B 桌举手他看不见，C 桌想结账他没空，门口新来的客人在等位。整个餐厅停摆 47 毫秒。</p>
+
+<p>代码里对应的就是这个：</p>
+
+<pre><code><span class="k">async def</span> handler(request):
+    <span class="c"># 注意：这一行没有 await，它是普通的同步调用。</span>
+    <span class="c"># json.dumps 会一路算完才返回，中途一次控制权都不交还。</span>
+    body = json.dumps(big_object)      <span class="c"># ← 47ms，全程占着事件循环</span>
+    <span class="k">return</span> body</code></pre>
+
+<p>这里有个特别容易踩的坑：函数签名写了 <code>async def</code>，很多人就默认它"是异步的"。<strong><code>async def</code> 不会把同步代码变成异步的</strong>，它只是让这个函数<em>有资格</em>使用 <code>await</code>。函数体里那一行是同步的，就是同步的。</p>
+
+<p>这个行为有个专门的名字，叫 <span class="term">阻塞事件循环（blocking the event loop）</span>。</p>
+
+<p>现在问题来了：这件事到底有多严重？<strong>严重到什么程度、伤害落在谁身上</strong>，这两点几乎所有人第一次都会猜错。所以先猜一下再往下看。</p>
+
+<!-- ============ 预测框 ============ -->
+<div class="card predict">
+  <div class="tag">预测 · 先写答案，再往下看</div>
+  <h3 style="margin-bottom:4px">一个你八成会猜错的实验</h3>
+
+  <p>实验很简单，上面用到的概念都讲过了。一个服务跑在 2 核机器上，有三个接口：</p>
+  <ul>
+    <li><code>/await</code>：里面写 <code>await asyncio.sleep(0.048)</code>。它在<strong>等</strong>，48 毫秒。</li>
+    <li><code>/block</code>：里面写同步的 <code>json.dumps(大对象)</code>，实测算一次 47 毫秒。它在<strong>算</strong>。</li>
+    <li><code>/health</code>：什么都不干，直接返回。它是"无辜路人"，正常情况下 1 毫秒以内就该回来。</li>
+  </ul>
+  <p>压测方式：平均每秒 10 个请求打到 <code>/await</code> 或 <code>/block</code>，到达时刻随机。<strong>同时另开一个独立的进程</strong>，不定时地去探 <code>/health</code>，记录它的延迟。</p>
+
+  <p>先跟着算一笔账：一次请求占 47 毫秒，每秒来 10 个，也就是每秒有 470 毫秒被占用。一秒有 1000 毫秒。所以事件循环大约<strong>一半时间在忙，一半时间空着</strong>——听起来相当宽松。</p>
+
+  <p><strong>请预测：压 <code>/block</code> 的时候，那个无辜的 <code>/health</code> 会变成什么样？</strong></p>
+  <div class="write-area tall">压 /block 时，/health 的 P50（中位数）约 ____ ms；P90 约 ____ ms。<br>我的理由：</div>
+
+  <p style="margin-bottom:4px"><strong>再多问一句</strong>：你觉得这两个数会是同一个量级吗？如果不是，哪个更糟、为什么？</p>
+  <div class="write-area">我的想法：</div>
+
+  <p style="color:var(--fg2);font-size:14.5px;margin-bottom:0">写完了再往下翻。下面给的都是实测数字。</p>
+</div>
+
+<h3>4. 揭晓：中位数纹丝不动，尾巴被掀翻了</h3>
+
+<p>下面这张表对比 <code>/await</code> 和 <code>/block</code>。两边的请求速率一样、单次耗时一样，<strong>唯一的区别是那 47 毫秒在等还是在算</strong>。这样切是为了把"负载高低"这个变量彻底排除掉。</p>
+
+<table>
+<thead><tr><th>被压的接口</th><th><code>/health</code> P50</th><th><code>/health</code> P90</th><th><code>/health</code> P99</th></tr></thead>
+<tbody>
+<tr><td><code>/await</code>（在等）</td><td>0.7 ms</td><td>0.9 ms</td><td>1.1 ms</td></tr>
+<tr><td><code>/block</code>（在算）</td><td><strong>0.8 ms</strong></td><td><strong>76.3 ms</strong></td><td><strong>199.3 ms</strong></td></tr>
+</tbody>
+</table>
+
+<p>这张表<strong>要把 P50 和 P90 两列并排着看</strong>，单看任何一列都会得出错误结论。</p>
+
+<p>P50 那一列：0.7 对 0.8。<strong>中位数完全没有反应</strong>，两种情况一模一样。</p>
+<p>P90 那一列：0.9 对 76.3。<strong>差了 85 倍。</strong></p>
+
+<h4>为什么中位数一点没动</h4>
+
+<p>回到刚才算的那笔账：事件循环大约一半时间被占着。</p>
+
+<p>一个健康检查请求到达的时刻是随机的。它有大约一半的概率落在空闲窗口里，那它 1 毫秒就回来了，跟没有故障时一模一样。既然过半的请求都是这样，<strong>中位数当然就是"没事"的那个值</strong>。</p>
+
+<p>这里可以精确一点：<strong>只要占用率低于 50%，P50 就基本不受影响</strong>。这个门槛非常具体，也解释了后面 22 rps 时会发生什么。</p>
+
+<h4>为什么尾巴会这么难看</h4>
+
+<p>另外那一半请求，撞上了正在执行的 <code>json.dumps</code>。它们必须等这一整次算完——<strong>没有任何办法插队，因为事件循环压根没在轮转</strong>。</p>
+
+<p>撞进去的位置是随机的，所以还要等的时间大致均匀分布在 0 到 47 毫秒之间。粗算一下 P90：需要找到那个 v，使"等待超过 v"的概率等于 10%。</p>
+
+<p style="padding-left:1.4em">0.50 × (47 − v) ÷ 47 = 0.10　→　v ≈ 38 毫秒</p>
+
+<p>模型给出 38 毫秒，实测 76.3 毫秒。<strong>量级对了，但偏低了一半。</strong>差在哪？模型假设"撞上时只需等当前这一次"。实际到达是随机的，会出现短时间内挤进来好几个请求的情况，健康检查前面排的不止一个。这部分排队正是 Day 2 讲的内容。</p>
+
+<p>能算出量级、并说清模型少算了什么，比背下 76.3 这个数有用得多。</p>
+
+<div class="card warn">
+<div class="tag">关键结论</div>
+<p style="margin-bottom:0"><strong>只要负载还没超过容量，事件循环被阻塞伤害的是尾巴，不是中位数。</strong><br>
+这直接决定你的监控怎么配。如果面板上只有"平均延迟"和"P50"，这类故障会<strong>完全隐形</strong>——面板一片绿，而每十个用户里有一个在等一百毫秒以上，健康检查在偶尔超时。这正好接上昨天 Q2 那道题：平均值把出事的那个人平摊没了。</p>
+</div>
+
+<h3>5. 那把它扔到别的线程去？</h3>
+<p class="lead">这一节回答：问题定位到了——一段同步代码占着单线程的事件循环。最自然的解法管不管用？</p>
+
+<p>既然罪魁是"它占着那唯一的线程"，最自然的想法就是：把它挪到另一个线程去跑，别占着主线程。</p>
+
+<p>asyncio 确实提供了这个能力，叫 <span class="term">线程池外派（run_in_executor）</span>：</p>
+
+<pre><code><span class="k">from</span> concurrent.futures <span class="k">import</span> ThreadPoolExecutor
+POOL = ThreadPoolExecutor(max_workers=4)
+
+<span class="k">async def</span> handler(request):
+    loop = asyncio.get_running_loop()
+    <span class="c"># 把 cpu_work 丢给线程池里的某个线程去执行。</span>
+    <span class="c"># 当前协程在这里 await —— 也就是交还了控制权，</span>
+    <span class="c"># 事件循环因此可以继续处理别人。看起来问题就解决了。</span>
+    n = <span class="k">await</span> loop.run_in_executor(POOL, cpu_work)
+    <span class="k">return</span> n</code></pre>
+
+<p>看起来无懈可击。但这个办法<strong>有时候完全管用，有时候几乎没用</strong>，而且差别不在"活有多重"上。</p>
+
+<p>要看清这一点，需要再加一组对照。下面把四种做法放在一起，两个维度交叉：</p>
+
+<ul>
+<li><strong>维度一：怎么执行</strong>——同步执行在事件循环上，还是扔进线程池。</li>
+<li><strong>维度二：干哪种活</strong>——两种都是纯计算，都用 C 扩展实现，都不碰网络和磁盘，而且<strong>单次耗时被调到几乎一样</strong>（<code>json.dumps</code> 实测 47.3 毫秒，<code>hashlib.sha256</code> 实测 50.5 毫秒）。</li>
+</ul>
+
+<p>为什么必须这样交叉：如果只测"同步"和"线程池"两个格子，那不管出什么数字，都能编出一套解释。加上第二个维度之后，两组横向对比各自回答一个独立的问题。</p>
+
+<table>
+<thead><tr><th>做法</th><th><code>/health</code> P90</th><th><code>/health</code> P99</th></tr></thead>
+<tbody>
+<tr><td><code>/await</code>（基准：不做任何计算）</td><td>0.9 ms</td><td>1.1 ms</td></tr>
+<tr><td><code>json.dumps</code>，同步执行</td><td>76.3 ms</td><td>199.3 ms</td></tr>
+<tr><td><code>sha256</code>，同步执行</td><td>81.7 ms</td><td>217.0 ms</td></tr>
+<tr><td><code>json.dumps</code>，扔进线程池</td><td><strong>45.5 ms</strong></td><td>161.7 ms</td></tr>
+<tr><td><code>sha256</code>，扔进线程池</td><td><strong>1.1 ms</strong></td><td>5.2 ms</td></tr>
+</tbody>
+</table>
+
+<p>这张表要<strong>横着比两次</strong>。</p>
+
+<p><strong>第一次，比第 2 行和第 3 行（都是同步执行）</strong>：76.3 对 81.7，基本一样。结论是——只要同步执行在事件循环上，<strong>干的是什么活完全无所谓，阻塞就是阻塞</strong>。</p>
+
+<p><strong>第二次，比第 4 行和第 5 行（都扔进了线程池）</strong>：1.1 对 45.5，差了 40 倍。<code>sha256</code> 那一行掉回到了 1.1 毫秒——和什么都不干的基准行（0.9）一模一样，<strong>问题被彻底解决了</strong>。而 <code>json.dumps</code> 只从 76.3 降到 45.5，<strong>问题基本还在</strong>。</p>
+
+<p>两种活耗时几乎相同，外派机制完全相同，线程池配置完全相同。那差别只能来自这两种计算<strong>本身的某个性质</strong>。是什么性质？</p>
+
+<h3>6. GIL：差别就在这里</h3>
+<p class="lead">这一节回答：那个性质是什么，以及它为什么能决定线程池管不管用。</p>
+
+<p>差别是 <span class="term">GIL（Global Interpreter Lock，全局解释器锁）</span>。</p>
+
+<p>CPython 解释器内部有一把全局的锁。规则只有一条：<strong>任何线程想执行 Python 字节码，必须先拿到这把锁</strong>。而一个进程里只有一把。所以哪怕你开一百个线程，同一时刻真正在跑 Python 代码的永远只有一个。</p>
+
+<p>为什么要有这么个东西？因为 CPython 的每个对象内部都带一个引用计数，多个线程同时改同一个对象的计数会出错。用一把大锁把整个解释器保护起来，是最简单可靠的做法，代价就是牺牲了多线程并行。</p>
+
+<p>关键在下面这一步。C 扩展在做那种<strong>不碰任何 Python 对象、纯粹啃一块连续内存</strong>的活时，它可以主动把 GIL <em>放开</em>，算完再拿回来。这个动作叫 <span class="term">放开 GIL（release the GIL）</span>。</p>
+
+<p>现在回头看那两行数据，就全通了：</p>
+
+<ul>
+<li><code>hashlib.sha256</code> 对大块数据正是这么做的。它一放手，事件循环所在的线程<strong>立刻</strong>能拿到 GIL 继续干活。所以 <code>/health</code> 完全恢复。</li>
+<li><code>json.dumps</code> 全程都在读写 Python 的 dict、list、str 对象，它<strong>不能</strong>放开 GIL，只能一路握着算完。事件循环所在的线程虽然没有被自己的代码占住，但它<strong>拿不到 GIL，照样动不了</strong>。它只是从"被自己卡住"变成了"被别的线程卡住"，对外表现差不多。</li>
+</ul>
+
+<p>所以线程池救不救得了，判据只有一条：</p>
+
+<div class="card warn">
+<div class="tag">今天最实用的一条判据</div>
+<p>把一段 CPU 密集的代码扔进线程池有没有用，<strong>只取决于它执行期间会不会放开 GIL</strong>。</p>
+<ul style="margin-bottom:0">
+<li><strong>会放开</strong>：真正的 IO（读写文件、socket 收发）、<code>time.sleep</code>、以及一部分 C 扩展的重计算——hashlib、numpy 的大数组运算、压缩解压、图像编解码。扔进去<strong>有用</strong>。</li>
+<li><strong>不放开</strong>：任何以 Python 对象为主要操作对象的代码——纯 Python 循环、<code>json.dumps</code> / <code>json.loads</code>、Pydantic 的校验与序列化、大量字符串拼接、正则匹配。扔进去<strong>基本没用</strong>。</li>
+</ul>
+</div>
+
+<p>这条判据对你四周后的岗位特别要命。推理服务和 agent 平台的响应里<strong>充满了大 JSON</strong>：工具调用的参数、整轮对话历史、流式返回的 token 批次。这些序列化每一次都是不放 GIL 的 C 调用。它们看起来不像"计算"，但对事件循环来说和一段死循环没有区别——<strong>而且扔进线程池也救不了</strong>。</p>
+
+<h3>7. 过载之后：连中位数也保不住</h3>
+<p class="lead">这一节回答：刚才是 10 rps，如果请求速率继续往上涨呢？</p>
+
+<p>把负载提到 22 rps。这个数字是故意选的：一次 <code>json.dumps</code> 要 47.3 毫秒，单线程一秒最多算完 1 ÷ 0.0473 ≈ 21 个。所以 22 rps <strong>已经超过了这个服务的极限</strong>。</p>
+
+<table>
+<thead><tr><th>被压的接口</th><th>自身 P50</th><th>自身 P99</th><th>实际完成速率</th><th><code>/health</code> P50</th><th><code>/health</code> P99</th></tr></thead>
+<tbody>
+<tr><td><code>/await</code></td><td>50.3 ms</td><td>52.3 ms</td><td>23.6 /秒</td><td>0.7 ms</td><td>1.4 ms</td></tr>
+<tr><td><code>/block</code></td><td>1478 ms</td><td>4100 ms</td><td><strong>21.3 /秒</strong></td><td><strong>192.3 ms</strong></td><td>4247 ms</td></tr>
+</tbody>
+</table>
+
+<p>这张表<strong>先看"实际完成速率"那一列</strong>，它解释了其他所有列。</p>
+
+<p><code>/await</code> 完成了 23.6 个/秒，跟得上目标。<code>/block</code> 只完成 21.3，跟不上 22。<strong>差的那部分不会消失，它堆在队列里。</strong>每秒差 0.7 个，压 20 秒队列就堆到十几个，最后到达的请求得等前面所有人算完——P99 就冲到了 4.1 秒。</p>
+
+<p>但今天真正要看的变化是 <code>/health</code> 的 <strong>P50 从 0.8 变成了 192.3 毫秒</strong>。</p>
+
+<p>为什么这次中位数守不住了？回到第 4 节那个门槛：10 rps 时占用率约 50%，所以有一半的空闲窗口可以接住健康检查。现在占用率超过 100%，<strong>空闲窗口消失了</strong>。任何时刻到达的请求都得排队，中位数自然也就崩了。</p>
+
+<p><strong>欠载时只有尾巴受伤，一旦过载，全体受伤。</strong>两者之间没有平滑过渡，只隔着"容量"这一条线。这正是 Day 2 讲的"利用率与 P99 的非线性关系"在 Python 单线程事件循环上的具体形态。</p>
+
+<h3>8. 怎么在线上把它测出来</h3>
+<p class="lead">这一节回答：线上你不知道哪一行代码有问题，用什么数字判断事件循环健不健康？</p>
+
+<p>上面的实验里我们知道是哪个接口在捣鬼，因为服务是自己写的。线上没有这个信息，你需要一个<strong>不依赖任何业务知识</strong>的健康指标。</p>
+
+<p>方法出奇地简单，而且和昨天的采样器是同一个思路：<strong>派一个哨兵进去，看它能不能按时回来</strong>。</p>
+
+<p>具体做法：开一个后台协程，让它睡一小会，醒来后看实际过了多久。一切正常时它应该基本准时。如果它打算睡 50 毫秒、结果过了 98 毫秒才醒，那多出来的 48 毫秒就是它排队等事件循环的时长。</p>
+
+<p>这个"实际睡了多久 减去 打算睡多久"的差值，叫 <span class="term">事件循环延迟（event loop lag）</span>。</p>
+
+<pre><code>LAG = []
+
+<span class="k">async def</span> lag_monitor():
+    rnd = random.Random(12345)
+    <span class="k">while True</span>:
+        <span class="c"># 间隔必须随机。这个坑昨天见过一次：</span>
+        <span class="c"># 如果哨兵用固定周期，而负载也有周期性，两者会"对齐"——</span>
+        <span class="c"># 要么每次都恰好撞进阻塞窗口，要么每次都恰好躲开。</span>
+        <span class="c"># 那样测出来的是两个周期的相位，不是系统的性质。</span>
+        <span class="c">#（昨天 py-spy 用 99 Hz 而不是 100 Hz，是同一个道理。）</span>
+        iv = rnd.uniform(0.02, 0.08)
+        t0 = time.perf_counter()          <span class="c"># 用 perf_counter：单调时钟，不会被系统改时间影响</span>
+        <span class="k">await</span> asyncio.sleep(iv)
+        LAG.append((time.perf_counter() - t0 - iv) * 1000)</code></pre>
+
+<p>装上之后，第一件要学的事是：<strong>这个指标的中位数是瞎的，别看它。</strong></p>
+
+<table>
+<thead><tr><th>场景</th><th>样本数</th><th>均值</th><th>P50</th><th>P90</th><th>P99</th></tr></thead>
+<tbody>
+<tr><td>/await 10 rps（健康）· 25 秒</td><td>630</td><td>0.80 ms</td><td>0.74 ms</td><td>1.32 ms</td><td>2.16 ms</td></tr>
+<tr><td>/block 10 rps（欠载但阻塞）· 25 秒</td><td>520</td><td>11.32 ms</td><td><strong>1.02 ms</strong></td><td>41.15 ms</td><td>89.91 ms</td></tr>
+<tr><td>/block 22 rps（严重过载）· 20 秒</td><td>162</td><td>116.54 ms</td><td><strong>0.96 ms</strong></td><td>445.5 ms</td><td>1957 ms</td></tr>
+</tbody>
+</table>
+
+<p>这张表<strong>先看 P50 那一列</strong>：0.74、1.02、0.96。三种情况几乎一模一样——哪怕第三行的服务已经烂到健康检查要等 192 毫秒。<strong>P50 在这个指标上完全没有诊断价值。</strong></p>
+
+<p>原因和第 4 节是同一个：探针大部分时候落在健康的时刻，中位数被那些健康样本占据了。所以要看均值、P90、P99——那才是有信号的地方。</p>
+
+<h3>9. 但这个指标还有一个更深的盲区</h3>
+<p class="lead">这一节回答：既然 P50 没用，那数一数"有多少个样本是坏的"，总该行了吧？</p>
+
+<p>这是一个非常自然的下一步：既然中位数被健康样本淹了，那就统计<strong>超过某个阈值的样本占多大比例</strong>，比如超过 10 毫秒的占几成。这个指标看起来又直观又适合做告警。</p>
+
+<p>结果它有一个很坏的性质：<strong>服务越糟，它给出的数字反而越小。</strong></p>
+
+<table>
+<thead><tr><th>场景</th><th>① 超 10ms 的样本占比</th><th>② 累计滞后 ÷ 墙上时间</th></tr></thead>
+<tbody>
+<tr><td>/await 10 rps（健康）</td><td>0.0%</td><td>2.0%</td></tr>
+<tr><td>/block 10 rps（欠载但阻塞）</td><td>27.5%</td><td>23.5%</td></tr>
+<tr><td>/block 22 rps（严重过载）</td><td><strong>21.6%</strong></td><td><strong>94.4%</strong></td></tr>
+</tbody>
+</table>
+<p style="color:var(--fg2);font-size:14px;margin-top:-6px">②的算法：把所有 lag 值加起来，除以实验时长。每一次 <em>L</em> 毫秒的滞后，意味着事件循环有 <em>L</em> 毫秒不可用，所以这个比值是"循环不可用时间占比"的下界。</p>
+
+<p>看①这一列：10 rps 时是 27.5%，到了 22 rps <strong>反而降到 21.6%</strong>。服务从"欠载但有点卡"恶化成"完全过载、健康检查要等 192 毫秒"，这个指标却往下走了。如果你的告警阈值配在 20%～25% 之间，<strong>它会在真正的灾难时刻停止告警。</strong></p>
+
+<p>再看②这一列：2.0% → 23.5% → 94.4%，单调上升，跨了两个数量级。而且 94.4% 这个数是对的——用第 7 节的数据验算一下：实际完成 21.3 个/秒 × 47.3 毫秒 = <strong>1.008</strong>，正好是满载。</p>
+
+<h4>为什么①会低估</h4>
+
+<p>线索在上一节那张表的<strong>样本数</strong>那一列：健康时 25 秒采到 630 个样本，过载时 20 秒只采到 <strong>162</strong> 个。</p>
+
+<p>原因是：<strong>事件循环卡住的时候，哨兵自己也跑不起来。</strong>它也是个协程，它也要排队等事件循环。一次持续两秒的卡顿，只会产生<strong>一个</strong>样本；而同样两秒的健康时段，会产生几十个样本。</p>
+
+<p>于是探针系统性地漏采了它本该测量的那段时间。①是按<strong>样本</strong>加权的，所以被这个偏差扭曲；②是按<strong>时间</strong>加权的——一次两秒的卡顿贡献两秒，不管它只产生了一个样本。</p>
+
+<p>这个毛病叫 <span class="term">采样偏差（sampling bias）</span>。</p>
+
+<p><strong>你昨天已经见过它一次了。</strong>昨天那个 on-CPU 盲区，机制一模一样：采样器看到线程状态是 <code>S</code> 就跳过不采，于是"在等待"这件事在火焰图上一个样本都不剩。今天是同一个毛病换了张脸：探针在循环卡住时跑不动，于是"卡住"这件事在统计里被稀释。</p>
+
+<p><strong>共同的形状是：当你的观测手段和被观测对象共享同一个受损的资源时，它会在你最需要它的时候失灵。</strong>这条规律你会在这份材料里反复遇到，值得现在就记下来。</p>
+
+<div class="card warn">
+<div class="tag">落到生产上怎么配</div>
+<p>把事件循环延迟接进监控时，上报这两个，它们都是按时间加权的：</p>
+<ol style="margin-bottom:0">
+<li><strong>累计滞后总量</strong>（把 lag 值加起来）。等价做法是把均值和样本数一起上报，因为 均值 × 样本数 ÷ 时长 就是累计占比。</li>
+<li><strong>哨兵的实际执行次数</strong>。630 → 520 → 162。这个数掉下来，本身就是"循环忙到连哨兵都排不上队"的直接证据。<strong>指标停止上报，就是最强的告警信号。</strong></li>
+</ol>
+</div>
+
+<h3>10. 把今天的两件事分开记</h3>
+<p class="lead">这一节回答：今天讲的两个机制，各自负责解释什么？</p>
+
+<p>今天最容易被搅混的地方，是把"阻塞事件循环"和"GIL"当成一件事。第 5 节那张 2×2 的表正好把它们分开了。</p>
+
+<table>
+<thead><tr><th></th><th>机制 A：阻塞事件循环</th><th>机制 B：GIL</th></tr></thead>
+<tbody>
+<tr><td>它决定什么</td><td>同步代码会不会卡住整个服务</td><td>把代码扔进线程池能不能救</td></tr>
+<tr><td>根源</td><td>asyncio 是协作式调度，单线程，靠协程主动交还控制权</td><td>CPython 同一时刻只允许一个线程执行 Python 字节码</td></tr>
+<tr><td>跟另一个有关吗</td><td>无关。会放 GIL 的 <code>sha256</code> 同步跑，一样糟（81.7 对 76.3）</td><td>无关。它跟 asyncio 没关系，写普通多线程程序一样撞上</td></tr>
+<tr><td>如果 CPython 去掉 GIL</td><td>还在，一点不变</td><td>消失</td></tr>
+</tbody>
+</table>
+
+<p>这张表<strong>最该记住的是最后一行</strong>。假如哪天 CPython 真的去掉了 GIL（PEP 703 正在做这件事），机制 B 的问题会消失，机制 A 一点都不会变。Node.js 从来没有 GIL，社区里一样天天在说 don't block the event loop。</p>
+
+<h4>那到底该怎么修</h4>
+
+<p>今天的重点是"看见"，修的部分下周展开。但先把地图给你：</p>
+
+<ol>
+<li><strong>先量，再动。</strong>装上事件循环延迟哨兵，看累计滞后和执行次数。数字正常就说明问题不在这儿，别浪费时间。</li>
+<li><strong>看那段同步代码能不能变成真正的异步。</strong>如果它其实是 IO（用了 <code>requests</code> 而不是异步 HTTP 客户端、用了同步数据库驱动），换成异步版本就解决了，这是收益最高的一类。</li>
+<li><strong>如果它确实是计算，先想办法让它变快或变少。</strong>一次 47 毫秒变成一次 5 毫秒，尾延迟的伤害也跟着缩到十分之一。</li>
+<li><strong>判断能不能靠线程池</strong>：这段代码放不放 GIL。</li>
+<li><strong>把活挪出这个 Python 进程。</strong>这是绕开 GIL 的根本办法，因为 GIL 是每个进程一把的。代价是进程间传数据要序列化，而序列化本身又是不放 GIL 的活——所以它不是免费的。</li>
+</ol>
+
+<!-- ============ 动手任务 ============ -->
+<h2>动手任务</h2>
+
+<p>两个任务，一共约 2 小时。任务 A 是必做，纯标准库，不用装任何包。任务 B 把今天的哨兵装到你自己的服务上。</p>
+
+<h3>任务 A · 亲手复现"中位数是瞎的"（约 1 小时）</h3>
+
+<h4>第 1 步：服务端</h4>
+
+<p>这个文件分四块：<strong>第一块</strong>准备两种计算原料；<strong>第二块</strong>是随机间隔的哨兵；<strong>第三块</strong>按路径分发到五种行为；<strong>第四块</strong>启动时先量一遍两种计算的耗时再开始服务。</p>
+
+<p>用裸 asyncio 而不是 FastAPI，是为了让你直接看见事件循环，中间没有框架挡着。FastAPI 跑在完全相同的事件循环上，结论一样。</p>
+
+<pre><code><span class="c"># d4_server.py</span>
+import asyncio, json, time, random, hashlib
+from concurrent.futures import ThreadPoolExecutor
+
+<span class="c"># ---- 第一块：两种计算原料 ----</span>
+random.seed(0)                       <span class="c"># 固定种子，保证你我的数据量一致</span>
+PAYLOAD = [{"id": i, "name": f"item-{i}",
+            "vec": [random.random() for _ in range(16)],
+            "meta": {"tags": ["a","b","c"], "ok": True}} for i in range(5000)]
+BUF = random.randbytes(19_500_000)   <span class="c"># 大小要调到让 w_release() 的耗时贴近 w_hold()</span>
+hashlib.sha256(BUF)                  <span class="c"># 预热：把这块内存真实触碰一遍，避开首次缺页的开销</span>
+
+POOL = ThreadPoolExecutor(max_workers=4)
+def w_hold():    return len(json.dumps(PAYLOAD))            <span class="c"># C 调用，全程持有 GIL</span>
+def w_release(): return len(hashlib.sha256(BUF).digest())   <span class="c"># C 调用，会放开 GIL</span>
+
+<span class="c"># ---- 第二块：事件循环延迟哨兵（间隔随机）----</span>
+LAG = []
+async def lag_monitor():
+    rnd = random.Random(12345)
+    while True:
+        iv = rnd.uniform(0.02, 0.08)
+        t0 = time.perf_counter()
+        await asyncio.sleep(iv)
+        LAG.append((time.perf_counter() - t0 - iv) * 1000)
+
+<span class="c"># ---- 第三块：处理请求 ----</span>
+async def handle(reader, writer):
+    try:
+        line = await reader.readline()
+        if not line: writer.close(); return
+        while True:                       <span class="c"># 把 HTTP 头读干净，否则下次读会串</span>
+            h = await reader.readline()
+            if h in (b"\r\n", b"\n", b""): break
+        path = line.split()[1].decode()
+
+        if   path == "/block":      n = w_hold()
+        elif path == "/block_rel":  n = w_release()
+        elif path == "/thread":
+            n = await asyncio.get_running_loop().run_in_executor(POOL, w_hold)
+        elif path == "/thread_rel":
+            n = await asyncio.get_running_loop().run_in_executor(POOL, w_release)
+        elif path == "/await":
+            await asyncio.sleep(0.048); n = 0   <span class="c"># 48ms，对齐 w_hold 的实测耗时</span>
+        elif path == "/lag":
+            s = sorted(LAG)
+            def q(p): return round(s[min(len(s)-1, int(len(s)*p))], 2)
+            body = json.dumps({"n": len(s), "mean": round(sum(s)/max(1,len(s)),2),
+                               "sum_s": round(sum(s)/1000, 2),   <span class="c"># 累计滞后，单位秒</span>
+                               "p50": q(.5), "p90": q(.9), "p99": q(.99)}).encode()
+            writer.write(b"HTTP/1.1 200 OK\r\nContent-Length: %d\r\nConnection: close\r\n\r\n"%len(body)+body)
+            await writer.drain(); writer.close(); return
+        else:
+            n = 0                                     <span class="c"># /health 走这里，什么都不做</span>
+
+        body = b'{"ok":true,"n":%d}' % n
+        writer.write(b"HTTP/1.1 200 OK\r\nContent-Length: %d\r\nConnection: close\r\n\r\n"%len(body)+body)
+        await writer.drain()
+    except Exception:
+        pass
+    finally:
+        try: writer.close()
+        except: pass
+
+<span class="c"># ---- 第四块：启动 ----</span>
+async def main():
+    <span class="c"># 对照的前提是两种活耗时相当。而 sha256 的速度取决于当天这台机器的</span>
+    <span class="c"># 内存带宽，同一台机器不同时段可能差好几倍。所以每次启动都现场量一遍。</span>
+    for f, name in ((w_hold, "w_hold  (json.dumps, 不放 GIL)"),
+                    (w_release, "w_release(sha256,     放 GIL)")):
+        for _ in range(3): f()
+        xs = []
+        for _ in range(5):
+            t = time.perf_counter(); f(); xs.append((time.perf_counter()-t)*1000)
+        xs.sort()
+        print(f"  {name}: {xs[len(xs)//2]:.1f} ms  (范围 {xs[0]:.1f}~{xs[-1]:.1f})", flush=True)
+
+    _t = asyncio.create_task(lag_monitor())   <span class="c"># 用变量接住，否则任务可能被 GC 掉</span>
+    srv = await asyncio.start_server(handle, "127.0.0.1", 8848, backlog=512)
+    print("listening 8848", flush=True)
+    async with srv:
+        await srv.serve_forever()
+
+asyncio.run(main())</code></pre>
+
+<p><strong>跑起来该看到什么</strong>：先打印两行实测耗时，然后 <code>listening 8848</code>，然后卡住等连接。<strong>先检查那两行数字是不是接近</strong>——差超过 20% 就调 <code>BUF</code> 的字节数把它们拉平，否则第 5 节那个对照根本不成立。</p>
+
+<h4>第 2 步：压测端</h4>
+
+<p>这是一个<strong>开环压测器</strong>：按预定时间表发请求，不管上一个有没有回来。两个细节写在注释里，都是很容易搞错的地方。</p>
+
+<pre><code><span class="c"># d4_load.py</span>
+import asyncio, time, sys, random
+
+async def one(path, t_intended, results):
+    now = time.perf_counter()
+    if t_intended &gt; now:
+        await asyncio.sleep(t_intended - now)
+    start = t_intended     <span class="c"># ← 从"计划发出的时刻"起算，不是从"实际连上"起算。</span>
+                           <span class="c">#   服务卡住时连接本身就建不上，那段干等也必须算进延迟</span>
+    try:
+        r, w = await asyncio.open_connection("127.0.0.1", 8848)
+        w.write(f"GET {path} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n".encode())
+        await w.drain(); await r.read(); w.close()
+        results.append((time.perf_counter() - start) * 1000)
+    except Exception:
+        results.append(float("nan"))
+
+async def run(path, rps, secs):
+    rnd = random.Random(99); results = []; t0 = time.perf_counter()
+    ts, t = [], 0.0
+    for _ in range(int(rps * secs)):
+        t += rnd.expovariate(rps)   <span class="c"># 指数间隔 = 随机到达。</span>
+                                    <span class="c"># 如果用均匀节拍，每个请求都来得刚刚好，几乎测不出排队</span>
+        ts.append(t0 + t)
+    await asyncio.gather(*[asyncio.create_task(one(path, x, results)) for x in ts])
+    ok = sorted(x for x in results if x == x)   <span class="c"># x == x 用来滤掉 nan</span>
+    def p(q): return ok[min(len(ok)-1, int(len(ok)*q))]
+    wall = time.perf_counter() - t0
+    print(f"  {path:12s} P50={p(.5):8.1f} P90={p(.9):8.1f} "
+          f"P99={p(.99):9.1f} 实际速率={len(ok)/wall:5.1f}/s")
+
+if __name__ == "__main__":
+    asyncio.run(run(sys.argv[1], float(sys.argv[2]), float(sys.argv[3])))</code></pre>
+
+<h4>第 3 步：探针（必须是单独一个进程）</h4>
+
+<p>这一条不是可选的。如果把探 <code>/health</code> 的代码和压测代码放进同一个进程，探针会被压测任务自己拖慢，测出来的延迟里有一大截是<strong>客户端自己的排队</strong>，跟服务端一点关系都没有。</p>
+
+<pre><code><span class="c"># d4_probe.py —— 单独一个进程跑，不要和 d4_load.py 合并</span>
+import asyncio, time, sys, random, json
+async def main(dur):
+    rnd = random.Random(7); out = []; end = time.perf_counter() + dur
+    while time.perf_counter() &lt; end:
+        t = time.perf_counter()
+        try:
+            r, w = await asyncio.open_connection("127.0.0.1", 8848)
+            w.write(b"GET /health HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n")
+            await w.drain(); await r.read(); w.close()
+            out.append((time.perf_counter() - t) * 1000)
+        except Exception: pass
+        await asyncio.sleep(rnd.uniform(0.02, 0.08))   <span class="c"># 抖动，避免和负载对齐</span>
+    s = sorted(out)
+    def q(p): return round(s[min(len(s)-1,int(len(s)*p))], 1)
+    print(json.dumps({"n": len(s), "p50": q(.5), "p90": q(.9), "p99": q(.99)}))
+asyncio.run(main(float(sys.argv[1])))</code></pre>
+
+<h4>第 4 步：跑</h4>
+
+<pre><code><span class="c"># 终端 1：起服务。每换一个端点都要重启，否则 LAG 会累加，污染分位数</span>
+python3 d4_server.py
+
+<span class="c"># 终端 2：先起探针，再起压测</span>
+python3 d4_probe.py 25 &amp;
+python3 d4_load.py /block 10 25
+
+<span class="c"># 压完看事件循环延迟</span>
+curl -s localhost:8848/lag
+
+<span class="c"># 重启服务，把 /block 依次换成：/await  /block_rel  /thread  /thread_rel</span>
+<span class="c"># 最后跑一次过载：python3 d4_load.py /block 22 20</span></code></pre>
+
+<p><strong>验收标准：</strong></p>
+<ul>
+<li>服务启动打印的两个耗时相差 20% 以内。差太多先调 <code>BUF</code>。</li>
+<li>五种情况下 <code>/health</code> 的 <strong>P50 全部在 1 毫秒左右</strong>。亲眼确认一遍中位数是瞎的。</li>
+<li><code>/block</code> 和 <code>/block_rel</code> 的 <code>/health</code> P90 接近（几十毫秒量级）。</li>
+<li><code>/thread_rel</code> 的 <code>/health</code> P90 回到个位数毫秒，<code>/thread</code> 明显回不去。</li>
+<li>过载那一次，<code>/health</code> 的 <strong>P50 也崩了</strong>，同时 <code>/lag</code> 返回的 <code>n</code> 大幅下降、<code>sum_s</code> 接近实验总时长。</li>
+</ul>
+
+<p><strong>常见坑：</strong></p>
+<ul>
+<li><strong>换端点忘了重启服务</strong>：<code>LAG</code> 一直累加，上一轮的数据会污染这一轮。</li>
+<li><strong>探针和压测器合并了</strong>：会测出一个漂亮但完全错误的 P50。</li>
+<li><strong>用了 <code>time.time()</code> 测延迟</strong>：它会被 NTP 校准往回拨，你可能量出负数。一律用 <code>time.perf_counter()</code>。</li>
+<li><strong><code>BUF</code> 大小写死后就不管了</strong>：<code>sha256</code> 的速度取决于内存带宽，同一台机器不同时段可能差几倍。每次跑之前看一眼启动打印的那两行。</li>
+<li><strong>核数太少</strong>：压测器和服务会互相抢 CPU，绝对数值会偏大。先 <code>nproc</code> 看看。结论方向不受影响。</li>
+</ul>
+
+<h3>任务 B · 装到真实服务上，并抓一次现场（约 1 小时）</h3>
+
+<p>把 Day 1 那个最小服务（或任何一个 FastAPI 服务）跑起来，做三件事。</p>
+
+<p><strong>① 把哨兵装进去。</strong>把上面 <code>lag_monitor</code> 那二十行抄进你的服务，在启动事件里挂上。压测 30 秒，看 <code>sum_s ÷ 30</code> 是多少。健康的服务这个比值应该在 5% 以下。</p>
+
+<p><strong>② 打开 asyncio 的调试模式，让它自己告状。</strong>asyncio 内置了一个检查：某个回调执行超过 100 毫秒就打警告。</p>
+
+<pre><code><span class="c"># PYTHONASYNCIODEBUG=1 打开调试模式</span>
+<span class="c"># -W default 让警告都打出来，不被默认过滤规则吃掉</span>
+PYTHONASYNCIODEBUG=1 python3 -W default your_server.py</code></pre>
+
+<p>你会看到类似 <code>Executing &lt;Task ...&gt; took 0.152 seconds</code> 的警告，后面跟着协程名字和文件行号——直接把嫌疑人指出来了。如果什么都没出现，说明单次阻塞没到默认阈值 100 毫秒，在启动代码里加一行把阈值调低：<code>asyncio.get_running_loop().slow_callback_duration = 0.02</code>。</p>
+
+<p><strong>③ 用昨天的 py-spy 抓现场，看 GIL 长什么样。</strong>这一步能把今天的第 6 节变成你亲眼看到的东西。</p>
+
+<pre><code>pgrep -f your_server.py                        <span class="c"># 拿到 PID</span>
+py-spy dump --pid &lt;PID&gt; --nonblocking          <span class="c"># 打印所有线程当前的 Python 调用栈</span></code></pre>
+
+<p>拿任务 A 那个服务做对照，连打几次 dump：</p>
+<ul>
+<li>压 <code>/block</code> 时，栈顶反复落在 <code>json.dumps</code> 附近，而且是在 <strong>MainThread</strong> 上。</li>
+<li>压 <code>/thread</code> 时，栈顶转移到了 <code>ThreadPoolExecutor-0_x</code> 这样的工作线程上，<strong>主线程看起来很闲，但服务依然慢</strong>。这一幕就是 GIL 的可视化。</li>
+<li>再压 <code>/thread_rel</code>，栈顶同样在工作线程上，但这次服务是好的。<strong>说明"栈顶在哪个线程"本身判断不了好坏，还得看那段代码放不放 GIL。</strong></li>
+</ul>
+
+<p>如果 py-spy 报 permission denied，回到 Day 3 第 1 步的 ptrace 权限那一节。</p>
+
+<!-- ============ 上岗关联 ============ -->
+<h2>上岗关联</h2>
+
+<p><strong>推理服务的网关层。</strong>vLLM、SGLang 前面都有一层 Python 写的 HTTP 服务，负责收请求、校验参数、拼 prompt、按 SSE 流式吐回结果。模型计算在别处，但这一层一卡，所有请求都被拖累，而你在 GPU 监控上完全看不出问题。流式返回尤其危险：每吐一批 token 就要序列化一次，高并发下每秒几千次，每一次都是不放 GIL 的 C 调用。</p>
+
+<p><strong>Agent 运行时（阶段三你要自己造一个）。</strong>Agent 的上下文越滚越大，每一轮都要把整个上下文序列化一次发给模型。上下文从 4K token 涨到 100K token，一次可能要几百毫秒，这期间同进程的其他会话全部停摆。而且这类负载天然是"少数请求特别大"，正好命中今天讲的尾延迟形态。</p>
+
+<p><strong>Sandbox 服务（阶段四）。</strong>沙箱执行完代码要把 stdout 收回来。如果某个用户的程序打印了 50 MB 输出，你在异步处理函数里对它做一次字符串处理或 JSON 编码，整个调度服务卡住好几秒。<strong>一个用户就能拖垮所有用户</strong>，这既是性能问题也是可用性问题。</p>
+
+<p><strong>面试和同事常问的四道题</strong>，今天的内容正好覆盖：</p>
+<ul>
+<li>"服务 CPU 才 40%，P99 却两秒，你怎么查？"——先量事件循环延迟判断是不是被阻塞，正常的话再走 Day 3 的 on-CPU / off-CPU 分流。</li>
+<li>"Python 有 GIL，还能做高性能服务吗？"——想听你能区分 IO 密集和 CPU 密集，并且知道 GIL 只锁 Python 字节码、不锁放开了 GIL 的 C 扩展。</li>
+<li>"这段代码我扔线程池了，为什么还是慢？"——想听"放不放 GIL"这个判据，最好能举 <code>json.dumps</code> 和 <code>hashlib</code> 的对比。</li>
+<li>"你们的延迟监控看哪几个指标？"——如果你能说出"事件循环延迟不能看 P50，也不能只看超阈值比例，因为探针在卡住时采不到样"，这个回答会非常扎实。</li>
+</ul>
+
+<!-- ============ 自检 ============ -->
+<h2>自检问题</h2>
+
+<details>
+<summary>1. 同样是"一次 47 毫秒的活"，为什么 <code>/await</code> 完全没事，<code>/block</code> 却把 P90 抬到 76 毫秒？两者对事件循环做的事，差别在哪一个动作上？</summary>
+<div class="qa">
+<p>差别只在一个动作：<strong>有没有把控制权交还给事件循环</strong>。</p>
+<p><code>await asyncio.sleep(0.048)</code> 做的是：登记一个 48 毫秒后的闹钟，然后立刻把控制权还给事件循环。这 48 毫秒里事件循环是自由的，可以去处理健康检查、可以接新连接、可以推进别的请求。所以哪怕同时有 100 个请求在"等"，它们也只是 100 个闹钟，互相不挡道。</p>
+<p><code>json.dumps(big_object)</code> 做的是：一路算完才返回。这 47 毫秒里没有任何一个时刻控制权回到事件循环手上。事件循环不是"忙"，是<strong>压根没在运行</strong>——它被困在这个函数调用的栈里出不来。</p>
+<p>所以关键不是"耗时多久"，而是"这段时间里事件循环能不能转"。这也解释了为什么 <code>async def</code> 这个签名毫无保护作用：它只是让函数<em>有资格</em>写 <code>await</code>，至于你写不写，它管不着。</p>
+</div>
+</details>
+
+<details>
+<summary>2. 函数 <code>def embed(texts)</code> 里用 numpy 做大矩阵运算，单次 200 毫秒。同事说"扔 run_in_executor 就行"。你同意吗？如果换成 <code>def render(data)</code>，里面是纯 Python 的字符串模板拼接，同样 200 毫秒，答案还一样吗？</summary>
+<div class="qa">
+<p>答案不同，但判据是同一条：<strong>这段代码执行期间放不放 GIL。</strong></p>
+<p><strong><code>embed</code>：倾向同意，但必须验证。</strong>numpy 做大数组运算时，底层是 C / BLAS 在啃一块连续内存，不碰 Python 对象，<strong>通常会放开 GIL</strong>。那它就属于今天表里 <code>sha256</code> 那一行。</p>
+<p>为什么必须验证？numpy 不是所有操作都放。小数组运算里函数调用和对象开销占大头；用了 Python 层循环或 <code>np.vectorize</code> 包装的也会退化成不放。验证方法就是今天这个对照的缩小版：把它当作 <code>w_release</code> 塞进任务 A 那个服务，看 <code>/health</code> 的 P90 会不会回到基准线。回去了，就是放了。</p>
+<p>还有一个坑：BLAS 自己通常也开多线程。外面开 4 个线程、里面每个再开 8 个，会开出几十个线程互相抢核，反而更慢。用 <code>OMP_NUM_THREADS</code> 之类的环境变量把里层线程数固定住。</p>
+<p><strong><code>render</code>：不同意。</strong>纯 Python 字符串拼接每一步都在执行 Python 字节码、创建销毁 str 对象，全程需要 GIL。它属于 <code>json.dumps</code> 那一行——今天实测 <code>/health</code> P90 只从 76.3 降到 45.5，问题基本还在。</p>
+<p>所以 <code>render</code> 的正确方向是：让它变快（换模板引擎、少拼一点），或者挪到别的进程去。</p>
+</div>
+</details>
+
+<details>
+<summary>3. 某团队把事件循环延迟接进了监控，告警配的是"超过 10 毫秒的样本占比大于 20% 就报警"。这比只看 P50 强多了。但它仍然有一个致命问题，是什么？</summary>
+<div class="qa">
+<p>致命问题是：<strong>这个指标在服务最糟的时候反而会下降，于是告警会在灾难时刻自己关掉。</strong></p>
+<p>看今天的实测：10 rps（欠载但阻塞）时"超 10ms 占比"是 27.5%；22 rps（严重过载、循环 94% 不可用）时反而降到 21.6%。服务烂了四倍，指标却往下走。阈值配在 20%～25% 之间的话，它会正好在最需要报警的时候低于阈值。</p>
+<p>原因是这个指标按<strong>样本</strong>加权，而样本本身被采样偏差扭曲了：循环卡住时哨兵跑不起来，一次两秒的卡顿只产生一个样本，同样两秒的健康时段产生几十个。样本集被健康时刻主导。今天实测样本数从 630 掉到 162，就是这个效应的直接证据。</p>
+<p>改法是换成按<strong>时间</strong>加权的指标：</p>
+<ul>
+<li><strong>累计滞后 ÷ 时长</strong>：2.0% → 23.5% → 94.4%，单调，跨两个数量级，而且 94.4% 和理论满载值 1.008 吻合。</li>
+<li><strong>哨兵执行次数相对基线的降幅</strong>：630 → 520 → 162。指标本身停止上报，就是最强的告警信号。</li>
+</ul>
+<p>更一般的教训：<strong>当你的观测手段和被观测对象共享同一个受损资源时，它会在你最需要它的时候失灵。</strong>昨天 on-CPU 火焰图看不见等待，是同一个毛病的另一张脸。</p>
+</div>
+</details>
+
+<details>
+<summary>4. 假如 CPython 明天就去掉了 GIL，今天第 5 节那张表里的四行，各自会怎么变？</summary>
+<div class="qa">
+<p>逐行问一个问题就行：这一行的毛病属于机制 A 还是机制 B？</p>
+<p><strong><code>json.dumps</code> 同步执行：完全不变，还是那么糟。</strong>它的问题是机制 A。同步代码占着单线程的事件循环不交还控制权，这跟别的线程能不能同时跑 Python 代码毫无关系。哪怕一个进程里一百个线程都能并行，这一个事件循环该卡还是卡。</p>
+<p><strong><code>sha256</code> 同步执行：完全不变。</strong>它本来就是会放 GIL 的活，却依然糟（81.7）——这正是它在表里存在的意义：证明机制 A 和 GIL 无关。</p>
+<p><strong><code>json.dumps</code> 扔线程池：会大幅改善，接近 <code>sha256</code> 那一行。</strong>它的问题是机制 B。GIL 一去掉，工作线程和事件循环所在的线程就能真的同时跑。</p>
+<p><strong><code>sha256</code> 扔线程池：基本不变，它本来就已经好了</strong>（P90 = 1.1，等于基准线）。</p>
+<p>一句话总结：<strong>去掉 GIL 消灭的是"线程池救不了你"，消灭不了"不要阻塞事件循环"。</strong>Node.js 从来没有 GIL，社区里一样天天在说 don't block the event loop。</p>
+</div>
+</details>
+
+<!-- ============ 新词 ============ -->
+<h2>今日新词</h2>
+
+<p>今天引入 8 个新术语，全部在上面出现过。以后忘了可以回来查。</p>
+
+<table>
+<thead><tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>事件循环</td><td>event loop</td><td>asyncio 的调度中枢，单线程，靠协程主动 <code>await</code> 交还控制权来轮转</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>耗时花在"算"上叫 CPU 密集，加核能变快；花在"等外部回话"上叫 IO 密集，加核没用。异步只对后者有效</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>在协程里执行不交还控制权的同步代码，整个服务在这段时间停摆。<strong>机制 A</strong>，与 GIL 无关。它导致快请求陪着慢请求排队，这个连带后果的行话叫 head-of-line blocking</td></tr>
+<tr><td>全局解释器锁</td><td>GIL / Global Interpreter Lock</td><td>CPython 里的一把全局锁，同一进程内同一时刻只允许一个线程执行 Python 字节码。<strong>机制 B</strong></td></tr>
+<tr><td>放开 GIL</td><td>release the GIL</td><td>C 扩展在做不碰 Python 对象的纯计算时主动交出 GIL。<code>hashlib</code>、numpy 的大数组运算会放；<code>json.dumps</code> 不放</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>把同步函数扔到线程池执行，当前协程 <code>await</code> 它的结果。有没有用完全取决于那段代码放不放 GIL</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>派一个协程哨兵进去，测它"该醒却没醒成"的超出时长。间隔必须随机；不要看 P50，也不要只看超阈值比例，要看累计滞后和哨兵执行次数</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>采样方式让某一类情形系统性地采不到，统计结果因此失真。今天的形态：循环卡住时哨兵也跑不起来，所以最糟的时段样本最少。昨天 on-CPU 火焰图看不见等待，是同一个毛病</td></tr>
+</tbody>
+</table>
+
+<!-- ============ 延伸 ============ -->
+<h2>延伸材料</h2>
+
+<p>不用全看。前两条建议今天就看，后面的留着以后查。</p>
+
+<ol>
+<li><strong>Python 官方文档 · asyncio 章节 ·《Developing with asyncio》</strong><br>
+<span style="color:var(--fg2)">短，而且几乎每一条都是你今天会踩的坑。重点看 Debug Mode（<code>PYTHONASYNCIODEBUG</code>、<code>slow_callback_duration</code>）和 Running Blocking Code 两节，任务 B 的第 ② 步就出自这里。<strong>难度：新手友好。</strong></span></li>
+
+<li><strong>FastAPI 官方文档 ·《Concurrency and async / await》</strong><br>
+<span style="color:var(--fg2)">讲清楚了 FastAPI 里用 <code>def</code> 和 <code>async def</code> 定义路由函数时行为完全不同：普通 <code>def</code> 会被自动扔进线程池。带着今天的判据去读——自动扔进线程池，对不放 GIL 的代码同样救不了。<strong>难度：新手友好。</strong></span></li>
+
+<li><strong>py-spy · GitHub 仓库 benfred/py-spy 的 README</strong><br>
+<span style="color:var(--fg2)">昨天用过。今天重点看 <code>dump</code> 子命令和 <code>--nonblocking</code>，任务 B 第 ③ 步要用。<strong>难度：新手友好。</strong></span></li>
+
+<li><strong>PEP 703 ·《Making the Global Interpreter Lock Optional in CPython》</strong><br>
+<span style="color:var(--fg2)">不用通读，看 Motivation 和 Performance 两节即可。它会告诉你 GIL 具体保护的是什么、去掉之后代价在哪。读完自检问题 4 会答得更有底气。<strong>难度：需要基础</strong>，建议今天的实验跑完再读。</span></li>
+
+<li><strong>《Understanding the Python GIL》 — David Beazley，PyCon 2010 演讲</strong><br>
+<span style="color:var(--fg2)">关于 GIL 最经典的一次讲解，用实测演示了多线程在 CPU 密集任务上为什么反而会变慢。年代久远（讲的是 Python 3.2 之前的旧实现），但揭示的机制和你今天量到的现象完全对得上。搜作者名加标题可以找到幻灯片和视频。<strong>难度：需要基础。</strong></span></li>
+</ol>
+
+<!-- ============ 五句话 ============ -->
+<div class="card feynman">
+  <div class="tag">今日五句话 · 费曼式复述</div>
+  <h3 style="margin-bottom:4px">合上这一页，不看笔记</h3>
+  <p>想象你要把今天这块讲给一个刚入职的同事听。他 Python 写得很熟，但从来没做过性能相关的工作。用五句话讲给他听，每句都要是完整的中文句子，不能只写关键词。</p>
+
+  <p style="margin-bottom:4px"><strong>第 1 句</strong>——事件循环是单线程的，它凭什么还能同时招呼很多请求？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 2 句</strong>——一行没有 <code>await</code> 的同步代码，会对整个服务做什么？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 3 句</strong>——这种故障为什么在 P50 上完全看不出来，只有尾巴受伤？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 4 句</strong>——同样是纯计算，为什么有的扔进线程池就好了，有的扔了没用？</p>
+  <div class="write-area"></div>
+  <p style="margin-bottom:4px"><strong>第 5 句</strong>——事件循环延迟这个指标，为什么"坏样本占比"是个陷阱？</p>
+  <div class="write-area"></div>
+
+  <h4 style="margin-top:20px">自查标准</h4>
+  <ul style="margin-bottom:0">
+    <li><strong>第 1 句</strong>如果没提到"把等待的时间让出来给别人用"，回去重读第 2 节那个餐厅的例子。</li>
+    <li><strong>第 2 句</strong>如果写成"会让服务变慢"，太软了。准确的说法是：这段时间里事件循环<em>压根没在运行</em>，所有其他请求一步都推进不了。</li>
+    <li><strong>第 3 句</strong>如果写成"所有请求都会变慢"，那就错了。欠载时中位数<strong>根本不动</strong>（今天五组数据里 P50 全是 0.7～0.9 毫秒）。这是最反直觉、也最影响监控配置的一条。</li>
+    <li><strong>第 4 句</strong>如果写成"CPU 密集的扔线程池没用"，那是记住了结论没记住判据。判据是"放不放 GIL"——<code>hashlib.sha256</code> 也是 CPU 密集的，但它扔进线程池<strong>完全</strong>有用（P90 从 81.7 回到 1.1）。</li>
+    <li><strong>第 5 句</strong>如果只写"要看 P99 不要看 P50"，你只学到了一半。更深的一层是：<strong>哨兵在服务最糟的时候会失灵</strong>，所以按样本加权的指标会反向变化。这和昨天火焰图的盲区是同一个毛病。</li>
+  </ul>
+</div>
+
+<!-- ============ 明日 ============ -->
+<h2>明日预告</h2>
+<p>Day 5 是阶段一的第一个项目日。你要拿前四天的全部工具，去剖析一个你没写过的真实推理服务：自己设计负载、抓 on-CPU 火焰图、做 off-CPU 分析，最后产出一张"top 3 瓶颈假设"表。今天装的这个哨兵会是你第一个动作。</p>
+<p>项目日有一条规矩：<strong>先画后跑</strong>。动手之前先在纸上画出你预期的性能曲线形状，跑完再和真实曲线对比。差在哪里，那里就是你认知的漏洞。</p>
+
+<p class="footer">AI Infra 速成 · Day 4 / 28 · 2026-08-21（周五）· 阶段一 · CPU 侧系统工程<br>
+本页数字实测于一台 2 核 Linux 容器（Python 3.11.15）：<code>json.dumps</code> 单次 47.3ms、<code>sha256</code> 单次 50.5ms，压测平均 10 / 22 rps、指数分布随机到达、持续 25 / 20 秒，探针独立进程、20～80ms 随机间隔。你机器上的绝对值会不同，各组之间的相对关系才是结论。</p>
+
+</main>
+
+</body>
+</html>

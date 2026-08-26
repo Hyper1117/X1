@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra 速成 · Day 6 · 测量本身也会说谎</title>
+<style>
+:root{
+  --bg:#faf6ef; --bg2:#f3ece1; --fg:#2b2621; --fg2:#5f574d; --fg3:#8b8175;
+  --rule:#e2d8c8; --code-bg:#231f1a; --code-fg:#ece5d8; --code-dim:#9a9184;
+  --recall:#2c7c8c; --recall-bg:#e8f2f4;
+  --predict:#b3760d; --predict-bg:#fbf0dc;
+  --key:#b0432c; --key-bg:#fbebe6;
+  --five:#6a58a4; --five-bg:#efebf8;
+  --term-bg:#f5e6c8; --term-fg:#7a5a10;
+  --bar:#c9a86a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15130f; --bg2:#1e1b16; --fg:#e9e2d6; --fg2:#b6ac9d; --fg3:#847a6c;
+    --rule:#332e26; --code-bg:#0e0c09; --code-fg:#e3dbcc; --code-dim:#8d8477;
+    --recall:#5cb4c4; --recall-bg:#15282c;
+    --predict:#e0a63f; --predict-bg:#2c2214;
+    --key:#e2795c; --key-bg:#2e1a14;
+    --five:#a894e0; --five-bg:#211c30;
+    --term-bg:#3a2f16; --term-fg:#e8ca80;
+    --bar:#8a7444;
+  }
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",sans-serif;
+  font-size:17px; line-height:1.78; -webkit-font-smoothing:antialiased;
+}
+.bar{
+  position:sticky; top:0; z-index:20; background:var(--bg2);
+  border-bottom:1px solid var(--rule); padding:9px 20px;
+  display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+  font-size:13px; color:var(--fg2); letter-spacing:.02em;
+}
+.bar b{color:var(--fg); font-weight:650}
+.bar .pill{background:var(--bg); border:1px solid var(--rule); border-radius:99px; padding:1px 10px}
+.bar .track{flex:1; min-width:80px; height:5px; background:var(--rule); border-radius:99px; overflow:hidden}
+.bar .track i{display:block; height:100%; width:21.4%; background:var(--bar)}
+main{max-width:820px; margin:0 auto; padding:26px 22px 80px}
+h1{font-size:31px; line-height:1.32; margin:26px 0 10px; letter-spacing:-.01em; font-weight:700}
+.sub{color:var(--fg2); font-size:16px; margin:0 0 30px}
+h2{font-size:23px; margin:52px 0 6px; line-height:1.4; font-weight:680; letter-spacing:-.005em}
+h3{font-size:18.5px; margin:34px 0 6px; line-height:1.5; font-weight:660}
+h4{font-size:16px; margin:24px 0 4px; font-weight:660; color:var(--fg)}
+p{margin:15px 0}
+.lead{color:var(--fg2); font-style:normal; margin:6px 0 18px; padding-left:13px; border-left:3px solid var(--rule); font-size:15.5px; line-height:1.7}
+ul,ol{padding-left:24px} li{margin:8px 0}
+hr{border:0; border-top:1px solid var(--rule); margin:46px 0}
+a{color:var(--recall); text-decoration:none; border-bottom:1px solid var(--rule)}
+a:hover{border-bottom-color:var(--recall)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--bg2); border:1px solid var(--rule);
+  border-radius:4px; padding:1px 5px; overflow-wrap:anywhere; word-break:break-word}
+pre{background:var(--code-bg); color:var(--code-fg); border-radius:9px;
+  padding:15px 17px; overflow-x:auto; font-size:13.5px; line-height:1.62; margin:16px 0}
+pre code{background:none; border:0; padding:0; color:inherit; font-size:inherit; overflow-wrap:normal; word-break:normal}
+pre .c{color:var(--code-dim)}
+.term{background:var(--term-bg); color:var(--term-fg); border-radius:3px; padding:0 4px; font-weight:640}
+.tw{overflow-x:auto; margin:18px 0; border:1px solid var(--rule); border-radius:9px}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:480px}
+th,td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--rule); vertical-align:top}
+th{background:var(--bg2); font-weight:650; white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right; font-family:ui-monospace,Menlo,Consolas,monospace; white-space:nowrap}
+.card{border-left:4px solid var(--rule); background:var(--bg2); border-radius:0 9px 9px 0; padding:16px 20px; margin:24px 0}
+.card>:first-child{margin-top:0} .card>:last-child{margin-bottom:0}
+.card .ct{font-size:12.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; margin-bottom:8px}
+.card.recall{border-left-color:var(--recall); background:var(--recall-bg)} .card.recall .ct{color:var(--recall)}
+.card.predict{border-left-color:var(--predict); background:var(--predict-bg)} .card.predict .ct{color:var(--predict)}
+.card.warn{border-left-color:var(--key); background:var(--key-bg)} .card.warn .ct{color:var(--key)}
+.card.five{border-left-color:var(--five); background:var(--five-bg)} .card.five .ct{color:var(--five)}
+details{margin:12px 0; border:1px solid var(--rule); border-radius:8px; background:var(--bg); padding:0 14px}
+details[open]{padding-bottom:8px}
+summary{cursor:pointer; padding:11px 0; font-weight:620; font-size:15.5px; list-style-position:outside}
+summary::marker{color:var(--fg3)}
+details p:first-of-type{margin-top:6px}
+.write{border:1px dashed var(--fg3); border-radius:7px; min-height:60px; margin:9px 0 16px; padding:9px 12px; color:var(--fg3); font-size:13.5px; background:var(--bg)}
+.hb{display:flex; align-items:center; gap:9px; font-size:13px; margin:3px 0}
+.hb .lb{width:96px; text-align:right; font-family:ui-monospace,Menlo,monospace; color:var(--fg2); flex:none}
+.hb .bx{flex:1; background:var(--bg2); border-radius:3px; overflow:hidden; height:15px; min-width:40px}
+.hb .bx i{display:block; height:100%; background:var(--bar)}
+.hb .vv{width:64px; font-family:ui-monospace,Menlo,monospace; color:var(--fg2); flex:none; font-size:12.5px}
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; color:var(--fg3); font-size:13.5px}
+@media(max-width:640px){
+  body{font-size:16px} main{padding:18px 15px 60px} h1{font-size:25px} h2{font-size:20px}
+  .hb .lb{width:74px; font-size:11.5px} .hb .vv{width:52px; font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>AI Infra 速成</b>
+  <span class="pill">Day 6 / 28</span>
+  <span>阶段一 · CPU 侧系统工程</span>
+  <span class="track"><i></i></span>
+  <span>2026-08-23 周日</span>
+</div>
+
+<main>
+
+<h1>测量本身也会说谎：为什么你的压测器可能刚好漏掉了最糟的那一段</h1>
+<p class="sub">今天不学新工具。今天学的是：怎么确认你昨天量到的那些数字，说的是服务的事，而不是压测脚本自己的事。</p>
+
+<!-- ══════════════ 温故 ══════════════ -->
+<div class="card recall">
+  <div class="ct">温故 · 闭卷回想</div>
+  <p>先别往下翻。这两道题都需要你真的把机制在脑子里跑一遍，光记住名词答不出来。</p>
+
+  <details>
+    <summary>1 · （昨天 Day 5）一个服务 CPU 利用率只有 30%，但 P99 很高。火焰图和 off-CPU 分析，哪个更可能告诉你原因？为什么？</summary>
+    <p><b>off-CPU 分析。</b></p>
+    <p>关键在于采样剖析器的工作方式：它只在线程<b>正在 CPU 上跑</b>的那些瞬间才能抓到栈。CPU 利用率 30% 意味着，你的线程在 70% 的时间里根本不在 CPU 上——它在等锁、等网络回包、等磁盘、等被调度器选中。</p>
+    <p>所以火焰图能告诉你的，只是那 30% 的时间是怎么花的。它画得再漂亮，覆盖的也只是三成的故事。而 P99 高、CPU 却闲，这个组合本身就在指向"时间花在等待上"，也就是剩下那 70%。</p>
+    <p>反过来说，如果 CPU 已经跑到 95% 而 P99 很高，那火焰图就是主力工具，因为时间确实都花在执行上了。<b>选哪张图，先看 CPU 利用率。</b></p>
+    <p style="color:var(--fg2)">→ 今天要处理的正是这一类：一个服务在绝大多数时间里 CPU 几乎是闲的，却能把 P99 推到 400 毫秒。而更麻烦的是，最常见的那种压测方法会告诉你它只有 6.7 毫秒。</p>
+  </details>
+
+  <details>
+    <summary>2 · （前天 Day 3）假设一个采样剖析器每秒采 100 次。有个函数每 2 秒被调用一次，每次耗时 1 毫秒。跑满 60 秒，期望能采到它几次？这说明采样剖析器有什么盲区？</summary>
+    <p><b>大约 3 次。</b></p>
+    <p>算法是这样的。60 秒里这个函数被调用 30 次，每次 1 毫秒，所以它总共占用了 30 毫秒的 CPU 时间。整段观测窗口是 60000 毫秒。所以在任意一个随机瞬间，线程恰好停在这个函数里的概率是 30 / 60000 = 0.05%。</p>
+    <p>60 秒里一共采 100 × 60 = 6000 个样本。6000 × 0.05% = 3 次。</p>
+    <p>盲区在于：<b>采样剖析器测的是时间占比，不是调用次数。</b>一个被调用得很频繁但每次都极快的函数，在火焰图上可能细得看不见；而一个只被调用一次、却卡了 5 秒的函数，会占掉图上一大块。</p>
+    <p>还有一个连带后果：3 次是<b>期望值</b>，实际可能是 0 次、也可能是 7 次。样本量小的时候，火焰图上那些窄条的宽度基本是噪声，不要拿它们做比较。</p>
+    <p style="color:var(--fg2)">→ "样本量太小，所以那个数字是噪声"——今天你会在压测结果上再遇到同一个道理，而且这次它会让你把一个真实的故障判成"服务很健康"。</p>
+  </details>
+</div>
+
+<!-- ══════════════ 今日概览 ══════════════ -->
+<h2>今日概览</h2>
+
+<div class="tw"><table>
+<tr><th style="width:112px">进度</th><td>Day 6 / 共 28 天 · 阶段一「CPU 侧系统工程：先学会看见」的倒数第二天</td></tr>
+<tr><th>今日主题</th><td>基准测试方法学。把昨天那张瓶颈假设表上的第一条修掉，并且用一套站得住脚的方法量出收益</td></tr>
+<tr><th>时间预算</th><td>约 4~5 小时（周末档）：核心讲解 1.5 小时，动手任务 2.5 小时，自检与复述 0.5 小时</td></tr>
+<tr><th>今天不讲</th><td><b>协调遗漏的数学补偿法</b>（有些工具会按发压节奏把漏掉的样本补回直方图里）。今天的重点是让你亲眼看见"漏"是怎么发生的；先看见机制，再学补偿手段，顺序反过来就只是记住一个开关<br><br><b>统计显著性检验</b>。今天用"同样的测量跑三遍、报范围、看范围重不重叠"这个更土但足够用的办法。正式的检验要先讲清分布假设，硬塞进今天只会变成一节讲不透的统计课<br><br><b>昨天假设表上的另外两条瓶颈</b>。今天只修一条。把"测量 → 假设 → 改动 → 验证 → 量化"这一圈完整走对一次，比修三个但每个都量错要值钱</td></tr>
+</table></div>
+
+<h4>今天结束后你应该能做到这三件事</h4>
+<ol>
+  <li>拿到任何一个压测工具，能从它的命令行参数或源码里判断出：它是按固定节奏发压的，还是等上一个回来才发下一个；并说清这个区别会让哪个数字失真。</li>
+  <li>给出一份压测报告，能指出其中至少三处让结论不可信的地方（发压模型、探针位置、探针周期、预热、重复次数）。</li>
+  <li>把一个修复前后的性能对比做成能交出去的结论：带范围、带对照组、并且能说清为什么排除了其他解释。</li>
+</ol>
+
+<hr>
+
+<!-- ══════════════ 核心讲解 ══════════════ -->
+<h2>1 · 你昨天做的事，今天要先怀疑一遍</h2>
+<p class="lead">这一节回答：昨天那张表上写的是"假设"，把它变成"结论"还缺什么？</p>
+
+<p>昨天你给一个服务做了完整剖析，最后交出一张 top 3 瓶颈假设表。今天很自然的下一步是：挑一条，改掉它，然后再测一遍，看数字变好了多少。</p>
+
+<p>作为一个有经验的后端工程师，你多半会这么做：起一个压测工具，比如 <code>ab -c 4 -n 20000</code> 或者 <code>wrk -c 4 -d 30s</code>，改代码之前跑一次，改完再跑一次，两份 P99 一对比，写进 PR 描述里。</p>
+
+<p>这个流程本身没错。问题在于，它有四个地方会安静地出错，而且出错的时候不会报错，只会给你一个看起来很正常的数字：</p>
+
+<ul>
+  <li><b>发压方式会决定你能看见哪些坏事。</b>最常见的那种压测器有一个内建的机制，会让它在服务最糟的时候<b>少发请求</b>。少发的那些，正是本该最慢的那些。</li>
+  <li><b>你的探针可能在测你自己。</b>如果监控探针和发压逻辑跑在同一个进程里，探针读到的延迟里会混进压测脚本自己的排队时间。服务完全没问题的时候，探针也能报出 150 毫秒。</li>
+  <li><b>周期性的探针会和周期性的故障对上拍子。</b>同一个服务、同一段故障，探针早出发 1.2 秒和早出发 0.4 秒，能得出"完全健康"和"永远坏着"两个完全相反的结论。</li>
+  <li><b>跑一遍的数字没有分母。</b>P99 从 8.1 变成 8.5，是变差了还是本来就在抖？跑一遍这个问题没有答案。</li>
+</ul>
+
+<p>今天把这四件事一件一件拆开看。每一条都会给你一组真实跑出来的数字，以及一个对照——一个"如果这个解释是错的，数字就会不一样"的对比组。</p>
+
+<h4>今天所有数字的来源</h4>
+<p>下面每一个数字，都来自同一台机器上的同一套脚手架。为了让你能对上，先把它交代清楚：</p>
+<ul>
+  <li><b>机器</b>：2 个 vCPU（Intel Xeon @ 2.80GHz），7.8 GiB 内存，Python 3.11.15，Linux 容器。</li>
+  <li><b>被测服务</b>：一个纯标准库写的 asyncio HTTP 服务。每个请求的"正常工作"是 <code>await asyncio.sleep(0.005)</code>，也就是 5 毫秒。</li>
+  <li><b>注入的故障</b>：服务里有一个后台维护任务，<b>每 2.0 秒执行一次，每次耗时 0.4 秒</b>，执行期间事件循环被完全占住，一个请求都处理不了。也就是说，这个服务有 20% 的时间是"坏"的。这正是昨天假设表上的那种瓶颈：同步阻塞调用写在了事件循环里。</li>
+  <li><b>隔离</b>：服务用 <code>taskset -c 0</code> 钉在 0 号 CPU 上，压测器钉在 1 号 CPU 上。这样两边不会互相抢 CPU。</li>
+</ul>
+
+<p>记住这个 <b>20%</b>。整个今天，它就是标准答案。任何一个测量方法，如果不能让你看出"这服务有五分之一的时间在罢工"，那就是这个测量方法有问题，不是服务的问题。</p>
+
+<h2>2 · 压测器有两种，区别不在参数，在模型</h2>
+<p class="lead">这一节回答：<code>-c 4</code> 和 <code>--rate 500</code> 这两个参数，为什么不是同一件事的两种写法？</p>
+
+<p>先把最基础的词说清楚。<b>压测器</b>（load generator）就是一个程序，它不停地向你的服务发请求，然后记录每个请求花了多久。<b>rps</b> 是 requests per second 的缩写，每秒请求数，是发压速率的单位。25 rps 就是每秒发 25 个请求，平均每 40 毫秒发一个。</p>
+
+<p>而<b>延迟</b>（latency）就是一个请求从发出到收到回复花的时间。因为每个请求的延迟都不一样，所以要用分位数来概括：把这一批请求的延迟从小到大排好，排在正中间那个叫 P50，排在 99% 位置那个叫 P99。P99 = 400 毫秒的意思是：100 个请求里有 99 个比 400 毫秒快，有 1 个比它慢。</p>
+
+<h3>两种发压模型</h3>
+<p>现在关键的地方来了。压测器要决定"什么时候发下一个请求"，有两种完全不同的答案。</p>
+
+<p><b>第一种</b>：养 N 个工人，每个工人的行为是——发一个请求，等回复，收到回复了立刻发下一个，永不停歇。这种做法，就叫<span class="term">闭环压测器（closed-loop load generator）</span>。<code>ab -c 4</code>、<code>wrk -c 4</code> 里的那个 <code>-c</code>，指的就是工人数量。</p>
+
+<p><b>第二种</b>：先排好一张时刻表——第 0 毫秒发一个、第 40 毫秒发一个、第 80 毫秒发一个……然后到点就发，<b>完全不管前面那些有没有回来</b>。这种做法，就叫<span class="term">开环压测器（open-loop load generator）</span>。</p>
+
+<h4>用一个日常例子把这两种模型分开</h4>
+<p>想象一家只有一个厨师的小餐馆。</p>
+<p><b>闭环</b>好比这样：门口站着 4 个顾客，规矩是"必须等前一个人拿到菜走了，下一个才能进门点单"。厨师今天要是切到手，停工十分钟，那么这十分钟里门口一个人都进不来——因为第 5 个人还在等第 4 个人出来。等厨师恢复，队伍继续，一切风平浪静。<b>厨师停工的十分钟，只让 4 个顾客等到了。</b></p>
+<p><b>开环</b>好比这样：外卖平台按真实的下单节奏往这家店派单，每 40 秒一单。厨师停工十分钟？平台不知道，也不在乎，照样每 40 秒派一单。十分钟里堆积了 15 单。这 15 个顾客，每一个都真真切切地等了很久。</p>
+
+<p>哪一种更像真实世界？<b>开环。</b>你的用户不会因为你的服务卡住了就自觉地不点开 App。今天早上八点有多少人要用你的服务，这件事由他们的作息决定，跟你的服务健不健康毫无关系。</p>
+
+<h4>开环还有一个容易被忽略的细节</h4>
+<p>开环压测器算延迟的时候，起点必须是<b>时刻表上写的那个时间</b>，不是"我实际把请求发出去的那一刻"。</p>
+<p>还用餐馆的例子：第 15 个顾客的单子是 09:10 派出来的，他 09:25 才拿到菜。他等了 15 分钟。你不能说"这单我 09:24 才递给厨师，厨师一分钟就做好了，所以延迟是 1 分钟"。那 14 分钟的排队时间，也是顾客等的。</p>
+<p>这一点在代码里就是一行的差别，但它决定了整个测量的成败。</p>
+
+<div class="tw"><table>
+<tr><th>　</th><th>闭环压测器</th><th>开环压测器</th></tr>
+<tr><th>你设的参数</th><td>并发工人数（<code>-c</code>）</td><td>目标速率（rps）</td></tr>
+<tr><th>什么时候发下一个</th><td>上一个回来之后</td><td>时刻表到点就发</td></tr>
+<tr><th>服务变慢时</th><td>发压速率<b>自动降下来</b></td><td>速率不变，请求堆积</td></tr>
+<tr><th>延迟从哪一刻算起</th><td>实际发出的那一刻</td><td>时刻表上计划的那一刻</td></tr>
+<tr><th>像什么</th><td>一个有耐心的机器人客户端</td><td>不看你脸色的真实用户流量</td></tr>
+</table></div>
+
+<p>这张表重点看<b>「服务变慢时」</b>这一行，因为其他四行都只是它的推论。闭环压测器在服务变慢时会自动少发请求——这不是 bug，这是它的定义决定的：工人被卡住了，自然发不出新请求。而正是这个"自动"，让它在你最需要数据的时候停止收集数据。</p>
+
+<!-- ══════════════ 预测框 ══════════════ -->
+<div class="card predict">
+  <div class="ct">预测 · 先写下来再往下看</div>
+  <p>现在你已经知道了全部前提条件，写下你的猜测。</p>
+  <p><b>题目：</b>那个服务每 2.0 秒会卡住 0.4 秒，卡住期间一个请求都处理不了；不卡的时候每个请求约 5.6 毫秒。现在用一个<b>闭环</b>压测器，4 个并发工人，不停地打它 20 秒。</p>
+  <p><b>问：它测出来的 P99 会是多少毫秒？</b></p>
+  <div class="write">你的答案（数量级就行）：</div>
+  <p><b>再问：你为什么这么猜？</b>把你的推理写下来——你用了什么算式，或者你觉得哪一部分请求会落进那 1% 里。这一步比答案本身重要，因为待会儿你要回来看是推理的哪一环出了问题。</p>
+  <div class="write">你的理由：</div>
+  <p style="color:var(--fg2);font-size:14.5px;margin-bottom:0">下面给出的是这台机器上实测的数字，同样的配置各跑了三遍。</p>
+</div>
+
+<h2>3 · 揭晓：闭环压测器报出的 P99 是 6.7 毫秒</h2>
+<p class="lead">这一节回答：一个五分之一时间在罢工的服务，怎么会测出一个漂亮的尾延迟？</p>
+
+<p>如果你猜的是 400 毫秒上下，那你的推理是对的——20% 的时间坏掉，坏掉时要等 0.4 秒，尾延迟当然该在几百毫秒。这个推理唯一的问题是，它默认了"压测器会在服务坏掉的时候照常发请求"。</p>
+
+<p>下面是实测结果。两种压测器打的是<b>同一个服务</b>、跑的是<b>同样长的时间</b>、而且<b>平均发压速率一样</b>——具体做法是先让闭环压测器跑，记下它实际达到的速率，再让开环压测器照这个速率去发。所以两者唯一的区别，就是发压模型。</p>
+
+<h4>先看有停顿的服务</h4>
+<div class="tw"><table>
+<tr><th>压测器</th><th class="n">P50 (ms)</th><th class="n">P99 (ms)</th><th class="n">最大值 (ms)</th><th class="n">实际速率 (rps)</th></tr>
+<tr><td>闭环（4 工人）</td><td class="n">5.58 – 5.59</td><td class="n">6.65 – 6.75</td><td class="n">406.3 – 406.7</td><td class="n">566.1 – 569.4</td></tr>
+<tr><td>开环（同速率）</td><td class="n">6.45 – 6.47</td><td class="n">395.3 – 401.8</td><td class="n">413.2 – 485.2</td><td class="n">565.8 – 568.8</td></tr>
+</table></div>
+<p style="font-size:14px;color:var(--fg2);margin-top:-8px">每格是三次独立运行的最小值 – 最大值。</p>
+
+<p>这张表重点看 <b>「P99」</b>这一列，因为 P50 那一列两边几乎一样，最大值那一列两边也都看见了 400 毫秒——只有 P99 差了将近 60 倍。</p>
+
+<p><b>闭环压测器报出 6.65 到 6.75 毫秒。</b>如果你把这个数字写进 PR 描述里，任何人看了都会说：这服务尾延迟很稳，没问题。</p>
+<p><b>开环压测器报出 395 到 402 毫秒。</b>这才是用户会经历的事。</p>
+
+<h4>再看对照组：把停顿去掉</h4>
+<p>到这里必须停一下，先排除一个竞争解释：会不会开环压测器<b>本来就</b>倾向于报出更大的数字？毕竟它是从"计划时刻"开始算的，多算了一段。要回答这个问题，把同样这两个压测器，打在一个<b>完全没有停顿</b>的服务上。</p>
+
+<div class="tw"><table>
+<tr><th>压测器（无停顿服务）</th><th class="n">P50 (ms)</th><th class="n">P99 (ms)</th><th class="n">实际速率 (rps)</th></tr>
+<tr><td>闭环（4 工人）</td><td class="n">5.57 – 5.61</td><td class="n">6.63 – 6.85</td><td class="n">705.7 – 709.6</td></tr>
+<tr><td>开环（同速率）</td><td class="n">6.15 – 6.17</td><td class="n">15.8 – 29.2</td><td class="n">705.8 – 709.8</td></tr>
+</table></div>
+
+<p>这张表重点看<b>开环那一行的 P99：15.8 到 29.2 毫秒。</b>开环压测器确实会报得高一些——高出大约 9 到 23 毫秒。这部分来自压测器自己：在这台只有两个核的机器上，一秒钟安排 706 次发送，偶尔会晚发几毫秒，而晚发的这几毫秒按定义要算进延迟里。</p>
+
+<p>但这就是对照组要回答的问题：<b>9 到 23 毫秒的客户端开销，解释不了 395 毫秒。</b>有停顿时两者差了将近 390 毫秒，无停顿时只差 9 到 23 毫秒。差距的绝对多数，只能来自那个被漏掉的停顿。</p>
+
+<div class="card warn">
+  <div class="ct">关键结论</div>
+  <p><b>闭环压测器在服务变慢时会自动减少发压，于是最该被记录的那些请求根本没被发出去。</b>这个现象有个名字，叫<span class="term">协调遗漏（coordinated omission）</span>——"协调"的意思是，压测器不知不觉地和被测服务达成了默契：你慢，我就少发。</p>
+</div>
+
+<h2>4 · 它到底是怎么漏掉的</h2>
+<p class="lead">这一节回答：60 倍的差距，具体是被哪一步吃掉的？</p>
+
+<p>把那两次运行的原始延迟数据拿出来数一数，机制就一目了然了。</p>
+
+<div class="tw"><table>
+<tr><th>指标</th><th class="n">闭环</th><th class="n">开环</th></tr>
+<tr><td>总请求数</td><td class="n">11389</td><td class="n">11380</td></tr>
+<tr><td>延迟超过 100 毫秒的请求数</td><td class="n">40</td><td class="n">1903</td></tr>
+<tr><td>占比</td><td class="n">0.35%</td><td class="n">16.72%</td></tr>
+<tr><td>P99</td><td class="n">6.75</td><td class="n">395.26</td></tr>
+<tr><td>P99.9</td><td class="n">405.22</td><td class="n">409.30</td></tr>
+<tr><td>最大值</td><td class="n">406.64</td><td class="n">414.90</td></tr>
+</table></div>
+
+<p>这张表重点看<b>「占比」</b>和<b>「P99.9」</b>两行。</p>
+
+<p>先看占比。闭环压测器一共只有 40 个请求超过 100 毫秒，占 0.35%。为什么正好是 40 个？因为每次停顿发生时，只有当时正卡在服务里的那 4 个请求会被拖住；20 秒里发生 10 次停顿，4 × 10 = 40。<b>停顿有多长、期间本该有多少用户被影响，这些信息压测器一概不知道，因为工人被卡住的那 0.4 秒里它一个新请求都没发。</b></p>
+
+<p>而开环压测器按时刻表办事，停顿期间照发不误。以 567 rps 的速率、0.4 秒的停顿，每次停顿会有 227 个请求撞上，10 次就是 2270 个左右——实测 1903 个超过 100 毫秒，剩下的落在 100 毫秒以下（那些是停顿快结束时才到的请求）。</p>
+
+<p>再看 P99.9 这行：<b>闭环压测器的数据里其实有那 400 毫秒，只是被 0.35% 这个占比推到了 P99.9 之外。</b>数据没丢，是分位数选得不对。如果你当初报的是 P99.9 而不是 P99，你就会看见它。但这是运气，不是方法——0.35% 这个数字是并发工人数除以总请求数得来的，它由你的压测器配置决定，跟服务坏得多严重毫无关系。<b>换句话说，闭环压测下要看哪个分位数才能发现问题，取决于你设了几个工人。这就不是个能用的方法。</b></p>
+
+<h4>一个反直觉的性质：这个指标会随着你怎么配置压测器而变，却几乎不随服务变</h4>
+<p>顺着上面的算式往下推。闭环压测器记录到的慢请求个数，约等于 <code>并发工人数 × 停顿次数</code>——它<b>完全不取决于服务坏成什么样</b>，只取决于你设了几个工人、跑了多久。而占比 = 这个个数 ÷ 总请求数。</p>
+<p>这个推论可以直接验证。先把工人数从 4 调到 64，服务完全不动：</p>
+
+<div class="tw"><table>
+<tr><th>闭环工人数</th><th class="n">总请求数</th><th class="n">慢请求占比</th><th class="n">慢请求个数</th><th class="n">P99 (ms)</th></tr>
+<tr><td>4</td><td class="n">11217 – 11398</td><td class="n">0.351 – 0.357%</td><td class="n">≈ 40</td><td class="n">6.87 – 7.24</td></tr>
+<tr><td>64</td><td class="n">166226 – 167067</td><td class="n">0.383 – 0.385%</td><td class="n">≈ 640</td><td class="n">8.06 – 8.15</td></tr>
+</table></div>
+
+<p>这张表重点看<b>「慢请求个数」</b>这一列：40 和 640，正好是 <code>4 × 10</code> 和 <code>64 × 10</code>，公式一分不差。总请求数涨了 15 倍，占比几乎没动（0.35% → 0.38%），P99 也还是个位数毫秒。<b>你把压测强度提高了 15 倍，对发现这个故障没有任何帮助。</b></p>
+
+<p>再换个方向，工人数固定在 4，把停顿从 0.4 秒延长到 1.5 秒——服务明显变糟很多：</p>
+
+<div class="tw"><table>
+<tr><th>停顿时长（周期都是 2.0 秒）</th><th class="n">总请求数</th><th class="n">慢请求占比</th><th class="n">P99 (ms)</th><th class="n">吞吐量 (rps)</th></tr>
+<tr><td>0.4 秒（20% 的时间坏）</td><td class="n">11343 – 11373</td><td class="n">0.352 – 0.353%</td><td class="n">6.61 – 7.14</td><td class="n">567.1 – 568.6</td></tr>
+<tr><td>1.5 秒（75% 的时间坏）</td><td class="n">3552 – 3568</td><td class="n">1.121 – 1.126%</td><td class="n">1500.8 – 1502.2</td><td class="n">177.5 – 178.3</td></tr>
+</table></div>
+
+<p>这张表重点看<b>「P99」</b>这一列：<b>从 7 毫秒跳到 1502 毫秒，跳了 215 倍。</b>而服务只是从"20% 的时间坏"变成了"75% 的时间坏"，坏的程度不到 4 倍。</p>
+
+<p>为什么会跳这么狠？看占比那一列就明白了：两种情况下被拖住的都是 40 个请求（0.352% × 11350 ≈ 40，1.124% × 3560 ≈ 40），分子完全没变。变的是分母——服务罢工时间变长，总共能完成的请求从 11350 掉到 3560。于是占比从 0.35% 涨到 1.12%，<b>刚好越过了 1% 这道线</b>，P99 才终于看见它。</p>
+
+<div class="card warn">
+  <div class="ct">关键结论</div>
+  <p><b>闭环压测下的 P99 不是一个连续的、能反映服务好坏的量。</b>它在"慢请求占比"跨过 1% 的那一刻会突然从个位数跳到上千，跳之前它对服务的恶化几乎毫无反应。而占比跨不跨过 1%，一半取决于你设了几个工人。<br>一个指标如果对你的测量配置比对被测对象还敏感，它就不能拿来做判断——不管它看起来多像一个正常的 P99。</p>
+</div>
+
+<h4>但有一个数字，闭环压测器没有说谎</h4>
+<p>回头看第一张表的最后一列：有停顿时闭环压测器达到 566–569 rps，无停顿时达到 706–710 rps。降了 19.7%。</p>
+<p>而服务的停顿占空比是 0.4 ÷ 2.0 = <b>20%</b>。</p>
+<p>吻合得几乎完美。原因很直白：服务每 2 秒里有 1.6 秒在干活，所以吞吐量就是无故障时的 80%。<b>闭环压测器的吞吐量数字是可信的，撒谎的只是它的延迟数字。</b>这也给你一条实用的应急检查：如果一次压测里延迟看着很漂亮但吞吐量莫名其妙地低，别急着高兴，那多半是有东西在偷偷吃掉你的时间。</p>
+
+<h2>5 · 先看分布的形状，再决定用哪个统计量</h2>
+<p class="lead">这一节回答：平均值 50 毫秒，是不是意味着"大部分请求花了 50 毫秒上下"？</p>
+
+<p>拿刚才开环那次运行的 11380 个延迟值，画一张直方图出来。横轴是延迟区间，每根条的长度是落在这个区间里的请求占比。</p>
+
+<div style="margin:18px 0">
+  <div class="hb"><span class="lb">5–7 ms</span><span class="bx"><i style="width:100%"></i></span><span class="vv">64.51%</span></div>
+  <div class="hb"><span class="lb">7–10</span><span class="bx"><i style="width:20.0%"></i></span><span class="vv">12.90%</span></div>
+  <div class="hb"><span class="lb">10–20</span><span class="bx"><i style="width:1.4%"></i></span><span class="vv">0.91%</span></div>
+  <div class="hb"><span class="lb">20–50</span><span class="bx"><i style="width:3.3%"></i></span><span class="vv">2.16%</span></div>
+  <div class="hb"><span class="lb">50–100</span><span class="bx"><i style="width:4.3%"></i></span><span class="vv">2.80%</span></div>
+  <div class="hb"><span class="lb">100–150</span><span class="bx"><i style="width:4.3%"></i></span><span class="vv">2.79%</span></div>
+  <div class="hb"><span class="lb">150–200</span><span class="bx"><i style="width:4.4%"></i></span><span class="vv">2.83%</span></div>
+  <div class="hb"><span class="lb">200–250</span><span class="bx"><i style="width:4.2%"></i></span><span class="vv">2.73%</span></div>
+  <div class="hb"><span class="lb">250–300</span><span class="bx"><i style="width:4.0%"></i></span><span class="vv">2.55%</span></div>
+  <div class="hb"><span class="lb">300–350</span><span class="bx"><i style="width:3.9%"></i></span><span class="vv">2.53%</span></div>
+  <div class="hb"><span class="lb">350–400</span><span class="bx"><i style="width:3.9%"></i></span><span class="vv">2.54%</span></div>
+  <div class="hb"><span class="lb">400–450</span><span class="bx"><i style="width:1.2%"></i></span><span class="vv">0.76%</span></div>
+</div>
+
+<p>这张图重点看<b>从 50 毫秒到 400 毫秒那一段</b>：八个区间的高度几乎完全一样，每个都在 2.5% 到 2.8% 之间，平得像一块板子。</p>
+
+<p>为什么是平的？因为停顿期间到达的请求是均匀分布在那 0.4 秒里的：最早到的那个要等满 400 毫秒，最晚到的那个只等几毫秒，中间的均匀铺开。<b>这个平台的宽度，直接就是停顿的时长。</b>你看一眼直方图就能读出"有一段 0.4 秒的东西堵住了服务"，都不用去翻日志。</p>
+
+<p>这种一头一个高峰、中间还有一块另外的堆积的形状，叫<span class="term">双峰分布（bimodal distribution）</span>——"峰"指的是数据聚集的地方。这里的两个聚集区是"正常完成的请求"（5–10 毫秒）和"撞上停顿的请求"（20–420 毫秒）。</p>
+
+<h4>为什么形状决定了统计量能不能用</h4>
+<p>这批数据的<b>平均值是 50.31 毫秒</b>。</p>
+<p>现在数一下：11380 个请求里，延迟落在平均值上下 20 毫秒范围内（也就是 30.3 到 70.3 毫秒之间）的，有多少个？</p>
+<p><b>276 个。占 2.4%。</b></p>
+<p>换句话说，"平均延迟 50 毫秒"这句话描述的，是一个 97.6% 的请求都不在的区间。它掉进了两个峰之间的山谷里。这个服务上，几乎没有任何一个请求的体验是"50 毫秒"——要么 6 毫秒，要么两三百毫秒。</p>
+
+<div class="card warn">
+  <div class="ct">关键结论</div>
+  <p><b>先画直方图，再选统计量。</b>平均值只有在数据聚成一堆的时候才有意义。而性能数据几乎从来不聚成一堆——它总是"绝大多数很快 + 一小撮很慢"，因为快和慢往往走的是两条不同的代码路径。看到形状是两堆或者带长尾，就别报平均值了，报分位数，或者直接把直方图贴出来。</p>
+</div>
+
+<h2>6 · 探针不能住在压测器进程里</h2>
+<p class="lead">这一节回答：一个从头到尾都健康的服务，探针为什么会报出 155 毫秒？</p>
+
+<p>先说什么是<b>探针</b>（probe）。压测器负责制造大流量，但你还想知道"在这么大流量下，一个普通用户的体验如何"。所以你会另外起一个轻量的循环，每隔一小段时间发一个请求，单独记它的延迟。这个循环就是探针。</p>
+
+<p>探针写起来很简单，简单到你会很自然地把它写成压测脚本里的一个协程——反正连接、解析这些代码都是现成的。这一步就是问题所在。</p>
+
+<h4>实验设置</h4>
+<p>为了让这次的因果关系干干净净，被测服务这次<b>完全没有停顿</b>（用的是无故障那一版）。所以探针读到的任何超出 6 毫秒的东西，都不可能来自服务端。</p>
+<p>然后同一时间窗里跑两个探针，打同一个服务：</p>
+<ul>
+  <li><b>同进程探针</b>：和 8 个压测协程共用一个事件循环，钉在 1 号 CPU。这个压测脚本还做了一件很多人都会做的事——<b>每隔约 1 秒同步地算一次统计</b>（比如把延迟数组排序、打印一行滚动分位数），每次耗时 0.15 秒。</li>
+  <li><b>独立进程探针</b>：单独一个进程，钉在 0 号 CPU，什么别的事都不干。</li>
+</ul>
+<p>这次两个 CPU 都远没跑满——实测压测进程占 21.3%，服务进程占 9.4%。所以"两边在抢 CPU"这个竞争解释可以直接排除。</p>
+
+<div class="tw"><table>
+<tr><th>探针</th><th class="n">P50 (ms)</th><th class="n">P99 (ms)</th><th class="n">最大值 (ms)</th><th class="n">采到的样本数</th></tr>
+<tr><td>同进程（压测脚本在算统计）</td><td class="n">6.14 – 6.21</td><td class="n">7.85 – 12.55</td><td class="n">155.5 – 156.9</td><td class="n">653 – 664</td></tr>
+<tr><td>独立进程（同一时刻、同一服务）</td><td class="n">5.94 – 6.10</td><td class="n">6.71 – 6.92</td><td class="n">9.15 – 10.27</td><td class="n">739 – 748</td></tr>
+<tr><td><b>对照：</b>同进程（那段统计关掉）</td><td class="n">6.08 – 6.10</td><td class="n">6.99 – 7.36</td><td class="n">10.27 – 31.11</td><td class="n">739 – 750</td></tr>
+<tr><td><b>对照：</b>独立进程（统计关掉）</td><td class="n">6.09 – 6.12</td><td class="n">6.52 – 6.71</td><td class="n">8.16 – 9.71</td><td class="n">744 – 757</td></tr>
+</table></div>
+
+<p>这张表重点看<b>「最大值」</b>这一列，因为四行里只有第一行是异常的。</p>
+
+<p>第一行：<b>155.5 到 156.9 毫秒</b>，三次运行全都撞在这个数附近。而第二行——同一时刻、看着同一个服务的独立进程探针——最大值只有 9 到 10 毫秒。服务端这 20 秒里从来没有慢过。</p>
+
+<p>那 155 毫秒是哪来的？看压测脚本自己的行为：它每隔约 1 秒会同步地占住事件循环 0.15 秒。如果探针的请求恰好在这 0.15 秒里飞回来，响应就得在 socket 缓冲区里干等，等到那段同步代码跑完，事件循环才回来读它。<b>探针把自己进程里的等待时间，记成了服务的延迟。</b>155 毫秒和 150 毫秒的吻合，就是证据。</p>
+
+<p>这个现象叫<span class="term">客户端排队（client-side queuing）</span>：延迟数字里混进了客户端自己的排队，而不是服务端造成的。</p>
+
+<p>第三、四行是对照组：把那段同步统计关掉，其他一切不变。同进程探针的最大值立刻从 155 毫秒掉回 10 到 31 毫秒，和独立进程探针基本齐平了。这就排除了"两个探针的实现本身有系统性差异"这个解释——差别只来自那段同步代码。</p>
+
+<p>还有一个容易被忽略的细节，在<b>「采到的样本数」</b>这一列：同进程探针只采到 653–664 个样本，独立进程探针采到 739–748 个。<b>被堵住的探针，连采样都变少了。</b>这正是第 3 节那个协调遗漏，只不过这次发生在客户端内部：探针在最该记录的那段时间里，反而记得最少。</p>
+
+<div class="card warn">
+  <div class="ct">关键结论</div>
+  <p><b>探针必须是一个独立进程。</b>不是"最好是"，是"必须是"。任何和压测逻辑共享事件循环、共享 GIL、共享进程的探针，测的都是"服务的延迟 + 你自己脚本的延迟"，而你没有办法把这两部分拆开。这跟 Day 4 讲的是同一件事：事件循环被阻塞了。只不过这次被阻塞的不是你的服务，是你的测量工具。</p>
+</div>
+
+<h2>7 · 周期性的探针会和周期性的故障对上拍子</h2>
+<p class="lead">这一节回答：为什么"每 60 秒检查一次"这种再自然不过的做法，可能永远发现不了一个每天出现上百次的故障？</p>
+
+<p>探针要多久发一次？很多人的第一反应是"取个整数吧"——每秒一次、每 15 秒一次、每分钟一次。Prometheus 默认按固定间隔抓取，cron 按固定间隔跑，健康检查也是固定间隔。这看起来是最合理、最省事的选择。</p>
+
+<p>但如果被测的东西<b>也是周期性的</b>，麻烦就来了。</p>
+
+<h4>用一个日常例子建立直觉</h4>
+<p>想象一条每 60 秒过一趟的班车路线，其中有一趟固定在整点后第 30 秒到 40 秒这段时间堵在路口。现在你派一个人去记录路况，规矩是"每 60 秒记一次"。</p>
+<p>如果这个人第一次记录的时刻是整点后第 5 秒，那他之后每次记录都落在第 5 秒——<b>永远看不到那次堵车。</b>他会写一份非常自信的报告：观测 100 次，0 次堵车，路况良好。</p>
+<p>如果他第一次记录恰好落在第 35 秒，那他之后每次都落在第 35 秒——<b>每次都看到堵车。</b>他的报告会说：观测 100 次，100 次堵车，这条路完全瘫痪。</p>
+<p>两份报告都是 100 个样本，都内部完全一致，都是错的。</p>
+<p>这个现象叫<span class="term">锁相（phase locking）</span>：观测的周期和被观测事件的周期对上了拍子，于是观测者被永久锁在事件周期里的同一个位置。</p>
+
+<h4>回到真实机制</h4>
+<p>把它跑一遍。服务还是每 2.0 秒停 0.4 秒（20% 的时间是坏的）。探针每 2.0 秒发一次请求，跑 60 秒，得到 30 个样本。唯一改变的是探针的<b>起跑时刻</b>——分别推迟 0.0、0.4、0.8、1.2、1.6 秒。</p>
+<p>这 5 个探针加上下面要说的另外 5 个，一共 10 个进程，同时跑在同一段时间窗里，打同一个服务。所以它们看到的是<b>完全相同的那一串停顿</b>。</p>
+
+<div class="tw"><table>
+<tr><th>固定间隔探针</th><th class="n">慢样本 (&gt;100ms)</th><th class="n">占比</th><th class="n">P50 (ms)</th><th class="n">P99 (ms)</th></tr>
+<tr><td>起跑推迟 0.0 秒</td><td class="n">0 / 30</td><td class="n">0.0%</td><td class="n">5.75</td><td class="n">6.08</td></tr>
+<tr><td>起跑推迟 0.4 秒</td><td class="n">0 / 30</td><td class="n">0.0%</td><td class="n">5.83</td><td class="n">5.99</td></tr>
+<tr><td>起跑推迟 0.8 秒</td><td class="n">0 / 30</td><td class="n">0.0%</td><td class="n">5.75</td><td class="n">6.87</td></tr>
+<tr><td><b>起跑推迟 1.2 秒</b></td><td class="n"><b>30 / 30</b></td><td class="n"><b>100.0%</b></td><td class="n"><b>121.93</b></td><td class="n"><b>136.62</b></td></tr>
+<tr><td>起跑推迟 1.6 秒</td><td class="n">0 / 30</td><td class="n">0.0%</td><td class="n">5.73</td><td class="n">6.04</td></tr>
+</table></div>
+
+<p>这张表重点看<b>「占比」</b>这一列，因为它给出的是五个互相矛盾的答案：四个探针说"这服务 0% 的时间有问题"，一个说"100% 的时间有问题"。真值是 20%。<b>五个探针，没有一个答对。</b></p>
+
+<p>更糟的是，每一份报告单看都毫无破绽。推迟 0.0 秒那个探针连采了 30 个样本，全部 6 毫秒以内，P99 是 6.08 毫秒。你拿到这份数据，没有任何理由怀疑它。</p>
+
+<p>还可以注意推迟 1.2 秒那一行的 P50：121.93 毫秒，而不是 400 毫秒。因为这个探针每次都固定落在停顿窗口内的同一个位置——大约还剩 122 毫秒就结束的那个位置。<b>它连"这次停顿有多长"都测不对。</b></p>
+
+<h4>修法：给间隔加随机抖动</h4>
+<p>把探针的间隔从"固定 2.0 秒"改成"每次在 1.0 到 3.0 秒之间随机取一个值"，平均还是 2.0 秒。这种给周期加随机扰动的做法，就叫加<span class="term">抖动（jitter）</span>。</p>
+<p>原理很简单：探针不再有固定的相位，于是它落在故障周期里各个位置的机会是均等的。落进坏窗口的比例，长期下来就会收敛到坏窗口占整个周期的比例。</p>
+
+<div class="tw"><table>
+<tr><th>加抖动的探针</th><th class="n">慢样本 (&gt;100ms)</th><th class="n">占比</th><th class="n">P99 (ms)</th></tr>
+<tr><td>起跑推迟 0.0 秒</td><td class="n">8 / 30</td><td class="n">26.7%</td><td class="n">345.93</td></tr>
+<tr><td>起跑推迟 0.4 秒</td><td class="n">6 / 31</td><td class="n">19.4%</td><td class="n">385.77</td></tr>
+<tr><td>起跑推迟 0.8 秒</td><td class="n">2 / 32</td><td class="n">6.2%</td><td class="n">346.58</td></tr>
+<tr><td>起跑推迟 1.2 秒</td><td class="n">5 / 32</td><td class="n">15.6%</td><td class="n">324.76</td></tr>
+<tr><td>起跑推迟 1.6 秒</td><td class="n">8 / 30</td><td class="n">26.7%</td><td class="n">396.94</td></tr>
+</table></div>
+
+<p>这张表重点看<b>「P99」</b>这一列，因为这是固定间隔探针从来没能做到的事：五个探针全部报出 324 到 397 毫秒，全部指向那个 400 毫秒的停顿。而固定间隔那五个探针里，最大的 P99 只有 136.62 毫秒。</p>
+
+<p>占比这一列是 6.2% 到 26.7%，围着真值 20% 上下摆。这个摆动幅度不小，但它有一个和上面完全不同的性质：<b>它是可以靠加样本收窄的。</b>30 个样本估一个 20% 的比例，误差本来就该有这么大。而固定间隔探针的 0% 和 100%，你采一万个样本它还是 0% 和 100%——那不是精度问题，是偏差问题。</p>
+
+<div class="card warn">
+  <div class="ct">关键结论</div>
+  <p><b>任何周期性的观测都要加抖动。</b>探针、健康检查、指标抓取、定时任务，全都算。<br>判断标准很清楚：如果一个测量方法的误差能靠"多采样本"变小，那它只是不够精确；如果多采样本也不会变小，那它是有偏的，采多少都没用。锁相属于后者。</p>
+</div>
+
+<h2>8 · 跑三遍、报范围、扔掉开头</h2>
+<p class="lead">这一节回答：P99 从 8.1 变成 8.5，是变差了，还是本来就在抖？</p>
+
+<p>上面每一张表里的数字都是"最小值 – 最大值"，来自同一个配置的三次独立运行。这不是排版习惯，这是让结论能被信任的最低成本。</p>
+
+<p>规则就一条：<b>如果两组的范围重叠了，你没有测出差异。</b></p>
+
+<p>看两个来自今天的例子。第 3 节里，有停顿服务的闭环 P99 是 6.65–6.75，无停顿服务的闭环 P99 是 6.63–6.85。这两个范围完全重叠——所以从这两个数字上，你没有任何依据说停顿造成了影响。而开环的 395.3–401.8 和 15.8–29.2 差了一个数量级，中间隔着几百毫秒，那就是实打实的差异。</p>
+
+<p>反过来一个正面的例子在第 10 节：修好之后的 P99 范围是 8.48–17.69，而完全无故障的基线是 8.05–16.56。这两个范围也重叠了。这时候正确的结论是"<b>修完之后回到了基线，测不出剩余差异</b>"，而不是"修完之后还差 0.4 毫秒"。范围重叠的时候，你唯一能说的就是"测不出来"。</p>
+
+<h4>基线必须和处理组在同一批里跑</h4>
+<p>这一条容易被忽略，但代价很大。往回翻一下：第 3 节和第 4 节里都出现了"闭环 4 工人打有停顿服务"这个<b>完全相同</b>的配置，两处的 P99 分别是 <b>6.65–6.75</b> 和 <b>6.87–7.24</b>。同一台机器、同一份代码、同一组参数，两个范围甚至不重叠。</p>
+<p>差别只在于它们是隔了一段时间跑的两批。机器的状态会变：页缓存里有什么、有没有别的进程刚跑完、CPU 的频率处在哪一档。这些都不是你能控制的，但它们能在个位数毫秒的量级上制造出稳定的偏移。</p>
+<p>所以规则是：<b>要比较 A 和 B，就必须在同一批里交替跑 A 和 B，不能拿今天的 B 去比上周的 A。</b>第 10 节那四种服务形态是连着测完的，所以它们之间的比较成立。如果你在 PR 里写"对比的是上次发版时的基准数据"，那这个对比本身就没有意义。</p>
+
+<h4>还要扔掉开头那一段</h4>
+<p>服务刚起来的头几秒和跑稳之后不是同一个东西。Python 要 import 模块、连接要建立、socket 缓冲区要分配、内存页要第一次被真正映射、CPU 的分支预测器和缓存里什么都还没有。这些一次性的开销，就叫<span class="term">预热（warm-up）</span>成本。</p>
+<p>把它量出来：一次 12 秒、300 rps、<b>不做任何预热</b>的开环压测，把结果按时间切成三段。</p>
+
+<div class="tw"><table>
+<tr><th>时间段</th><th class="n">P50 (ms)</th><th class="n">P99 (ms)</th><th class="n">最大值 (ms)</th></tr>
+<tr><td>前 1 秒（前 300 个请求）</td><td class="n">6.53 – 6.63</td><td class="n">21.07 – 23.02</td><td class="n">31.04 – 32.99</td></tr>
+<tr><td>第 3 秒之后</td><td class="n">6.49 – 6.57</td><td class="n">7.28 – 8.10</td><td class="n">10.17 – 24.96</td></tr>
+</table></div>
+
+<p>这张表重点看<b>「P99」</b>这一列，因为 P50 那一列两段几乎没有区别——预热成本没有让每个请求都变慢，它只是制造了一小撮很慢的请求。前 1 秒的 P99 是稳定段的 <b>2.7 到 3.1 倍</b>，三次运行都落在这个范围里。</p>
+
+<p>这里有个要注意的地方：这次 12 秒的压测，<b>整段一起算</b>的 P99 是 7.38 到 8.30 毫秒，和"只算第 3 秒之后"的 7.28 到 8.10 几乎一样。因为冷启动那 300 个请求只占全部 3600 个的 8%，稀释掉了。</p>
+<p>所以预热危不危险，取决于它占你测量窗口的多大比例。跑 12 秒，它藏起来了；跑 3 秒，它就是你的 P99。<b>短压测比长压测更容易被预热毁掉，而人在赶时间的时候恰恰倾向于跑短压测。</b></p>
+
+<p>正确做法是：先按正常速率跑一段（几秒就够），把这段的结果整个丢掉，然后才开始正式采集。今天所有实验用的压测器都内置了这个步骤。</p>
+
+<h2>9 · 开环压测器必须汇报一个数：它自己有没有掉队</h2>
+<p class="lead">这一节回答：怎么知道压测器本身有没有变成瓶颈？</p>
+
+<p>开环压测器有一个闭环压测器没有的失败模式：<b>它可能发不出去。</b></p>
+<p>时刻表说第 40 毫秒要发一个请求，但压测进程当时正忙着处理别的事，实际到第 55 毫秒才发出去。晚了 15 毫秒。而按照第 2 节的规则，延迟是从计划时刻算起的，所以这 15 毫秒会被算进延迟里——<b>并且被归咎到服务头上。</b></p>
+
+<p>好在这个量是可以直接测的：每次发送时记一下"计划时刻"和"实际发出时刻"的差。今天所有开环压测里这个差的 P99 落在 <b>1.16 到 30.0 毫秒</b>之间，视速率和当时机器的忙闲而定。</p>
+
+<p>这个数就是压测器的健康证明，用法有两条：</p>
+<ul>
+  <li>如果它比你在测的延迟小很多（比如你测的是几百毫秒，它是几毫秒），可以放心忽略。</li>
+  <li>如果它和你测的延迟同一量级，那你测的是压测器，不是服务。<b>这时候要么给压测器更多 CPU，要么换台机器发压，要么降低速率——总之不能直接用这份数据。</b></li>
+</ul>
+
+<p>回头看第 3 节那个对照组：无停顿服务上开环 P99 是 15.8–29.2 毫秒，闭环是 6.6–6.9 毫秒。差出来的那 9 到 23 毫秒，和当时 3.69–13.01 毫秒的发送迟滞是同一个量级。这不是巧合，这就是同一件事。<b>而这也正是为什么那 395 毫秒的结论站得住：它比压测器自己的误差大了一个数量级还多。</b></p>
+
+<h2>10 · 回到假设表：修掉它，并且把收益量对</h2>
+<p class="lead">这一节回答：把方法学全部用对之后，"我修好了一个瓶颈"这句话该怎么证明？</p>
+
+<p>现在把工具全部装备好，回到昨天那张表上的第一条：<b>一个同步阻塞调用写在了事件循环里</b>。在今天的服务里，它就是那个每 2 秒执行一次、每次 0.4 秒的后台维护任务。</p>
+
+<p>修法是 Python 异步编程里的标准动作：把阻塞调用丢进线程池，让事件循环在它执行期间还能继续处理别的请求。</p>
+
+<pre><code><span class="c"># 修之前：阻塞调用直接写在协程里，这 0.4 秒事件循环什么都干不了</span>
+io_stall(0.4)
+
+<span class="c"># 修之后：丢给线程池执行，await 期间事件循环回去处理别的请求</span>
+loop = asyncio.get_running_loop()
+await loop.run_in_executor(None, io_stall, 0.4)</code></pre>
+
+<h4>但是"改完变快了"不等于"是这个改动让它变快的"</h4>
+<p>为了让因果站得住，这次一共测了四种服务形态，用<b>同一个开环压测器、同一个 500 rps 速率、同样 20 秒、各跑三遍</b>：</p>
+
+<div class="tw"><table>
+<tr><th>服务形态</th><th>说明</th><th class="n">P50 (ms)</th><th class="n">P99 (ms)</th></tr>
+<tr><td><code>none</code></td><td>基线：完全没有那个后台任务</td><td class="n">6.52 – 6.55</td><td class="n">8.05 – 16.56</td></tr>
+<tr><td><code>block</code></td><td>阻塞 IO 直接写在事件循环里（修之前）</td><td class="n">6.64 – 6.68</td><td class="n">394.39 – 395.05</td></tr>
+<tr><td><code>thread</code></td><td>同样的阻塞 IO 丢进线程池（修之后）</td><td class="n">6.54 – 6.56</td><td class="n">8.48 – 17.69</td></tr>
+<tr><td><code>cpublock</code></td><td><b>对照</b>：换成纯 CPU 计算，写在事件循环里</td><td class="n">6.65 – 6.67</td><td class="n">393.90 – 394.72</td></tr>
+<tr><td><code>cputhread</code></td><td><b>对照</b>：同样的纯 CPU 计算，丢进线程池</td><td class="n">6.62 – 6.64</td><td class="n">19.68 – 42.08</td></tr>
+</table></div>
+
+<p>这张表重点看 <b><code>thread</code> 和 <code>cputhread</code> 这两行的对比</b>，因为它们做的是<b>完全相同的动作</b>——都是把 0.4 秒的工作丢进线程池——但结果差了一倍多。</p>
+
+<ul>
+  <li><b><code>block</code> → <code>thread</code>：P99 从 394 毫秒降到 8.5–17.7 毫秒。</b>而且这个范围和基线 <code>none</code> 的 8.05–16.56 完全重叠。按第 8 节的规则，正确的表述是"<b>P99 回到了无故障基线，测不出剩余差异</b>"。</li>
+  <li><b><code>cputhread</code>：P99 是 19.68–42.08 毫秒。</b>这个范围和基线 <code>none</code> 的 8.05–16.56 <b>不重叠</b>。所以纯 CPU 的活儿丢进线程池，只修好了一部分。</li>
+</ul>
+
+<p>这个对照把因果钉死了。<code>cpublock</code> 那一行说明纯 CPU 的活儿写在事件循环里，破坏力和阻塞 IO 一模一样（394 毫秒对 394 毫秒）。而如果"丢进线程池"这个动作本身就能修好问题，那 <code>cputhread</code> 应该和 <code>thread</code> 一样回到基线。它没有。</p>
+
+<p>真正的原因是 Day 4 讲过的 GIL。<code>time.sleep()</code> 这类阻塞 IO 在等待期间<b>会释放 GIL</b>，所以主线程上的事件循环能拿到 GIL 继续跑，一点都不受影响。而纯 Python 的 CPU 计算<b>会一直持有 GIL</b>，解释器只在固定的切换间隔才让出一次，于是事件循环变成了断断续续地被调度——比完全卡死好得多，但也远不如没有。</p>
+
+<div class="card warn">
+  <div class="ct">关键结论</div>
+  <p><b>"丢进线程池"不是一个万能修法，它修的是"这段代码会释放 GIL"的那一类阻塞。</b>阻塞 IO 属于这一类，纯 Python 计算不属于。后者要靠多进程，或者靠会释放 GIL 的原生扩展。<br>更重要的是方法本身：如果今天只测了修前和修后两组，你会得到"P99 降了将近 380 毫秒"这个正确的数字，但会带着一个错误的理解走出去——"以后遇到卡顿就丢线程池"。<b>加一个对照组的成本是多跑 20 秒，收益是把一个正确的数字和一个正确的解释一起拿到手。</b></p>
+</div>
+
+<h4>最后一击：如果用闭环压测器来量这次修复</h4>
+<p>同样这个修复，改用 4 工人的闭环压测器测一遍：</p>
+
+<div class="tw"><table>
+<tr><th>服务形态</th><th class="n">P99 (ms)</th><th class="n">吞吐量 (rps)</th></tr>
+<tr><td><code>block</code>（修之前）</td><td class="n">7.33 – 7.67</td><td class="n">566.7 – 567.5</td></tr>
+<tr><td><code>thread</code>（修之后）</td><td class="n">6.33 – 6.62</td><td class="n">693.1 – 707.0</td></tr>
+</table></div>
+
+<p>这张表重点看两列的<b>反差</b>。</p>
+<p>P99 那一列说：从 7.5 毫秒改善到 6.5 毫秒，大约 13%。如果你把这个数写进 PR，评审多半会说"1 毫秒而已，这个改动值得吗"——一个真实消除了将近 380 毫秒尾延迟的修复，就这样被毙掉了。</p>
+<p>吞吐量那一列说：从 567 rps 涨到 700 rps，提升 24%。<b>这个数字是对的。</b>它对应的正是那 20% 被浪费掉的时间被拿回来了。</p>
+
+<p>所以闭环压测器不是完全没用，它只是<b>不能用来看延迟</b>。而这恰好是最危险的失败模式：它不会崩、不会报错、不会给你一个明显荒谬的数，它只会给你一个偏小的、看起来完全合理的数。</p>
+
+<hr>
+
+<!-- ══════════════ 动手任务 ══════════════ -->
+<h2>动手任务</h2>
+<p class="lead">这一节回答：怎么在自己机器上把上面每一个数字都复现一遍？</p>
+
+<h3>任务 A（必做，约 1.5 小时）· 亲手让 P99 从 6.7 变成 395</h3>
+<p>目标是复现第 3 节那个 60 倍的差距。全部用 Python 标准库，不装任何第三方包，所以在任何有 Python 3.8+ 的地方都能跑。</p>
+
+<h4>A1 · 被测服务</h4>
+<p>这个文件分成三块：<code>io_stall</code> 是注入的故障，<code>handle</code> 处理请求，<code>stall_loop</code> 是那个周期性的后台任务。<code>--mode</code> 决定后台任务用哪种方式执行，这是待会儿做对照的开关。</p>
+
+<pre><code><span class="c"># server.py —— 最小 asyncio HTTP 服务，可注入周期性停顿</span>
+import argparse, asyncio, time, sys
+HDR = b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: keep-alive\r\n\r\nok"
+
+def io_stall(sec):
+    <span class="c"># 代表一次同步阻塞 IO：同步写盘、同步调用另一个服务。</span>
+    <span class="c"># 用 time.sleep 是因为它在 C 层会释放 GIL，这一点决定了线程池能不能修好它。</span>
+    time.sleep(sec)
+
+async def handle(reader, writer, args):
+    try:
+        while True:
+            if not await reader.readline(): break        <span class="c"># 请求行；连接关了就退出</span>
+            while True:                                   <span class="c"># 读完请求头，读到空行为止</span>
+                h = await reader.readline()
+                if h in (b"\r\n", b"\n", b""): break
+            await asyncio.sleep(args.work)                <span class="c"># 每请求的“正常工作”，不阻塞事件循环</span>
+            writer.write(HDR); await writer.drain()
+    except (ConnectionResetError, BrokenPipeError):
+        pass
+    finally:
+        writer.close()
+
+async def stall_loop(args):
+    loop = asyncio.get_running_loop()
+    await asyncio.sleep(args.period)
+    while True:
+        t0 = time.perf_counter()
+        if args.mode == "block":
+            io_stall(args.dur)                            <span class="c"># 直接在事件循环里阻塞 ← 待会儿要修的就是这行</span>
+        elif args.mode == "thread":
+            await loop.run_in_executor(None, io_stall, args.dur)   <span class="c"># 修好的版本</span>
+        <span class="c"># mode == "none" 时什么都不做，这是基线</span>
+        <span class="c"># 减掉已花时间，保证周期稳定在 period，否则周期会漂移</span>
+        await asyncio.sleep(max(0.0, args.period - (time.perf_counter() - t0)))
+
+async def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--port", type=int, default=9001)
+    p.add_argument("--mode", default="block")
+    p.add_argument("--period", type=float, default=2.0)   <span class="c"># 停顿间隔（秒）</span>
+    p.add_argument("--dur", type=float, default=0.4)      <span class="c"># 停顿时长（秒）</span>
+    p.add_argument("--work", type=float, default=0.005)   <span class="c"># 每请求正常耗时（秒）</span>
+    args = p.parse_args()
+    if args.mode != "none":
+        asyncio.create_task(stall_loop(args))
+    srv = await asyncio.start_server(lambda r, w: handle(r, w, args),
+                                     "127.0.0.1", args.port, backlog=4096)
+    sys.stderr.write(f"server ready mode={args.mode}\n"); sys.stderr.flush()
+    async with srv:
+        await srv.serve_forever()
+
+if __name__ == "__main__":
+    asyncio.run(main())</code></pre>
+
+<p><b>运行它，你应该看到什么：</b>执行 <code>python3 server.py --port 9001 --mode block</code>，标准错误上打出一行 <code>server ready mode=block</code>，然后进程挂住不退。另开一个终端 <code>curl -s localhost:9001/work</code>，应该立刻返回 <code>ok</code>。多敲几次 <code>curl</code>，大部分是瞬间返回，偶尔有一次会明显卡半秒——那就是你注入的停顿。<b>如果 curl 全部瞬间返回，从来不卡</b>，检查 <code>--mode</code> 是不是被写成了 <code>none</code>。</p>
+
+<h4>A2 · 两种压测器</h4>
+<p>这个文件的核心是两个函数：<code>run_open</code> 和 <code>run_closed</code>。它们唯一的区别就是"什么时候发下一个请求"。请重点读 <code>run_open</code> 里 <code>sched_abs</code> 这个变量怎么用的——它就是第 2 节讲的那张时刻表。</p>
+
+<pre><code><span class="c"># client.py（节选）—— 同一份代码里的两种发压模型</span>
+
+async def run_open(args, lat, slip):
+    pool = Pool(args.port)                               <span class="c"># 连接池，避免把建连成本算进延迟</span>
+    for _ in range(args.prewarm):
+        pool.put(await open_conn(args.port))
+    t0 = time.perf_counter()
+    interval = 1.0 / args.rps                            <span class="c"># 时刻表的步长</span>
+
+    async def fire(sched_abs):                           <span class="c"># sched_abs = 这个请求“计划”发出的绝对时刻</span>
+        now = time.perf_counter()
+        if now &lt; sched_abs:
+            await asyncio.sleep(sched_abs - now)         <span class="c"># 睡到点。晚了就不睡，立刻发</span>
+        actual = time.perf_counter()
+        c = await pool.get()
+        await one_request(*c)
+        done = time.perf_counter()
+        pool.put(c)
+        lat.append(done - sched_abs)                     <span class="c"># ★ 关键一行：从“计划时刻”算起，不是从 actual</span>
+        slip.append(actual - sched_abs)                  <span class="c"># 压测器自己的健康指标：晚发了多久</span>
+
+    <span class="c"># ★ 关键：所有请求的任务一次性全建好，谁也不等谁 —— 这就是“开环”</span>
+    tasks = [asyncio.create_task(fire(t0 + i * interval))
+             for i in range(int(args.dur * args.rps))]
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+async def run_closed(args, lat, slip):
+    stop = time.perf_counter() + args.dur
+    async def worker():
+        r, w = await open_conn(args.port)
+        while time.perf_counter() &lt; stop:
+            s = time.perf_counter()
+            await one_request(r, w)                      <span class="c"># ★ 关键：必须等这个回来</span>
+            lat.append(time.perf_counter() - s)          <span class="c"># 延迟从实际发出算起</span>
+    <span class="c"># conc 个工人各自循环，服务慢下来时它们自动就发得少了 —— 这就是“闭环”</span>
+    await asyncio.gather(*[worker() for _ in range(args.conc)], return_exceptions=True)</code></pre>
+
+<p><b>运行它，你应该看到什么：</b>先起服务，然后</p>
+<pre><code>taskset -c 0 python3 server.py --port 9001 --mode block &amp;
+sleep 2
+taskset -c 1 python3 client.py --port 9001 --mode closed --conc 4 --dur 20 --tag c1
+<span class="c"># 记下上面输出里的 achieved_rps，比如 567，然后用同样的速率跑开环</span>
+taskset -c 1 python3 client.py --port 9001 --mode open --rps 567 --dur 20 --tag o1</code></pre>
+<p>两行 JSON。闭环那行的 <code>p99</code> 应该是<b>个位数毫秒</b>，同时 <code>max</code> 是 <b>400 上下</b>。开环那行的 <code>p99</code> 应该是 <b>380 到 410 之间</b>。</p>
+<ul>
+  <li><b>如果开环的 p99 也只有个位数</b>：检查 <code>lat.append</code> 那行是不是写成了 <code>done - actual</code>。这是最容易犯的错，改一个变量名就把开环变回了闭环。</li>
+  <li><b>如果开环的 <code>slip_p99_ms</code> 和 <code>p99</code> 是同一量级</b>：你的压测器掉队了，把 <code>--rps</code> 调低一半再试。</li>
+  <li><b>如果闭环的 <code>max</code> 远小于 400</b>：服务的 <code>--mode</code> 没设成 <code>block</code>，或者压测时长不够长、一次停顿都没赶上。</li>
+</ul>
+
+<h4>A3 · 验收标准</h4>
+<ul>
+  <li>同一个服务、同样的平均速率下，你手上有两份数字：闭环 P99 是个位数毫秒，开环 P99 是几百毫秒。</li>
+  <li>你跑了对照组（<code>--mode none</code>），并且能说出：这时候两个压测器的 P99 差多少，以及为什么这个差值证明了前一条的结论成立。</li>
+  <li>每个配置你都跑了三遍，报出的是范围，不是单个数。</li>
+  <li>你能指着自己的 <code>slip_p99_ms</code> 说出压测器有没有掉队。</li>
+</ul>
+
+<h4>A4 · 常见坑</h4>
+<ul>
+  <li><b>服务和压测器抢 CPU。</b>不用 <code>taskset</code> 分开钉住的话，两边会互相干扰，而这种干扰恰恰长得像"服务变慢了"。核数少的机器上这一步是必须的。</li>
+  <li><b>没预热。</b><code>--warmup</code> 设成 0 跑一次短压测，你会看到 P99 比稳定值高两三倍，然后花半天去追一个不存在的 bug。</li>
+  <li><b>压测时长不是停顿周期的整数倍。</b>周期 2.0 秒、跑 20 秒，正好 10 次停顿，稳定。跑 21 秒，有时 10 次有时 11 次，三次运行之间就会莫名其妙地飘。</li>
+  <li><b>连接数不够。</b>开环压测在停顿期间需要几百个并发连接。<code>--prewarm</code> 给小了，池子空了就得现开连接，建连成本会被算进延迟。</li>
+</ul>
+
+<h3>任务 B（约 1 小时）· 把这套方法用到你自己的服务上</h3>
+<p>拿你手上任何一个真实的 HTTP 服务——公司的、自己写的、Day 5 剖析过的那个都行——按下面四步走一遍：</p>
+<ol>
+  <li><b>先找出它的周期性行为。</b>定时任务、指标上报、缓存刷新、连接池健康检查、日志轮转、GC。翻代码里的 <code>schedule</code>、<code>interval</code>、<code>cron</code>、<code>every</code> 这些词。把周期记下来。</li>
+  <li><b>用固定间隔探针探一次，故意把探针间隔设成上一步找到的那个周期。</b>然后换三个不同的起跑时刻各跑一次。如果三次结果差得离谱，你就在自己的服务上复现了第 7 节。</li>
+  <li><b>换成开环压测，速率设在它日常峰值的七成左右。</b>把结果和你们现有的监控面板上的 P99 对一下。如果开环测出来的明显更高，去查一下面板上那个数是怎么采的——很可能就是闭环，或者是同进程探针。</li>
+  <li><b>画一张延迟直方图。</b>不用工具，把延迟数组排序后分桶打印就行。看它是一堆还是两堆。如果是两堆，去找那个把请求分成两条路径的分叉点（缓存命中与否、快慢路径、重试）。</li>
+</ol>
+<p><b>验收标准</b>：你能画出自己服务的延迟直方图，指出它是几个峰；你能说出你们监控面板上的 P99 用的是哪种发压模型；你手上有一份"面板数字 vs 开环数字"的对比。</p>
+
+<h3>加分题</h3>
+<p>第 4 节量到了两个点：停顿 0.4 秒时闭环 P99 是 7 毫秒，停顿 1.5 秒时是 1502 毫秒。<b>中间那个拐点在哪？</b></p>
+<p>把服务的 <code>--dur</code> 从 0.4 秒扫到 1.5 秒，取七八个值，每个值用闭环 4 工人跑三遍，画两条曲线：一条是闭环报出的 P99，一条是开环同速率报出的 P99。开环那条应该是一条平滑上升的直线，闭环那条会在某处直上直下。</p>
+<p>算出跳变发生时的慢请求占比，验证它是不是恰好落在 1% 附近。然后把工人数从 4 换成 16 重跑一遍——按第 4 节那个公式，分子会变成 16 × 停顿次数，你能<b>先算出</b>拐点会往哪边移、移多少，再用实验验证你算得对不对。</p>
+
+<hr>
+
+<!-- ══════════════ 上岗关联 ══════════════ -->
+<h2>上岗关联</h2>
+<p class="lead">这一节回答：今天这些东西，在推理服务的日常工作里长什么样？</p>
+
+<p>下面三个场景都来自 vLLM 仓库里的压测脚本 <code>vllm/benchmarks/serve.py</code>。这是你四周后大概率每周都要用的工具，也是团队里所有性能结论的来源。行号对应的是 2026-08-22 的提交 <code>bbe8b23</code>。</p>
+
+<h4>场景一 · 你被要求"测一下这个改动对 TTFT 的影响"</h4>
+<p>先搞清楚这个工具是怎么发压的。<code>serve.py</code> 第 499–506 行：</p>
+<pre><code>start_ts = time.time()
+for request_index, request in enumerate(input_requests):
+    if delay_ts[request_index] &gt; 0:
+        current_ts = time.time()
+        sleep_interval_s = start_ts + delay_ts[request_index] - current_ts   <span class="c"># ← 绝对时刻表</span>
+        if sleep_interval_s &gt; 0:
+            await asyncio.sleep(sleep_interval_s)
+    yield request, request_rates[request_index]</code></pre>
+<p>睡到的是 <code>start_ts + delay_ts[i]</code>，一个从压测开始时刻算起的<b>绝对</b>时间点，而不是"上一个发完之后再睡 X 秒"。这两种写法看着差不多，但相对睡法会把每次的处理耗时累加成漂移，跑十分钟能漂出好几秒。</p>
+<p>再看第 1067–1074 行：请求全都用 <code>asyncio.create_task(...)</code> 建好扔进 <code>tasks</code>，最后一起 <code>await asyncio.gather(*tasks)</code>——<b>没有任何一步等待前一个请求的响应。</b>这是一个标准的开环压测器。</p>
+<p>还有一个细节值得注意，在第 469 行和第 948 行：请求间隔是从 gamma 分布采样的，<code>burstiness</code> 默认为 1 时退化成指数分布，代码里把它打印为 <code>"Poisson process"</code>。这就是第 7 节讲的抖动，而且是它最标准的形式——随机的到达间隔从原理上就不可能和任何周期对上拍子。</p>
+
+<h4>场景二 · 有人跟你说"加上 --max-concurrency 才像真实线上环境"</h4>
+<p>这句话对了一半。第 969–981 行，这个参数会给每个请求套一个信号量：</p>
+<pre><code>semaphore = asyncio.Semaphore(max_concurrency) if max_concurrency else contextlib.nullcontext()
+
+async def limited_request_func(request_func_input, session, pbar):
+    async with semaphore:                          <span class="c"># ← 在这里排队等一个名额</span>
+        return await request_func(...)</code></pre>
+<p>这个信号量把开环压测器变回了闭环：拿不到名额的请求就在这里等着，服务越慢等的越久，实际发压速率就跟着降下来。参数自己的帮助文本（第 1606–1613 行）也明说了这一点——"如果服务处理得不够快，实际请求速率可能低于 <code>--request-rate</code> 指定的值"。</p>
+<p>真正要命的是计时的位置。计时起点 <code>st = time.perf_counter()</code> 在 <code>lib/endpoint_request_func.py</code> 第 198 行，也就是<b>信号量已经拿到之后</b>才开始计时。所以请求在客户端信号量上排的那段队，完全不在 TTFT 里。</p>
+<p><b>这就是第 3 节那个协调遗漏，一字不差。</b>所以：<code>--max-concurrency</code> 用来模拟"上游网关限制了并发"这个约束是对的，但这时候你手里的延迟数字不能当作用户体验来读。<b>要报延迟，就别加这个参数；加了这个参数，就只报吞吐量。</b></p>
+
+<h4>场景三 · 你想知道"大压力下一个小请求要等多久"</h4>
+<p>这个脚本内置了探针功能，<code>--probe-request-rate</code>。它的帮助文本（第 1692–1700 行）写得很准："绕过 <code>--max-concurrency</code>，单独报告它们的延迟，用来测量主负载对无关请求的拖累。"绕过信号量这个设计是对的，正好避开了场景二那个坑。</p>
+<p>但看一下它的实现，第 984–1003 行：</p>
+<pre><code>async def probe_loop():
+    interval = 1 / probe_request_rate
+    while not probe_stop.is_set():
+        probe_outputs.append(await request_func(request_func_input=probe_input, session=session))
+        await asyncio.sleep(interval)              <span class="c"># ← 固定间隔，且是相对睡法</span>
+
+probe_task = asyncio.create_task(probe_loop())     <span class="c"># ← 和压测协程同一个事件循环</span></code></pre>
+<p>两件事值得你在用之前心里有数。第一，这个探针是压测进程里的一个协程，和几千个压测协程共用一个事件循环——正是第 6 节那个结构。第二，间隔是固定的 <code>1 / probe_request_rate</code>，没有抖动，所以第 7 节的锁相风险是存在的。</p>
+<p>实用建议：把 <code>--probe-request-rate</code> 设成一个<b>不整除任何常见周期</b>的值（比如 0.37 而不是 0.5），并且如果它给出的结论很关键，另外用一个独立进程的探针交叉验证一次。<b>读工具的源码，比读它的 README 更能告诉你这个数字能信到什么程度。</b></p>
+
+<h4>面试和同事会问的问题</h4>
+<ul>
+  <li>"你们的 P99 是怎么测的？"——这个问题真正在问的是发压模型。回答里要包含：开环还是闭环、延迟从哪一刻算起、探针在哪个进程。</li>
+  <li>"这个优化提升了多少？"——先反问测量条件：跑了几遍、范围多大、有没有对照组、负载是不是同一个。没有这些，"提升 15%" 是一句没有信息量的话。</li>
+  <li>"为什么线上 P99 比压测出来的高这么多？"——线上流量是开环的（用户不管你忙不忙），压测常常是闭环的。这个问题十次里有七八次答案就在这里。</li>
+  <li>"为什么监控面板上一切正常，但用户在投诉？"——先问面板上的数是怎么采的。固定间隔探针 + 周期性故障，是这个组合的经典产物。</li>
+</ul>
+
+<hr>
+
+<!-- ══════════════ 自检问题 ══════════════ -->
+<h2>自检问题</h2>
+<p class="lead">这一节回答：你是真的理解了机制，还是只记住了"要用开环"这个结论？</p>
+
+<details>
+<summary>1 · 某个服务每 10 秒卡 1 秒。你用闭环压测器，8 个工人，跑 100 秒。大约有多少个请求的延迟会超过 500 毫秒？如果不卡的时候每个请求 5 毫秒，总请求数大概多少？算出慢请求占比，然后说明 P99 能不能发现这个故障。</summary>
+<p><b>慢请求约 80 个，总请求约 145000 个，占比约 0.055%，P99 发现不了。</b></p>
+<p>逐步算。100 秒里发生 10 次停顿。每次停顿时，8 个工人手上各有一个请求正卡着，所以每次拖住 8 个请求。10 × 8 = <b>80 个</b>慢请求。</p>
+<p>总请求数：服务有 10 秒在罢工，剩下 90 秒在干活。8 个工人，每个请求 5 毫秒，所以每秒能完成 8 ÷ 0.005 = 1600 个。90 × 1600 = <b>144000 个</b>，加上那 80 个，约 144080。</p>
+<p>占比 = 80 ÷ 144080 = <b>0.055%</b>。</p>
+<p>P99 看的是最慢的 1%，也就是最慢的约 1440 个请求。80 个慢请求只排在最慢的前 0.055%，深深地埋在 P99 的分界线之内侧。所以 <b>P99 完全看不见它</b>，报出来的会是正常的个位数毫秒。</p>
+<p>要看见它，得看 P99.95 甚至 P99.99。但这个"需要看哪个分位数"完全由你设了 8 个工人这件事决定，跟故障本身无关——换成 64 个工人，慢请求变 640 个，总数也变 8 倍，占比纹丝不动。所以这不是一个能用的方法。</p>
+<p>用开环压测器，同样 1600 rps，每次停顿会有 1600 个请求撞上，10 次就是 16000 个，占 11%。这时候 P99 会直接落在 800 毫秒到 1 秒那一带。</p>
+</details>
+
+<details>
+<summary>2 · 同事说："我们的探针是独立进程，而且用了开环压测，所以数据没问题。"但他的探针每 30 秒发一次，而服务里有个每 30 秒执行一次的指标上报任务。他的数据可信吗？如果你只能给他提一条修改建议，提哪条？</summary>
+<p><b>不可信。建议：给探针间隔加随机抖动。</b></p>
+<p>独立进程解决的是第 6 节那个客户端排队问题，开环解决的是第 3 节那个协调遗漏问题。这两件事他都做对了。但探针周期和故障周期相等，触发的是第 7 节的锁相——这是第三个、独立的问题。</p>
+<p>后果和第 7 节的实验一样：他的探针会被永久锁在指标上报周期里的同一个位置。如果那个位置在上报之外，他会得到一份"从来没有异常"的报告，而且这份报告的样本会随着时间越来越多、看起来越来越可信。如果那个位置恰好在上报期间，他会得到"每次都异常"，然后去追一个其实只占 3% 时间的问题。</p>
+<p>修法是把固定的 30 秒换成"在 15 到 45 秒之间随机取"，平均还是 30 秒。或者更标准的做法，按泊松过程采样，也就是让间隔服从指数分布——vLLM 的压测脚本对请求到达时间用的就是这个。</p>
+<p>怎么判断这类问题：如果多采样本能让误差变小，那只是精度不够；如果采再多也不会变小，那是有偏。锁相是后者，所以"再多跑几天攒数据"帮不上任何忙。</p>
+</details>
+
+<details>
+<summary>3 · 你把一个阻塞调用移进线程池，开环压测下 P99 从 380 毫秒降到 12 毫秒。你的同事把另一段纯 Python 的 CPU 计算也移进线程池，P99 只从 380 降到 35。他问你为什么效果差这么多，而且这个 35 毫秒还能不能再降。</summary>
+<p><b>因为 GIL。能再降，但不能靠线程。</b></p>
+<p>先说机制。CPython 有一把全局解释器锁，同一时刻只允许一个线程执行 Python 字节码。<code>time.sleep()</code>、网络读写、磁盘读写这些阻塞 IO 在等待期间会<b>主动释放</b> GIL，因为它们等的是操作系统，不需要解释器。所以主线程上的事件循环能立刻拿到 GIL 继续跑，完全不受影响。</p>
+<p>而纯 Python 的 CPU 计算<b>一直持有</b> GIL。解释器只会在固定的切换间隔到了之后才让出一次。所以事件循环变成了断断续续被调度：能跑，但每次都要等一小段。这比完全卡死好得多，也远不如没有。这就是 380 → 35 的来历。</p>
+<p>怎么再降，取决于那段计算是什么：</p>
+<ul>
+  <li><b>移到独立进程</b>（<code>ProcessPoolExecutor</code>）。GIL 是每个解释器进程一把的，换进程就彻底躲开了。代价是参数和返回值要序列化，所以传大对象时反而可能更慢。</li>
+  <li><b>换成会释放 GIL 的原生实现</b>。NumPy 这类库的很多操作在 C 层执行期间会释放 GIL。这时候线程池就重新有效了。</li>
+  <li><b>把那段计算搬出请求路径</b>。如果它不需要同步返回，扔进队列异步做。</li>
+</ul>
+<p>顺带一提，"P99 从 380 降到 12"这句话本身还缺一个东西：这两个数各跑了几遍、范围多大。如果 12 的范围是 8–17，而无故障基线是 8–16，那正确的结论是"回到基线了"，不是"还剩 4 毫秒"。</p>
+</details>
+
+<details>
+<summary>4 · 你拿到一份压测报告：平均延迟 45 毫秒，P50 是 8 毫秒，P99 是 390 毫秒。光凭这三个数，你能推断出这个服务大概是什么毛病吗？</summary>
+<p><b>能推断出形状，而且这个形状指向一段固定时长的阻塞。</b></p>
+<p>关键在于平均值和 P50 差了 5 倍多。平均值被少数极大值拽了上去，而 P50 没有——说明有一小撮请求慢得非常离谱，而绝大多数请求很快。</p>
+<p>再往下算一步。假设慢请求的延迟平均是 200 毫秒（如果它们是均匀铺在 0 到 390 毫秒之间的话），快请求是 8 毫秒。设慢请求占比 x：<code>8(1-x) + 200x = 45</code>，解得 x ≈ 19%。<b>大约五分之一的请求撞上了慢路径。</b></p>
+<p>这个组合——绝大多数请求很快、约五分之一的请求均匀分布到几百毫秒、上限大约 390 毫秒——正是一段固定时长的阻塞反复发生时的样子。上限 390 毫秒基本就是阻塞的时长，19% 基本就是它的占空比。</p>
+<p>接下来该做的：画直方图确认是不是真的双峰、上限那一带是不是平的；然后去服务里找周期大约能对上的定时任务。</p>
+<p>顺便说，这份报告本身是合格的——它同时给了平均值和分位数，你才能做上面这个推断。<b>只报平均值，你什么都推不出来；只报 P99，你不知道有多少请求受影响。</b></p>
+</details>
+
+<hr>
+
+<!-- ══════════════ 今日新词 ══════════════ -->
+<h2>今日新词</h2>
+<div class="tw"><table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>闭环压测器</td><td>closed-loop load generator</td><td>用固定数量的工人发压，每个工人必须等上一个请求回来才发下一个；服务变慢时发压速率自动降低。</td></tr>
+<tr><td>开环压测器</td><td>open-loop load generator</td><td>按预先排好的时刻表发压，不管前面的请求有没有回来；延迟必须从计划时刻算起。</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>压测器在服务变慢时少发了请求，于是最该被记录的那些慢请求根本没被发出去，尾延迟被系统性地低估。</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>数据聚成两堆而不是一堆；此时平均值会落在两堆之间的山谷里，描述的是几乎没有样本的区域。</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>延迟数字里混进了压测客户端自己的等待时间，被错误地归给了服务端。</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>观测周期和被观测事件的周期对上拍子，观测者被永久锁在事件周期里的同一个位置，结果系统性有偏。</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>给周期性动作的间隔加上随机扰动，破坏固定相位；平均周期不变，但采样变得无偏。</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>服务刚启动时的一次性开销（建连、首次内存映射、缓存与分支预测器为空）；测量前要先跑一段并把结果丢掉。</td></tr>
+</table></div>
+
+<!-- ══════════════ 延伸材料 ══════════════ -->
+<h2>延伸材料</h2>
+<ol>
+  <li><b>vLLM 压测脚本源码</b>　<a href="https://github.com/vllm-project/vllm/blob/main/vllm/benchmarks/serve.py">vllm/benchmarks/serve.py</a>　<span style="color:var(--fg2)">（难度：需要基础 · 约 2400 行，但你只需要读三段）</span><br>
+  值得读，是因为它是一个把今天的方法学做对了的真实例子：绝对时刻表、泊松到达间隔、显式的预热请求数。而 <code>--max-concurrency</code> 和内置探针这两处，则是你需要自己心里有数的地方。带着"这个数字能信到什么程度"的问题去读，比通读一遍收获大得多。</li>
+
+  <li><b>Gil Tene，《How NOT to Measure Latency》</b>　<span style="color:var(--fg2)">（难度：新手友好 · 演讲）</span><br>
+  "协调遗漏"这个说法就来自这里。今天第 3 节的实验是这场演讲核心论点的一个最小复现。看完你会对"P99 是怎么被系统性算小的"有一个非常具体的画面。</li>
+
+  <li><b>Brendan Gregg，《Systems Performance: Enterprise and the Cloud》第 12 章 Benchmarking</b>　<span style="color:var(--fg2)">（难度：查阅型 · 按需翻）</span><br>
+  这一章把基准测试会出错的方式做了系统的编目，今天讲的几条都在里面，还有很多今天没碰到的。当成清单用：做完一次压测，对着它过一遍。</li>
+
+  <li><b>Brendan Gregg，《Systems Performance》第 2 章 Methodology 中的 USE 方法与 Little's Law 部分</b>　<span style="color:var(--fg2)">（难度：需要基础）</span><br>
+  接的是 Day 2。今天第 4 节末尾那个"吞吐量没说谎"的观察，本质上就是 Little's Law 的一个应用。把这一节和今天的数据放在一起读，会更清楚为什么吞吐量和延迟必须一起看。</li>
+</ol>
+
+<!-- ══════════════ 五句话 ══════════════ -->
+<div class="card five">
+  <div class="ct">今日五句话 · 用自己的话讲一遍</div>
+  <p>不要抄上面的句子。想象你在跟一个懂后端但没做过性能工程的同事解释，每题写 2 到 4 句。写完之后对照下面的自查标准。</p>
+
+  <p><b>1 · 闭环压测器和开环压测器，区别到底在哪一步？</b></p>
+  <div class="write"></div>
+
+  <p><b>2 · 为什么一个五分之一时间在罢工的服务，闭环压测器会报出 6.7 毫秒的 P99？</b></p>
+  <div class="write"></div>
+
+  <p><b>3 · 一个从头到尾都健康的服务，探针为什么可能报出 155 毫秒？</b></p>
+  <div class="write"></div>
+
+  <p><b>4 · 为什么"每 30 秒检查一次"这种做法可能永远发现不了一个每 30 秒发生一次的故障？</b></p>
+  <div class="write"></div>
+
+  <p><b>5 · 你说"这个优化把 P99 降低了 380 毫秒"，凭什么让人相信是这个优化的功劳？</b></p>
+  <div class="write"></div>
+
+  <h4 style="margin-top:26px">逐句自查标准</h4>
+  <ul>
+    <li><b>第 1 句</b>如果写成"一个设并发数、一个设速率"，那就错了——参数只是表象。必须写到"什么时候发下一个请求"这一步：闭环等上一个回来，开环按时刻表到点就发。少了这一句，后面四句都没有根基。</li>
+    <li><b>第 2 句</b>如果写成"因为闭环压测器不准"，那就没答到点上。必须说清是怎么"不准"的：服务卡住的那 0.4 秒里，工人全被堵着，压测器<b>一个新请求都没发</b>，所以本该最慢的那批请求根本不存在于数据里。如果你还能补上"被记录的慢请求数等于工人数乘以停顿次数"，说明机制真的通了。</li>
+    <li><b>第 3 句</b>如果只写"因为客户端太忙"，那还差一层。要说清那 155 毫秒具体是怎么进到数字里的：响应已经回到 socket 了，但事件循环正被一段同步代码占着，读不出来，这段等待就被算进了延迟。如果你的答案里没有"响应已经到了但没人读"这个画面，说明还停留在结论层面。</li>
+    <li><b>第 4 句</b>如果写成"因为可能刚好错过"，那把它说轻了。"刚好错过"是运气，是偶尔的；锁相是<b>系统性</b>的——一旦相位定下来，之后每一次都会错过，采一万个样本还是错过。你的答案里必须体现出"每一次"和"多采样本也没用"这两层意思。</li>
+    <li><b>第 5 句</b>如果只写"跑了压测"，不够。及格线要包含三样：跑了多遍并报范围（不是单个数）、用的是开环压测器（否则这 380 毫秒你根本量不出来）、有对照组把其他解释排除掉。如果你还提到"修好之后的范围和无故障基线重叠，所以结论是回到基线而不是还差多少"，那就是满分。</li>
+  </ul>
+</div>
+
+<hr>
+
+<h2>明日预告</h2>
+<p><b>Day 7 · 内存与 NUMA</b>——阶段一的最后一天。cache 层级和它们之间差了几个数量级、页与大页、NUMA 的 first-touch 规则和跨节点访问的惩罚、内存分配器在其中的角色。</p>
+<p>留一个钩子给你。今天那个 400 毫秒的停顿，是你亲手注入的，所以你知道它在哪。但真实服务里有一类停顿，你在代码里翻不到任何 <code>sleep</code>、任何定时任务、任何锁——它藏在一次看起来完全无辜的内存访问后面，而它的代价能差出一百倍。明天你会知道去哪里找它。</p>
+
+<footer>
+AI Infra 速成 · Day 6 / 28 · 2026-08-23 · 阶段一：CPU 侧系统工程<br><br>
+本页全部数字来自一台 2 vCPU（Intel Xeon @ 2.80GHz）、7.8 GiB 内存的 Linux 容器，Python 3.11.15。被测服务用 <code>taskset</code> 钉在 0 号 CPU，压测器钉在 1 号 CPU。每个配置重复三次、每次 15 到 60 秒，表格中给出的是三次运行的最小值到最大值。源码引用对应 vLLM 仓库 2026-08-22 的提交 <code>bbe8b23e1a2b32a96240b27f63255170d09ef144</code>。
+</footer>
+
+</main>
+</body>
+</html>
