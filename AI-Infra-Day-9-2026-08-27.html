@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 9</title>
+<style>
+:root{
+  --bg:#faf6ef; --panel:#fffdf8; --ink:#2f2a24; --ink-soft:#5c5347; --line:#e6ddcd;
+  --accent:#a8622a; --accent-soft:#f3e6d8;
+  --recall:#7a6a3a; --recall-bg:#f6f1e0;
+  --predict:#3f6b7a; --predict-bg:#e6f0f3;
+  --warn:#a1442e; --warn-bg:#f8e9e4;
+  --five:#5a6b3a; --five-bg:#eef3e2;
+  --dig:#6a4a7a; --dig-bg:#f0eaf4;
+  --code-bg:#241f1a; --code-ink:#f0e7da; --code-dim:#a89a86;
+  --term-bg:#f6e3cf; --term-ink:#8a4c17; --th:#f2ebdd;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#191714; --panel:#211e1a; --ink:#ece4d8; --ink-soft:#b3a996; --line:#3a352d;
+  --accent:#e0a267; --accent-soft:#332a20;
+  --recall:#c9b978; --recall-bg:#2a271c;
+  --predict:#8ec2d3; --predict-bg:#1c272b;
+  --warn:#e79b83; --warn-bg:#2d201c;
+  --five:#a9c07d; --five-bg:#242a1c;
+  --dig:#b99cc9; --dig-bg:#241d29;
+  --code-bg:#14120f; --code-ink:#ece2d3; --code-dim:#8c8171;
+  --term-bg:#3d2e1d; --term-ink:#f0c391; --th:#2a261f;
+}}
+:root[data-theme="dark"]{
+  --bg:#191714; --panel:#211e1a; --ink:#ece4d8; --ink-soft:#b3a996; --line:#3a352d;
+  --accent:#e0a267; --accent-soft:#332a20;
+  --recall:#c9b978; --recall-bg:#2a271c;
+  --predict:#8ec2d3; --predict-bg:#1c272b;
+  --warn:#e79b83; --warn-bg:#2d201c;
+  --five:#a9c07d; --five-bg:#242a1c;
+  --dig:#b99cc9; --dig-bg:#241d29;
+  --code-bg:#14120f; --code-ink:#ece2d3; --code-dim:#8c8171;
+  --term-bg:#3d2e1d; --term-ink:#f0c391; --th:#2a261f;
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased}
+.bar{position:sticky;top:0;z-index:50;background:var(--panel);border-bottom:1px solid var(--line);
+  padding:9px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--ink-soft)}
+.bar b{color:var(--accent);font-size:14.5px}
+.bar .track{flex:1 1 120px;height:5px;background:var(--line);border-radius:3px;overflow:hidden;min-width:80px}
+.bar .fill{height:100%;width:32.1%;background:var(--accent)}
+main{max-width:820px;margin:0 auto;padding:26px 18px 80px}
+h1{font-size:27px;line-height:1.42;margin:14px 0 6px;letter-spacing:.2px}
+.sub{color:var(--ink-soft);font-size:14px;margin:0 0 26px}
+h2{font-size:21px;margin:44px 0 10px;padding-bottom:7px;border-bottom:2px solid var(--accent-soft)}
+h2.part{border-bottom:none;background:var(--accent-soft);padding:11px 15px;border-radius:9px;margin-top:52px;font-size:20px}
+h2.part span{display:block;font-size:13.5px;font-weight:400;color:var(--ink-soft);margin-top:2px;letter-spacing:0}
+h3{font-size:17.5px;margin:30px 0 8px}
+h4{font-size:15.5px;margin:22px 0 6px;color:var(--ink-soft)}
+p{margin:11px 0}
+.lead{color:var(--accent);font-weight:600;margin:8px 0 14px;font-size:15.5px}
+.term{background:var(--term-bg);color:var(--term-ink);padding:1px 6px;border-radius:4px;font-weight:600;white-space:nowrap}
+code{background:var(--accent-soft);padding:1.5px 5px;border-radius:4px;font-size:.9em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;overflow-wrap:anywhere}
+pre{background:var(--code-bg);color:var(--code-ink);padding:15px 16px;border-radius:9px;
+  overflow-x:auto;line-height:1.62;font-size:13.3px;margin:14px 0}
+pre code{background:none;color:inherit;padding:0;font-size:inherit;white-space:pre}
+pre .c{color:var(--code-dim)}
+.scroll{overflow-x:auto;margin:16px 0;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14.2px;min-width:440px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.hi td{background:var(--accent-soft)}
+.card{border-left:5px solid var(--accent);background:var(--panel);padding:15px 18px;border-radius:0 9px 9px 0;margin:20px 0}
+.card>:first-child{margin-top:0}.card>:last-child{margin-bottom:0}
+.card .ttl{font-weight:700;margin-bottom:8px;letter-spacing:.4px}
+.card.recall{border-color:var(--recall);background:var(--recall-bg)}.card.recall .ttl{color:var(--recall)}
+.card.predict{border-color:var(--predict);background:var(--predict-bg)}.card.predict .ttl{color:var(--predict)}
+.card.warn{border-color:var(--warn);background:var(--warn-bg)}.card.warn .ttl{color:var(--warn)}
+.card.five{border-color:var(--five);background:var(--five-bg)}.card.five .ttl{color:var(--five)}
+.card.dig{border-color:var(--dig);background:var(--dig-bg)}.card.dig .ttl{color:var(--dig)}
+.map{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:14px 18px;margin:18px 0}
+.map div{margin:7px 0;font-size:15px}
+.map b{color:var(--accent)}
+details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:0 14px}
+details[open]{padding-bottom:10px}
+summary{cursor:pointer;padding:9px 0;font-weight:600;color:var(--accent);font-size:14.5px}
+.write{border:1px dashed var(--line);border-radius:7px;min-height:52px;margin:8px 0 14px;background:var(--bg)}
+.write.tall{min-height:76px}
+ul,ol{padding-left:22px;margin:11px 0}li{margin:6px 0}
+.tip{font-size:14px;color:var(--ink-soft)}
+.rest{font-size:15.5px;color:var(--ink-soft);border-left:3px solid var(--line);padding-left:14px;margin:18px 0;font-style:normal}
+footer{max-width:820px;margin:0 auto;padding:0 18px 60px;color:var(--ink-soft);font-size:13.4px}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>Day 9 / 28</b>
+  <span class="track"><span class="fill"></span></span>
+  <span>阶段二 · 推理服务</span>
+  <span>2026-08-27</span>
+</div>
+<main>
+
+<h1>八条请求一起进来，最短的那条为什么要陪最长的那条等到底</h1>
+<p class="sub">调度器决定的不是"算什么"，而是"这一步让谁上车"</p>
+
+<div class="card recall">
+<div class="ttl">温故 · 闭卷</div>
+<p>三道题，分别来自昨天、三天前、七天前。答完再展开。</p>
+
+<p><b>第 1 题（Day 8）</b><br>
+一个推理服务报出来 TPOT 平均 45 毫秒，看着很健康。用户抱怨"打字打到一半会卡一下"。这两件事怎么同时成立？你会去查什么？</p>
+<details><summary>看答案</summary>
+<p>TPOT 是一次除法算出来的平均值：端到端延迟减去 TTFT，再除以 token 数减一。一条回答里所有的停顿都被摊平进这个数。</p>
+<p>而用户感受到的是<b>每一次</b>停顿。一条两百个 token 的回答有一百九十九个间隔，其中五个被拖到八百毫秒，其余都是二十几毫秒——平均下来仍然是四十几毫秒，但那五次停顿用户全都经历过。</p>
+<p>要查的是 ITL 的高百分位，不是 TPOT。ITL 是那一串间隔本身，是分布，能看 P99。再往下一步，把服务端每一步的起止时刻记下来，看那些大间隔里夹着什么。昨天的答案是：夹着别人的 prefill。</p>
+<p>今天要做的事情就是把那个"别人的 prefill"从中间拿掉。</p>
+</details>
+
+<p><b>第 2 题（Day 6）</b><br>
+你用开环压测器测出 P99 是 380 毫秒。同事说这个数不能信，因为压测器自己可能没按时把请求发出去。怎么用一个数字堵住他的嘴？</p>
+<details><summary>看答案</summary>
+<p>记录每条请求的"计划发出时刻"和"实际发出时刻"的差，报出它的 P99。这个差有个名字叫发送迟滞。</p>
+<p>用法只有一条：拿它和你测的延迟比量级。</p>
+<p>如果发送迟滞是几毫秒，而你测的是几百毫秒，差一个数量级以上，那这份数据站得住。如果两者同一量级，你测的就是压测器不是服务，得换机器发压或者降速率。</p>
+<p>Day 6 那次的发送迟滞 P99 落在个位数到几十毫秒，而结论涉及的差异是几百毫秒，所以结论成立。</p>
+<p>今天所有实验都在同一台两核机器上跑，压测器和服务各占一个进程，这个警惕一天都不能松。</p>
+</details>
+
+<p><b>第 3 题（Day 2）</b><br>
+一台服务器的利用率从 50% 提到 90%，忙碌程度只涨了不到一倍。平均排队时间会变成原来的几倍？给出量级和它背后的形状。</p>
+<details><summary>看答案</summary>
+<p>九倍。不是一倍。</p>
+<p>形状是 <code>ρ / (1 − ρ)</code>。分母是剩下的空闲比例，空闲越接近零，整个值越往上冲。代进去：利用率一半时是 1，利用率九成时是 9。</p>
+<p>原因在于请求到达是随机的，不是掐着点来的。利用率越高，"闲下来把队伍清空"的窗口越少；积压一旦形成就散不掉。</p>
+<p>这就是线上服务把水位定在六七成的理由——那三成不是浪费，是买延迟的稳定。</p>
+<p>今天的实验全部跑在九成五以上的利用率上，所以你会看到一些非常夸张的等待时间。那不是服务坏了，是这条曲线的右端本来就长这样。</p>
+</details>
+</div>
+
+<h2>今日概览</h2>
+<div class="scroll">
+<table>
+<tr><th style="width:112px">项目</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 9 / 28 · 阶段二</td></tr>
+<tr><td>今日主题</td><td>调度器：什么时候放新请求进来、一步算多少、内存不够时牺牲谁</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+<p style="margin:0 0 8px">KV cache 的块表和内存公式。今天会看到"内存不够就要抢占谁"这件事，但"内存到底是怎么被占掉的"要等到 Day 15 用一整天算给你看。今天塞进来会把调度和内存两条线搅在一起。</p>
+<p style="margin:0">prefix caching。它属于"怎么少算一点"，今天讲的是"怎么安排已经要算的东西"。Day 16 单独讲。</p>
+</td></tr>
+</table>
+</div>
+
+<p><b>今天结束后你应该能做到这三件事：</b></p>
+<ol>
+<li>看到一个推理服务吞吐不达标，能判断问题出在"槽位没填满"还是"每步算得太少"，并说出该看哪个数。</li>
+<li>拿到 <code>max_num_seqs</code> 和 <code>max_num_batched_tokens</code> 两个参数，能说清楚调大调小各自牺牲什么、在什么负载下才有效果。</li>
+<li>读懂 vLLM 调度器在内存不够时做了什么，以及为什么它牺牲的是最新那条请求而不是最老的。</li>
+</ol>
+
+<div class="map">
+<div><b>第一部分 · 谁在等谁</b>　两种放行策略，差别在哪，以及一个会让你猜错的对照实验</div>
+<div><b>第二部分 · 把插队的账消掉</b>　prefill 挡住 decode 这件事，怎么修才是真的修好</div>
+<div><b>第三部分 · 调度器手里的旋钮</b>　两个参数、一次抢占，以及 vLLM 源码里的实际写法</div>
+</div>
+
+<h2>今天的装置：Day 8 那套，改了四个地方</h2>
+
+<p>今天所有数字来自同一套东西，就是昨天那个：两个 Python 进程，一个发请求，一个装着 512 MiB 权重转圈。昨天已经把它整个拆开讲过，今天只说改动。</p>
+
+<p>改的是引擎循环里"谁能上车"这一段，做成了四个环境变量：</p>
+
+<div class="scroll">
+<table>
+<tr><th>旋钮</th><th>取值</th><th>它管什么</th><th>今天哪一节动它</th></tr>
+<tr><td><code>SCHED</code></td><td>static / continuous</td><td>什么时候把排队的请求放进来算</td><td>第一部分</td></tr>
+<tr><td><code>MAX_SEQS</code></td><td>1 / 2 / 4 / 8 / 16</td><td>同时最多几条序列在生成</td><td>第一部分锁死 8，第三部分扫它</td></tr>
+<tr><td><code>CHUNK</code></td><td>0 或 32</td><td>一步最多算几个 prompt token，0 表示一口气算完</td><td>第二部分</td></tr>
+<tr><td><code>MIXED</code></td><td>0 / 1</td><td>1 表示 prompt 和生成中的 token 挤进同一次矩阵乘法</td><td>第二部分</td></tr>
+</table>
+</div>
+
+<p>其余全部锁死，和昨天一样：8 层 4096×4096 的 float32 权重合计 512 MiB（MiB 是 1024×1024 字节，比按 1000 算的 MB 略大；这个量超过了这台机器 260 MB 的 L3）、单线程 BLAS、压测器独立进程、泊松到达、延迟从计划发出时刻算起。<b>没有真的模型，也没有真的文字</b>——一条请求就是 <code>{"prompt_len": 8, "max_tokens": 24}</code> 两个数字，服务端照着这两个数走矩阵乘法。所以今天不会出现任何关于分词、注意力、KV cache 内存的结论。</p>
+
+<p>放行那段代码只有九行，两种策略的差别全在这里：</p>
+
+<pre><code>def admit():
+    """把排队的请求放进 prefilling。两种调度策略只差这个函数。"""
+    if SCHED == "static":
+        <span class="c"># 上一批没跑完，一条新的都不接</span>
+        if running or prefilling: return
+        room = MAX_SEQS
+    else:
+        <span class="c"># 有空位就补，不管别人跑到哪儿了</span>
+        room = MAX_SEQS - len(running) - len(prefilling)
+    while room > 0 and pending:
+        prefilling.append(pending.pop(0)); room -= 1</code></pre>
+
+<p>跑起来之后，服务端会把每一次矩阵乘法记进日志：类型、开始时刻、结束时刻、这一步算了几个 prompt token、几条序列在生成。下面所有关于"引擎在干什么"的话，都是从这份日志读出来的。</p>
+
+<h3>这些参数为什么取这些值</h3>
+
+<p>下面每一组实验的负载参数不是随手挑的，都是从这台机器的能力倒推出来的。</p>
+
+<div class="scroll">
+<table>
+<tr><th>参数</th><th class="n">取值</th><th>怎么定出来的</th></tr>
+<tr><td>批量上限</td><td class="n">8</td><td>第三部分扫出来的结果是吞吐在 8 附近走平，再往上加不动了。前两部分锁在这里，是为了不让批量上限本身变成一个会动的变量。</td></tr>
+<tr><td>发压速率<br>（第一部分）</td><td class="n">2.0 条/秒</td><td>要让 static 的批次真的装满。一批 8 条、每条平均 24 个 token、每步约 110 毫秒；输出定长时一批约 24 步、两秒半，输出变长时要跑到最长那条，实测下面那一批是 38 步、4.9 秒。每秒 2 条的话，这几秒里正好又攒够 8 条。速率再低批次装不满，static 的毛病就显不出来；再高两边一起被压垮，也比不出东西。</td></tr>
+<tr><td>单轮时长<br>（第一部分）</td><td class="n">60 秒</td><td>60 秒 × 每秒 2 条 ≈ 137 条请求，每条二三十个 token 间隔，合计三千多个样本。要算 P99 至少得这个量级。</td></tr>
+<tr><td>prompt 长度<br>（第一、三部分）</td><td class="n">8 个 token</td><td>故意取到最短。这两部分讲的是槽位怎么被浪费，prompt 越短，prefill 的开销越不干扰这条主线。</td></tr>
+<tr><td>prompt 长度<br>（第二部分）</td><td class="n">128 个 token</td><td>反过来，这一部分要让 prefill 的开销显出来。Day 8 量过这台机器上 128 个 token 的 prefill 约 288 毫秒，是一次 decode 步的三到四倍，切碎才有讨论的意义。</td></tr>
+<tr><td>切块大小</td><td class="n">32 个 token</td><td>128 ÷ 32 = 4 块。切成 4 块足够看出效果，又不至于像切成 32 块那样把步数放大到没法和别的组比。</td></tr>
+<tr><td>发压速率<br>（第二部分）</td><td class="n">1.2 条/秒</td><td>prompt 变长之后单条请求的成本上升，速率要跟着降，否则队列直接爆掉，测出来的是崩溃过程不是曲线形状。</td></tr>
+<tr><td>发压速率<br>（第三部分）</td><td class="n">1.0 条/秒</td><td>被最低那一档卡住的。批量上限为 1 时这台机器每秒最多吐约 28 个 token，也就是约 1.2 条请求；速率必须低于这个数，否则那一档永远跑不完。</td></tr>
+</table>
+</div>
+
+<p>这张表的用法是：后面任何一节说"只改了一个变量"，你都可以回来对一下，看它改的是哪一行、别的有没有动。</p>
+
+<h3>跟着一个批次走一遍</h3>
+
+<p>下面是 <code>SCHED=static</code> 那次运行里的第 9 个批次，从放行到全部跑完，一步不落。八条请求同时进来，输出长度是 4 到 44 之间的随机数。</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">步</th><th>类型</th><th class="n">耗时</th><th>这一步服务了谁</th></tr>
+<tr class="hi"><td class="n">1</td><td>prefill</td><td class="n">252.6 ms</td><td>一次算完 64 个 prompt token（8 条请求各 8 个）</td></tr>
+<tr><td class="n">2–9</td><td>decode</td><td class="n">110 ~ 120 ms</td><td>8 条序列，各推进一个 token</td></tr>
+<tr class="hi"><td class="n">10</td><td>decode</td><td class="n">156.1 ms</td><td>7 条 —— 有一条跑完了，它的位子空出来但没人能用</td></tr>
+<tr><td class="n">11–16</td><td>decode</td><td class="n">155 ~ 162 ms</td><td>7 条</td></tr>
+<tr><td class="n">17–18</td><td>decode</td><td class="n">130 ~ 135 ms</td><td>6 条，然后 5 条</td></tr>
+<tr><td class="n">19–27</td><td>decode</td><td class="n">129 ~ 144 ms</td><td>5 条</td></tr>
+<tr><td class="n">28–31</td><td>decode</td><td class="n">108 ~ 110 ms</td><td>4 条</td></tr>
+<tr><td class="n">32–33</td><td>decode</td><td class="n">125 ms</td><td>3 条</td></tr>
+<tr class="hi"><td class="n">34–37</td><td>decode</td><td class="n">107 ms</td><td>2 条</td></tr>
+<tr class="hi"><td class="n">38</td><td>decode</td><td class="n">50.1 ms</td><td>1 条 —— 最长的那条自己跑完最后一段</td></tr>
+</table>
+</div>
+
+<p>整批 38 步，耗时 4.92 秒。</p>
+<p>先说一个下面会一直用的说法。批量上限是 8，意思是这一步最多带 8 条序列，可以理解成车上有 8 个位子。一条序列占一个位子直到它吐完最后一个 token。下文把这个位子叫<em>槽位</em>。</p>
+
+<p>把标出来的几行对着读一遍，这一批的账就清楚了。第 2 步到第 9 步，每步 110 毫秒左右，产出 8 个 token。第 34 步到第 37 步，每步 107 毫秒，产出 2 个 token。<b>耗时几乎没变，产出少了四分之三。</b></p>
+
+<p>为什么耗时不跟着降——Day 7 和 Day 8 已经把这件事讲透了：一次前向的成本主要是"把 512 MiB 权重完整读一遍"，跟这一步捎带算几列关系不大。所以批量掉下去，省不下时间，只是少吐了 token。</p>
+
+<div class="rest">
+这就是静态批处理的全部问题，一张表就看完了。剩下的事情是：这种浪费有多大、换一种放行策略能救回多少、以及救回来的代价是什么。
+</div>
+
+<h2 class="part">第一部分 · 谁在等谁<span>两种放行策略，以及一个会让你猜错的对照</span></h2>
+
+<h3>1. 你现在会怎么写这个调度器</h3>
+<p class="lead">这一节回答：把请求攒成一批，最自然的写法是什么？它错在哪？</p>
+
+<p>你是后端工程师，要给这个引擎写放行逻辑。最自然的写法大概是：攒够一批，一起处理，处理完再攒下一批。</p>
+<p>这个写法在别的地方是对的。批量写数据库、批量发消息、批量调外部接口，都是这么干的，而且效果很好。它的前提是：<em>一批里每个元素的处理时间差不多。</em></p>
+<p>生成式推理不满足这个前提。一条请求要吐多少个 token，事先不知道，而且差异极大——有人问"今天几号"，有人让模型写一篇文章。第一条八个 token 就结束，第二条要八百个。</p>
+<p>把这两条放进同一批，会发生什么，上面那张表已经演过了：短的先跑完，槽位空出来，但下一条请求进不来，因为这一批还没结束。空着的槽位就一直空到最长那条跑完为止。</p>
+
+<p>这种"攒一批、跑到全部结束、再攒下一批"的做法，就叫 <span class="term">静态批处理（static batching）</span>。</p>
+<p>与之相对的另一种做法是：不等整批结束，谁跑完谁下车，空出来的位子立刻让下一个排队的上来。这叫 <span class="term">连续批处理（continuous batching）</span>，有时也叫 in-flight batching。</p>
+
+<p>顺便把一个昨天一直在用、但没正式命名的东西补上。引擎循环转一圈，做一次矩阵乘法，给这一批里每条序列各推进一个 token——这一圈叫一个 <span class="term">引擎步（engine step / iteration）</span>。上面那张表里的每一行就是一步。连续批处理的另一个名字 iteration-level scheduling，说的就是"以引擎步为粒度重新决定谁上车"。</p>
+
+<h3>2. 先别急着下结论</h3>
+
+<p>到这里，标准答案已经呼之欲出：连续批处理更好，因为它不浪费槽位。</p>
+<p>这个结论是对的，但只对了一半，而漏掉的那一半恰恰是上岗后会咬你的部分。所以先做个实验。</p>
+
+<p>两台服务器，除了 <code>SCHED</code> 全部一样：批量上限 8、prompt 8 个 token、每秒 2 条请求、跑 60 秒、一共 137 条。压测器用固定种子，两边拿到的到达时刻表和输出长度<em>完全一致</em>。</p>
+
+<p>然后再分两组跑：一组所有请求的输出长度都是 24 个 token；另一组从 4 到 44 之间随机取，平均下来还是 24。两组的 token 总量几乎一样。</p>
+
+<p>这个第二组不是为了"更真实"才加的。它是对照组：<em>如果连续批处理的好处来自"批处理"这件事本身，那它在定长那组也应该赢。</em>如果它只在变长那组赢，那好处的来源就是别的东西。</p>
+
+<div class="card predict">
+<div class="ttl">预测 · 先写下来再往下看</div>
+<p>四次运行，两两对照。</p>
+<p><b>问题一：</b>输出长度全部相同（都是 24）时，static 和 continuous 哪个的首 token 延迟更好？还是打平？</p>
+<div class="write"></div>
+<p><b>问题二：</b>输出长度从 4 到 44 随机时，哪个更好？大约差几倍？</p>
+<div class="write"></div>
+<p><b>问题三：</b>写一句理由。你认为差别（或者没差别）是从哪里来的？</p>
+<div class="write tall"></div>
+<p class="tip">提示：装置那节的批次表里，第 38 步只服务了 1 条序列。数一下那一批 38 步总共产出多少 token，再想想如果空出来的槽位能立刻被填上，同样 38 步能产出多少。</p>
+</div>
+
+<h3>3. 揭晓：定长那组，连续批处理输了</h3>
+
+<p>四次运行的结果。吞吐按真实时间跨度算——从第一条请求计划发出，到最后一条收到最后一个 token。</p>
+
+<div class="scroll">
+<table>
+<tr><th>放行策略</th><th>输出长度</th><th class="n">吞吐<br>token/s</th><th class="n">TTFT<br>P50</th><th class="n">端到端<br>P50</th><th class="n">decode 每步<br>平均产出</th></tr>
+<tr><td>static</td><td>定长 24</td><td class="n">50.4</td><td class="n">2.6 s</td><td class="n">5.5 s</td><td class="n">6.23</td></tr>
+<tr><td>continuous</td><td>定长 24</td><td class="n">48.4</td><td class="n">4.9 s</td><td class="n">8.2 s</td><td class="n">6.73</td></tr>
+<tr class="hi"><td>static</td><td>变长 4–44</td><td class="n">36.0</td><td class="n">15.4 s</td><td class="n">18.5 s</td><td class="n">4.02</td></tr>
+<tr class="hi"><td>continuous</td><td>变长 4–44</td><td class="n">45.2</td><td class="n">7.3 s</td><td class="n">9.9 s</td><td class="n">6.63</td></tr>
+</table>
+</div>
+
+<p>先看上面两行，也就是定长那组。连续批处理不但没赢，还小输了一点：吞吐低了 4%，首 token 延迟差了将近一倍。</p>
+<p>再看下面两行，变长那组。这次连续批处理赢了，而且赢得很干脆：吞吐高出四分之一，首 token 延迟只有对方的一半不到。</p>
+
+<p>最后一列把机制直接摆出来了。static 从定长换到变长，每个引擎步的平均产出从 6.23 掉到 4.02；continuous 几乎没动，6.73 变 6.63。</p>
+
+<p>把这一列展开成分布更清楚。同样是变长那组，两台服务器的 decode 步各自服务了几条序列：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">这一步服务几条序列</th><th class="n">static 的步数占比</th><th class="n">continuous 的步数占比</th></tr>
+<tr><td class="n">1</td><td class="n">21.6%</td><td class="n">8.7%</td></tr>
+<tr><td class="n">2</td><td class="n">17.4%</td><td class="n">1.1%</td></tr>
+<tr><td class="n">3</td><td class="n">7.8%</td><td class="n">5.2%</td></tr>
+<tr><td class="n">4</td><td class="n">9.5%</td><td class="n">1.1%</td></tr>
+<tr><td class="n">5</td><td class="n">14.5%</td><td class="n">1.7%</td></tr>
+<tr><td class="n">6</td><td class="n">7.4%</td><td class="n">7.0%</td></tr>
+<tr><td class="n">7</td><td class="n">7.3%</td><td class="n">19.6%</td></tr>
+<tr class="hi"><td class="n">8（满）</td><td class="n">14.5%</td><td class="n">55.6%</td></tr>
+</table>
+</div>
+
+<p>static 那一列几乎是平铺的，从 1 到 8 都有；批量只有一两条的步占了将近四成。continuous 那一列挤在下面：四分之三的步都在 7 条或 8 条。</p>
+<p>这就是"短的陪长的等到底"落在数字上的样子。不是打个比方，是 758 个引擎步里有 164 步只服务了一条序列。</p>
+
+<h3>4. 但连续批处理也在多花钱，只是花在别处</h3>
+
+<p>定长那组它为什么会输？把两边的账分开记就看出来了。同样的 3044 个输出 token、同样的 1096 个 prompt token，引擎的时间是这么花掉的：</p>
+
+<div class="scroll">
+<table>
+<tr><th>组</th><th class="n">decode 步数</th><th class="n">decode 用时</th><th class="n">prefill 步数</th><th class="n">prefill 用时</th><th class="n">引擎总忙</th></tr>
+<tr><td>定长 · static</td><td class="n">506</td><td class="n">59.8 s</td><td class="n">22</td><td class="n">5.0 s</td><td class="n">64.8 s</td></tr>
+<tr><td>定长 · continuous</td><td class="n">468</td><td class="n">56.2 s</td><td class="n">87</td><td class="n">11.3 s</td><td class="n">67.5 s</td></tr>
+<tr><td>变长 · static</td><td class="n">758</td><td class="n">83.0 s</td><td class="n">21</td><td class="n">5.1 s</td><td class="n">88.0 s</td></tr>
+<tr><td>变长 · continuous</td><td class="n">459</td><td class="n">56.1 s</td><td class="n">114</td><td class="n">14.0 s</td><td class="n">70.1 s</td></tr>
+</table>
+</div>
+
+<p>看 prefill 那两列。static 只做了二十来次 prefill，continuous 做了八十到一百多次。</p>
+<p>原因很直接：static 一次放行八条，八条的 prompt 挤进同一次矩阵乘法，权重读一遍就够了。continuous 是空一个补一个，每补一条就单独做一次 prefill，每次都要把 512 MiB 权重再读一遍。</p>
+
+<p>现在两笔账可以对起来了：</p>
+
+<div class="scroll">
+<table>
+<tr><th>连续批处理相对静态批处理</th><th class="n">在 decode 上省了</th><th class="n">在 prefill 上多花了</th><th class="n">净结果</th></tr>
+<tr><td>输出定长</td><td class="n">3.6 s</td><td class="n">6.3 s</td><td class="n">净亏 2.7 s</td></tr>
+<tr class="hi"><td>输出变长</td><td class="n">26.9 s</td><td class="n">8.9 s</td><td class="n">净赚 18.0 s</td></tr>
+</table>
+</div>
+
+<p>两行的第二列几乎一样（6.3 秒对 8.9 秒），说明"一条一条放行"的代价基本是个常数，跟输出长度无关。变的是第一列：定长时只省下 3.6 秒，变长时省下 26.9 秒。</p>
+
+<div class="card warn">
+<div class="ttl">关键结论</div>
+<p>连续批处理的收益，全部来自"不同请求的输出长度不一样"这一件事。长度一致时它只有代价没有收益，实测反而更慢。</p>
+<p>所以这不是一个"新方法比旧方法好"的故事。真实负载里输出长度差异极大，所以它几乎总是赢——但赢的原因不是"批处理"，而是"补位"。搞混这两件事，下一节那个坑就躲不掉。</p>
+</div>
+
+<p>对照组的价值也在这里。如果只跑变长那一组，看到连续批处理赢了 26%，你会得出"连续批处理更快"这个结论，而且它在那次实验里完全成立。定长那一组一跑，才知道这句话缺了前提。</p>
+
+<div class="rest">
+账已经分成两半：decode 那半连续批处理赢，prefill 那半它输。既然输的那半是"每放行一条就多读一遍权重"，下一个问题自然就是——能不能不多读这一遍？
+</div>
+
+<h2 class="part">第二部分 · 把插队的账消掉<span>prefill 挡住 decode，怎么修才是真的修好</span></h2>
+
+<h3>5. 昨天那条尾巴，现在有名字了</h3>
+<p class="lead">这一节回答：prefill 插在两次 decode 中间，为什么削短它没用？</p>
+
+<p>Day 8 量到过一件事：ITL 分布的整条尾巴，逐个点名都能归到 prefill 头上。一条请求正在一个字一个字往外吐，突然有人发来新请求，引擎跑去做 prefill，这条请求的下一个字就得多等一整遍权重读取。</p>
+<p>最自然的修法是：<em>把长 prompt 切成小块，一步只算一块。</em>每次插队变短，尾巴自然就矮了。</p>
+<p>这个做法叫 <span class="term">分块预填充（chunked prefill）</span>。它是对的，但单独用会出事。</p>
+
+<p>把上一部分的账搬过来就知道为什么了。一次 prefill 的成本主要不是"算了多少个 prompt token"，而是"把权重完整读了一遍"。把 128 个 token 的 prompt 切成 4 块，插队时长确实降到四分之一——但插队次数变成 4 次，权重被读了 4 遍。</p>
+<p>总账是变差的。</p>
+
+<p>所以还得配一件事：<em>把这一块 prompt 和正在生成的那些 token 挤进同一次矩阵乘法。</em>这样一步之内既推进了 prefill 也推进了 decode，而权重只读一遍。这种一次同时装着两种活的批，叫 <span class="term">混合批（mixed batch）</span>。</p>
+
+<p>代码上就是把两次调用合成一次，列数相加：</p>
+
+<pre><code>if MIXED and pre_S and dec_B:
+    <span class="c"># 合批：prompt token 和 decode token 挤进同一次矩阵乘法，权重只读一遍</span>
+    matmuls(pre_S + dec_B)
+else:
+    <span class="c"># 不合批：各算各的，权重被读两遍</span>
+    if pre_S: matmuls(pre_S)
+    if dec_B: matmuls(dec_B)</code></pre>
+
+<p>运行之后看服务端日志里步的类型：合批那组绝大多数是 <code>M</code> 开头的混合步；不合批那组是 <code>P</code> 和 <code>D</code> 交替。如果开了 <code>MIXED=1</code> 却几乎看不到 <code>M</code>，说明 prefill 和 decode 没有在同一步撞上，多半是负载太低。</p>
+
+<h3>6. 三种做法，一次跑给你看</h3>
+
+<p>这一节把 prompt 加长到 128 个 token，好让 prefill 的开销显出来。其余不变：连续批处理、批量上限 8、输出长度 4 到 44 随机、每秒 1.2 条、跑 60 秒、83 条请求。三组只差 <code>CHUNK</code> 和 <code>MIXED</code>。</p>
+
+<div class="scroll">
+<table>
+<tr><th>做法</th><th class="n">吞吐<br>token/s</th><th class="n">TTFT<br>P50</th><th class="n">ITL<br>P50</th><th class="n">ITL<br>P99</th><th class="n">prefill 相关<br>步数</th></tr>
+<tr><td>不切，不合批（Day 8 的行为）</td><td class="n">24.8</td><td class="n">11.6 s</td><td class="n">135 ms</td><td class="n">947 ms</td><td class="n">69</td></tr>
+<tr><td>切成 32 一块，不合批</td><td class="n">18.9</td><td class="n">25.8 s</td><td class="n">287 ms</td><td class="n">362 ms</td><td class="n">332</td></tr>
+<tr class="hi"><td>切成 32 一块，并且合批</td><td class="n">23.7</td><td class="n">13.6 s</td><td class="n">218 ms</td><td class="n">288 ms</td><td class="n">324</td></tr>
+</table>
+</div>
+
+<p>中间那一行是重点，因为它是"只做对了一半"的样子。ITL 的 P99 确实从 947 毫秒降到 362 毫秒，尾巴被削掉了。代价是吞吐掉了将近四分之一，首 token 延迟变成两倍多。</p>
+<p>prefill 步数那一列解释了这个代价：69 变成 332，权重多读了两百六十多遍。</p>
+<p>最后一行是两件事都做对：尾巴降到 288 毫秒，比只切碎还低；吞吐基本回到原位，只掉了 4%；首 token 延迟多了不到两秒。</p>
+
+<h3>7. 中位数变差了，为什么反而是好事</h3>
+
+<p>有一个数字看起来是反的：合批之后 ITL 的中位数从 135 毫秒涨到 218 毫秒。中位数变差了，怎么能算修好？</p>
+<p>把整个分布铺开就明白了。同样是 1894 个间隔，落在各个区间的比例：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">间隔落在</th><th class="n">不切不合批</th><th class="n">只切不合批</th><th class="n">切了且合批</th></tr>
+<tr><td class="n">小于 150 ms</td><td class="n">67.8%</td><td class="n">13.1%</td><td class="n">12.5%</td></tr>
+<tr class="hi"><td class="n">150 – 250 ms</td><td class="n">8.9%</td><td class="n">0.2%</td><td class="n">80.5%</td></tr>
+<tr><td class="n">250 – 400 ms</td><td class="n">0.4%</td><td class="n">86.7%</td><td class="n">7.0%</td></tr>
+<tr><td class="n">400 – 600 ms</td><td class="n">4.0%</td><td class="n">0%</td><td class="n">0%</td></tr>
+<tr class="hi"><td class="n">600 – 900 ms</td><td class="n">16.2%</td><td class="n">0%</td><td class="n">0%</td></tr>
+<tr><td class="n">900 – 1500 ms</td><td class="n">2.6%</td><td class="n">0%</td><td class="n">0%</td></tr>
+</table>
+</div>
+
+<p>第一列是两堆：将近七成的间隔很快，两成多的间隔在 400 毫秒以上。这个形状 Day 6 讲过，叫双峰分布——用户体验到的是"字流得好好的，突然卡将近一秒"。</p>
+<p>第三列只有一堆，八成挤在 150 到 250 毫秒之间，400 毫秒以上一个都没有。</p>
+
+<p>所以中位数变差这件事，描述的是同一个动作的另一面：把两堆压成一堆，快的那堆必然要往下靠。<b>用户感受到的不是中位数，是那两成会不会发生。</b></p>
+
+<div class="card warn">
+<div class="ttl">关键结论</div>
+<p>分块预填充单独用会让总账变差，因为它成倍增加了权重被读的次数。它必须和"把 prompt 和 decode 挤进同一步"配套，才是净收益。</p>
+<p>这也解释了 vLLM 文档里那句话的两个方向：一步里算的 prompt token 少一点，ITL 更好；多一点，TTFT 更好。这个取舍就是上面这三行的连续版本。</p>
+</div>
+
+<h3>8. vLLM 的调度器里根本没有"阶段"这回事</h3>
+
+<p>到这里可以去看真实实现了。vLLM 的调度器主函数开头有一段注释，把整套设计一句话说完了。<code>vllm/v1/core/sched/scheduler.py</code> 第 501 到 511 行：</p>
+
+<p class="tip">「There's no "decoding phase" nor "prefill phase" in the scheduler. Each request just has the num_computed_tokens and num_tokens_with_spec. At each step, the scheduler tries to assign tokens to the requests so that each request's num_computed_tokens can catch up its num_tokens_with_spec.」<br>
+——调度器里没有"解码阶段"，也没有"预填充阶段"。每条请求只有两个数：已经算完了多少 token、总共需要多少 token。每一步，调度器把 token 配额分给各条请求，让前一个数追上后一个数。</p>
+
+<p>这句话值得停一下。Day 8 花了整整一天把 prefill 和 decode 分成两个阶段讲，而真实实现里这两个词在调度器中<em>不存在</em>。</p>
+<p>两者不矛盾。prefill 和 decode 是描述"矩阵形状"的词，那一层的区别是真的。而在调度这一层，一条请求还差多少 token 没算，是 prefill 差的还是 decode 差的，没有区别——都是"欠着几个 token"。把它统一成一个数之后，分块预填充、混合批、prefix caching、投机解码全都变成同一套代码的特例。</p>
+<p>紧接着的两行标出了顺序：第 547 行 <code>First, schedule the RUNNING requests</code>，第 771 行 <code>Next, schedule the WAITING requests</code>。<em>先给正在生成的续上，剩下的配额才给新来的。</em>这和昨天那个装置正好相反——昨天是先 prefill 再 decode，所以尾巴全长在别人的字间。vLLM 选了另一边。</p>
+
+<h2 class="part">第三部分 · 调度器手里的旋钮<span>两个参数、一次抢占，以及源码里的实际写法</span></h2>
+
+<h3>9. 第一个旋钮：同时最多几条</h3>
+<p class="lead">这一节回答：把并发上限调大，什么时候有用，什么时候只是数字变大？</p>
+
+<p>上面所有实验里那个"批量上限 8"，在 vLLM 里是一个配置项。<code>vllm/config/scheduler.py</code> 第 63 行起：</p>
+
+<pre><code>max_num_seqs: int = Field(default=DEFAULT_MAX_NUM_SEQS, ge=1)
+<span class="c">"""Maximum number of sequences to be processed in a single iteration."""</span>
+DEFAULT_MAX_NUM_SEQS: ClassVar[int] = 128</code></pre>
+
+<p>它管的是"一个引擎步里最多有几条序列"。这个词叫 <span class="term">max_num_seqs</span>，就是上面那个 <code>MAX_SEQS</code>。</p>
+
+<p>把它从 1 扫到 16，其余全部锁死：连续批处理、不切不合批、prompt 8 个 token、输出固定 24、每秒 1 条、跑 40 秒、49 条请求。</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">max_num_seqs</th><th class="n">吞吐<br>token/s</th><th class="n">TTFT<br>P50</th><th class="n">TPOT<br>平均</th><th class="n">实际批量<br>平均</th></tr>
+<tr class="hi"><td class="n">1</td><td class="n">15.4</td><td class="n">16.2 s</td><td class="n">59.9 ms</td><td class="n">1.00</td></tr>
+<tr class="hi"><td class="n">2</td><td class="n">15.2</td><td class="n">15.1 s</td><td class="n">121.8 ms</td><td class="n">1.81</td></tr>
+<tr><td class="n">4</td><td class="n">22.6</td><td class="n">5.0 s</td><td class="n">140.9 ms</td><td class="n">3.00</td></tr>
+<tr><td class="n">8</td><td class="n">27.5</td><td class="n">1.2 s</td><td class="n">158.7 ms</td><td class="n">3.77</td></tr>
+<tr class="hi"><td class="n">16</td><td class="n">27.9</td><td class="n">1.1 s</td><td class="n">154.0 ms</td><td class="n">3.61</td></tr>
+</table>
+</div>
+
+<p>三段值得单独看。</p>
+
+<p><b>从 1 调到 2，吞吐一点没涨，TPOT 直接翻倍。</b>这一档是纯亏。原因 Day 7 讲过：批量从 1 变 2，矩阵乘法会从"矩阵乘向量"换到"矩阵乘矩阵"那条代码路径，权重被过了两遍，所以一步的耗时也翻倍。多算一列，什么都没赚到。</p>
+
+<p>从 2 调到 8 是这条曲线上真正有用的一段。吞吐涨了八成，首 token 延迟从十五秒掉到一秒出头。代价是 TPOT 从 122 毫秒涨到 159 毫秒——每一步要多带几条序列，每条的字就出得慢一点。这个取舍是显式的，你得知道自己在卖什么。</p>
+
+<p>从 8 调到 16，什么都没发生：吞吐只多了 1.5%，最后一列的实际批量平均反而从 3.77 掉到 3.61。因为这个负载下同时在跑的请求本来就到不了 8 条，把上限抬到 16 只是在写一个够不着的数。</p>
+
+<p>最后一列是这张表里最容易被忽略、上岗后最容易出事的一列：<em>上限不是实际值。</em>报"我们把并发开到 256"没有意义，要报实际批量。</p>
+
+<h3>10. 第二个旋钮：一步最多算几个 token</h3>
+
+<p>光有"最多几条序列"是不够的。八条序列可能是八条正在吐字的（一步八个 token），也可能里面混着一条 prompt 有八千个 token 的新请求（一步八千多个 token）。这两种情况一步的耗时差着几十倍。</p>
+<p>所以还需要第二个上限，管的是 token 总数。同一个文件第 49 行：</p>
+
+<pre><code>max_num_batched_tokens: int = Field(default=DEFAULT_MAX_NUM_BATCHED_TOKENS, ge=1)
+<span class="c">"""Maximum number of tokens that can be processed in a single iteration."""</span>
+DEFAULT_MAX_NUM_BATCHED_TOKENS: ClassVar[int] = 2048</code></pre>
+
+<p>这个数叫 <span class="term">max_num_batched_tokens</span>。它就是第 8 节那句注释里的"token 配额"——每一步调度器手上有这么多 token 可以分，分完为止。这个配额本身有个名字，叫 <span class="term">token 预算（token budget）</span>。</p>
+
+<p>分块预填充就是这个预算的自然结果，不是一个额外的功能。预算 2048，来了一条 prompt 八千 token 的请求，一步分给它 2048 个，剩下的下一步再说——它自动就被切开了。同一个文件第 75 行也印证了这一点：<code>enable_chunked_prefill: bool = True</code>，默认开着。</p>
+
+<p>两个旋钮的分工可以这样记：<code>max_num_seqs</code> 限的是"几个人上车"，<code>max_num_batched_tokens</code> 限的是"这一车总共装多少货"。任何一个先到上限，这一步就不再往里加了。</p>
+
+<p>第 6 节那三行实测，就是调小这个预算的效果：预算越小，一步里能塞的 prompt token 越少，插队越短，ITL 越好，但一条 prompt 要更多步才算完，TTFT 越差。</p>
+
+<h3>11. 内存不够的时候，牺牲谁</h3>
+
+<p>前面所有讨论都假设"想放几条就放几条"。真实系统里放不下——每条正在生成的序列都要占一块显存存中间结果，放太多就爆了。</p>
+<p>爆了怎么办？调度器得从正在跑的里面拉一条下来，把它的内存让出去。这个动作叫 <span class="term">抢占（preemption）</span>。</p>
+
+<p>vLLM 拉哪一条，源码里写得很直白。<code>scheduler.py</code> 第 702 行，非优先级模式下：</p>
+
+<pre><code>preempted_req = self.running.pop()</code></pre>
+
+<p><code>running</code> 是按到达顺序排的，<code>pop()</code> 取的是最后一个。<em>被牺牲的是最新来的那条。</em></p>
+<p>这不是随手写的。最新那条已经算出来的 token 最少，把它拉下来，扔掉的工作量最小。反过来牺牲最老那条，等于把一条已经吐了几百个字的请求推倒重来。</p>
+
+<p>推倒重来不是比喻。第 1365 行那个函数干的事情是：</p>
+
+<pre><code>self._free_request_blocks(request)          <span class="c"># 把它占的内存块全部释放</span>
+request.status = RequestStatus.PREEMPTED
+request.num_computed_tokens = 0             <span class="c"># 已算完的 token 数清零，从头再来</span></code></pre>
+
+<p>释放内存块，然后把"已经算完多少 token"清零，扔回等待队列。它之前算的东西一点没留下，回来之后整个 prompt 要重新算一遍。这种处理方式叫 <span class="term">重算（recompute）</span>。</p>
+<p>另一条路是把中间结果搬到 CPU 内存里存着，回来再搬回去，叫 swap。vLLM 文档写着「In vLLM V1, the default preemption mode is <code>RECOMPUTE</code> rather than <code>SWAP</code>, as recomputation has lower overhead in the V1 architecture」——V1 默认选重算，因为在新架构下重算的开销更低。这两条路的取舍要等 Day 15 把内存账算清楚才谈得下去。</p>
+
+<p>还有一种模式：如果配了优先级策略，牺牲的就不是最新那条，而是优先级最低的那条。第 668 行：</p>
+
+<pre><code>preempted_req = max(self.running, key=lambda r: (r.priority, r.arrival_time))</code></pre>
+
+<p>按"优先级，然后到达时间"取最大——优先级数值越大越低级，同优先级里取最晚到的。这就是给不同租户分级之后，调度器实际执行的动作。</p>
+
+<div class="card warn">
+<div class="ttl">关键结论</div>
+<p>调度器只有三件事可做：这一步让谁上车、给每个人分多少 token 配额、装不下时踢谁下去。今天这三部分正好一样一件。</p>
+<p>三件事都没有"最优解"，只有把压力从一个指标推到另一个指标。补位提高吞吐但增加 prefill 次数；切碎改善 ITL 但恶化 TTFT；抢占保住了内存但让某条请求白算一遍。</p>
+</div>
+
+<h2>动手任务</h2>
+
+<h3>任务 A（必做，约 70 分钟）：把这条曲线在自己机器上扫出来</h3>
+
+<p>服务端就是 Day 8 那个文件加上四个开关。整份贴在这里，改动集中在 <code>admit()</code> 和 <code>engine()</code> 里那段选择走哪条路的分支。</p>
+
+<pre><code>
+"""Day 9 的推理服务：和 Day 8 同一套骨架，只是把调度器做成可换的。
+用法: OPENBLAS_NUM_THREADS=1 python3 server.py &lt;端口&gt;
+环境变量:
+  SCHED     = continuous | static   何时接纳新请求
+  MAX_SEQS  = 整数                  decode 批量上限（同时最多几条在生成）
+  CHUNK     = 0 或正整数            一步最多算几个 prompt token；0 = 一口气算完
+  MIXED     = 0 | 1                 1 = prefill 和 decode 合成同一次矩阵乘法
+  STEPLOG   = 文件名                记录每一次引擎步
+"""
+import asyncio, json, os, sys, time
+import numpy as np
+
+N, L = 4096, 8                      # 8 层 4096x4096 float32 权重，合计 512 MiB
+W = [np.random.rand(N, N).astype(np.float32) for _ in range(L)]
+SCHED    = os.environ.get("SCHED", "continuous")
+MAX_SEQS = int(os.environ.get("MAX_SEQS", "1000"))
+CHUNK    = int(os.environ.get("CHUNK", "0"))
+MIXED    = os.environ.get("MIXED", "0") == "1"
+STEPLOG  = open(os.environ.get("STEPLOG", "/dev/null"), "w")
+
+class Seq:
+    __slots__ = ("q", "todo", "left", "admitted")
+    def __init__(self, prompt_len, out_len):
+        self.q = asyncio.Queue()
+        self.todo = prompt_len       # prompt 里还剩几个 token 没算
+        self.left = out_len          # 还要吐几个 token
+        self.admitted = False
+
+pending, prefilling, running = [], [], []   # 排队等着 / 正在做 prefill / 正在吐 token
+
+def matmuls(S):
+    """S 列输入过一遍全部权重。一次调用 = 把 512 MiB 权重完整读一遍。"""
+    X = np.random.rand(N, S).astype(np.float32)
+    for w in W: w @ X
+    return S
+
+def admit():
+    """把 pending 里的请求放进 prefilling。两种调度策略只差这个函数。"""
+    if SCHED == "static":
+        # 上一批没跑完，一条新的都不接
+        if running or prefilling: return
+        room = MAX_SEQS
+    else:
+        room = MAX_SEQS - len(running) - len(prefilling)
+    while room &gt; 0 and pending:
+        prefilling.append(pending.pop(0)); room -= 1
+
+async def engine():
+    while True:
+        admit()
+        if not prefilling and not running:
+            await asyncio.sleep(0.001); continue
+
+        # --- 这一步要算多少 prompt token ---
+        budget = CHUNK if CHUNK &gt; 0 else 10**9
+        pre_S, ready = 0, []
+        for s in prefilling:
+            if budget &lt;= 0: break
+            take = min(s.todo, budget)
+            s.todo -= take; pre_S += take; budget -= take
+            if s.todo == 0: ready.append(s)
+
+        dec_B = len(running)
+        if MIXED and pre_S and dec_B:
+            # 合批：prompt token 和 decode token 挤进同一次矩阵乘法，权重只读一遍
+            a = time.perf_counter(); matmuls(pre_S + dec_B); b = time.perf_counter()
+            STEPLOG.write(f"M {a:.6f} {b:.6f} {pre_S} {dec_B}\n")
+        else:
+            # 不合批：各算各的，权重被读两遍
+            if pre_S:
+                a = time.perf_counter(); matmuls(pre_S); b = time.perf_counter()
+                STEPLOG.write(f"P {a:.6f} {b:.6f} {pre_S} 0\n")
+            if dec_B:
+                a = time.perf_counter(); matmuls(dec_B); b = time.perf_counter()
+                STEPLOG.write(f"D {a:.6f} {b:.6f} 0 {dec_B}\n")
+
+        # --- 把这一步产出的 token 发出去 ---
+        done = []
+        for s in running:
+            s.q.put_nowait("x"); s.left -= 1
+            if s.left &lt;= 0: s.q.put_nowait(None); done.append(s)
+        for s in done: running.remove(s)
+        for s in ready:                      # prompt 算完的，第一个 token 现在出来
+            prefilling.remove(s)
+            s.q.put_nowait("x"); s.left -= 1
+            if s.left &gt; 0: running.append(s)
+            else: s.q.put_nowait(None)
+
+        STEPLOG.flush()
+        await asyncio.sleep(0)
+
+async def handle(reader, writer):
+    try:
+        head = await reader.readuntil(b"\r\n\r\n")
+    except Exception:
+        writer.close(); return
+    n = 0
+    for line in head.split(b"\r\n"):
+        if line.lower().startswith(b"content-length:"): n = int(line.split(b":")[1])
+    req = json.loads(await reader.readexactly(n) if n else b"{}")
+    s = Seq(int(req.get("prompt_len", 8)), int(req.get("max_tokens", 24)))
+    writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n"
+                 b"Transfer-Encoding: chunked\r\n\r\n")
+    await writer.drain()
+    pending.append(s)
+    while True:
+        if await s.q.get() is None: break
+        payload = b'data: {"t":"x"}\n\n'
+        writer.write(b"%x\r\n" % len(payload) + payload + b"\r\n")
+        await writer.drain()
+    writer.write(b"0\r\n\r\n")
+    try:
+        await writer.drain(); writer.close()
+    except Exception: pass
+
+async def main():
+    asyncio.create_task(engine())
+    srv = await asyncio.start_server(handle, "127.0.0.1", int(sys.argv[1]))
+    print(f"listening {sys.argv[1]} SCHED={SCHED} MAX_SEQS={MAX_SEQS} "
+          f"CHUNK={CHUNK} MIXED={int(MIXED)}", flush=True)
+    async with srv: await srv.serve_forever()
+
+asyncio.run(main())
+</code></pre>
+
+<p>启动：<code>OPENBLAS_NUM_THREADS=1 SCHED=static MAX_SEQS=8 STEPLOG=s.log python3 server.py 8901</code>。要等二十秒生成权重，打印出 <code>listening</code> 那一行才算好。内存不到 4 GB 就把 <code>L</code> 从 8 改成 4。</p>
+
+<p>压测器和昨天的差别只有一处：<code>max_tokens</code> 现在可以写成 <code>u:4:44</code>，表示每条从 4 到 44 之间随机取。种子是写死的，所以不同配置跑出来的长度序列完全一样，两组才可比。</p>
+
+<pre><code>
+"""开环压测器：按泊松到达发请求，逐 token 记录时间戳。
+用法: python3 loadgen.py &lt;port&gt; &lt;rps&gt; &lt;秒数&gt; &lt;prompt_len&gt; &lt;max_tokens&gt; [标签]
+     max_tokens 可以是一个整数（每条都一样），也可以写成 u:4:44
+     表示每条从 4 到 44 之间均匀随机取一个（种子固定，各组拿到同一串长度）
+输出一行 JSON，含每条请求的 ttft / itl 列表 / 端到端延迟。
+"""
+import asyncio, json, random, sys, time
+
+async def one(port, plan_t, prompt_len, max_tokens, out):
+    now = time.perf_counter()
+    if plan_t &gt; now: await asyncio.sleep(plan_t - now)
+    body = json.dumps({"prompt_len": prompt_len, "max_tokens": max_tokens}).encode()
+    try:
+        r, w = await asyncio.open_connection("127.0.0.1", port)
+    except Exception:
+        return
+    w.write(b"POST /gen HTTP/1.1\r\nHost: x\r\nContent-Length: %d\r\n\r\n" % len(body) + body)
+    await w.drain()
+    await r.readuntil(b"\r\n\r\n")
+    ts, ntok = [], 0
+    while True:
+        line = await r.readline()                 # chunk 长度行
+        if not line or line.strip() == b"0": break
+        payload = await r.readexactly(int(line.strip(), 16) + 2)
+        ts.append(time.perf_counter())
+        ntok += payload.count(b"x")               # 这一个 chunk 里真的装了几个 token
+        if b"data:" not in payload: break
+    w.close()
+    if not ts: return
+    # 延迟一律从"计划发出时刻"起算，不是从真正 write 的时刻起算
+    out.append({"ttft": ts[0] - plan_t,
+                "itl": [ts[i] - ts[i-1] for i in range(1, len(ts))],
+                "e2e": ts[-1] - plan_t, "n": len(ts), "ntok": ntok, "plan": plan_t})
+
+async def main():
+    port, rps, dur = int(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])
+    plen, mspec = int(sys.argv[4]), sys.argv[5]
+    tag = sys.argv[6] if len(sys.argv) &gt; 6 else ""
+    rnd = random.Random(1234)
+    t0 = time.perf_counter() + 0.5
+    plan, t = [], t0
+    while t - t0 &lt; dur:
+        plan.append(t)
+        t += rnd.expovariate(rps)                 # 泊松到达：间隔随机，不跟服务周期锁相
+    lrnd = random.Random(99)                      # 输出长度用另一个固定种子，各组完全一致
+    if mspec.startswith("u:"):
+        lo, hi = int(mspec.split(":")[1]), int(mspec.split(":")[2])
+        lens = [lrnd.randint(lo, hi) for _ in plan]
+    else:
+        lens = [int(mspec)] * len(plan)
+    out, tasks = [], []
+    for pt, mtok in zip(plan, lens):
+        tasks.append(asyncio.create_task(one(port, pt, plen, mtok, out)))
+    await asyncio.gather(*tasks)
+    print(json.dumps({"tag": tag, "rps": rps, "dur": dur, "plen": plen,
+                      "mtok": mspec, "lens": lens, "sent": len(plan), "reqs": out}))
+
+asyncio.run(main())
+</code></pre>
+
+<p>先跑一次确认链路通：<code>python3 loadgen.py 8901 1.0 20 8 24 t1 &gt; t1.json</code>。应该看到完成数等于发送数，TTFT 在几百毫秒到几秒之间。如果完成数远小于发送数，是服务被压垮了，把速率降下来。</p>
+
+<p><b>要交出来的东西是两张图。</b></p>
+<p>第一张：固定 <code>MAX_SEQS=8</code>，跑 static 和 continuous 各两组（输出定长、输出变长），四个点画在同一张图上，横轴是策略，纵轴是吞吐。你要能指着图说出哪一组是对照组、它证明了什么。</p>
+<p>第二张：固定 continuous，把 <code>MAX_SEQS</code> 从 1 扫到 16，画吞吐和 TPOT 两条曲线。标出吞吐不再上涨的那个点。</p>
+
+<p><b>验收标准</b></p>
+<ul>
+<li>定长那两组的差距明显小于变长那两组。如果两组差距一样大，说明你的输出长度分布方差不够，把范围拉开再试。</li>
+<li>你能从服务端日志里数出 decode 步的批量分布，并指出 static 那边有多少步的批量小于上限的一半。</li>
+<li>吞吐曲线在某个 <code>MAX_SEQS</code> 之后走平，而且你能说出走平的原因是负载够不着这个上限，不是硬件到顶了——证据是那一档的实际批量平均值明显小于上限。</li>
+</ul>
+
+<p><b>常见坑</b></p>
+<ul>
+<li><b>两个进程抢两个核。</b>压测器和服务各占一个，这台机器就满了。看到 ITL 中位数随速率涨得比 decode 步耗时快很多，先怀疑这一条，用发送迟滞验证。</li>
+<li><b>static 那组跑不完。</b>它的有效吞吐比 continuous 低，同样的速率可能压垮它，队列越排越长。发现 <code>timeout</code> 被触发就把速率降到 1.5 以下。</li>
+<li><b>拿设定的 dur 当分母算吞吐。</b>过载时请求会在窗口结束后很久才完成，用设定时长做分母会把吞吐算高。要用"最后一条完成时刻减第一条计划发出时刻"。</li>
+</ul>
+
+<h3>任务 B（约 40 分钟）：给你自己的服务加一个批量维度的指标</h3>
+
+<p>你从 Day 5 一直在改的那个服务，现在加一件事：在处理循环里记录"这一轮同时在处理几个请求"，把它和吞吐一起打出来。</p>
+<p>不一定是推理服务，任何按批处理的东西都行——批量写库、批量调下游、消息批量消费。做法一样：每一批记下批量大小和这批耗时。</p>
+<p><b>验收标准</b>：你能画出批量大小的分布直方图，并回答一个问题——如果这个分布的左半边（小批量）占比很高，是因为流量不够，还是因为你的放行逻辑让槽位空着？两者的区分方法是看同一时刻有没有请求在排队。</p>
+
+<h3>加分题</h3>
+<ol>
+<li><b>把 static 的优点补回给 continuous。</b>第 4 节那张账本显示，continuous 输在"一条一条放行、每条单独 prefill"。改一下 <code>admit()</code>：攒够 K 条或者等满 T 毫秒才放行一批。K 取 4、T 取 100 毫秒试试。预测：prefill 步数下降、吞吐上升、TTFT 略微变差。三个数都跑出来对一下。</li>
+<li><b>找出 <code>MAX_SEQS=2</code> 那个坑的边界。</b>第 9 节里 1 到 2 是纯亏。那 2 到 3 呢？把 <code>MAX_SEQS</code> 在 1、2、3、4 上各跑一遍，画每个 token 的平均成本。从第几档开始才真的开始摊薄？</li>
+<li><b>把混合批的粒度扫出来。</b><code>CHUNK</code> 取 8、16、32、64、128（128 等于不切），配合 <code>MIXED=1</code> 各跑一遍，画 TTFT 和 ITL P99 两条曲线。这两条曲线一定往相反方向走，交点附近就是这台机器上的合理取值。</li>
+<li><b>把爬坡段从统计里摘掉。</b>每次运行的前 10% 请求，每个 token 的端到端时间明显比后面快——队列还没堆起来。把统计窗口收窄到中间那段（丢掉前 20% 和后 10%）再算一遍四组的数。相对关系变了吗？如果没变，说明第一部分那个结论不依赖于窗口的选法；如果变了，那更值得深究。</li>
+<li><b>验证"牺牲最新那条"确实是最优的。</b>在自己的引擎里实现抢占：当同时在跑的超过上限时，踢一条回等待队列并把它的进度清零。分别试"踢最新的"和"踢最老的"，比较总的重复计算量。</li>
+</ol>
+
+<h2>上岗关联</h2>
+
+<h3>场景一：吞吐上不去，但 GPU 利用率看着不低</h3>
+<p>先别看 GPU，先看实际批量的分布。如果分布左偏、大量步只服务一两条序列，问题在调度不在算力。</p>
+<p>接下来分两种情况。同时排队的请求本来就少，那是流量问题或者路由问题，加机器没用。有请求在排队但批量还是上不去，那就是放行逻辑的问题——检查 <code>max_num_seqs</code> 是不是设小了，或者内存不够导致一直在抢占。抢占次数 vLLM 会打日志，也有 Prometheus 指标。</p>
+
+<h3>场景二：产品要求"首字必须一秒内出来"，同时要求吞吐翻倍</h3>
+<p>这两个要求指向相反的旋钮，得让他们排优先级。</p>
+<p>能给出的是一张取舍表而不是一个方案：调大 <code>max_num_seqs</code> 换吞吐，代价是每个人的字变慢；调小 <code>max_num_batched_tokens</code> 换 ITL，代价是长 prompt 的首字更慢。第 6 节和第 9 节那两张表就是这两条取舍的形状。</p>
+<p>顺带一提，如果长 prompt 是主要负载，还有第三条路：把 prefill 和 decode 拆到不同实例上。那是 Day 8 延伸材料里那篇文档讲的事，代价是要多一套机器。</p>
+
+<h3>场景三：线上偶发某条请求"卡住很久然后突然全出来"</h3>
+<p>这个形状是抢占。请求被踢回队列、进度清零、重新排队重算，用户端看到的就是长时间没动静，然后一次性追上来。</p>
+<p>排查顺序：先看抢占计数有没有同步上涨，再看是不是在内存吃紧的时段发生的。解法通常是限制并发或者给 KV cache 更多空间，而不是去优化模型。</p>
+
+<h3>同事和面试官常问的</h3>
+<ul>
+<li><b>「continuous batching 为什么比 static 快？」</b>——只答"不浪费槽位"是对的但不完整。加一句"收益全部来自输出长度的方差，长度一致时它反而略慢，因为每放行一条就多一次 prefill"，就说明你真做过对照。</li>
+<li><b>「chunked prefill 是干什么的？」</b>——它把长 prompt 切开，让它不至于一次堵住所有人的字。追问"那为什么不切得越碎越好"，答：切碎必须配合把 prompt 和 decode 放进同一步，否则权重被读的次数成倍增加，总账是亏的。</li>
+<li><b>「max_num_seqs 调大有什么坏处？」</b>——每步要带的序列多了，一步就慢，所有人的 TPOT 一起变差。而且调大不等于用得上，实际批量才是要看的数。</li>
+<li><b>「内存不够时 vLLM 踢谁？」</b>——默认踢最新那条，因为它已算的 token 最少、重算最便宜；配了优先级就踢优先级最低的。踢下去之后进度清零，整个 prompt 要重算。</li>
+</ul>
+
+<h2>自检问题</h2>
+
+<details><summary>1. 一个服务从 static 换成 continuous batching，上线后吞吐只涨了 3%。老板问是不是白改了。你怎么查？</summary>
+<p>先查输出长度的分布，这是决定收益上限的那个量。</p>
+<p>如果这个服务的输出长度高度集中（比如都是固定格式的短回答，都在 20 到 30 个 token），那 3% 就是它应得的收益，改动没做错，只是这个场景本来就没多少可捞的。第 3 节那两组定长实验里，continuous 甚至还小输了一点。</p>
+<p>如果输出长度差异很大，那 3% 说明补位没有真的发生，要往下查两件事。一是实际批量的分布：如果仍然大量步只服务一两条，说明放行逻辑没生效或者被别的上限卡住了。二是 prefill 步数：如果它涨得非常多，那 decode 侧省下来的时间被 prefill 侧吃掉了——这正是第 4 节那张账本上的形态，解法是把 prompt 和 decode 合进同一步。</p>
+<p>怎么区分这两件事：数一下引擎步里 prefill 占了多少。占比很低就是第一种，占比很高就是第二种。</p>
+</details>
+
+<details><summary>2. 你把 max_num_batched_tokens 从 8192 调到 2048，ITL 的 P99 明显改善，但用户投诉变多了。可能发生了什么？</summary>
+<p>最可能的是 TTFT 变差，而这个服务的用户对首字更敏感。</p>
+<p>这个参数管的是一步能算多少 token。调小之后，一条长 prompt 要分更多步才算完，第一个字自然出得更晚。第 6 节那张表里，切碎之后 TTFT 从 11.6 秒涨到 25.8 秒，就是这个方向的极端版本。</p>
+<p>还有第二种可能，跟第一种会同时发生：预算调小之后，每一步能容纳的 prompt token 变少，同样的流量需要更多引擎步，总吞吐下降，于是队列变长，所有人的等待都变长。这时候 ITL 好看是因为每一步都变短了，但端到端时长反而更差。</p>
+<p>区分方法：看端到端延迟。如果 ITL 改善而端到端变差，就是第二种；如果端到端没变而只有 TTFT 变差，就是纯粹的取舍生效了，那就要回去和业务确认到底哪个指标更重要。</p>
+</details>
+
+<details><summary>3. 有人提议：既然抢占要把进度清零重算，那干脆永远不抢占，请求太多就直接拒绝。这个方案有什么问题？</summary>
+<p>方向上不算错，很多系统确实这么做，这叫准入控制。但它把一个可以延后的成本换成了一个不可逆的失败。</p>
+<p>先说清楚这个提议的名字：在请求进门时就判断"扛不扛得住"，扛不住直接拒绝，这叫准入控制（admission control）。</p>
+<p>抢占的代价是某条请求白算一遍，用户感受到的是变慢；直接拒绝的代价是这条请求没有了，用户感受到的是报错。对大多数场景，慢比失败好接受。</p>
+<p>还有一个更实际的问题：拒绝的判断得在请求进来时做，而那时你不知道它要生成多少 token。一条请求会占多少内存，取决于它最终吐多长，这个数事先不知道。所以"够不够"这个判断只能一边跑一边做——这正是抢占存在的原因。</p>
+<p>合理的做法是两者都要：用准入控制挡住明显扛不住的流量，用抢占处理跑起来之后才发现的超额。它们管的是不同时刻的同一个问题。</p>
+</details>
+
+<details><summary>4. 第 9 节里 max_num_seqs 从 1 调到 2，吞吐没涨而 TPOT 翻倍。如果换成一台真实的 GPU 服务器，这个坑还在吗？</summary>
+<p>形状还在，位置不在同一个地方。</p>
+<p>这个坑的成因是 Day 7 讲的那件事：批量为 1 时走"矩阵乘向量"的代码路径，批量大于等于 2 时走"矩阵乘矩阵"，后者为了让内层循环命中缓存要先把权重重排一遍，于是权重被过了两遍。批量很小的时候，这笔重排费摊不回来。</p>
+<p>GPU 上的具体实现不同，但同一类现象存在：小批量时算力严重空转，一步的耗时基本由"把权重读一遍"决定，加几列几乎不要钱也几乎不赚钱。真正的分界线在这台硬件的算力除以带宽那个数上——Day 7 算过，这台机器上是个位数，一块 H100 上是几百。</p>
+<p>所以结论不是"2 是个坏数字"，而是"在拐点左边加批量，收益接近零"。要判断自己那台机器的拐点在哪，就把 Day 7 那两把尺子量一遍。</p>
+</details>
+
+<h2>今日新词</h2>
+<p>前三个是今天的主线，中间三个是"一步里装什么"这件事的三个侧面，最后四个是调度器实际暴露出来的参数和动作。</p>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>引擎循环转一圈：做一次矩阵乘法，给这一批里每条序列各推进一个 token。调度以它为粒度</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>攒够一批一起算，跑到整批全部结束才放下一批进来。短的必须陪最长的等到底</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>谁跑完谁下车，空出来的槽位立刻让排队的补上。收益全部来自输出长度的差异</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>把长 prompt 切成小块，一步只算一块，让它不至于一次堵住所有人的字</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>同一次矩阵乘法里既有 prompt token 也有生成中的 token，权重只读一遍。分块必须配它才是净收益</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>调度器每一步手上有多少 token 可以分给各条请求。分块预填充是这个预算的自然结果，不是额外功能</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>一个引擎步里最多几条序列。vLLM 默认 128。上限不等于实际批量</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>一个引擎步里最多算多少个 token。vLLM 默认 2048。调小 ITL 更好，调大 TTFT 更好</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>内存放不下时，把一条正在跑的请求拉下来腾地方。vLLM 默认拉最新到达的那条</td></tr>
+<tr><td>重算</td><td>recompute</td><td>被抢占的请求进度清零、扔回队列，回来时整个 prompt 重新算一遍。另一条路是把中间结果搬去 CPU 内存，叫 swap</td></tr>
+</table></div>
+
+<h2>已学词表</h2>
+<details><summary>Day 1 到今天的全部 71 个术语（点开）</summary>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little's Law</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+</table></div></details>
+
+<div class="card dig">
+<div class="ttl">专项深挖 · 今天没展开但值得单独学的</div>
+<p>今天只用一天讲调度，有两块被压缩了。下面两段可以直接粘给 Claude，另开一个会话深挖。</p>
+
+<p><b>一、排队论的完整版本</b></p>
+<p class="tip">我在学推理服务的性能工程，已经掌握这些：利用率和排队时间的关系是 ρ/(1−ρ)、Little's Law、开环与闭环压测的区别、协调遗漏、百分位与双峰分布。我现在想把排队论本身学扎实，而不是只会用这几个结论。请给我一份完整的推导路线：从 M/M/1 开始，讲清楚泊松到达和指数服务时间这两个假设分别在哪一步被用到、去掉它们会变成什么模型（M/G/1、M/M/c）、以及 Kingman 近似为什么在实际系统里比精确公式更有用。每一步都要有可以代数字验算的算例。最后告诉我：一个 LLM 推理服务的服务时间分布长什么样，它离这些模型的假设有多远。</p>
+
+<p><b>二、Orca 与 Sarathi 这两篇论文</b></p>
+<p class="tip">我在学 LLM 推理服务的调度。已经动手做过实验，验证了三件事：连续批处理的收益来自输出长度的方差（长度一致时它反而略慢）；分块预填充单独用会让总吞吐变差，必须和"prompt 与 decode 合进同一次前向"配套；max_num_seqs 调大换吞吐、换来的代价是 TPOT 变差。我也读过 vLLM V1 调度器的源码，知道它以 token 预算为中心、不区分 prefill/decode 阶段。现在请带我精读两篇论文：Orca（OSDI 2022，iteration-level scheduling 的出处）和 Sarathi-Serve（arXiv 2403.02310，chunked prefill 的系统性论证）。我要的不是摘要，是：每篇解决的具体问题是什么、它们的实验是怎么设计对照的、结论在什么条件下不成立、以及它们各自的做法在今天的 vLLM 里落到了哪一段代码上。</p>
+</div>
+
+<h2>延伸材料</h2>
+
+<p><b>1. vLLM 调度器主函数</b> —— <code>vllm/v1/core/sched/scheduler.py</code>，重点是 500 行开头那段注释和 547 / 771 两行<br>
+今天第 8 节引的那段设计说明就在这里。值得读的不是整个函数，是"先给 RUNNING 续、再给 WAITING 分"这个顺序，以及 token 预算怎么一步步被扣光。读完你会发现今天讲的三件事在代码里就是三个 if。<br>
+<b>难度：中。</b>函数很长，只读这三处，一小时。</p>
+
+<p><b>2. vLLM 调度器配置</b> —— <code>vllm/config/scheduler.py</code> 前 80 行<br>
+今天两个旋钮的权威定义和默认值。每个字段的 docstring 都写了它到底管什么，比任何二手教程准确。<br>
+<b>难度：低。</b>十分钟，当字典查。</p>
+
+<p><b>3. vLLM 文档 · Optimization and Tuning</b> —— <a href="https://docs.vllm.ai/en/latest/configuration/optimization.html">docs.vllm.ai</a><br>
+chunked prefill 那一节给出了调参的两个相反方向，以及 V1 默认用重算而不是换出的理由。第 6 节和第 11 节都引了它。<br>
+<b>难度：低。</b>一页。</p>
+
+<p><b>4. Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve</b> —— Agrawal 等，<a href="https://arxiv.org/abs/2403.02310">arxiv.org/abs/2403.02310</a><br>
+今天第二部分那三行实测的论文版。它系统地论证了为什么切碎必须配合合批，以及怎么选块大小。读引言和动机部分，对着今天那张 ITL 分布表看。<br>
+<b>难度：中高。</b>先读前两节。</p>
+
+<p><b>5. Orca: A Distributed Serving System for Transformer-Based Generative Models</b> —— Yu 等，OSDI 2022<br>
+iteration-level scheduling 的出处，也就是今天说的连续批处理。它第一次把"以引擎步为粒度重新调度"这件事讲清楚。<br>
+<b>难度：中高。</b>这篇没有 arXiv 版本，在 USENIX 的 OSDI 2022 会议页面上可以找到。</p>
+
+<div class="card five">
+<div class="ttl">今日五句话 · 费曼式复述</div>
+<p>合上这一页，用自己的话回答。每题一到三句，写完对照后面的自查标准。</p>
+
+<p><b>1. 静态批处理浪费在哪里？用一个具体场景说明。</b></p>
+<div class="write tall"></div>
+
+<p><b>2. 连续批处理的好处从哪来？什么情况下它没有好处？</b></p>
+<div class="write tall"></div>
+
+<p><b>3. 为什么把长 prompt 切碎，单独做反而更慢？</b></p>
+<div class="write tall"></div>
+
+<p><b>4. max_num_seqs 和 max_num_batched_tokens 各管什么？调大调小分别牺牲什么？</b></p>
+<div class="write tall"></div>
+
+<p><b>5. 内存不够时 vLLM 踢掉哪条请求？为什么是那一条？被踢掉的那条损失了什么？</b></p>
+<div class="write tall"></div>
+
+<p><b>逐句自查标准</b></p>
+<p><b>第 1 句</b>　如果只写"批处理效率低"，等于没说。要说出具体场景：一批八条，七条二十个 token 就结束，一条要四十四个；后面二十几步里槽位空着一半，但新请求进不来。还要补一句为什么空槽位是纯浪费——一步的耗时主要由读一遍权重决定，批量掉下去省不了时间，只是少吐了 token。</p>
+<p><b>第 2 句</b>　"不浪费槽位"只答了一半。必须说出"什么情况下没好处"：输出长度一致时。而且要知道那时它还略亏，因为一条一条放行意味着一条一条 prefill。<b>能说出"没好处的情况"，才说明你知道好处从哪来。</b></p>
+<p><b>第 3 句</b>　如果写成"切碎增加了开销"，太笼统。要具体到：一次前向的成本主要是把权重完整读一遍，跟这一步算几个 token 关系不大。切成四块就是读四遍。所以省下的插队时间被多读的权重吃掉了。</p>
+<p><b>第 4 句</b>　两个都要说清楚管的是什么维度：一个限序列条数，一个限 token 总数。调大 <code>max_num_seqs</code> 换吞吐、牺牲 TPOT；调小 <code>max_num_batched_tokens</code> 换 ITL、牺牲 TTFT。如果你写的是"调大性能更好"，那是漏掉了牺牲的那一边。另外要补一句上限不等于实际值。</p>
+<p><b>第 5 句</b>　默认踢最新到达的那条。理由要说出来：它已经算完的 token 最少，重算最便宜。损失的是全部进度——内存块释放、已算 token 数清零、回到队列后整个 prompt 重来。如果答"踢最不重要的"，那是优先级模式，要说明这是配置出来的另一种策略。</p>
+</div>
+
+<h2>明日预告</h2>
+<p>推理这条线先挂起来。今天已经三次撞到同一堵墙：内存放不下就要抢占、抢占之后要重算、放几条序列取决于内存够不够。这堵墙要用一整天算清楚，安排在 Day 15。</p>
+<p>明天转去另一块地。你四周后要负责的三块产出里，Agent 运行时和推理服务都碰过了，还有一块完全没动：让模型生成的代码安全地跑起来。那是纯粹的 Linux 系统工程——namespace、cgroup、seccomp，以及它们各自到底挡住了什么。</p>
+<p>明天先把这几样东西的边界画清楚：谁管"看不见"、谁管"用不了那么多"、谁管"这个系统调用不许发"。后天你会用它们手搓一个容器出来。</p>
+
+</main>
+<footer>
+<p>AI Infra · Day 9 / 28 · 2026-08-27 · 阶段二 · 推理服务与 KV Cache</p>
+<p class="tip">实验条件：2 核 Intel Xeon @ 2.10 GHz，L1d 48 KB、L2 2 MB、L3 260 MB，7 GB 内存；Python 3.11 + numpy 2.4（OpenBLAS），全程 <code>OPENBLAS_NUM_THREADS=1</code>。模型骨架为 8 层 4096×4096 的 float32 权重，合计 512 MiB；服务端与压测器分属两个进程。源码引用取自 vLLM 仓库 commit <code>3fd72ff</code>。</p>
+</footer>
+</body>
+</html>
