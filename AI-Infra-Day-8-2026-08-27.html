@@ -336,29 +336,251 @@ most_recent_timestamp = timestamp</code></pre>
 
 <p>顺便说一个真实存在的坑。vLLM 自己的设计文档 <code>docs/design/metrics.md</code> 第 52 行，把指标 <code>vllm:inter_token_latency_seconds</code> 描述成「Inter-token latency (Time Per Output Token, TPOT) in seconds」，等号两边就是上面刚区分开的两个词。而它的压测脚本第 1376 到 1377 行打印时用的又是两个名字：「Time per Output Token (excl. 1st token)」和「Inter-token Latency」。<b>同一个项目里，这两个缩写在两个地方是两个意思。</b>所以看别人的性能数字时，第一个要问的永远是：你这个数是一次除法得到的，还是一串间隔的百分位？</p>
 
-<h3>5. 现在轮到你猜了</h3>
-<p class="lead">这一节回答：把这三个数放到一个真实负载上，改一个变量，它们会各自动多少？</p>
+<h3>5. 这个实验到底在跑什么</h3>
+<p class="lead">这一节回答：下面那些 TTFT、ITL 的数字，是从一台什么样的机器上、用什么东西、怎么量出来的？</p>
 
-<p>先把实验装置说清楚，免得你猜的时候缺信息。</p>
-<p>一个单进程的推理服务，模型就是上面那 8 层 512 MiB 的权重。引擎循环每一轮做两件事：先把新到的请求做 prefill，再给所有正在生成的请求各推进一个 token。压测器是独立进程，按泊松到达开环发压——间隔随机、不管前面的回没回，延迟一律从<b>计划发出的时刻</b>算起。这是 Day 6 那套，为的是躲开协调遗漏和锁相。</p>
-<p>负载参数：每秒 1 条请求，跑 60 秒，一共 70 条，每条固定吐 24 个 token。</p>
-<p>已经量出来的两个基准数字：</p>
+<p>接下来五节的数字全部来自同一套装置。先把它整个摊开，摊到你能自己搭一遍为止。看不懂装置，后面所有数字对你来说都只是数字。</p>
+
+<h4>5.1 两个进程，一根 HTTP 连接</h4>
+
+<p>整套东西就是两个 Python 进程，跑在同一台机器上，通过本机 TCP 说话。没有 Docker，没有框架，没有真的模型。</p>
+
+<div class="scroll">
+<svg viewBox="0 0 760 330" width="760" style="max-width:100%;height:auto" role="img" aria-label="压测器进程与服务进程的结构图">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.5" opacity=".85">
+    <rect x="8" y="30" width="228" height="272" rx="10"/>
+    <rect x="330" y="30" width="422" height="272" rx="10"/>
+  </g>
+  <g font-size="14" font-weight="700" fill="currentColor">
+    <text x="22" y="52">进程 A · 压测器</text>
+    <text x="344" y="52">进程 B · 推理服务</text>
+  </g>
+  <g font-size="12" fill="currentColor" opacity=".72">
+    <text x="22" y="70">loadgen.py</text>
+    <text x="344" y="70">server.py　（OPENBLAS_NUM_THREADS=1）</text>
+  </g>
+
+  <g fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55">
+    <rect x="22" y="84" width="200" height="46" rx="7"/>
+    <rect x="22" y="142" width="200" height="46" rx="7"/>
+    <rect x="22" y="200" width="200" height="88" rx="7"/>
+  </g>
+  <g font-size="12.5" fill="currentColor">
+    <text x="34" y="103">① 先排好一张发送时刻表</text>
+    <text x="34" y="121" opacity=".72">间隔取自指数分布（泊松到达）</text>
+    <text x="34" y="161">② 到点就发，不等前一条回来</text>
+    <text x="34" y="179" opacity=".72">这就是「开环」</text>
+    <text x="34" y="219">③ 每收到一块数据记一个时刻</text>
+    <text x="34" y="240" opacity=".72">第一块 − 计划发出 = TTFT</text>
+    <text x="34" y="258" opacity=".72">相邻两块之差 = 一个 ITL</text>
+    <text x="34" y="276" opacity=".72" font-size="11">(总延迟−TTFT)÷(块数−1) = TPOT</text>
+  </g>
+
+  <g stroke="currentColor" stroke-width="1.5" fill="none" opacity=".9">
+    <path d="M236 120 L326 120" marker-end="url(#ar)"/>
+    <path d="M326 252 L238 252" marker-end="url(#ar)"/>
+  </g>
+  <g font-size="11.5" fill="currentColor" opacity=".75">
+    <text x="240" y="112">POST /gen</text>
+    <text x="238" y="134" font-size="10.5">prompt_len / max_tokens</text>
+    <text x="240" y="244">chunked</text>
+    <text x="238" y="270">一个 token 一块</text>
+  </g>
+
+  <g fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55">
+    <rect x="344" y="84" width="176" height="52" rx="7"/>
+    <rect x="344" y="148" width="176" height="44" rx="7"/>
+    <rect x="344" y="204" width="176" height="44" rx="7"/>
+    <rect x="552" y="84" width="188" height="164" rx="7"/>
+    <rect x="344" y="260" width="396" height="30" rx="7"/>
+  </g>
+  <g font-size="12.5" fill="currentColor">
+    <text x="356" y="104">权重：8 层 4096×4096</text>
+    <text x="356" y="122" opacity=".72">float32，合计 512 MiB</text>
+    <text x="356" y="168">waiting：还没做 prefill 的</text>
+    <text x="356" y="224">running：正在吐 token 的</text>
+    <text x="566" y="104" font-weight="700">engine() 循环，每一轮：</text>
+    <text x="566" y="126">1. waiting 非空 →</text>
+    <text x="578" y="144" opacity=".82">一次矩阵乘法算完全部</text>
+    <text x="578" y="161" opacity=".82">prompt，各吐第 1 个 token</text>
+    <text x="566" y="184">2. running 非空 →</text>
+    <text x="578" y="202" opacity=".82">一次矩阵乘法，每条各</text>
+    <text x="578" y="219" opacity=".82">推进 1 个 token</text>
+    <text x="566" y="240" opacity=".72">3. 让出事件循环一次</text>
+    <text x="356" y="280" opacity=".82">每一步的「类型 / 开始 / 结束 / 服务了几个 token」写进 STEPLOG</text>
+  </g>
+</svg>
+</div>
+
+<p>左边那个进程只干两件事：按时刻表发请求，以及给收到的每一块数据盖一个时间戳。右边那个进程装着 512 MiB 权重和一个死循环。<b>三个指标全部在左边算出来</b>，右边只额外记一份日志，那份日志到第 7 节才用得上。</p>
+
+<h4>5.2 一条「请求」里到底有什么</h4>
+
+<p>这里没有真的模型，也没有真的文字。一条请求的请求体只有两个数字：</p>
+<pre><code>{"prompt_len": 8, "max_tokens": 24}</code></pre>
+<p>它们的意思是「假装用户发来了 8 个 token，请生成 24 个 token」。服务端拿到之后不做任何文本处理，直接按这两个数走矩阵乘法：prefill 那一次的输入是 8 列，之后做 24 次 decode，每次 1 列。吐回去的每一块内容固定是 <code>data: {"t":"x"}</code>，那个 <code>x</code> 就代表一个 token。</p>
+
+<p>所以要说清楚<b>哪些是假的、哪些是真的</b>，因为只有真的那部分才能拿来下结论：</p>
+
+<div class="scroll">
+<table>
+<tr><th style="width:38%">这个装置里</th><th>是真的还是假的</th></tr>
+<tr><td>文本、分词、词表</td><td><b>完全没有。</b>prompt 只是一个整数，token 只是一个字母 x。所以今天页面上不会出现任何关于「中文比英文省多少 token」这类结论。</td></tr>
+<tr><td>注意力（attention）、KV cache</td><td><b>完全没有。</b>它们的开销跟上下文长度有关，这里一律没算。所以今天所有绝对时间都是「只算权重乘法」的下限，真服务只会更慢。</td></tr>
+<tr><td>模型的层与权重</td><td><b>形状是真的。</b>8 层各一个 4096×4096 的 float32 矩阵，合计 512 MiB，比这台机器 260 MB 的 L3 大。每做一次前向，这 512 MiB 要被完整读一遍——这是真实推理里最贵、也最不可回避的那一项。</td></tr>
+<tr><td>prefill 与 decode 的矩阵形状</td><td><b>是真的。</b>prefill 是 <code>W @ X</code>，X 有 prompt_len 列；decode 是 <code>W @ X</code>，X 的列数等于此刻同时在跑的请求数。第 2 节那张表量的就是这两种形状。</td></tr>
+<tr><td>调度：谁先算、谁插队</td><td><b>是真的，而且刻意做得最简单。</b>每一轮先把 waiting 里的全部 prompt 一次算完，再给 running 里的每条推进一个 token。真框架的调度器比这复杂得多，那是 Day 9 的内容。</td></tr>
+<tr><td>流式传输链路</td><td><b>是真的。</b>真的 HTTP chunked，真的一个 token 一次 <code>write</code> 加一次 <code>drain</code>，真的经过内核的 TCP 回环。第 8 节要测的攒批效应必须走这条真链路才成立。</td></tr>
+<tr><td>测量本身</td><td><b>是真的。</b>压测器是独立进程（不跟服务抢同一个事件循环）、开环发压（服务变慢时不会自动少发）、到达间隔随机（不跟引擎周期锁相）、延迟从计划发出时刻算起（不是从真正 write 的时刻）。这四条是 Day 6 一整天的内容。</td></tr>
+</table>
+</div>
+
+<p>这张表重点看<b>「是真的」那几行</b>：它们的共同点是都跟「一次前向要读多少字节、这次读服务了几个 token」有关。这个装置砍掉了模型里所有不影响这件事的东西，留下的正好够回答今天的问题。<b>凡是这张表里写着「完全没有」的，今天就不下结论。</b></p>
+
+<h4>5.3 跟着一条请求走一遍</h4>
+
+<p>光看结构还是抽象。下面是真实日志里的一条请求，从头到尾。这一轮的参数是每秒 1 条、prompt 8 个 token、生成 24 个 token，机器上同时还有别人在跑。所有时刻都相对于<b>这条请求的计划发出时刻</b>（也就是 0 毫秒）。</p>
+
+<p><b>第一段：从发出到第一个 token（TTFT = 677.6 毫秒）</b></p>
+<div class="scroll">
+<table>
+<tr><th class="n">时刻</th><th>发生了什么</th><th class="n">这一段多长</th></tr>
+<tr><td class="n">0.0 ms</td><td>压测器按时刻表发出这条请求</td><td class="n">—</td></tr>
+<tr><td class="n">0 → 514.4 ms</td><td>连接建立、请求读完、进了 <code>waiting</code>，然后等引擎这一轮轮到它</td><td class="n">514.4 ms</td></tr>
+<tr><td class="n">514.4 ms</td><td>引擎开始 prefill 这条请求的 8 个 token</td><td class="n">85.7 ms</td></tr>
+<tr><td class="n">600.1 ms</td><td>prefill 算完，第 1 个 token 生成了；同一轮里引擎接着做 decode，还没轮到把结果写回连接</td><td class="n">76.9 ms</td></tr>
+<tr><td class="n">677.0 ms</td><td>这一轮做完，引擎让出事件循环，连接把第 1 个 token 写出去</td><td class="n">0.6 ms</td></tr>
+<tr><td class="n"><b>677.6 ms</b></td><td><b>压测器收到第 1 块 → 这就是 TTFT</b></td><td class="n">—</td></tr>
+</table>
+</div>
+
+<p>这张表重点看<b>第二行那 514.4 毫秒</b>，因为它占了 TTFT 的四分之三，而它跟模型一点关系都没有。</p>
+<p>它也不是排在别的请求后面：那次 prefill 只算了 8 个 token，说明轮到它的时候 <code>waiting</code> 里就它自己一条。这 514 毫秒是这条连接从建立到被引擎看见所花的时间。引擎每一轮都被一次几十毫秒的矩阵乘法占死，只在轮末让出一次事件循环；而一条新连接要走完 accept、读请求头、读请求体、写响应头这几个 <code>await</code>，每一个都得等引擎让出一次。算一下：514 ÷ 80 ≈ 6，正好是六轮左右。<b>这正是 Day 4 讲的阻塞事件循环，只不过这次堵住循环的是模型本身。</b></p>
+<p>顺带把第 4 节那张表补全：TTFT 在这个装置里是三段，不是两段——等着被受理、自己的 prefill、以及等这一轮剩下的活做完。中间那一段才是模型的钱。</p>
+
+<p><b>第二段：24 个 token 一个一个出来</b></p>
+<p>下面是这条请求生成到一半时的一小段，把引擎在干什么和客户端收到什么画在同一根时间轴上。上面一行是引擎的每一步，下面的竖线是客户端收到 token 的时刻。</p>
+
+<div class="scroll">
+<svg viewBox="0 0 760 210" width="760" style="max-width:100%;height:auto" role="img" aria-label="引擎步与客户端收到 token 的时间轴对照">
+  <g font-size="12" fill="currentColor" opacity=".72">
+    <text x="4" y="26">引擎在做什么</text>
+    <text x="4" y="150">客户端收到</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1" opacity=".35">
+    <line x1="118" y1="118" x2="752" y2="118"/>
+  </g>
+  <!-- steps: 1191.3(78.5) 1270.1(78.3) 1348.9 P (95.5) 1444.4(77.2) 1521.9(77.8) 1600.0 ; scale: 1191->120, 1600->740  => 1.516 px/ms -->
+  <g>
+    <rect x="120" y="32" width="119" height="40" rx="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+    <rect x="239" y="32" width="119" height="40" rx="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+    <rect x="359" y="32" width="145" height="48" rx="5" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="2"/>
+    <rect x="504" y="32" width="117" height="40" rx="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+    <rect x="621" y="32" width="118" height="40" rx="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+  </g>
+  <g font-size="11.5" fill="currentColor" text-anchor="middle">
+    <text x="179" y="50">decode</text><text x="179" y="65" opacity=".7">78.5 ms · 2 条</text>
+    <text x="298" y="50">decode</text><text x="298" y="65" opacity=".7">78.3 ms · 2 条</text>
+    <text x="431" y="48" font-weight="700">prefill</text><text x="431" y="62" opacity=".85" font-size="11">95.5 ms</text><text x="431" y="74" opacity=".85" font-size="11">16 个 prompt token</text>
+    <text x="562" y="50">decode</text><text x="562" y="65" opacity=".7">77.2 ms · 2 条</text>
+    <text x="680" y="50">decode</text><text x="680" y="65" opacity=".7">77.8 ms · 4 条</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1" opacity=".3" stroke-dasharray="3 3">
+    <line x1="239" y1="72" x2="239" y2="118"/>
+    <line x1="359" y1="72" x2="359" y2="118"/>
+    <line x1="504" y1="72" x2="504" y2="118"/>
+    <line x1="621" y1="72" x2="621" y2="118"/>
+    <line x1="739" y1="72" x2="739" y2="118"/>
+  </g>
+  <g stroke="currentColor" stroke-width="2">
+    <line x1="239" y1="112" x2="239" y2="126"/>
+    <line x1="359" y1="112" x2="359" y2="126"/>
+    <line x1="621" y1="112" x2="621" y2="126"/>
+    <line x1="739" y1="112" x2="739" y2="126"/>
+  </g>
+  <g font-size="11.5" fill="currentColor" text-anchor="middle">
+    <text x="239" y="146">第 8 个</text><text x="239" y="161" opacity=".7">1270.4</text>
+    <text x="359" y="146">第 9 个</text><text x="359" y="161" opacity=".7">1349.2</text>
+    <text x="621" y="146">第 10 个</text><text x="621" y="161" opacity=".7">1522.2</text>
+    <text x="739" y="146">第 11 个</text><text x="739" y="161" opacity=".7">1600.2</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.4" opacity=".85">
+    <path d="M243 184 L355 184" marker-end="url(#ar)"/>
+    <path d="M355 184 L243 184" marker-end="url(#ar)"/>
+    <path d="M363 184 L617 184" marker-end="url(#ar)"/>
+    <path d="M617 184 L363 184" marker-end="url(#ar)"/>
+    <path d="M625 184 L735 184" marker-end="url(#ar)"/>
+    <path d="M735 184 L625 184" marker-end="url(#ar)"/>
+  </g>
+  <g font-size="11.5" fill="currentColor" text-anchor="middle">
+    <text x="299" y="202">ITL 78.8 ms</text>
+    <text x="490" y="202" font-weight="700">ITL 173.0 ms</text>
+    <text x="680" y="202">ITL 78.0 ms</text>
+  </g>
+</svg>
+</div>
+
+<p>这张图重点看<b>中间那个加粗的 173.0 毫秒</b>。它旁边两个间隔都是 78 毫秒左右，只有它是两倍多。原因在上面那一行：第 9 个 token 交出去之后，引擎没有接着做 decode，而是先花 95.5 毫秒去 prefill 两条新到的请求（16 个 prompt token，也就是两条 prompt 各 8 个），做完才轮到 decode 的 77.2 毫秒。<b>95.5 + 77.2 = 172.7，和实测的 173.0 对得上。</b></p>
+<p>这条请求本身没有任何异常。它只是恰好在那一刻，站在了别人的 prefill 后面。</p>
+<p>但这只是一条请求上的一次观察，一个样本什么也证明不了——第 7 节会把这件事放到 1610 个间隔上重做一遍。</p>
+
+<h4>5.4 参数表：每个旋钮是什么、为什么是这个值</h4>
+
+<p>下面这些参数，改任何一个都会让数字变。所以后面每一节都会说明它改了哪一个、别的都锁死不动。</p>
+
+<div class="scroll">
+<table>
+<tr><th>旋钮</th><th class="n">本页取值</th><th>它是什么意思，为什么取这个值</th></tr>
+<tr><td>权重层数 × 边长</td><td class="n">8 × 4096²</td><td>合计 512 MiB，超过这台机器 260 MB 的 L3。小于 L3 就测不出内存带宽，只测到缓存。</td></tr>
+<tr><td>数据类型</td><td class="n">float32</td><td>numpy 默认能高效跑的类型。真推理常用 float16，字节减半，结论方向不变。</td></tr>
+<tr><td>BLAS 线程数</td><td class="n">1</td><td>把「用了几个核」这个变量固定住。不锁的话，变快到底是因为批量还是因为多了个核，分不清。</td></tr>
+<tr><td><code>prompt_len</code></td><td class="n">8 或 128</td><td>假装用户发来多少个 token。<b>第 6 节唯一改动的就是它</b>，8 是基准，128 是对照。</td></tr>
+<tr><td><code>max_tokens</code></td><td class="n">24</td><td>每条请求生成几个 token。24 个给出 23 个 ITL 间隔，够算百分位；再长的话每轮实验太慢。</td></tr>
+<tr><td>发压速率</td><td class="n">1.0 / s</td><td>第 6、7、8 节固定在这个值。第 9 节专门扫它，从 0.5 到 3.0。</td></tr>
+<tr><td>到达方式</td><td class="n">泊松（指数间隔）</td><td>间隔随机。如果用固定间隔，采样点会跟引擎的步长锁相，测出来的是同一个相位（Day 6）。</td></tr>
+<tr><td>单轮时长</td><td class="n">60 秒 / 45 秒</td><td>第 6、7 节 60 秒（70 条请求）；第 9 节扫速率时每档 45 秒。</td></tr>
+<tr><td><code>BUNDLE</code></td><td class="n">1 或 4</td><td>攒够几个 token 才 flush 一次。<b>第 8 节唯一改动的就是它</b>，默认 1 表示生成一个推一个。</td></tr>
+<tr><td>SLO 门槛</td><td class="n">TTFT≤1s，TPOT≤100ms</td><td>第 9 节算 goodput 用。这两个数是这次实验定的，不是行业标准，第 9 节会再换一组给你看差别。</td></tr>
+</table>
+</div>
+
+<p><b>本页的数字分别出自哪个程序</b>，免得你把两套东西混在一起：</p>
+<div class="scroll">
+<table>
+<tr><th>哪一节的表</th><th>跑的是什么</th></tr>
+<tr><td>第 2 节（S 从 1 扫到 512）</td><td>一个单独的 numpy 脚本，<b>没有服务、没有网络、没有并发</b>，只量一次前向要多久。</td></tr>
+<tr><td>第 6、9、10 节</td><td><code>server.py</code> + <code>loadgen.py</code> 两个进程，指标在压测器那一侧算出来。</td></tr>
+<tr><td>第 7 节</td><td>同一次运行，额外读服务端写的 STEPLOG，把它和压测器的时刻对起来。</td></tr>
+<tr><td>第 8 节</td><td>同一套两进程，只把服务端的 <code>BUNDLE</code> 从 1 改成 4。</td></tr>
+</table>
+</div>
+
+<p>两个进程用的都是 <code>time.perf_counter()</code>。它在 Linux 上取自系统级的单调时钟，所以<b>两个进程读到的时刻可以直接相减</b>——第 7 节把服务端日志和客户端时刻对起来，靠的就是这一点。</p>
+
+<h4>5.5 现在轮到你猜了</h4>
+
+<p>装置说完了，把已经量出来的基准数字摆上，然后你来猜。</p>
 <ul>
 <li>一次 decode 步（同时在跑的请求数中位是 2）耗时中位 <b>74.3 毫秒</b>。</li>
 <li>prompt 长度为 8 时，一次 prefill 步耗时中位 <b>84.9 毫秒</b>；prompt 长度为 128 时，中位 <b>287.7 毫秒</b>。</li>
 </ul>
-<p>prompt 为 8 那一组的结果是：<b>TPOT 平均 81.8 毫秒，ITL 的 P50 是 78.7 毫秒，P99 是 183.5 毫秒。</b></p>
+<p>prompt 为 8 那一组跑完的结果是：<b>TPOT 平均 81.8 毫秒，ITL 的 P50 是 78.7 毫秒，P99 是 183.5 毫秒。</b></p>
 
 <div class="card predict">
 <div class="ttl">预测 · 先写下来再往下看</div>
-<p>现在只改一个变量：把 prompt 长度从 8 改成 128。到达时刻、请求条数、每条吐几个 token、服务器、机器，全都不动。</p>
+<p>现在只动参数表里的一个旋钮：把 <code>prompt_len</code> 从 8 改成 128。到达时刻表、请求条数、<code>max_tokens</code>、发压速率、服务端、机器，全都不动。</p>
 <p><b>问题一：</b>TPOT 的平均值会从 81.8 毫秒变成多少？</p>
 <div class="write"></div>
 <p><b>问题二：</b>ITL 的 P99 会从 183.5 毫秒变成多少？</p>
 <div class="write"></div>
 <p><b>问题三：</b>两个的变化倍数一样吗？如果不一样，哪个大，为什么？写两句话。</p>
 <div class="write tall"></div>
-<p class="tip">提示：一条请求吐 24 个 token，就有 23 个间隔。60 秒里一共到了 70 条请求。这两个数够你算出「一条请求的生命周期里，大概会撞上几次别人的 prefill」。</p>
+<p class="tip">提示：5.3 那张图里，一次 8 token 的 prefill 把一个间隔从 78 毫秒推到了 173 毫秒。prompt 换成 128 之后，那一下变成 287.7 毫秒。再算一笔：60 秒里到了 70 条请求，一条请求活着的时候有 23 个间隔——它大概会撞上几次别人的 prefill？</p>
 </div>
 
 <h3>6. 揭晓：平均值涨了一半，尾巴涨了三倍</h3>
@@ -390,8 +612,8 @@ most_recent_timestamp = timestamp</code></pre>
 <h3>7. 那条尾巴到底是谁弄出来的</h3>
 <p class="lead">这一节回答：ITL 分布的尾巴是随机噪声，还是有个具体的东西每次都把它拉出来？</p>
 
-<p>上一节只说了「prompt 变长，尾巴变长」。这还不够——prompt 变长也让整个系统更忙了，忙一点什么指标都会变差。要把原因钉死，得直接去看服务端每一步在干什么。</p>
-<p>办法就是 Day 5 那个办法，只不过这次打点打在引擎循环上：<b>让服务端自己把每一步的起止时刻记下来。</b>引擎循环每做一次矩阵乘法，就往日志里写一行：是 prefill 还是 decode、什么时候开始、什么时候结束、这一步服务了几个 token。</p>
+<p>第 5.3 节那条轨迹上已经见过一次：一个 173 毫秒的间隔，里面正好夹着一次 prefill。但那是一条请求上的一次观察，一个样本证明不了任何事。至少还有两个解释同样说得通：那 173 毫秒另有原因，prefill 只是碰巧在场；或者 prompt 变长只是让整个系统更忙了，而忙一点什么指标都会变差。</p>
+<p>要把原因钉死，就得把同样的对照做到全部 1610 个间隔上。工具第 5 节已经交代过了——服务端那份 STEPLOG。引擎每做一次矩阵乘法，就往里写一行：是 prefill 还是 decode、什么时候开始、什么时候结束、这一步服务了几个 token。</p>
 
 <pre><code>a = time.perf_counter(); matmuls(S); b = time.perf_counter()
 STEPLOG.write(f"P {a:.6f} {b:.6f} {S}\n")      <span class="c"># P = prefill 步</span>
@@ -399,7 +621,7 @@ STEPLOG.write(f"P {a:.6f} {b:.6f} {S}\n")      <span class="c"># P = prefill 步
 a = time.perf_counter(); matmuls(len(running)); b = time.perf_counter()
 STEPLOG.write(f"D {a:.6f} {b:.6f} {len(running)}\n")   <span class="c"># D = decode 步</span></code></pre>
 
-<p>拿到这份日志之后，客户端那边每一个 ITL 间隔都可以问一句：这段时间里，服务端有没有在做 prefill？判断方法是区间相交——某个 prefill 步的结束时刻晚于间隔的起点，同时它的开始时刻早于间隔的终点。把 1610 个间隔按这个标准分成两堆：</p>
+<p>客户端那边每一个 ITL 间隔都可以问一句：这段时间里，服务端有没有在做 prefill？判断方法是区间相交——某个 prefill 步的结束时刻晚于间隔的起点，同时它的开始时刻早于间隔的终点。两边的时刻能直接比，靠的是第 5.4 节最后那句：两个进程的 <code>perf_counter()</code> 取自同一个系统单调时钟。把 1610 个间隔按这个标准分成两堆：</p>
 
 <div class="scroll">
 <table>
@@ -484,18 +706,19 @@ while True:
 
 <div class="scroll">
 <table>
-<tr><th class="n">发压速率</th><th class="n">输出 token/s</th><th class="n">完成 req/s</th><th class="n">TTFT P99</th><th class="n">TPOT 平均</th><th class="n">goodput<br>TPOT≤100ms</th><th class="n">goodput<br>TPOT≤150ms</th></tr>
-<tr><td class="n">0.5</td><td class="n">12.8</td><td class="n">0.53</td><td class="n">671 ms</td><td class="n">53.6 ms</td><td class="n">0.53</td><td class="n">0.53</td></tr>
-<tr><td class="n">1.0</td><td class="n">29.3</td><td class="n">1.22</td><td class="n">829 ms</td><td class="n">79.5 ms</td><td class="n"><b>1.04</b></td><td class="n">1.22</td></tr>
-<tr><td class="n">1.5</td><td class="n">42.7</td><td class="n">1.78</td><td class="n">905 ms</td><td class="n">95.9 ms</td><td class="n">0.89</td><td class="n">1.78</td></tr>
-<tr><td class="n">2.0</td><td class="n">55.5</td><td class="n">2.31</td><td class="n">930 ms</td><td class="n">106.6 ms</td><td class="n">0.53</td><td class="n">2.31</td></tr>
-<tr><td class="n">2.5</td><td class="n">68.3</td><td class="n">2.84</td><td class="n">987 ms</td><td class="n">117.8 ms</td><td class="n">0.20</td><td class="n">2.82</td></tr>
-<tr><td class="n">3.0</td><td class="n">80.0</td><td class="n">3.33</td><td class="n">1116 ms</td><td class="n">126.9 ms</td><td class="n">0.13</td><td class="n"><b>2.96</b></td></tr>
+<tr><th class="n">发压速率</th><th class="n">输出 token/s</th><th class="n">完成 req/s</th><th class="n">TTFT P50</th><th class="n">TTFT P99</th><th class="n">TPOT 平均</th><th class="n">goodput<br>TPOT≤100ms</th><th class="n">goodput<br>TPOT≤150ms</th></tr>
+<tr><td class="n">0.5</td><td class="n">12.8</td><td class="n">0.53</td><td class="n">93 ms</td><td class="n">671 ms</td><td class="n">53.6 ms</td><td class="n">0.53</td><td class="n">0.53</td></tr>
+<tr><td class="n">1.0</td><td class="n">29.3</td><td class="n">1.22</td><td class="n">548 ms</td><td class="n">829 ms</td><td class="n">79.5 ms</td><td class="n"><b>1.04</b></td><td class="n">1.22</td></tr>
+<tr><td class="n">1.5</td><td class="n">42.7</td><td class="n">1.78</td><td class="n">649 ms</td><td class="n">905 ms</td><td class="n">95.9 ms</td><td class="n">0.89</td><td class="n">1.78</td></tr>
+<tr><td class="n">2.0</td><td class="n">55.5</td><td class="n">2.31</td><td class="n">725 ms</td><td class="n">930 ms</td><td class="n">106.6 ms</td><td class="n">0.53</td><td class="n">2.31</td></tr>
+<tr><td class="n">2.5</td><td class="n">68.3</td><td class="n">2.84</td><td class="n">795 ms</td><td class="n">987 ms</td><td class="n">117.8 ms</td><td class="n">0.20</td><td class="n">2.82</td></tr>
+<tr><td class="n">3.0</td><td class="n">80.0</td><td class="n">3.33</td><td class="n">827 ms</td><td class="n">1116 ms</td><td class="n">126.9 ms</td><td class="n">0.13</td><td class="n"><b>2.96</b></td></tr>
 </table>
 </div>
 
 <p>这张表重点看<b>倒数第二列，它和左边几列的走向是相反的</b>。输出 token 速率从 12.8 一路涨到 80.0，完成请求数从 0.53 涨到 3.33，两条都是漂亮的单调上升。而 TPOT 门槛定在 100 毫秒时，goodput 在每秒 1 条那一档达到峰值 1.04，之后掉头往下，到每秒 3 条时只剩 0.13——<b>比峰值少了 87%。</b></p>
 <p>把两头对齐着说：从每秒 1 条加到每秒 3 条，你的吞吐涨到 2.7 倍，而每秒真正被服务好的用户数变成了原来的八分之一。如果这台机器背后是按吞吐算成本的，你会觉得利用率提高了；如果按满意用户数算，你把八分之七的钱烧掉了。</p>
+<p>顺便留意 TTFT 那两列。P50 从 93 毫秒涨到 827 毫秒，而 P99 只从 671 涨到 1116——低负载时那几条慢请求把 P99 抬得很高，高负载时反而是所有请求一起变慢。这两列下一节要用。</p>
 <p>最后一列是同一批原始数据换一个门槛重新数了一遍：TPOT 放宽到 150 毫秒，别的都不动。这一列在扫到的范围内一路上升，到每秒 3 条时是 2.96，还没见顶。两列对着看：在每秒 3 条那一档，达标请求数一个是 0.13、一个是 2.96，<b>差了二十多倍</b>；而「峰值能扛多少」从每秒 1 条挪到了每秒 3 条以上，还没走到头。<b>同一台机器、同一份负载、同一批原始数据，门槛差 50 毫秒，答案完全是两回事。</b>所以 goodput 不是机器的属性，是「机器 + 承诺」这一对东西的属性。</p>
 
 <p>这个概念在 vLLM 的压测脚本里是可以直接开的一个开关。<code>vllm/benchmarks/serve.py</code> 第 1449 行规定了能设哪几个门槛：</p>
@@ -527,13 +750,36 @@ while True:
 </table>
 </div>
 
-<p>这张表重点看<b>中间那一列一直是 0，直到最后两行才动</b>。发压速率涨到 6 倍，首字延迟几乎没坏；崩掉的从头到尾都是 TPOT。这跟大多数人的直觉相反——一般人会觉得压力大了先是「排队排不上」，也就是首字变慢。</p>
+<p>这张表重点看<b>中间那一列一直是 0，直到最后两行才动</b>。发压速率涨到 6 倍，违反首字门槛的请求几乎一条都没有；判负的从头到尾都是 TPOT。</p>
 
-<p>原因在于这个引擎的两个性质，而且两个都值得记住。</p>
-<p><b>第一，这个引擎循环每一轮都先做 prefill，再做 decode，而且不设上限。</b>服务端代码就那几行，你可以自己看：只要 <code>waiting</code> 里有人，这一轮就先把他们全部受理掉。新请求几乎不排队，所以 TTFT 被保护得很好。代价是这次受理插在了别人的 decode 中间——第 7 节量到的那条尾巴，就是这个选择的账单。要确认这个因果，把这个顺序改掉再测一次就行，加分题里有这一道。</p>
-<p><b>第二，decode 步的耗时随同时在跑的请求数增长。</b>并发从 2 涨到 8，每一步要处理的列数变多，这一步就变慢，而慢下来的是<b>这一批里所有人的</b>下一个字。多接一个用户，代价由已经在场的所有用户平摊。第 2 节那张表的另一面就是这个：S 变大总耗时确实会涨（33.8 → 80.5 → 117.6 毫秒），只是涨得比 S 慢。摊到每人头上更划算，但每人等的绝对时间确实变长了。</p>
-<p>这两条合起来就是：<b>加压的时候，新用户抢的是老用户的字间速度。</b></p>
+<p>但这不等于 TTFT 没变差。回头看第 9 节那张表：TTFT 的 P50 从 93 毫秒涨到 827 毫秒，是 8.9 倍；TPOT 平均从 53.6 涨到 126.9 毫秒，是 2.4 倍。<b>论涨幅，坏得更快的其实是 TTFT。</b>它一次都没判负，只是因为门槛画在 1 秒，而它涨到 827 毫秒还没够到；TPOT 的门槛画在 100 毫秒，在每秒 1.5 到 2 条之间就越过去了。</p>
 
+<div class="card warn">
+<div class="ttl">关键结论</div>
+<p>哪个指标先「坏」，由两件事共同决定：<b>它涨得多快，以及门槛画在哪。</b>只看涨幅会说 TTFT 更危险，只看违规条数会说 TPOT 更危险。两个都对，回答的是不同的问题——所以报性能的时候，涨幅和门槛必须同时给。</p>
+</div>
+
+<p>两个指标为什么各自那样涨，服务端的步日志直接给出了答案。把同一次扫描里每一档的引擎步单独统计一遍：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">发压速率</th><th class="n">prefill 步<br>耗时中位</th><th class="n">decode 步<br>耗时中位</th><th class="n">decode 批量<br>中位</th><th class="n">引擎忙的<br>时间占比</th></tr>
+<tr><td class="n">0.5</td><td class="n">84.3 ms</td><td class="n">31.7 ms</td><td class="n">1</td><td class="n">42.6%</td></tr>
+<tr><td class="n">1.0</td><td class="n">82.1 ms</td><td class="n">72.4 ms</td><td class="n">2</td><td class="n">78.9%</td></tr>
+<tr><td class="n">1.5</td><td class="n">83.1 ms</td><td class="n">75.5 ms</td><td class="n">3</td><td class="n">94.5%</td></tr>
+<tr><td class="n">2.0</td><td class="n">83.5 ms</td><td class="n">90.1 ms</td><td class="n">5</td><td class="n">97.8%</td></tr>
+<tr><td class="n">2.5</td><td class="n">83.2 ms</td><td class="n">95.9 ms</td><td class="n">7</td><td class="n">98.5%</td></tr>
+<tr><td class="n">3.0</td><td class="n">83.7 ms</td><td class="n">101.6 ms</td><td class="n">9</td><td class="n">98.9%</td></tr>
+</table>
+</div>
+
+<p>这张表重点看<b>第二列和第三列的对比</b>：一个从头到尾不动，另一个涨了三倍多。</p>
+<p><b>prefill 步一直是 83 毫秒左右。</b>因为 prompt 固定 8 个 token，而且同时到的请求会被拼进同一次 prefill——列数从 8 变成 16 或 24，对一次要读 512 MiB 权重的矩阵乘法来说几乎不要钱（第 2 节那张表的左半边就是这个形状）。所以 TTFT 里「模型干活」那一段是个常数，它涨的全是等待。</p>
+<p><b>decode 步从 31.7 涨到 101.6 毫秒，因为批量从 1 涨到 9。</b>每一步要处理的列数变多，这一步就变慢，而慢下来的是<b>这一批里所有人的</b>下一个字。多接一个用户，代价由已经在场的所有用户平摊。这就是 TPOT 涨的那 2.4 倍。</p>
+<p><b>最后一列解释了 TTFT 的 8.9 倍。</b>引擎忙的时间占比从 42.6% 涨到 98.9%。Day 2 那条曲线在这里原样重演：利用率越靠近 1，排队涨得越猛。ρ 从 0.43 到 0.99，<code>ρ/(1−ρ)</code> 从 0.75 涨到 90，量级上比实测的 8.9 倍夸张得多——这条式子在 ρ 贴近 1 的地方本来就只用来判方向，不用来报数字。方向是对的：<b>TTFT 涨的那部分是排队，不是模型。</b></p>
+<p>两条合起来就是：<b>加压的时候，新用户既在抢老用户的字间速度，也在把自己的首字延迟推到队列里去。</b>而这两条各自撞上哪个门槛，才决定了你先看到哪个指标报警。</p>
+
+<p>还有一件事这张表说不出来，因为它是被这个装置的写法定死的：<b>这个引擎每一轮都先做 prefill，而且不设上限</b>——只要 <code>waiting</code> 里有人，这一轮就把他们全部一次算完（服务端代码那几行你可以自己看）。正因为不设上限，队列不会越堆越长，TTFT 才停在 827 毫秒而不是失控；代价是这次受理一定插在别人的 decode 中间，也就是第 7 节量到的那条尾巴。</p>
 <p>「先做 prefill 还是先做 decode」是调度器的一个选择，不是物理定律。vLLM 选的是另一边。它的 <code>docs/configuration/optimization.md</code> 里写着，开启 chunked prefill 之后「the scheduling policy prioritizes decode requests. It batches all pending decode requests before scheduling any prefill operations」——先把所有待处理的 decode 请求凑成一批，再去安排 prefill。同一页给出的两条调参建议正好是一对相反的方向：一次算的 prompt token 少一点，ITL 更好；多一点，TTFT 更好。</p>
 <p>换句话说，这不是一个「怎么做才对」的问题，是一个<b>把压力往哪个指标上推</b>的问题。明天整天都在讲这件事。</p>
 
@@ -779,7 +1025,7 @@ if __name__=="__main__":
 <li><b>把插队这件事修掉，然后量收益。</b>服务端里 prefill 和 decode 是两次独立的 <code>matmuls</code> 调用，也就是权重被读了两遍。改成一次调用、列数等于「prefill 的 token 数 + 正在跑的请求数」，两边的结果分别取出来。预测：总吞吐基本不变，ITL 的 P99 大幅下降。跑一遍看对不对。这就是明天的主线之一。</li>
 <li><b>把 prefill 切碎，看代价。</b>服务端已经留了 <code>PREFILL_CHUNK</code> 这个开关，设成 16 就是每步最多算 16 个 prompt token。在不做上一题那个合并的前提下切碎，会发生什么？先预测再跑。提示：切成 8 段，就是 8 次独立的 <code>matmuls</code>，也就是 8 遍权重。</li>
 <li><b>验证一次「攒批」在真实框架上的表现。</b>找一个你能访问的流式接口，用 <code>loadgen.py</code> 的思路量它的 ITL，同时用别的方式（比如响应里的 usage 字段）拿到真实 token 数。两个分母算出来的 TPOT 差多少？差得越多，说明这个后端攒批攒得越狠。</li>
-<li><b>把引擎循环的受理策略改掉，验证第 10 节那个因果。</b>现在的写法是「只要有人在等，这一轮就全部受理」。改成「只有当正在跑的请求少于 K 条时，这一轮才受理新请求」，K 取 4。预测：TTFT 会变差，ITL 的尾巴会变好。跑一遍，看两个指标各自动了多少，以及总吞吐动没动。</li>
+<li><b>把引擎循环的受理策略改掉，看压力挪到哪个指标上。</b>现在的写法是「只要有人在等，这一轮就全部受理，不设上限」（第 10 节最后那段）。改成「只有当正在跑的请求少于 K 条时，这一轮才受理新请求」，K 取 4。预测：TTFT 会变差，ITL 的尾巴会变好，总吞吐基本不动。三个都跑一遍对一下，错的那个最值得想。</li>
 <li><b>量一次分词器。</b>拿你手上任何一个开源模型的分词器（transformers 的 <code>AutoTokenizer</code> 就行），分别编码一段中文和一段等长意思的英文，看每个 token 平均对应几个字符。这个比值直接决定了同一段话在中英文下的 prefill 成本差多少，做成本估算时会天天用到。</li>
 <li><b>把 goodput 的门槛换成业务口径再扫一遍。</b>今天用的是 TTFT 1 秒、TPOT 100 毫秒。如果你的场景是 agent 后台任务，用户根本不看字往外冒，那 TPOT 门槛可以放到 500 毫秒，而端到端时长才是硬门槛。换成这个口径重扫，峰值挪到哪儿去了？</li>
 </ol>
