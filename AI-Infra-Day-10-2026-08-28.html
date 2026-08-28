@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 10</title>
+<style>
+:root{
+  --bg:#f7f2e8; --bg2:#fffdf8; --fg:#2f2a24; --fg-dim:#6b6053; --line:#e0d5c2;
+  --accent:#a8642a; --accent2:#3f6f5e; --accent3:#7a4a86; --accent4:#8c5a2b;
+  --card-recall:#fdf6e6; --card-predict:#eef5f1; --card-five:#f4eff7; --card-key:#fbeee4;
+  --code-bg:#241f1a; --code-fg:#ece3d4; --code-dim:#a99a83;
+  --th:#efe6d4;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16130f; --bg2:#1e1a15; --fg:#e8e0d2; --fg-dim:#a89c88; --line:#3a332a;
+    --accent:#e0995a; --accent2:#6fb79b; --accent3:#b98ec9; --accent4:#d3a06a;
+    --card-recall:#241e14; --card-predict:#152220; --card-five:#201a26; --card-key:#261b12;
+    --code-bg:#100d0a; --code-fg:#e2d8c6; --code-dim:#8d8172;
+    --th:#2a241c;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16130f; --bg2:#1e1a15; --fg:#e8e0d2; --fg-dim:#a89c88; --line:#3a332a;
+  --accent:#e0995a; --accent2:#6fb79b; --accent3:#b98ec9; --accent4:#d3a06a;
+  --card-recall:#241e14; --card-predict:#152220; --card-five:#201a26; --card-key:#261b12;
+  --code-bg:#100d0a; --code-fg:#e2d8c6; --code-dim:#8d8172;
+  --th:#2a241c;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",sans-serif;
+  line-height:1.78; font-size:16.5px; overflow-x:hidden;
+}
+.bar{
+  position:sticky; top:0; z-index:20; background:var(--bg2);
+  border-bottom:1px solid var(--line); padding:.55rem 1rem;
+  display:flex; gap:.9rem; align-items:baseline; flex-wrap:wrap;
+  font-size:.83rem; color:var(--fg-dim);
+}
+.bar b{color:var(--accent); font-size:.95rem; letter-spacing:.02em}
+.wrap{max-width:820px; margin:0 auto; padding:1.4rem 1.05rem 4rem}
+h1{font-size:1.62rem; line-height:1.4; margin:1.6rem 0 .4rem; letter-spacing:.01em}
+h2{font-size:1.24rem; margin:2.6rem 0 .5rem; padding-top:.7rem; border-top:2px solid var(--line)}
+h3{font-size:1.06rem; margin:2rem 0 .4rem; color:var(--accent4)}
+h4{font-size:.98rem; margin:1.5rem 0 .3rem; color:var(--fg-dim); font-weight:600}
+p{margin:.75rem 0}
+.sub{color:var(--fg-dim); font-size:.95rem; margin-top:.1rem}
+.lead{font-size:1.04rem; color:var(--accent2); font-weight:600; margin:1.1rem 0 .5rem}
+.part{
+  margin:3rem 0 .2rem; padding:.85rem 1rem; border-radius:9px;
+  background:var(--bg2); border:1px solid var(--line); border-left:5px solid var(--accent);
+}
+.part .pn{font-size:.78rem; color:var(--fg-dim); letter-spacing:.08em}
+.part .pt{font-size:1.2rem; font-weight:700; margin-top:.15rem}
+.part .pd{font-size:.92rem; color:var(--fg-dim); margin-top:.25rem}
+.card{border-radius:9px; padding:.9rem 1.05rem; margin:1.3rem 0; border:1px solid var(--line)}
+.recall{background:var(--card-recall); border-left:5px solid var(--accent)}
+.predict{background:var(--card-predict); border-left:5px solid var(--accent2)}
+.five{background:var(--card-five); border-left:5px solid var(--accent3)}
+.key{background:var(--card-key); border-left:5px solid var(--accent4)}
+.card>h4:first-child{margin-top:0}
+.tag{display:inline-block; font-size:.74rem; letter-spacing:.09em; color:var(--fg-dim);
+     text-transform:uppercase; margin-bottom:.2rem}
+.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:.9rem 0; border-radius:7px}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:440px; background:var(--bg2)}
+th,td{border:1px solid var(--line); padding:.42rem .6rem; text-align:left; vertical-align:top}
+th{background:var(--th); font-weight:600}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+     font-size:.87em; background:rgba(128,110,80,.15); padding:.08em .32em; border-radius:4px;
+     overflow-wrap:anywhere; word-break:break-word}
+pre{background:var(--code-bg); color:var(--code-fg); padding:.85rem 1rem; border-radius:8px;
+    overflow-x:auto; line-height:1.62; font-size:.845rem; margin:.9rem 0}
+pre code{background:none; padding:0; font-size:1em; overflow-wrap:normal; word-break:normal}
+.term{background:linear-gradient(transparent 62%, rgba(168,100,42,.28) 62%); font-weight:600; padding:0 .06em}
+details{margin:.7rem 0; border:1px solid var(--line); border-radius:8px; background:var(--bg2)}
+summary{cursor:pointer; padding:.55rem .85rem; font-weight:600; font-size:.94rem}
+details[open] summary{border-bottom:1px solid var(--line)}
+details .inner{padding:.35rem 1rem .9rem}
+.write{border:1px dashed var(--line); border-radius:7px; min-height:3.1rem; margin:.55rem 0;
+       background:var(--bg); padding:.5rem .7rem; color:var(--fg-dim); font-size:.85rem}
+ul,ol{padding-left:1.35rem; margin:.65rem 0}
+li{margin:.3rem 0}
+figure{margin:1.2rem 0}
+figcaption{font-size:.85rem; color:var(--fg-dim); margin-top:.35rem}
+svg{display:block; color:var(--fg)}
+footer{margin-top:3.4rem; padding-top:1rem; border-top:2px solid var(--line);
+       font-size:.83rem; color:var(--fg-dim)}
+.small{font-size:.86rem; color:var(--fg-dim)}
+.qn{color:var(--accent2); letter-spacing:.06em}
+em{font-style:normal; border-bottom:1px solid var(--accent); padding-bottom:1px}
+hr{border:none; border-top:1px solid var(--line); margin:2rem 0}
+</style>
+</head>
+<body>
+<div class="bar"><b>Day 10 / 28</b><span>阶段三 · Sandbox：Linux 系统工程</span><span>2026-08-28</span></div>
+<div class="wrap">
+
+<h1>三把锁：谁管看不见、谁管用不了那么多、谁管这个系统调用不许发</h1>
+<p class="sub">AI Infra 速成 · Day 10 · 预计 3~4 小时（讲解约 1.5 小时 + 动手约 2 小时）</p>
+
+<div class="card recall">
+<span class="tag">温故 · 闭卷</span>
+<h4>先凭记忆答，答不出再展开</h4>
+<p class="small">不要翻旧页面。这三道分别来自 1 天前、3 天前、7 天前，间隔是照着遗忘曲线挑的。答不出来说明那个点该再看一遍，不是你的问题。</p>
+
+<h4>Q1 · 1 天前（Day 9 · 调度与批处理）</h4>
+<p>输出长度全都一样的那一组里，连续批处理输给了静态批处理。它输在哪一笔账上？为什么这笔账的大小几乎不随输出长度变化，而赢的那一笔会变？</p>
+<details><summary>展开答案</summary><div class="inner">
+<p>输在 prefill 那一笔。定长那组里，static 做了 22 次 prefill、共 5.0 秒；continuous 做了 87 次、共 11.3 秒。</p>
+<p>机制是这样：static 一次放行八条，八条的 prompt 挤进同一次矩阵乘法，512 MiB 的权重只被读一遍。continuous 是空一个补一个，每补一条就单独做一次 prefill，每次都要把权重再完整读一遍。所以它的额外开销正比于「放行了多少次」，而放行次数约等于请求条数——跟每条请求吐多少个字没关系。定长那组多花 6.3 秒，变长那组多花 8.9 秒，两个数差不多。</p>
+<p>赢的那一笔是 decode。它省下来的是「空槽位」，而空槽位的多少完全取决于同一批里最长和最短差多少。定长时只省下 3.6 秒，变长时省下 26.9 秒，差了七倍多。</p>
+<p>今天要用到这个思路的地方是：一个机制的代价和它的收益，往往由两个完全不同的量决定。今天量隔离开销的时候，同一件事会再出现一次。</p>
+</div></details>
+
+<h4>Q2 · 3 天前（Day 7 · 内存层级）</h4>
+<p>指针追逐那个程序，工作集 512 MB 时顺序跳每次 8.32 纳秒、随机跳每次 216.22 纳秒。现在把页从 4 KB 换成 2 MB 的大页，其余一律不动。随机那一列会往哪个方向变、变多少？这个对照是用来排掉哪一个竞争解释的？</p>
+<details><summary>展开答案</summary><div class="inner">
+<p>基本不变。Day 7 在 256 MB 工作集上跑的那组大页数据是：顺序跳 5.8 ~ 8.0 纳秒，随机跳 161 ~ 169 纳秒，二十多倍的差距一点没缩小。</p>
+<p>要排掉的竞争解释是：「顺序访问之所以快，是因为它连着走，地址翻译更省事，跟预取器无关。」换成 2 MB 的页之后，256 MB 的工作集只占 128 个页，TLB 完全装得下，翻译这条路上的压力基本消失了。差距还在，就说明差距不是翻译造成的，只能是预取器猜不猜得中造成的。</p>
+<p>这里的方法比结论更值钱：想证明「A 导致了 B」，就找一个只关掉竞争解释、不动 A 的对照。今天量 seccomp 开销时会用同一招。</p>
+</div></details>
+
+<h4>Q3 · 7 天前（Day 3 · 剖析器与火焰图）</h4>
+<p>一张 on-CPU 火焰图上，某个函数占了 99%。同一段时间 <code>perf stat</code> 报的 task-clock 是 4 秒，而程序总共跑了 20 秒。把这两个数放在一起，能推出什么？这个 99% 换算成真实时间是多少？下一步该做什么？</p>
+<details><summary>展开答案</summary><div class="inner">
+<p>task-clock 除以墙上时钟：4 ÷ 20 = 0.2。也就是这 20 秒里只有 4 秒真的在 CPU 上，剩下 16 秒线程是 S 状态，在等某件事。</p>
+<p>on-CPU 火焰图只统计线程状态为 R 的那些样本，所以图上那个 100% 覆盖的只是这 4 秒。99% × 4 秒 ≈ 3.96 秒，占 20 秒的真实时间不到两成。</p>
+<p>下一步不是去优化那个函数——最多只能省下两成。要转 off-CPU：<code>py-spy record --idle</code> 把等待也算进来，或者用 <code>strace</code> 看它到底卡在哪个系统调用上。</p>
+<p>今天会把 <code>strace</code> 再拿出来用一次，但换一个用途：不是看它在等谁，是数它一共发了多少个系统调用。这个数字直接决定了今天第三把锁贵不贵。</p>
+</div></details>
+</div>
+
+<h2>今日概览</h2>
+<div class="scroll"><table>
+<tr><th>项目</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 10 / 28 · 阶段三第一天 · Sandbox：Linux 系统工程（Day 10 ~ Day 14）</td></tr>
+<tr><td>今日主题</td><td>隔离谱系与安全边界：namespace、cgroup、seccomp 各自挡住什么、挡不住什么、各要多少钱；再往上一层，容器 / gVisor / microVM 的边界差在哪</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+手搓容器的完整步骤。今天是把三把锁各自的边界量清楚，明天 Day 11 才把它们拼成一个能跑代码的东西。先分开量，拼起来的时候才知道哪一段是谁的功劳。<br><br>
+换根（<code>chroot</code> / <code>pivot_root</code>）的机制。今天你会看到「命名空间不换根」这个事实，也会看到它带来的后果，但换根本身连着根文件系统怎么准备，那是 Day 11 一整段。<br><br>
+出网管控、磁盘配额、逃逸风险面自查。这些属于「配额已经会设了，怎么设全」，放在 Day 12。今天先把配额本身的行为搞懂。
+</td></tr>
+</table></div>
+
+<h4>今天结束后你应该能做到这三件事</h4>
+<ol>
+<li>拿到一个「把这段模型生成的代码跑起来」的需求，你能说出要开哪几种隔离、每一种挡住了什么，并且能指出这套组合<em>没有</em>挡住的东西。</li>
+<li>看到一个被限了 CPU 的服务「平均延迟正常但偶尔卡半秒」，你能一眼想到去读哪两个内核计数器，并且知道该动哪个参数——而且知道那个参数不改变平均速度。</li>
+<li>面对「用容器还是用 microVM」这个问题，你能说出这两条路各自把哪一层交给了谁，以及代价分别落在启动时间还是每次系统调用上。</li>
+</ol>
+
+<h4>今天这一页怎么走</h4>
+<p>四个部分，一部分一把锁，最后一部分把三把锁拼起来看边界。</p>
+<div class="scroll"><table>
+<tr><th>部分</th><th>它回答的问题</th></tr>
+<tr><td>第一部分 · 换一套编号</td><td>「看不见」是怎么做到的？做到之后，哪三样东西还是看得见？</td></tr>
+<tr><td>第二部分 · 配额</td><td>「只给半个 CPU」到底是什么意思？它对延迟做了什么，而对平均速度没做什么？</td></tr>
+<tr><td>第三部分 · 系统调用名单</td><td>怎么禁掉一个系统调用？为什么这套机制永远看不懂「不许打开 /etc/passwd」？</td></tr>
+<tr><td>第四部分 · 边界在哪</td><td>三把锁全上之后，还剩什么没挡住？业界为此又造了两层东西。</td></tr>
+</table></div>
+<p class="small">第二部分中间有一个预测框。到那儿之前不要往下翻。</p>
+
+<h2>核心讲解</h2>
+
+<div class="part">
+<div class="pn">第一部分</div>
+<div class="pt">换一套编号</div>
+<div class="pd">「看不见」是怎么做到的，以及做到之后还有什么看得见</div>
+</div>
+
+<h3>1. 你现在会怎么隔离一段模型生成的代码</h3>
+<p>先把场景摆出来。你的 agent 让模型写了一段 Python，要在你的服务器上跑一下看结果。这段代码你没读过，也来不及读。</p>
+<p>你是后端工程师，第一反应大概是这样几条：起一个子进程去跑，别在主进程里跑；给它一个超时，到点就 kill；用一个低权限的用户跑，别用 root；再把工作目录限制在某个临时目录里。</p>
+<p>这几条都对，但它们全都建立在同一个假设上：<em>这段代码会规规矩矩待在你划的范围里</em>。而这个假设是错的，因为进程默认能看见的东西比你想的多得多。它能 <code>ls /</code> 看到你整台机器的目录结构，能读 <code>/proc</code> 里其他进程的命令行（里面常常带着数据库密码），能 <code>connect</code> 到内网的任何一台机器，能开一万个进程把机器压垮，能申请到内存耗尽为止。超时和低权限用户，一条都拦不住这些。</p>
+<p>Linux 提供了三样专门的东西来管这三类问题。这三样彼此完全独立，各管一件事，谁也替不了谁：</p>
+<div class="scroll"><table>
+<tr><th>要解决的问题</th><th>Linux 提供的东西</th><th>一句话</th></tr>
+<tr><td>它能看见什么</td><td><span class="term">命名空间（namespace）</span></td><td>给它一套自己的编号，别的编号它查不到</td></tr>
+<tr><td>它能用多少</td><td><span class="term">控制组（cgroup，control group）</span></td><td>给它一个额度，超了就限速或者杀掉</td></tr>
+<tr><td>它能对内核说什么</td><td><span class="term">seccomp</span></td><td>给内核入口挂一张名单，名单上的请求直接打回</td></tr>
+</table></div>
+<p>这张表是今天全篇的骨架，后面三个部分依次是它的三行。把这三样东西装在一起、再配上一套自己的根目录，得到的东西就叫一个<span class="term">沙箱（sandbox）</span>——一个让不受信任的代码跑起来、但跑不出去的执行环境。</p>
+<p class="small">先说清楚一件事，免得后面每一节都要提：这三样东西没有一样能挡住「内核自己有 bug」。这个缺口是第四部分的全部内容。</p>
+
+<h3>2. 今天的实验台</h3>
+<p>今天所有数字来自同一套东西：一个 shell 脚本负责在外面搭好隔离，里面套一个被测的 Python 程序。程序本身不知道自己被关在什么里面，它只是一直算，然后把自己观察到的时间打出来。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 760 400" width="760" height="400" role="img" aria-label="实验台结构图：四层嵌套的隔离外壳，最里面是被测程序；指标从两个地方读出来">
+  <g fill="none" stroke="currentColor" stroke-width="1.4">
+    <rect x="6" y="30" width="748" height="356" rx="10" opacity=".85"/>
+    <rect x="22" y="62" width="420" height="310" rx="8" opacity=".75"/>
+    <rect x="40" y="94" width="384" height="262" rx="8" opacity=".75"/>
+    <rect x="58" y="126" width="348" height="214" rx="8" opacity=".75"/>
+    <rect x="76" y="158" width="312" height="166" rx="8" stroke-width="2"/>
+    <rect x="470" y="80" width="278" height="112" rx="8" opacity=".9"/>
+    <rect x="470" y="232" width="278" height="112" rx="8" opacity=".9"/>
+  </g>
+  <g fill="currentColor" font-size="12.5" font-family="ui-monospace,Menlo,Consolas,monospace">
+    <text x="18" y="22" font-size="13.5">实验台：一层层套进去，最里面才是被测程序</text>
+    <text x="32" y="52" font-size="13">宿主内核 · Linux 6.18.44 · 2 核 Xeon</text>
+    <text x="34" y="82">① run_cg.sh 建的 cgroup「lab」：cpu / memory / pids</text>
+    <text x="52" y="114">② unshare 开的命名空间：pid mnt uts ipc net</text>
+    <text x="70" y="146">③ seccomp_run 装的 BPF 过滤器</text>
+    <text x="88" y="180" font-size="13">④ python3 tick.py（或 probe.py）</text>
+    <text x="88" y="204">每做完一小块哈希，记一次 perf_counter()</text>
+    <text x="88" y="226">一块 ≈ 4.9 毫秒，共 2000 块</text>
+    <text x="88" y="248">相邻两块的时间差 = 这一页说的「间隔」</text>
+    <text x="88" y="276">probe.py 换成问十来个问题，看哪个答案变了</text>
+    <text x="88" y="304">程序对外面这三层一无所知</text>
+    <text x="482" y="102" font-size="13">指标来源 A：内核记的账</text>
+    <text x="482" y="126">cpu.stat 里的 nr_periods、</text>
+    <text x="482" y="146">nr_throttled、throttled_time</text>
+    <text x="482" y="166">memory.failcnt、oom_control</text>
+    <text x="482" y="186">pids.events、pids.peak</text>
+    <text x="482" y="254" font-size="13">指标来源 B：程序自己打的</text>
+    <text x="482" y="278">stdout 一行 JSON：wall_s、cpu_s</text>
+    <text x="482" y="298">gap_p50、p90、p99、max</text>
+    <text x="482" y="322">或者一行一块：序号 完成时刻 间隔</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.4" fill="none">
+    <path d="M442 136 L 470 136"/>
+    <path d="M388 288 L 470 288"/>
+  </g>
+  <g fill="currentColor">
+    <path d="M470 136 l -9 -4 v 8 z"/>
+    <path d="M470 288 l -9 -4 v 8 z"/>
+  </g>
+</svg>
+</div>
+<figcaption>外面三层由 shell 搭好，被测程序在最里面。A 那条线是外层 shell 跑完之后去读内核的计数器；B 那条线是程序自己算完直接打到标准输出。两个来源互相独立，正好可以对账。</figcaption>
+</figure>
+
+<h4>一次测量里有什么</h4>
+<p>启动一次长这样，从外往里读，正好是上图从外往里的四层：</p>
+<pre><code>./run_cg.sh 50000 100000 268435456 64 \
+    unshare --pid --fork --mount --mount-proc --uts --ipc --net -- \
+    ./seccomp_run 272 \
+    python3 tick.py 460 2000
+#     └ CPU 配额 50000 微秒 / 周期 100000 微秒、内存 256 MiB、最多 64 个进程
+#                        └ 开五种命名空间          └ 禁掉 272 号系统调用
+#                                                        └ 每块 460 轮哈希，做 2000 块</code></pre>
+<p>程序做完最后一块，往标准输出打一行 JSON。这就是后面大部分表格里那些数字的原始形态：</p>
+<pre><code>{"wall_s": 20.288, "cpu_s": 10.170, "chunks": 2000,
+ "gap_p50_ms": 4.98, "gap_p90_ms": 52.24, "gap_p99_ms": 56.72,
+ "gap_max_ms": 61.12, "gap_min_ms": 4.78}</code></pre>
+<p>字段的意思：<code>wall_s</code> 是墙上时钟走过的秒数；<code>cpu_s</code> 是这个进程真正占着 CPU 的秒数（<code>time.process_time()</code>，用户态加内核态）；<code>gap_*</code> 是 2000 个「相邻两块完成时刻之差」的分布，单位毫秒。</p>
+<p>换成逐块打印的版本时，每块一行，三列分别是序号、从开跑起算的完成时刻（毫秒）、和上一块的时间差（毫秒）：</p>
+<pre><code>1	4.95	4.95
+2	9.94	4.99
+3	14.97	5.03</code></pre>
+
+<h4>哪些是真的，哪些是假的</h4>
+<p>下面这张表把简化掉的部分全列出来。它划定的是今天这些数字能撑住哪些结论、撑不住哪些。</p>
+<div class="scroll"><table>
+<tr><th>这部分</th><th>实际情况</th><th>所以今天不下这类结论</th></tr>
+<tr><td>负载</td><td>不是模型，也不是 agent 生成的代码，就是一个 SHA-256 循环，单线程，用 <code>taskset -c 0</code> 钉在 0 号核上</td><td>不下关于多线程程序怎么被限速的结论；多线程在配额下的行为和单线程不一样</td></tr>
+<tr><td>cgroup 版本</td><td>这台机器上 cpu / memory / pids 三个控制器挂在 cgroup v1 上，cgroup v2 那套只挂了一个跟大页有关的控制器，所以所有数字来自 v1 的文件名</td><td>不下「v2 的数值和 v1 一样」的结论。语义相同的部分会把两套文件名并排列出来，标明哪个是实测的</td></tr>
+<tr><td>换根</td><td>没有做。命名空间开了五种，但根目录始终是宿主的那一个</td><td>不下关于文件系统隔离强度的结论。这正好是 Day 11 的起点</td></tr>
+<tr><td>用户命名空间</td><td>没有开，全程以 root 身份跑</td><td>不下「非特权用户能不能建这些东西」的结论</td></tr>
+<tr><td>gVisor / Firecracker / Kata</td><td>没有实测，这台机器上跑不了。第四部分那几段全部来自各自的官方文档和规格文件，逐条标了出处</td><td>不下任何关于它们在这台机器上跑多快的结论</td></tr>
+<tr><td>机器</td><td>2 核 Intel Xeon @ 2.80 GHz、8023 MB 内存。<em>和 Day 7 ~ Day 9 用的不是同一台</em></td><td>今天的绝对数字不要和前几天的数字直接相减，只在本页内部横向比较</td></tr>
+<tr><td>重复性</td><td>同一档设置重复跑，总时长在 ±2% 之内浮动（不限配额那一档实测落在 9.89 ~ 10.09 秒之间）</td><td>差异小于 2% 的两个数，今天一律当成没有差异</td></tr>
+</table></div>
+<p>最后两行是给后面所有比较划的红线：跨天不比，差 2% 不比。</p>
+
+<h4>跟着一个真实日志走一遍</h4>
+<p>这是不限任何配额时，逐块打印版本的前 12 行。三列还是序号、完成时刻、间隔，单位毫秒。</p>
+<div class="scroll"><table>
+<tr><th class="n">块</th><th class="n">完成时刻 ms</th><th class="n">和上一块的间隔 ms</th><th>发生了什么</th></tr>
+<tr><td class="n">1</td><td class="n">4.95</td><td class="n">4.95</td><td>预热之后开始计时，第一块做完</td></tr>
+<tr><td class="n">2</td><td class="n">9.94</td><td class="n">4.99</td><td>接着做，没有任何等待</td></tr>
+<tr><td class="n">3</td><td class="n">14.97</td><td class="n">5.03</td><td>同上</td></tr>
+<tr><td class="n">4</td><td class="n">19.79</td><td class="n">4.82</td><td>同上</td></tr>
+<tr><td class="n">5</td><td class="n">24.64</td><td class="n">4.86</td><td>同上</td></tr>
+<tr><td class="n">6</td><td class="n">29.79</td><td class="n">5.14</td><td>同上</td></tr>
+<tr><td class="n">7</td><td class="n">35.02</td><td class="n">5.23</td><td>同上</td></tr>
+<tr><td class="n">8</td><td class="n">39.99</td><td class="n">4.97</td><td>同上</td></tr>
+<tr><td class="n">9</td><td class="n">45.02</td><td class="n">5.03</td><td>同上</td></tr>
+<tr><td class="n">10</td><td class="n">49.86</td><td class="n">4.85</td><td>同上</td></tr>
+<tr><td class="n">11</td><td class="n">55.09</td><td class="n">5.23</td><td>同上</td></tr>
+<tr><td class="n">12</td><td class="n">60.11</td><td class="n">5.02</td><td>同上</td></tr>
+</table></div>
+<p>这张表的用处是让你自己做一遍加法。第二列是累计的，第三列是差分，所以第 12 行的 60.11 应该等于前 12 个间隔加起来——你可以挑几行验一下。同一趟跑满 2000 块，最后一块落在 10040.30 毫秒。用平均值倒推：10040.30 ÷ 2000 = 5.02 毫秒一块，再乘回 2000 正好是 10.040 秒。这是逐块打印的那一趟；第 7 节表里不限配额那一行是另外单独跑的一趟，两趟差在上面说的 ±2% 之内。</p>
+<p>把这条链记住，因为第二部分整节都在拆它：<em>一块的时间 × 块数 = 总时长</em>。等会儿会出现一种情况，块数没变、每块的活儿没变、总时长翻倍——那多出来的时间就一定不在这条链上。</p>
+
+<h4>旋钮和它们的取值是怎么定的</h4>
+<div class="scroll"><table>
+<tr><th>旋钮</th><th>取值</th><th>这个值是怎么定出来的</th><th>哪一节动它</th></tr>
+<tr><td>一块的大小</td><td>460 轮哈希 ≈ 4.9 毫秒</td><td>先测 200 / 250 / 300 轮，得到约 93 轮/毫秒，反推 460 轮≈5 毫秒。要比 CPU 周期（100 毫秒）小一到两个数量级，一个周期里才能装下十几块，看得出周期内的结构；再小就会被 <code>perf_counter()</code> 本身的调用开销污染</td><td>全程锁死</td></tr>
+<tr><td>块数</td><td>2000 块</td><td>2000 × 4.9 毫秒 ≈ 10 秒 CPU 时间。要算 P99 至少得有两千个样本；同时最慢那一档（0.25 份额）也要在 45 秒内跑完，不然一轮扫描做不完</td><td>全程锁死</td></tr>
+<tr><td>CPU 周期<br><code>cpu.cfs_period_us</code></td><td>100000 微秒<br>和 10000 微秒</td><td>100000 是内核文档给的默认值：cgroup v2 的 <code>cpu.max</code> 「默认是 <code>max 100000</code>」，两个数分别是配额和周期，单位都是微秒。10000 是拿来做对照的另一档，正好小一个数量级</td><td>第二部分</td></tr>
+<tr><td>CPU 配额<br><code>cpu.cfs_quota_us</code></td><td>周期的 1.0 / 0.5 / 0.25</td><td>份额取 0.5 是因为这是给沙箱切一半机器的典型配置；再加一档 0.25 是为了看效应是不是随份额单调；1.0 那一档是对照，用来确认「配额存在」本身不产生开销</td><td>第二部分</td></tr>
+<tr><td>内存上限<br><code>memory.limit_in_bytes</code></td><td>268435456 字节（256 MiB）</td><td>探针要申请 1.5 GB。上限必须明显小于它才能触发，又要大于 Python 解释器自己的驻留内存（这台机器上约 8 MB），256 MiB 在中间，且是 2 的整数次幂，写成字节数好核对</td><td>第四部分</td></tr>
+<tr><td>进程数上限<br><code>pids.max</code></td><td>64</td><td>探针要连开 200 个子进程。上限取 64，既明显小于 200，又大得足够让 shell 加 Python 解释器（占 2 个）正常启动</td><td>第四部分</td></tr>
+<tr><td>被禁的系统调用号</td><td>272（<code>unshare</code>）<br>2（<code>open</code>）<br>257（<code>openat</code>）</td><td>272 选的是「能拿来往外爬的那一类」的代表，探针里正好试着调它。2 和 257 是一对：同一件事的两个号码，用来验证过滤器认号码还是认意思</td><td>第三部分</td></tr>
+<tr><td>探针跑多久</td><td>4 秒</td><td>4 秒里能做八百块左右，够看出两倍的差异；再长的话最慢那一档一次矩阵扫描要跑好几分钟</td><td>第四部分</td></tr>
+</table></div>
+<p>后面每一节说「只改了一个变量」的时候，你都可以回来对一下改的是哪一行。下面这张是反查用的：哪张表的数字出自哪个程序。</p>
+<div class="scroll"><table>
+<tr><th>数字出现在</th><th>产出它的程序</th><th>它读的是什么</th></tr>
+<tr><td>命名空间对照（第 3、4 节）</td><td><code>probe.py</code></td><td>程序自己调 <code>os.listdir</code> / <code>socket</code> / <code>unshare</code>，把结果打成 JSON</td></tr>
+<tr><td>配额扫描表（第 7 节）</td><td><code>tick.py</code> + <code>cpu.stat</code></td><td>前七列来自程序 stdout，后三列来自内核计数器</td></tr>
+<tr><td>周期内的走查（第 8 节）</td><td><code>tick_trace.py</code></td><td>逐块打印的那个版本，一行一块</td></tr>
+<tr><td>seccomp 开销表（第 12 节）</td><td><code>bench_syscall</code>（C 程序）</td><td>三百万次 <code>getpid</code> 的总耗时除以次数</td></tr>
+<tr><td>启动开销表（第 13 节）</td><td><code>startcost.py</code></td><td>用 <code>subprocess.run</code> 起 30 次，取中位数</td></tr>
+<tr><td>完整对照矩阵（第 14 节）</td><td><code>probe.py</code> + <code>probe_res.py</code> + <code>probe_cpu.py</code></td><td>三个探针分别负责「看得见什么」「要得到多少」「算得多快」</td></tr>
+</table></div>
+<p>装置到此为止。下面开始一把锁一把锁地拆。</p>
+
+<h3>3. 第一把锁：把编号换掉</h3>
+<p>先讲现象，最后再给名字。</p>
+<p>你的进程能看见别的进程，靠的是进程号。能看见别的网卡，靠的是内核里那张网络设备表。能看见 <code>/etc</code>，靠的是当前这套挂载点。这些「表」在内核里都是一份，全机器共用。</p>
+<p>Linux 做的事很朴素：把这些表<em>复制成多份</em>，每份挂一个编号，然后规定每个进程只查其中一份。你的进程查的是 7 号表，别人的进程查的是 3 号表，两边的内容互不相干。查不到，就等于看不见。</p>
+<p>这个「一份被复制出来的表加它的编号」就叫一个<span class="term">命名空间（namespace）</span>。每个进程的每一类表各属于哪个编号，可以直接看出来：</p>
+<pre><code># /proc/&lt;pid&gt;/ns/ 下面每个文件是一个软链接，指向 类型:[编号]
+$ ls -l /proc/self/ns/
+cgroup -&gt; cgroup:[4026531835]
+ipc    -&gt; ipc:[4026531839]
+mnt    -&gt; mnt:[4026531832]
+net    -&gt; net:[4026531833]
+pid    -&gt; pid:[4026531836]
+time   -&gt; time:[4026531834]
+user   -&gt; user:[4026531837]
+uts    -&gt; uts:[4026531838]</code></pre>
+<p>八种类型，八个编号。man 手册 <code>namespaces(7)</code> 列的就是这八种，各自隔离的东西是：</p>
+<div class="scroll"><table>
+<tr><th>类型</th><th>创建时的标志</th><th>它复制的是哪张表</th></tr>
+<tr><td>mnt</td><td><code>CLONE_NEWNS</code></td><td>挂载点</td></tr>
+<tr><td>pid</td><td><code>CLONE_NEWPID</code></td><td>进程号</td></tr>
+<tr><td>net</td><td><code>CLONE_NEWNET</code></td><td>网络设备、协议栈、端口</td></tr>
+<tr><td>ipc</td><td><code>CLONE_NEWIPC</code></td><td>System V IPC 和 POSIX 消息队列（进程之间互相传消息的几种老机制）</td></tr>
+<tr><td>uts</td><td><code>CLONE_NEWUTS</code></td><td>主机名和 NIS 域名</td></tr>
+<tr><td>user</td><td><code>CLONE_NEWUSER</code></td><td>用户号和组号</td></tr>
+<tr><td>cgroup</td><td><code>CLONE_NEWCGROUP</code></td><td>cgroup 的根目录（它隔离的是「看得见哪些控制组」，不是配额本身）</td></tr>
+<tr><td>time</td><td><code>CLONE_NEWTIME</code></td><td>启动时钟和单调时钟</td></tr>
+</table></div>
+<p>八行里今天真正会动的是前五种。user 那一行值得单记一笔，因为它的权限规则和别的不一样：手册说「用 <code>clone(2)</code> 和 <code>unshare(2)</code> 创建新命名空间在大多数情况下需要 CAP_SYS_ADMIN 能力」，紧接着补了一句「用户命名空间是例外：从 Linux 3.8 起，创建用户命名空间不需要任何特权」。这句话在第三部分会变成一个具体的攻击动作。</p>
+<p><span class="term">能力（capabilities）</span>是这里出现的新词：Linux 把过去 root 的那一大坨权力拆成了四十来个独立的开关，<code>CAP_SYS_ADMIN</code> 是其中管「系统管理类操作」的那一个。今天你会反复看到它，因为它几乎是所有隔离操作的入场券。</p>
+<p>现在把编号换掉。<code>unshare</code> 这个命令行工具做的就是「开几个新编号，然后在里面 exec 一个程序」：</p>
+<pre><code># 开五种新的命名空间，然后在里面看一眼自己的编号
+# --fork 是必须的：进程号那张表要在下一个进程身上才生效
+$ unshare --pid --fork --mount --uts --ipc --net -- ls -l /proc/self/ns/
+cgroup -&gt; cgroup:[4026531835]     ← 没开，编号和外面一样
+ipc    -&gt; ipc:[4026532261]        ← 变了
+mnt    -&gt; mnt:[4026532259]        ← 变了
+net    -&gt; net:[4026532263]        ← 变了
+pid    -&gt; pid:[4026532262]        ← 变了
+time   -&gt; time:[4026531834]       ← 没开，编号和外面一样
+user   -&gt; user:[4026531837]       ← 没开，编号和外面一样
+uts    -&gt; uts:[4026532260]        ← 变了</code></pre>
+<p>开了的五个编号全变了，没开的三个一个字没动。这就是命名空间的全部——<em>八个独立的开关，一个一个开</em>，没开的那些照旧共享。</p>
+
+<h3>4. 换完编号之后，还有什么看得见</h3>
+<p>把一个探针程序塞进去跑一遍就知道了。这个探针叫 <code>probe.py</code>，它问十来个问题，每个问题要么有答案要么失败。左边一列是什么都不做时的答案，右边一列是套上五种命名空间之后的答案。</p>
+<div class="scroll"><table>
+<tr><th>探针问的问题</th><th>裸跑</th><th>五种命名空间</th></tr>
+<tr><td>能看见几个进程（数 <code>/proc</code> 下的数字目录）</td><td class="n">61</td><td class="n">1</td></tr>
+<tr><td>主机名</td><td>vm</td><td>sandbox-a</td></tr>
+<tr><td>网卡（问内核要接口列表）</td><td>eth0 ifb0 ifb1 lo</td><td>lo</td></tr>
+<tr><td>能连到 1.1.1.1 的 443 端口吗</td><td>能</td><td>不能</td></tr>
+<tr><td>根目录第一层有几个条目</td><td class="n">26</td><td class="n">26</td></tr>
+<tr><td>能读到宿主上的 <code>/hostmark.txt</code> 吗</td><td>能，内容是「宿主机的暗号-a7f3」</td><td>能，内容一模一样</td></tr>
+<tr><td><code>/proc/cpuinfo</code> 里报了几个 CPU</td><td class="n">2</td><td class="n">2</td></tr>
+<tr><td><code>os.cpu_count()</code></td><td class="n">2</td><td class="n">2</td></tr>
+<tr><td><code>/proc/meminfo</code> 报的总内存</td><td class="n">8023 MB</td><td class="n">8023 MB</td></tr>
+<tr><td>能发出 <code>unshare(CLONE_NEWUSER)</code> 吗</td><td>能</td><td>能</td></tr>
+</table></div>
+<p>上面四行是变了的，下面六行是没变的。变了的那四行正好对应开了的四种编号：进程号、主机名、网络、以及网络带来的连通性。</p>
+<p>没变的那六行，才是今天这一节的重点，它们分成三类。</p>
+
+<h4>第一类：文件还在那儿</h4>
+<p>挂载命名空间开了，根目录条目数还是 26，宿主的标记文件照样读得到。这不是没生效，而是它生效的方式和你想的不一样：它复制的是<em>挂载点这张表</em>，复制出来的那份内容和原来一模一样。换了一份完全相同的地图，看到的当然还是同一片地。</p>
+<p>要让它看不到宿主的文件，得再做一步：把根换掉。这一步叫换根（<code>chroot</code> 是老办法，<code>pivot_root</code> 是容器实际用的那个），明天 Day 11 整段讲。今天你要带走的只是这个因果：<em>开挂载命名空间不等于换根，它只是让你有资格改自己这份挂载表而不影响别人</em>。</p>
+<p>顺着这条因果还能看到一个具体的漏法。上面那张表里「网卡」这一行问的是内核要接口列表。但如果换一种问法——去 <code>/sys/class/net</code> 这个目录里数文件——答案就不一样了：</p>
+<pre><code># 只换网络命名空间，不动挂载
+$ unshare --net -- ls /sys/class/net
+eth0  ifb0  ifb1  lo          ← 还是宿主的那四张
+
+# 同时换挂载命名空间，并且重新挂一次 sysfs
+$ unshare --net --mount -- bash -c 'mount -t sysfs sysfs /sys &amp;&amp; ls /sys/class/net'
+lo                            ← 这才对上</code></pre>
+<p>网络命名空间确实换了，网络也确实不通了。但 <code>/sys</code> 是一个挂载点，挂上去的那份内容还是进新命名空间之前的那一份，它显示的是旧网络命名空间的设备。换句话说，<em>一个命名空间隔离出来的东西，可以通过另一个命名空间里的旧挂载漏回来</em>。本节开头那张表的 B 列之所以对得上，是因为跑之前重新挂了一次 <code>sysfs</code>。</p>
+
+<h4>第二类：机器有多大，它还是照实说</h4>
+<p><code>/proc/cpuinfo</code> 报 2 个 CPU，<code>/proc/meminfo</code> 报 8023 MB。这两个数是整台机器的，不是给你这个沙箱的。第二部分给它配上 CPU 配额之后，这两个数一个字都不会变——这一点先记着，第 14 节会拿实测数据把它钉死。</p>
+
+<h4>第三类：系统调用一个没少</h4>
+<p>最后一行是关键。探针在新的命名空间里再次调用 <code>unshare(CLONE_NEWUSER)</code>，成功了。也就是说，被关起来的这个进程，有能力自己再开一层命名空间。</p>
+<p>再想一步：如果它能开用户命名空间，它就能在那层里拿到 root，然后用 root 去碰一些平时碰不到的内核代码路径。这条路是历史上多起<span class="term">逃逸（container escape）</span>的起点——逃逸的意思是：本该被关住的代码，最终在宿主上执行了自己的指令。</p>
+<p>而这条路命名空间和配额都堵不住，因为它既不是「看见了什么」，也不是「用了多少」，而是「向内核提了一个请求」。这需要第三把锁。</p>
+<div class="card key">
+<span class="tag">关键结论</span>
+<p>命名空间管的是「查哪张表」。它把进程号、主机名、网络挡得干干净净，但它不换根、不改变机器自报的规格、也不减少一个可以发出的系统调用。把它当成一整套沙箱来用，是最常见的第一个错误。</p>
+</div>
+
+<div class="part">
+<div class="pn">第二部分</div>
+<div class="pt">配额</div>
+<div class="pd">「只给半个 CPU」到底是什么意思，以及它对平均速度和对延迟做的是两件完全不同的事</div>
+</div>
+
+<h3>5. 配额是怎么写下来的</h3>
+<p class="lead">「给这个沙箱半个 CPU」这句话，翻译成内核听得懂的形式，是什么样子？</p>
+<p>你可能想到过两个办法。一个是 <code>nice</code>：调低优先级。但优先级只在抢不过来的时候起作用，机器空着的时候它照样能吃满，限不住。另一个是 <code>taskset</code>（Day 6 用过，把进程钉在某几个核上）。它能限，但粒度是整颗核，给不出「半个」。</p>
+<p>真正的办法是 cgroup。它的接口是文件系统：<em>建一个目录就是建一个组</em>，往目录里的文件写数字就是设限，往 <code>tasks</code> 里写一个进程号就是把那个进程放进这个组。</p>
+<pre><code># 建组
+mkdir -p /sys/fs/cgroup/cpu/lab
+# 设限：每 100000 微秒的窗口里，最多用掉 50000 微秒的 CPU 时间
+echo 100000 &gt; /sys/fs/cgroup/cpu/lab/cpu.cfs_period_us
+echo  50000 &gt; /sys/fs/cgroup/cpu/lab/cpu.cfs_quota_us
+# 入组：把当前这个 shell 放进去，之后它 exec 出来的一切都跟着进来
+echo $BASHPID &gt; /sys/fs/cgroup/cpu/lab/tasks</code></pre>
+<p>把这两个数的单位拆开说清楚，因为这是今天最容易糊过去的地方。<code>cfs_period_us</code> 的单位是微秒，量的是<em>墙上时钟</em>走过多久，它划出一个个首尾相接的窗口。<code>cfs_quota_us</code> 的单位也是微秒，但量的是<em>CPU 时间</em>——这个组里所有线程占用 CPU 的时间加起来。</p>
+<p>所以 50000 / 100000 的意思是：墙上时钟每走过 100 毫秒，这个组总共只能用掉 50 毫秒的 CPU 时间。用完了，这个窗口剩下的时间里它一步都不能走。这个「用完额度被停下」的动作叫<span class="term">节流（throttling）</span>。</p>
+<p>额度用完到窗口结束的这段时间，进程既没有在等 IO，也没有在等锁，它是被内核冻住的。这一点值得停一下：Day 3 那张 on-CPU / off-CPU 的表里，这种状态两边都不太好归类——它不在 CPU 上，但它等的不是任何一个具体的东西，等的是一个时钟。</p>
+
+<h4>v1 和 v2 的文件名对照</h4>
+<p>cgroup 有两代，文件名不一样。内核文档写得很直白：「和 v1 不同，cgroup v2 只有单一层级。」v1 是每个控制器一棵树（<code>/sys/fs/cgroup/cpu</code>、<code>/sys/fs/cgroup/memory</code>……各挂各的），v2 把它们合成一棵。今天这台机器上 cpu / memory / pids 都挂在 v1 上，所以实测数字全部来自左边那一列。</p>
+<div class="scroll"><table>
+<tr><th>要设的东西</th><th>v1 文件（今天实测用的）</th><th>v2 文件</th><th>写法</th></tr>
+<tr><td>CPU 配额与周期</td><td><code>cpu.cfs_quota_us</code><br><code>cpu.cfs_period_us</code></td><td><code>cpu.max</code></td><td>v1 分两个文件写；v2 一行写两个值 <code>$MAX $PERIOD</code>，默认是 <code>max 100000</code></td></tr>
+<tr><td>节流统计</td><td><code>cpu.stat</code>：<code>nr_periods</code> / <code>nr_throttled</code> / <code>throttled_time</code>（纳秒）</td><td><code>cpu.stat</code>：同名字段，时间字段叫 <code>throttled_usec</code>（微秒）</td><td>两边都是只读的累计值，没有清零接口</td></tr>
+<tr><td>内存上限</td><td><code>memory.limit_in_bytes</code></td><td><code>memory.max</code></td><td>字节数。文档说：用量达到上限又降不下来时，「在这个 cgroup 里触发 OOM killer」</td></tr>
+<tr><td>进程数上限</td><td><code>pids.max</code></td><td><code>pids.max</code></td><td>同名。文档说默认是 <code>max</code>，也就是不限</td></tr>
+<tr><td>入组</td><td>写 <code>tasks</code> 或 <code>cgroup.procs</code></td><td>写 <code>cgroup.procs</code></td><td>写进程号进去，一次一个</td></tr>
+</table></div>
+<p>关于计数器要多说一句：它们只增不减，也没有清零的写法。所以要拿到一次运行的净增量，办法是跑之前删掉目录、重新 <code>mkdir</code>——目录一没，计数器跟着归零。今天所有 <code>cpu.stat</code> 的数字都是这么取的。</p>
+
+<div class="card predict">
+<span class="tag">预测 · 先写下来再往下翻</span>
+<h4>6. 半个 CPU，代价长什么样</h4>
+<p>装置那节的程序，不限任何配额时跑出来是这样的（这就是等会儿那张表的第一行）：总时长 9.891 秒，相邻两块的间隔中位数 4.89 毫秒、P99 是 6.24 毫秒、最大 9.28 毫秒。</p>
+<p>现在只改一个东西：给它配上 <code>cpu.cfs_quota_us=50000</code>、<code>cpu.cfs_period_us=100000</code>，也就是半个 CPU、周期用内核的默认值。块数、每块的活儿、钉在哪个核上，全都不动。</p>
+<p><span class="qn">问题一</span>　总时长会变成多少？</p>
+<div class="write">我的预测：______ 秒</div>
+<p><span class="qn">问题二</span>　间隔的中位数会变成多少？P99 会变成多少？</p>
+<div class="write">中位数 ______ 毫秒　　P99 ______ 毫秒</div>
+<p><span class="qn">问题三</span>　写一句理由：你认为多出来的那些时间，是「每一块都变慢了」，还是别的形状？</p>
+<div class="write">我的理由：</div>
+<p class="small">提示：装置那节末尾留了一条链——一块的时间 × 块数 = 总时长。这次块数没变，每块要做的哈希轮数也没变。</p>
+</div>
+
+<h3>7. 揭晓：一半的 CPU，中位数一点没变</h3>
+<p>五档，每档都是同一个程序、同样 2000 块、同样钉在 0 号核上，只有配额和周期这两个数在动。每档跑之前都把 cgroup 目录删掉重建，所以右边三列是这一趟的净增量。</p>
+<div class="scroll"><table>
+<tr><th>配额 / 周期</th><th class="n">平均份额</th><th class="n">总时长 s</th><th class="n">占 CPU s</th><th class="n">间隔 P50 ms</th><th class="n">P90 ms</th><th class="n">P99 ms</th><th class="n">最大 ms</th><th class="n">窗口数</th><th class="n">被节流的窗口</th><th class="n">被冻住 s</th></tr>
+<tr><td>不限</td><td class="n">1.00</td><td class="n">9.891</td><td class="n">9.927</td><td class="n">4.89</td><td class="n">5.05</td><td class="n">6.24</td><td class="n">9.28</td><td class="n">0</td><td class="n">0</td><td class="n">0</td></tr>
+<tr><td>50 ms / 100 ms</td><td class="n">0.50</td><td class="n">20.288</td><td class="n">10.170</td><td class="n">4.98</td><td class="n">52.24</td><td class="n">56.72</td><td class="n">61.12</td><td class="n">204</td><td class="n">203</td><td class="n">10.137</td></tr>
+<tr><td>5 ms / 10 ms</td><td class="n">0.50</td><td class="n">20.479</td><td class="n">10.243</td><td class="n">9.44</td><td class="n">15.51</td><td class="n">17.61</td><td class="n">36.59</td><td class="n">2055</td><td class="n">2052</td><td class="n">10.242</td></tr>
+<tr><td>25 ms / 100 ms</td><td class="n">0.25</td><td class="n">42.108</td><td class="n">10.561</td><td class="n">5.11</td><td class="n">80.66</td><td class="n">83.05</td><td class="n">111.97</td><td class="n">422</td><td class="n">422</td><td class="n">31.595</td></tr>
+<tr><td>2.5 ms / 10 ms</td><td class="n">0.25</td><td class="n">43.862</td><td class="n">10.968</td><td class="n">20.95</td><td class="n">29.71</td><td class="n">38.69</td><td class="n">69.69</td><td class="n">4403</td><td class="n">4398</td><td class="n">32.938</td></tr>
+</table></div>
+<p>先做三个加法把这张表验一遍，它每一行都自洽：</p>
+<ul>
+<li>总时长 ≈ 占 CPU 的时间 + 被冻住的时间。第二行：10.170 + 10.137 = 20.307，实测 20.288。第四行：10.561 + 31.595 = 42.156，实测 42.108。</li>
+<li>窗口数 × 周期 ≈ 总时长。第二行：204 × 100 毫秒 = 20.4 秒。第五行：4403 × 10 毫秒 = 44.03 秒。</li>
+<li>「占 CPU 的时间」这一列五行全在 10 秒上下。活儿一点没多，也一点没少。</li>
+</ul>
+<p>现在看那两组两两对照的行。</p>
+<p>第二行和第三行，平均份额都是 0.5，总时长几乎一样（20.288 对 20.479），可是间隔的 P99 差了三倍多：56.72 毫秒对 17.61 毫秒。两行唯一的差别是周期从 100 毫秒换成了 10 毫秒。第四行和第五行是同一件事在 0.25 份额上重演：83.05 对 38.69。</p>
+<p>还有更反直觉的一处。第二行的间隔中位数是 4.98 毫秒，第一行不限配额时是 4.89 毫秒——<em>砍掉一半 CPU 之后，一半以上的块跑得和没砍的时候一样快</em>。如果你只看平均延迟或者 P50，你会得出「限流没生效」的结论，而实际上总时长已经翻倍了。</p>
+<p>这个形状 Day 6 讲过，叫双峰分布；Day 9 在 ITL 上见过一次一模一样的：大部分间隔很快，少数间隔奇慢，中位数落在快的那一堆里，完全代表不了整体。</p>
+
+<h3>8. 一个 100 毫秒的窗口里发生了什么</h3>
+<p>把逐块打印的版本在 50 毫秒 / 100 毫秒这一档下跑一趟，取中间一段。下面是第 25 到第 34 块，三列还是序号、完成时刻、间隔。</p>
+<div class="scroll"><table>
+<tr><th class="n">块</th><th class="n">完成时刻 ms</th><th class="n">间隔 ms</th><th>这一块是怎么过去的</th></tr>
+<tr><td class="n">25</td><td class="n">236.13</td><td class="n">52.76</td><td>大部分时间被冻着，额度补上之后算完最后一小段</td></tr>
+<tr><td class="n">26</td><td class="n">241.15</td><td class="n">5.01</td><td>全速</td></tr>
+<tr><td class="n">27</td><td class="n">246.19</td><td class="n">5.05</td><td>全速</td></tr>
+<tr><td class="n">28</td><td class="n">251.21</td><td class="n">5.02</td><td>全速</td></tr>
+<tr><td class="n">29</td><td class="n">256.15</td><td class="n">4.94</td><td>全速</td></tr>
+<tr><td class="n">30</td><td class="n">261.43</td><td class="n">5.27</td><td>全速</td></tr>
+<tr><td class="n">31</td><td class="n">268.00</td><td class="n">6.57</td><td>全速</td></tr>
+<tr><td class="n">32</td><td class="n">273.70</td><td class="n">5.70</td><td>全速</td></tr>
+<tr><td class="n">33</td><td class="n">278.73</td><td class="n">5.03</td><td>全速，额度快用完了</td></tr>
+<tr><td class="n">34</td><td class="n">335.25</td><td class="n">56.52</td><td>算了一小段就被冻住，等下一个窗口</td></tr>
+</table></div>
+<p>这一段可以完全对上账，你自己拿计算器就能验。</p>
+<p>两次长间隔之间隔了 335.25 − 236.13 = 99.12 毫秒，和 100 毫秒的窗口对得上，说明这确实是一个完整窗口。第 26 到第 33 块全速跑，从 236.13 到 278.73 用掉 42.60 毫秒，这段全是在算。加上第 25 块在窗口开头算完的那一小截（约 5 毫秒）和第 34 块被冻住之前算掉的那一小截（约 2.4 毫秒），合计约 50.0 毫秒——正好是配额。</p>
+<p>剩下的 99.12 − 50.0 ≈ 49 毫秒，一步没走。它全部塞在第 34 块那 56.52 毫秒的间隔里。</p>
+<p>所以「半个 CPU」的真实形状不是「每块慢一倍」，而是：<em>全速跑满配额，然后原地冻住，直到窗口翻页</em>。一次冻结有多长，用第 7 节那张表里的两个数一除就知道：这一档被冻住 10.137 秒、被节流的窗口 203 个，10.137 ÷ 203 ≈ 49.9 毫秒，正好是周期减配额的 50 毫秒。</p>
+<p>第三行为什么 P99 只有 17.61 毫秒，同一个除法就能答：10.242 ÷ 2052 ≈ 5.0 毫秒。周期换成 10 毫秒之后，一次冻结平均只剩 5 毫秒；代价是冻的次数从 203 涨到 2052，涨了十倍。两边乘出来的总冻结时间几乎一样，所以总时长不变，而单次卡顿小了一个数量级。</p>
+<p>那 17.61 毫秒本身又是怎么来的？它比一个 10 毫秒的窗口还长，所以那一块活儿必然横跨了至少两个窗口、连着挨了两次冻结。窗口越密，一块活儿被切开的次数越多，但每一刀都很浅。</p>
+<div class="card key">
+<span class="tag">关键结论</span>
+<p>CPU 配额里的两个数管的是两件不同的事。配额除以周期决定平均速度，周期本身决定卡顿的粒度。默认周期 100 毫秒，意味着任何被限了 CPU 的服务，天生就带着一个最长可达数十毫秒的规律性停顿——而这个停顿在中位数上完全看不见。</p>
+</div>
+<p>把这条接到你四周后的活上：一个 agent 的沙箱如果按默认周期限成半个 CPU，它执行的每段代码都会周期性地停几十毫秒。单看一次不要紧，但 agent 一轮要跑十几次工具调用，这些停顿会一次次叠进端到端延迟里。Day 2 算过一次同类的账：串行调用越多，尾部被放大得越厉害。</p>
+
+<div class="part">
+<div class="pn">第三部分</div>
+<div class="pt">系统调用名单</div>
+<div class="pd">怎么禁掉一个系统调用，以及为什么这套机制永远读不懂「不许打开某个文件」</div>
+</div>
+
+<h3>9. 在内核门口挂一张名单</h3>
+<p class="lead">一个进程想干任何一件超出自己内存范围的事，都得先问内核。那道门能不能装个人守着？</p>
+<p>先把「问内核」这件事说具体。打开文件、发网络包、创建进程、映射内存——这些进程自己做不到，只能通过一个约定好的入口请内核来做。请求的形式是把一个号码放进寄存器，然后触发一条特殊指令。这个号码就是<span class="term">系统调用号（syscall number）</span>，每个功能一个固定的号，全系统统一。</p>
+<p>这台机器上的头文件 <code>asm/unistd_64.h</code> 里定义了 373 个号，最大的一个是 461。数量级记住就行：三百多个入口，每一个都是内核里的一段代码。</p>
+<p>既然请求都要经过这道门，那就在门口挂一张名单：来一个请求，看一眼号码，在名单上就打回，不在就放行。Linux 里这个机制叫 <span class="term">seccomp</span>（secure computing mode）。名单本身用内核里那套通用的小程序格式写，叫 BPF，所以完整的说法是 <span class="term">seccomp-BPF 过滤器</span>。</p>
+<p>「打回」有好几种打法，内核文档列了这几种返回值：</p>
+<div class="scroll"><table>
+<tr><th>返回值</th><th>文档原文的意思</th><th>什么时候用</th></tr>
+<tr><td><code>SECCOMP_RET_ALLOW</code></td><td>「系统调用被执行」</td><td>名单之外的默认动作</td></tr>
+<tr><td><code>SECCOMP_RET_ERRNO</code></td><td>「返回值的低 16 位作为 errno 传给用户态，系统调用不执行」</td><td>最常用。程序会以为自己权限不够，通常还能继续跑</td></tr>
+<tr><td><code>SECCOMP_RET_KILL_PROCESS</code></td><td>「整个进程立刻退出，系统调用不执行」</td><td>确定不该出现的调用，直接了断</td></tr>
+<tr><td><code>SECCOMP_RET_TRAP</code></td><td>「内核向触发的线程发一个 SIGSYS 信号，系统调用不执行」</td><td>把控制权交回用户态自己处理。第四部分会看到有人拿它做了很大的事</td></tr>
+<tr><td><code>SECCOMP_RET_USER_NOTIF</code></td><td>「往用户态的通知文件描述符上发一条消息」</td><td>让另一个进程来裁决这次调用</td></tr>
+</table></div>
+<p>今天用的是第二行，返回 <code>EPERM</code>。下面这段 C 程序把一张名单装上去，然后 exec 目标程序。exec 这个动作是「把当前进程正在运行的程序整个换成另一个，进程号不变」，而过滤器是挂在进程上的，所以它会跟着活到新程序里去——这正是它能用来包别人的原因。程序分三块：拼出 BPF 指令、装上过滤器、exec。</p>
+<pre><code>/* 第一块：拼指令。先核对架构，再逐个比对号码，命中就跳到最后那条 EPERM */
+prog[i++] = BPF_STMT(BPF_LD|BPF_W|BPF_ABS, offsetof(struct seccomp_data, arch));
+prog[i++] = BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, AUDIT_ARCH_X86_64, 1, 0);
+prog[i++] = BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_KILL_PROCESS);  /* 架构不对，直接杀 */
+prog[i++] = BPF_STMT(BPF_LD|BPF_W|BPF_ABS, offsetof(struct seccomp_data, nr));
+for (int k = 0; k &lt; n; k++)
+    /* 命中就往前跳 (n-k) 条，正好落在最后那条 EPERM 上 */
+    prog[i++] = BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, nrs[k], n - k, 0);
+prog[i++] = BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ALLOW);
+prog[i++] = BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ERRNO | (EPERM &amp; SECCOMP_RET_DATA));
+
+/* 第二块：装上。不加 NO_NEW_PRIVS 这一句，非特权进程根本装不了 */
+prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
+syscall(SYS_seccomp, SECCOMP_SET_MODE_FILTER, 0, &amp;fprog);
+
+/* 第三块：换成目标程序，过滤器跟着走 */
+execvp(argv[2], &amp;argv[2]);</code></pre>
+<p>有两行不是可选的，漏了会出事。</p>
+<p>一行是 <code>PR_SET_NO_NEW_PRIVS</code>。文档写着：「使用之前，任务必须调用 <code>prctl(PR_SET_NO_NEW_PRIVS, 1)</code>，或者以其命名空间内的 CAP_SYS_ADMIN 特权运行。」它的字面意思是「我以后不再获得任何新权限」，作用是保证 exec 一个 setuid 程序（那种一执行就自动切换成文件属主身份的程序，<code>sudo</code> 就是）也不能借机提权——否则被关的进程只要找一个 setuid 的二进制就能绕出去。</p>
+<p>另一行是最开头对架构的核对。文档专门点名了这个坑：「使用中最大的陷阱是只按系统调用号过滤而不检查架构值……永远检查 arch 值！」原因是同一个号码在不同架构下是不同的功能，32 位那套编号和 64 位这套完全对不上，不核对就等于名单形同虚设。</p>
+<p>装上去跑一遍。272 是 <code>unshare</code> 的号，正是第一部分末尾那个堵不住的动作。返回值里的 <code>errno=1</code> 就是 <code>EPERM</code>，系统调用失败时的那个错误码，含义是「不允许这么干」：</p>
+<pre><code>$ ./seccomp_run 272 python3 -c "调用 unshare(CLONE_NEWUSER)"
+unshare 返回 -1 errno= 1 Operation not permitted
+
+$ ./seccomp_run 272 python3 -c "print(open('/hostmark.txt').read())"
+宿主机的暗号-a7f3          ← 别的一切照常</code></pre>
+<p>第一把和第二把锁堵不住的东西，第三把锁一行名单就堵住了。回头看第 3 节引的那句手册：创建用户命名空间不需要任何特权，所以这个动作连能力那道关都不用绕——能拦住它的，只有名单。三把锁各管一件事，到这里凑齐了。</p>
+
+<h3>10. 它认号码，不认意思</h3>
+<p>接下来这个实验解释了为什么写 seccomp 名单是件专业活，而不是「把危险的调用列一列」那么简单。</p>
+<p>打开一个文件在 Linux 上有两个入口：老的 <code>open</code> 是 2 号，新的 <code>openat</code> 是 257 号。功能上后者能干前者的一切。写一个程序，同一个文件走两个号各打开一次：</p>
+<pre><code># 什么都不禁
+open(2 号)        成功，读到: 宿主机的暗号-a7f3
+openat(257 号)    成功，读到: 宿主机的暗号-a7f3
+
+# 只禁 2 号
+open(2 号)        失败 errno=1 Operation not permitted
+openat(257 号)    成功，读到: 宿主机的暗号-a7f3        ← 同一个文件，照样打开了</code></pre>
+<p>名单挡住的是号码，不是「打开文件」这件事。你以为封了一扇门，其实旁边还有一扇。</p>
+<p>那把 257 也一起禁掉呢？</p>
+<pre><code>$ ./seccomp_run 2,257 python3 two_doors.py
+python3: error while loading shared libraries: libm.so.6:
+         cannot open shared object file: Operation not permitted</code></pre>
+<p>连动态链接器都没走到 <code>main</code> 就死了。动态链接器是程序启动时负责把 <code>libc</code> 这类共享库找出来装进内存的那一步，而装共享库就得打开文件。这是写名单最真实的难处：<em>禁得太少不管用，禁得太多程序起不来</em>，中间那条线要靠对目标程序的实际了解来划。</p>
+<p>更根本的一条限制在内核文档里：「BPF 程序不能解引用指针，这使得所有过滤器只能直接对系统调用的参数求值。」</p>
+<p>把这句话翻译成后果。<code>openat</code> 的参数里，路径不是字符串本身，而是一个指向字符串的地址。过滤器拿得到那个地址的数值，但不能顺着它去看内容。所以下面这条规则，seccomp 永远写不出来：</p>
+<pre><code># 想写的：
+如果 系统调用 == openat 且 路径 == "/etc/shadow"  →  拒绝
+# 能写的：
+如果 系统调用 == openat  →  拒绝（不管打开的是什么）</code></pre>
+<p>这个限制不是偷懒，是有意的。文档给了理由：「BPF 使得 seccomp 的使用者不可能落入检查时刻与使用时刻（TOCTOU）攻击的陷阱，而这类攻击在系统调用拦截框架里很常见。」如果过滤器去读那个地址上的字符串，程序完全可以在过滤器读完之后、内核真正用它之前，从另一个线程把内容改掉——检查过的和用上的不是同一个东西。干脆不让读，这个漏洞就不存在。</p>
+<p>所以要限制「能打开哪些文件」，得换一把锁：那是第一把锁配上换根要做的事，明天 Day 11 会做。三把锁不能互相替代，这是又一个具体例证。</p>
+
+<h3>11. 工业界的名单长什么样</h3>
+<p>你可能以为容器的默认名单是「只放行必要的几十个」。实际是反过来的。Docker 的文档说，默认配置文件「在 300 多个系统调用里禁掉了大约 44 个」，默认动作是 <code>SCMP_ACT_ERRNO</code>，也就是「造成一个 Permission Denied 错误」。</p>
+<p>44 个是哪些、为什么禁，文档逐条给了理由。挑几条和今天直接相关的：</p>
+<div class="scroll"><table>
+<tr><th>被禁的调用</th><th>文档给的理由</th></tr>
+<tr><td><code>mount</code></td><td>「拒绝挂载，本来也已由 CAP_SYS_ADMIN 把关」</td></tr>
+<tr><td><code>setns</code></td><td>「拒绝把线程关联到某个命名空间上，同样由 CAP_SYS_ADMIN 把关」</td></tr>
+<tr><td><code>ptrace</code></td><td>「跟踪 / 剖析用的系统调用。在 4.8 之前的内核上被禁，以免绕过 seccomp」</td></tr>
+<tr><td><code>keyctl</code></td><td>「防止容器使用内核 keyring，因为它没有做命名空间隔离」。keyring 是内核里替进程保管密钥和凭据的地方</td></tr>
+<tr><td><code>kexec_load</code></td><td>「拒绝加载一个新内核以待稍后执行，也由 CAP_SYS_BOOT 把关」</td></tr>
+<tr><td><code>bpf</code></td><td>「拒绝把可能长期存在的 BPF 程序载入内核，本来也已由 CAP_SYS_ADMIN 把关」</td></tr>
+</table></div>
+<p>这张表里有两处值得单独说。</p>
+<p>第一处，<code>ptrace</code> 那一行正好接上 Day 3 的一句话。当时讲 py-spy 需要 ptrace 权限，末尾提了一句：正因为 ptrace 能读别的进程的内存，它才是沙箱必须封掉的能力之一。现在你看到了它被封在哪张名单上，以及封它的第二个理由——它还能被用来绕过 seccomp 本身。</p>
+<p>第二处，好几条理由都写着「本来也已由某个 CAP 把关」。这说明能力和 seccomp 是两道叠在一起的关卡，不是二选一：能力管「你有没有资格做这类事」，seccomp 管「这个号码准不准发出来」。工业实践是两道都上，任何一道漏了另一道还在。</p>
+<p>最后回到那个数字上：44 个被禁，意味着 260 多个还开着。一个跑在标准容器里的进程，仍然能对宿主内核发出两百多种请求。这个数字是第四部分的入口。</p>
+
+<h3>12. 这把锁要多少钱</h3>
+<p>门口多了一道检查，每次进门都要多花一点时间。量它的办法是找一个「什么都不干」的系统调用，反复调，看单次耗时。<code>getpid</code> 就是这样一个：它只把进程号返回来，几乎没有实际工作，所以测出来的基本就是进出内核这趟路本身的成本。</p>
+<p>C 程序调三百万次，取三轮里最快的一轮，总时间除以次数。三种情况：不装过滤器、装一条规则的过滤器、装 50 条和 64 条规则的过滤器。整轮跑五遍。</p>
+<div class="scroll"><table>
+<tr><th>过滤器</th><th class="n">第 1 遍</th><th class="n">第 2 遍</th><th class="n">第 3 遍</th><th class="n">第 4 遍</th><th class="n">第 5 遍</th><th class="n">单次耗时范围 ns</th></tr>
+<tr><td>没有</td><td class="n">255.1</td><td class="n">256.4</td><td class="n">256.4</td><td class="n">253.6</td><td class="n">258.3</td><td class="n">253.6 ~ 258.3</td></tr>
+<tr><td>1 条规则</td><td class="n">285.6</td><td class="n">279.3</td><td class="n">280.5</td><td class="n">278.7</td><td class="n">279.5</td><td class="n">278.7 ~ 285.6</td></tr>
+<tr><td>50 条规则</td><td class="n">283.8</td><td class="n">275.9</td><td class="n">285.5</td><td class="n">274.6</td><td class="n">274.2</td><td class="n">274.2 ~ 285.5</td></tr>
+<tr><td>64 条规则</td><td class="n">274.6</td><td class="n">280.4</td><td class="n">282.9</td><td class="n">278.6</td><td class="n">276.3</td><td class="n">274.6 ~ 282.9</td></tr>
+</table></div>
+<p>横着读第一行和第二行，纵着读后面三行，能读出两件事。</p>
+<p>第一件：装上过滤器，每次系统调用多花二十几纳秒，大约 9%。这是「门口有没有人」的固定成本。</p>
+<p>第二件：规则从 1 条加到 64 条，四个范围互相重叠，看不出差别。也就是说贵的是<em>有没有过滤器</em>，不是<em>名单有多长</em>。这条对写名单的人很实用：不必为了省开销去精简规则数，该禁的都禁上。</p>
+<p>把这二十几纳秒换算成能感受的量，需要知道一个程序到底发多少个系统调用。用 Day 3 那个 <code>strace</code>，这次加 <code>-c</code> 只数数不打印细节：</p>
+<pre><code>$ strace -f -c python3 -c pass
+100.00    0.002305           6       370        49 total
+#                                    ↑ 370 次系统调用，其中 49 次返回了错误</code></pre>
+<p>启动一个什么都不做的 Python 解释器要发 370 个系统调用。370 × 23 纳秒 ≈ 8.5 微秒。而启动这个解释器本身要十几毫秒，两者差了三个数量级。</p>
+<p>所以 seccomp 的开销对普通服务基本可以当成零。它会显出来的场景只有一种：程序在紧密循环里疯狂发系统调用。这类程序确实存在——大量小文件读写、每条消息一次 <code>send</code> 的网络代码——但那类程序在装 seccomp 之前就该先减少系统调用次数了。</p>
+
+<div class="part">
+<div class="pn">第四部分</div>
+<div class="pt">边界在哪</div>
+<div class="pd">三把锁全上之后，还剩什么没挡住，以及业界为此又造了两层东西</div>
+</div>
+
+<h3>13. 三把锁全上，启动贵了多少</h3>
+<p>沙箱和普通服务有个结构性差别：普通服务起一次跑一整天，沙箱是<em>每来一段代码就起一个、跑完就扔</em>。所以启动开销不是一次性成本，它乘在每一次调用上。</p>
+<p>量法是用 Python 的 <code>subprocess.run</code> 把一个几乎什么都不做的程序（<code>/bin/true</code>）起 30 次，取中位数。逐层往上加隔离，看每加一层多多少。</p>
+<p>这里有个陷阱要先排掉：每加一层就多一个包装程序，而多 exec 一个程序本身就要花时间。所以表里专门放了一行对照——<code>unshare</code> 什么命名空间都不开，只是白白 exec 一次。它和第一行的差值就是「包装」这件事本身的价钱。</p>
+<div class="scroll"><table>
+<tr><th>怎么起</th><th class="n">中位 ms</th><th class="n">最快 ms</th><th class="n">最慢 ms</th><th>比上面那行多了什么</th></tr>
+<tr><td>直接 exec <code>/bin/true</code></td><td class="n">1.21</td><td class="n">1.17</td><td class="n">1.45</td><td>基准</td></tr>
+<tr><td><code>unshare</code> 一个命名空间都不开</td><td class="n">2.44</td><td class="n">2.34</td><td class="n">2.62</td><td>只是多 exec 了一个程序：+1.23</td></tr>
+<tr><td><code>unshare</code> 开 3 种命名空间</td><td class="n">2.72</td><td class="n">2.52</td><td class="n">3.00</td><td>3 种命名空间：+0.28</td></tr>
+<tr><td><code>unshare</code> 开 6 种命名空间</td><td class="n">3.29</td><td class="n">3.00</td><td class="n">4.06</td><td>再多 3 种：+0.57</td></tr>
+<tr><td>6 种命名空间 + 装 seccomp</td><td class="n">4.53</td><td class="n">4.09</td><td class="n">5.58</td><td>又多一个包装程序 + 装过滤器：+1.24</td></tr>
+<tr><td>直接跑 <code>python3 -c pass</code></td><td class="n">14.13</td><td class="n">12.66</td><td class="n">16.40</td><td>换成 Python 解释器：+12.9</td></tr>
+<tr><td>装 seccomp 后跑 <code>python3 -c pass</code></td><td class="n">15.20</td><td class="n">13.92</td><td class="n">17.50</td><td>在解释器上加一层过滤器：+1.07</td></tr>
+</table></div>
+<p>最有信息量的是最后两行和前面几行的落差。开六种命名空间加装一张过滤器，加起来三毫秒出头；而仅仅是启动一个空的 Python 解释器，就要十三毫秒以上，是前者的四倍。</p>
+<p>这个比例决定了优化的先后顺序。做代码执行沙箱时，如果从零起一个新沙箱到它能跑代码要一百毫秒，那一百毫秒里隔离机制占的份额小到可以忽略，真正的开销在语言运行时的启动、在依赖包的导入、在根文件系统的准备上。Day 14 会把冷启动的 P99 当成一个正经指标来打，那一天的优化对象不会是今天这三把锁。</p>
+<p class="small">这张表的每一行都比上一行多 exec 一次，所以「多了什么」那一列里，包装程序的成本和机制本身的成本是混在一起的。要单独看机制，就用第三、四行减第二行：六种命名空间自己的代价不到 1 毫秒。</p>
+
+<h3>14. 三把锁的完整对照</h3>
+<p>把三个探针在四种配置下各跑一遍。四列从左到右依次加锁，每一列相对左边只多一样东西。</p>
+<p>C 列的配额是：CPU 50 毫秒 / 100 毫秒、内存 256 MiB、最多 64 个进程。D 列在 C 的基础上加一张只禁 272 号的名单。</p>
+<div class="scroll"><table>
+<tr><th>探针问的问题</th><th>A 裸跑</th><th>B 加命名空间</th><th>C 再加 cgroup</th><th>D 再加 seccomp</th></tr>
+<tr><td>能看见几个进程</td><td class="n">61</td><td class="n">1</td><td class="n">1</td><td class="n">1</td></tr>
+<tr><td>主机名</td><td>vm</td><td>sandbox-a</td><td>sandbox-a</td><td>sandbox-a</td></tr>
+<tr><td>网卡</td><td>eth0 ifb0 ifb1 lo</td><td>lo</td><td>lo</td><td>lo</td></tr>
+<tr><td>能连外网</td><td>能</td><td>不能</td><td>不能</td><td>不能</td></tr>
+<tr><td>连开 200 个子进程</td><td class="n">200 个</td><td class="n">200 个</td><td>62 个之后失败</td><td>62 个之后失败</td></tr>
+<tr><td>申请并碰满 1.5 GB</td><td>成功</td><td>成功</td><td>被信号 9 杀掉</td><td>被信号 9 杀掉</td></tr>
+<tr><td>4 秒内做完几块哈希</td><td class="n">800</td><td class="n">814</td><td class="n">403</td><td class="n">392</td></tr>
+<tr><td>发出 <code>unshare(NEWUSER)</code></td><td>允许</td><td>允许</td><td>允许</td><td>被拒 errno=1</td></tr>
+<tr><td>根目录条目数</td><td class="n">26</td><td class="n">26</td><td class="n">26</td><td class="n">26</td></tr>
+<tr><td>读宿主的 <code>/hostmark.txt</code></td><td>能</td><td>能</td><td>能</td><td>能</td></tr>
+<tr><td><code>/proc/cpuinfo</code> 的 CPU 数</td><td class="n">2</td><td class="n">2</td><td class="n">2</td><td class="n">2</td></tr>
+<tr><td><code>os.cpu_count()</code></td><td class="n">2</td><td class="n">2</td><td class="n">2</td><td class="n">2</td></tr>
+<tr><td><code>/proc/meminfo</code> 总内存</td><td class="n">8023 MB</td><td class="n">8023 MB</td><td class="n">8023 MB</td><td class="n">8023 MB</td></tr>
+</table></div>
+<p>前八行是被这套组合改变了的，每一行都能指到具体是哪一把锁在起作用。后五行四列一模一样，它们才是今天要你记住的边界。</p>
+<p>被杀那一行值得补一句机制。内存超限时进程不是收到 <code>MemoryError</code>，而是直接被 SIGKILL 打死（SIGKILL 是那个程序拦不住、也来不及善后的终止信号，<code>kill -9</code> 发的就是它）——这就是内核文档说的「在这个 cgroup 里触发 OOM killer」，也叫 <span class="term">OOM 杀手（OOM killer）</span>。事后可以从计数器里读到确凿证据：<code>memory.max_usage_in_bytes</code> 停在 268435456，正好是上限；<code>memory.failcnt</code> 记了 181 次分配失败；<code>memory.oom_control</code> 里的 <code>oom_kill</code> 计到了 2。进程数那边同样有账：<code>pids.peak</code> 是 64，<code>pids.events</code> 里的 <code>max</code> 记了 2 次撞顶。</p>
+<p>这里对你写 Python 服务有个直接后果：<em>被 cgroup 限住的进程，捕获不到自己的死</em>。<code>try / except MemoryError</code> 拦不住 SIGKILL。沙箱里跑的代码如果吃爆内存，你在容器内部写任何清理逻辑都不会执行，善后只能在外面做。</p>
+
+<h4>那三个一模一样的数字</h4>
+<p>最后三行——<code>cpuinfo</code> 报 2 个 CPU、<code>os.cpu_count()</code> 返回 2、<code>meminfo</code> 报 8023 MB——从 A 到 D 一个字没变，尽管 C 和 D 明明只有半个 CPU 和 256 MiB。</p>
+<p>原因是这三个数都在回答「机器有多大」——前两个来自 <code>/proc</code> 里的硬件信息，第三个是 Python 转手问的同一件事——而 cgroup 限的是「你能用多少」。它从来没打算修改机器有多大这个事实。</p>
+<p>要知道自己实际有多少，只能去读 cgroup 自己的文件：</p>
+<pre><code># 在一个 50 毫秒 / 100 毫秒 的 cgroup 里问四个问题
+os.cpu_count()         = 2          ← 机器有几个核
+len(sched_getaffinity) = 2          ← 允许我跑在几个核上
+nproc 会说：             2          ← 同上
+配额 / 周期            = 50000 / 100000 = 0.5 个核    ← 这个才是真的</code></pre>
+<p>这是一个每年都要坑一批人的坑，因为几乎所有语言的运行时都默认读第一个数。线程池按 <code>os.cpu_count()</code> 开 2 个工作线程，而配额只够 0.5 个核，结果就是两个线程互相抢那半个核的额度，双双被节流，尾延迟直接翻番。今天的动手任务 A 会让你亲手做一遍这个换算。</p>
+
+<h3>15. 三把锁之上，还剩什么</h3>
+<p class="lead">名单禁掉 44 个、还开着 260 多个，这个「还开着」到底意味着多大的风险？</p>
+<p>把前面几节的事实串起来看：沙箱里的进程查不到宿主的进程号、用不了超过额度的 CPU、发不出名单上的系统调用。但它剩下能发的那两百多个系统调用，走的是<em>和宿主上所有别的程序完全相同的那一份内核代码</em>。整台机器只有一个内核，沙箱里外共用。</p>
+<p>所以只要那两百多个入口里有任何一个存在可以被利用的缺陷，被关起来的代码就有机会在内核里执行到不该执行的地方，进而拿到宿主的权限。这就是第 4 节提过的逃逸。三把锁都是在内核<em>外面</em>加约束，没有一把能修内核<em>里面</em>的 bug。</p>
+<p>「一个系统能被外部输入触碰到的入口的总和」，这个概念叫<span class="term">攻击面（attack surface）</span>。标准容器的攻击面，就是那两百多个系统调用背后的全部内核代码。这个面很大，而且它的大小不取决于你的沙箱写得多好。</p>
+<p>缩小它只有两条路，业界两条都走了。</p>
+
+<h3>16. 两条更贵的路</h3>
+<h4>第一条：换一个内核来接应用的系统调用</h4>
+<p>思路是在应用和宿主内核之间插一层：应用发的系统调用不再直达宿主内核，而是被一个跑在用户态的程序接住，由它自己实现这些系统调用的语义。这个程序就叫<span class="term">应用内核（application kernel）</span>。Google 的 gVisor 是这条路上最有名的实现，它那个用户态内核叫 Sentry，官方文档描述它是「一个运行这些容器、并拦截和响应应用发出的系统调用的内核」。</p>
+<p>安全模型是两层。gVisor 的文档写得很清楚：「第一，应用与宿主 System API 的直接交互被 Sentry 拦截，由 Sentry 自己实现这套 API。第二，Sentry 自身可访问的 System API 被最小化到一个更安全的受限集合。」也就是说应用碰不到宿主内核，而 Sentry 自己能碰到的部分被刻意削到很小——文档说它「只发出一个最小的宿主系统调用集合」，并且这个集合默认「不包括创建新 socket 或者打开文件」。</p>
+<p>它靠什么拦截？这里有一个今天刚学过的东西的另一种用法。gVisor 现在默认的平台叫 Systrap，文档说它「依赖 seccomp 的 <code>SECCOMP_RET_TRAP</code> 特性来拦截系统调用。这会让内核向触发的线程发送 SIGSYS，从而把控制权交给 gVisor 来处理这个系统调用」。同一个机制，你用它返回 EPERM 来拒绝，gVisor 用它把请求转交给自己的内核。文档还提到 Systrap「在 2023 年中取代 ptrace 成为 gVisor 的默认平台」，而更早那个基于 <code>ptrace</code> 的平台「上下文切换开销很高，所以系统调用密集的应用要付出性能代价」。</p>
+<p>代价写在文档里：「gVisor 对系统调用密集的负载可能提供较差的性能。」这和你在第 12 节量到的东西是同一类账，只是量级完全不同——你测到的是每次多花二十几纳秒，而这里是每次都要绕一趟用户态。</p>
+
+<h4>第二条：给它一个自己的内核</h4>
+<p>更彻底的做法是不共享内核：起一台真的虚拟机，里面跑一个独立的客机内核，应用的系统调用由那个内核处理，宿主内核只面对虚拟机这一个客户。</p>
+<p>传统虚拟机太重，起一台要几十秒。所以出现了<span class="term">microVM</span>：把虚拟硬件砍到只剩必需的几样，换来极快的启动和极小的内存开销。AWS 的 Firecracker 是这条路的代表，它的 README 说自己「排除了不必要的设备和面向客机的功能，以减小内存占用和攻击面」。规格文件里给了两个可以直接引用的数：「从收到 Firecracker 的 InstanceStart API 调用，到 Linux 客机用户态 <code>/sbin/init</code> 进程开始，耗时 ≤ 125 毫秒。」以及「Firecracker 的虚拟机管理器线程内存开销 ≤ 5 MiB。」跑虚拟机的那个程序叫<span class="term">虚拟机监视器（hypervisor / VMM）</span>。</p>
+<p>值得注意的是，Firecracker 自己也用今天这三把锁：README 里写着它有「高级的、按线程区分的 seccomp 过滤器」，还有一个叫 Jailer 的东西，「在生产场景下启动 Firecracker 时使用，它先施加一层 cgroup / 命名空间隔离屏障，然后放弃特权」。所以这不是「三把锁 vs 虚拟机」的二选一，而是虚拟机<em>之外还套着</em>三把锁。</p>
+<p>Kata Containers 走的是把 microVM 接进容器生态的路。它的架构文档说，虚拟机里跑着一个用 Rust 写的常驻进程 <code>kata-agent</code>，并且它的架构「允许一台虚拟机里跑多个容器，以支持那些需要在一个 pod 里跑多个容器的容器引擎」——pod 是 Kubernetes 里一组总是被一起调度、共享网络的容器。它对自己的定位写得很直接：用硬件虚拟化技术提供「更强的工作负载隔离，作为第二道防线」。</p>
+
+<h4>三条路怎么选</h4>
+<p>下面这张表只放有出处的东西。没有出处的格子一律留空，不猜。</p>
+<div class="scroll"><table>
+<tr><th>&nbsp;</th><th>命名空间 + cgroup + seccomp</th><th>应用内核（gVisor）</th><th>microVM（Firecracker / Kata）</th></tr>
+<tr><td>应用的系统调用谁来处理</td><td>宿主内核直接处理</td><td>用户态的 Sentry 接住并自己实现</td><td>虚拟机里的客机内核</td></tr>
+<tr><td>暴露给不受信任代码的面</td><td>宿主内核里 260 多个还开着的系统调用</td><td>Sentry；Sentry 对宿主只发一个最小集合</td><td>虚拟设备接口；宿主内核只面对 VMM</td></tr>
+<tr><td>启动开销</td><td>本页实测：六种命名空间不到 1 毫秒，加过滤器共约 3 毫秒</td><td>&nbsp;</td><td>Firecracker 规格：≤125 毫秒到 <code>/sbin/init</code></td></tr>
+<tr><td>每次系统调用的额外成本</td><td>本页实测：约 +23 纳秒</td><td>文档：对系统调用密集的负载性能较差</td><td>&nbsp;</td></tr>
+<tr><td>常驻内存开销</td><td>&nbsp;</td><td>&nbsp;</td><td>Firecracker 规格：VMM 线程 ≤5 MiB</td></tr>
+<tr><td>它自己还用不用三把锁</td><td>就是三把锁</td><td>用（Sentry 对宿主的调用被最小化）</td><td>用（Jailer 先加 cgroup / 命名空间，再放弃特权）</td></tr>
+</table></div>
+<p>选的逻辑落在一个问题上：<em>你打算让谁的代码在这里面跑</em>。跑你自己团队写的服务，三把锁足够，那两百多个入口是你自己的代码在用。跑用户提交的、或者模型生成的代码，前提就变了——那两百多个入口是给对手用的，这时候多花一百毫秒换一个独立内核，通常是划算的。</p>
+<div class="card key">
+<span class="tag">关键结论</span>
+<p>三把锁全部上齐，被隔离的代码仍然和宿主共用同一个内核。它们缩小的是「能做什么」，缩小不了「做的时候碰到的是谁的代码」。真正换掉那份代码，只有换一个用户态内核或者换一个客机内核这两条路，代价分别落在每次系统调用上和每次启动上。</p>
+</div>
+
+<h2>动手任务</h2>
+<p>两个任务，约两小时。任务 A 是把今天量过的东西自己量一遍，任务 B 把它接到你自己的服务上。</p>
+
+<h3>任务 A · 亲手装上三把锁（约 1 小时）</h3>
+<h4>第 1 步：确认你的机器上 cgroup 挂在哪一代</h4>
+<p>这一步必须先做，因为文件名不一样，做错了后面所有命令都会报「没有这个文件」。</p>
+<pre><code># 有 cgroup.controllers 这个文件、且里面列着 cpu，就是 v2
+cat /sys/fs/cgroup/cgroup.controllers 2&gt;/dev/null
+# 有 /sys/fs/cgroup/cpu/ 这个目录，就是 v1（今天这台机器是这种）
+ls -d /sys/fs/cgroup/cpu 2&gt;/dev/null</code></pre>
+<p>看到哪一种，后面就用哪一套文件名，第 5 节那张对照表可以直接查。</p>
+
+<h4>第 2 步：复现节流的形状</h4>
+<p>写一个循环，每做完一小块固定的活儿就记一次时间，把相邻两次的时间差收集起来。块要小到一个周期能装下十几块——4 到 5 毫秒是合适的量级，怎么标定见装置那节的参数表。</p>
+<p>然后在三种设置下各跑一次：不限、半个 CPU 配默认周期、半个 CPU 配十分之一的周期。每次跑之前把 cgroup 目录删了重建，让计数器归零。</p>
+<p><em>验收标准</em>：三次的「占 CPU 时间」应该基本相同；后两次的总时长应该都是第一次的两倍左右；第二次的间隔中位数应该和第一次几乎一样，而 P99 高出一个数量级；第三次的 P99 应该明显低于第二次。最后用 <code>cpu.stat</code> 验一遍加法：总时长 ≈ 占 CPU 时间 + <code>throttled_time</code>。</p>
+
+<h4>第 3 步：写出「我到底有几个核」这个函数</h4>
+<p>这是今天最该带走的一段代码，因为它是你上岗后会真的写进项目里的东西。三个来源都读，取最小值：</p>
+<pre><code>import os
+
+def quota_from_cgroup():
+    """返回配额折算出来的核数；没有配额就返回 None。v2 和 v1 的文件名不一样，都试一遍。"""
+    try:                                    # cgroup v2：一行两个数 "MAX PERIOD"
+        raw = open("/sys/fs/cgroup/cpu.max").read().split()
+        if raw[0] != "max":
+            return int(raw[0]) / int(raw[1])
+        return None
+    except FileNotFoundError:
+        pass
+    # cgroup v1：两个文件分开放，而且当前进程在哪个组里要从 /proc/self/cgroup 里查
+    line = [l for l in open("/proc/self/cgroup") if ":cpu," in l or l.split(":")[1] == "cpu"]
+    if not line:
+        return None
+    path = "/sys/fs/cgroup/cpu" + line[0].rstrip().split(":", 2)[2]
+    try:
+        q = int(open(path + "/cpu.cfs_quota_us").read())
+        p = int(open(path + "/cpu.cfs_period_us").read())
+    except FileNotFoundError:
+        return None
+    return None if q &lt; 0 else q / p         # -1 表示不限
+
+def usable_cpus():
+    candidates = [os.cpu_count(), len(os.sched_getaffinity(0))]
+    q = quota_from_cgroup()
+    if q is not None:
+        candidates.append(q)
+    return min(candidates)</code></pre>
+<p>不在任何配额里跑，和在半个 CPU 的组里跑，输出应该分别是这样：</p>
+<pre><code>### 不在任何配额里
+机器有几个核        os.cpu_count()        = 2
+允许我跑在几个核上  sched_getaffinity     = 2
+配额折算出来的核数  cgroup                = None
+应该按这个数开线程池                      = 2
+
+### 在 50 毫秒 / 100 毫秒 的组里
+机器有几个核        os.cpu_count()        = 2
+允许我跑在几个核上  sched_getaffinity     = 2
+配额折算出来的核数  cgroup                = 0.5
+应该按这个数开线程池                      = 0.5</code></pre>
+
+<h4>第 4 步：命名空间和名单</h4>
+<p>用 <code>unshare --pid --fork --mount --mount-proc --uts --ipc --net</code> 起一个 shell，在里面数 <code>/proc</code> 下的数字目录、看主机名、试着连一个外网地址。然后确认你还是能读到宿主上的某个文件——这一条是今天最反直觉的事实，一定要自己看到。</p>
+<p>seccomp 那部分把第 9 节那段 C 编译出来跑，禁 272 号，再确认别的功能没受影响。</p>
+
+<h4>常见坑</h4>
+<ul>
+<li><code>echo ... &gt; cpu.cfs_quota_us</code> 报 <code>Invalid argument</code>：v1 要求先写周期再写配额，而且配额不能小于 1000 微秒。顺序反了就会失败。</li>
+<li><code>rmdir</code> 那个 cgroup 目录报 <code>Device or resource busy</code>：里面还有进程。<code>cat tasks</code> 看看是谁，把它移回根组或者等它退出。</li>
+<li>没有 <code>--fork</code>，进程号那张表看着没生效：<code>unshare</code> 自己不会换到新的进程号命名空间里去，要下一个进程才行。</li>
+<li>加了 <code>--pid</code> 却没加 <code>--mount-proc</code>，<code>/proc</code> 里还是宿主那一堆：因为 <code>/proc</code> 是一个挂载点，进程号换了，挂载点没换。这和第 4 节那个「网卡从 <code>/sys</code> 里看还是宿主的」是同一件事。</li>
+<li><code>usable_cpus()</code> 返回 0.5，直接拿去开线程池会崩：实际用的时候外面要包一层，比如 <code>max(1, round(usable_cpus()))</code>。函数本身返回小数是对的，因为你有时需要知道「不足一个核」这个事实。</li>
+<li>编译 seccomp 那段报 <code>offsetof</code> 未声明：少了 <code>#include &lt;stddef.h&gt;</code>。</li>
+</ul>
+
+<h3>任务 B · 把配额扣到你自己的服务上（约 1 小时）</h3>
+<p>把 Day 1 那个最小服务重新起来（没留着的话，任何一个 FastAPI 服务都行），用你 Day 1 写的压测器打它，记下 P50 和 P99。这是基线。</p>
+<p>然后做三件事：</p>
+<ol>
+<li>把服务进程放进一个半个 CPU、默认周期的 cgroup，同样的压测再打一遍。</li>
+<li>只把周期从 100000 微秒改成 10000 微秒，配额跟着按比例改成 5000，份额不变，再打一遍。</li>
+<li>跑完之后读 <code>cpu.stat</code>，记下 <code>nr_throttled</code> 除以 <code>nr_periods</code> 的比例。</li>
+</ol>
+<p><em>验收标准</em>：三次的吞吐应该是第一次明显高、后两次接近；P99 应该是第二次最差、第三次介于中间。你要能用一句话说清楚第二次和第三次差在哪，而且这句话里不能出现「更快」「更慢」，只能出现「停顿的长度」和「停顿的次数」。</p>
+<p>如果你的服务是 IO 密集的（大部分时间在等，Day 3 那套判断法），可能三次的 P99 差别都不大。这本身就是一个值得写下来的结论：配额限的是 CPU 时间，一个在等的进程不消耗配额。把这个现象记下来，Day 12 讲磁盘和网络配额时会接上。</p>
+
+<h4>加分题</h4>
+<ul>
+<li>今天全程是单线程。开两个线程做同样的活儿，放进同一个半个 CPU 的组里，总吞吐会怎么变？间隔分布会怎么变？（提示：配额是整组共享的，两个线程会一起把额度烧完）</li>
+<li>如果你的机器是 cgroup v2，用 <code>cpu.max</code> 把第 7 节那张表重跑一遍，看 <code>throttled_usec</code> 和这里的 <code>throttled_time</code> 差多少个零。</li>
+<li>用 <code>SECCOMP_RET_USER_NOTIF</code> 代替 <code>SECCOMP_RET_ERRNO</code> 写一个过滤器：不直接拒绝，而是把请求转给另一个进程裁决。这是第 16 节那两条路的雏形。</li>
+</ul>
+
+<h2>上岗关联</h2>
+<h4>场景一 · 沙箱里的代码「莫名其妙很慢」</h4>
+<p>用户反馈说同一段脚本，本地跑 2 秒，放进你们的代码执行沙箱要 8 秒。你上去测，平均每步的耗时和本地几乎一样，看不出问题。</p>
+<p>今天这一页给了你下一步：读 <code>cpu.stat</code>，看 <code>nr_throttled</code> 占 <code>nr_periods</code> 的比例。如果接近 1，问题就是节流，而不是任何一行代码。要缓解，第一选择是减小周期而不是加大配额——加大配额要多花钱，减小周期是免费的。</p>
+
+<h4>场景二 · 线程池开得比配额还多</h4>
+<p>推理服务或者 agent runtime 部署到 K8s 上，配了 <code>cpu: 500m</code>（就是 0.5 个核）。服务里某个库按 <code>os.cpu_count()</code> 开了线程池，机器有 64 个核，于是它开了 64 个线程去抢半个核的额度。表现是 CPU 用量看着没超，延迟却高得离谱。</p>
+<p>排查动作是第 14 节那三行：进程里同时打印 <code>os.cpu_count()</code>、<code>len(os.sched_getaffinity(0))</code> 和配额除以周期，三个数不一致就是这个病。常见的元凶是 OpenBLAS、numpy、tokenizers 这类会自己开线程的库——Day 9 那套装置全程锁死 <code>OPENBLAS_NUM_THREADS=1</code> 就是为了避开这件事。</p>
+
+<h4>场景三 · 要不要为一个新客户上 microVM</h4>
+<p>产品要开放「用户上传代码并执行」。安全同事问你现在的容器方案够不够。</p>
+<p>你的回答需要包含三层：第一，容器里那两百多个还开着的系统调用共用宿主内核，内核有洞就能逃；第二，可以选的两条路各自的代价——应用内核每次系统调用变贵，microVM 每次启动变贵（Firecracker 规格是 125 毫秒以内）；第三，这个选择取决于代码来自谁，自己团队的代码和用户上传的代码，要防的根本不是同一件事。</p>
+
+<h4>同事和面试官常问的</h4>
+<ul>
+<li>「namespace 和 cgroup 的区别是什么？」——一个管看得见什么，一个管用得了多少。能补一句「它们完全独立，可以只开一个」会显得你真用过。</li>
+<li>「容器算不算虚拟机？」——不算，容器共用宿主内核，虚拟机有自己的客机内核。差别落在攻击面上。</li>
+<li>「seccomp 能不能限制某个进程只读某个目录？」——不能，过滤器不能解引用指针，看不到路径字符串。这件事要靠换根和挂载选项。</li>
+<li>「CPU limit 设成 0.5，服务会变成什么样？」——平均速度减半，但不是每步都慢一半，而是全速跑完配额再冻住，冻的长度上限是周期减配额。</li>
+<li>「容器里 <code>free</code> 和 <code>nproc</code> 为什么是宿主的数？」——它们读的是 <code>/proc</code>，报的是机器规格，跟 cgroup 无关。要看配额得读 cgroup 的文件。</li>
+</ul>
+
+<h2>自检问题</h2>
+<details><summary>Q1 · 一个服务被限成 <code>cpu.max = "20000 100000"</code>。它每 30 毫秒要往外吐一个心跳包，超过 100 毫秒没吐就会被判定为掉线。这个服务会不会掉线？为什么？</summary><div class="inner">
+<p>会，而且是必然会，不是偶发。</p>
+<p>配额 20000 微秒、周期 100000 微秒，也就是每 100 毫秒里最多用 20 毫秒的 CPU 时间。用完之后剩下的 80 毫秒被冻住，一步都走不了。</p>
+<p>心跳是 30 毫秒一次，也就是说在被冻住的那 80 毫秒里，至少会错过两次心跳。第 8 节那个走查里量到的就是这个形状：50 毫秒配额配 100 毫秒周期时，一次冻结的平均长度实测 49.9 毫秒，正好是周期减配额。这里份额更小，一次冻结按同样的算法是 80 毫秒。</p>
+<p>错在哪：如果你答「不会，因为它只需要 20% 的 CPU，够用」，那是把平均速度当成了瞬时速度。配额保证的是长期平均，不保证任何一个 100 毫秒窗口内的响应性。</p>
+<p>怎么救：把周期改小，比如 <code>"2000 10000"</code>，份额一模一样还是 0.2，但一次最多只冻 8 毫秒，心跳就不会被卡住。</p>
+</div></details>
+
+<details><summary>Q2 · 有人给沙箱写了一条 seccomp 规则：禁掉 <code>openat</code>，理由是「不让它读文件」。这条规则会造成什么后果？如果目的确实是限制它读哪些文件，正确的做法是什么？</summary><div class="inner">
+<p>后果是程序根本起不来。第 10 节实测过：把 2 号和 257 号一起禁掉之后，Python 连动态链接器那一步都过不去，报的是加载 <code>libm.so.6</code> 失败。因为加载共享库本身就要打开文件。</p>
+<p>更根本的问题是这条规则的目的和手段错配了。seccomp 的粒度是系统调用号，它要么全禁要么全放，做不到「只禁某些路径」。内核文档说得很直接：BPF 程序不能解引用指针，所以过滤器拿得到路径参数的地址，却看不到地址上的字符串。</p>
+<p>正确做法是换一把锁：用挂载命名空间加换根，让沙箱的根目录里根本不存在那些文件。看不见的东西不需要禁。这也是为什么三把锁必须配套使用——每一把都有它够不着的地方。</p>
+</div></details>
+
+<details><summary>Q3 · 你把一个沙箱配成：五种命名空间 + 半个 CPU + 256 MiB 内存 + 64 个进程上限 + Docker 默认的 seccomp 名单。现在让它跑一段你完全不信任的代码。列出三件它仍然可能做到的事。</summary><div class="inner">
+<p>第一，读到宿主文件系统上的文件。命名空间不换根，第 4 节和第 14 节的探针在四种配置下都读到了宿主的标记文件。要挡住这一条必须再做换根。</p>
+<p>第二，知道这台机器的真实规格。<code>/proc/cpuinfo</code> 和 <code>/proc/meminfo</code> 报的一直是整机的数，配额一个字都没改它们。这本身不算严重，但它意味着代码能推断出自己在什么样的机器上，也意味着任何按机器规格自动调参的库都会算错。</p>
+<p>第三，对宿主内核发出两百多种系统调用。Docker 的默认名单只禁掉 300 多个里的 44 个左右。剩下的每一个都直达宿主内核，内核有洞就是逃逸的入口。</p>
+<p>如果你只答出「还能耗尽磁盘」「还能打内网」，那也对，但那是配额没配全的问题，补上就行；上面三条是这套机制的结构性边界，补配置补不掉。</p>
+</div></details>
+
+<details><summary>Q4 · 第 12 节量到装 seccomp 之后每次系统调用多花约 23 纳秒，而规则从 1 条加到 64 条看不出差别。为什么规则数不影响？这个「看不出差别」的结论，你怎么确认它不是因为测量精度不够？</summary><div class="inner">
+<p>规则数不影响，是因为多出来的开销主要是「进出过滤器这条路」的固定成本：内核在系统调用入口多了一次判断和一次 BPF 程序的调用。而 BPF 程序本身是几十条极简单的比较指令，跑在 CPU 上快到可以忽略——64 次整数比较连一纳秒都不到。</p>
+<p>确认精度够不够，看的是同一档内部的波动和档与档之间的差距哪个大。无过滤器那一档五遍落在 253.6 到 258.3 之间，波动约 5 纳秒；有过滤器和无过滤器之间差了二十几纳秒，是波动的四五倍，所以「装了过滤器变慢」这个结论站得住。而 1 条、50 条、64 条这三档的范围互相重叠，差距小于各自的波动，所以只能说「测不出差别」，不能说「一定完全相同」。</p>
+<p>这两种说法的区别很重要。前一句是结论，后一句是结论加上了测量精度的限制。写报告时把它们混为一谈，是很多性能结论后来被推翻的原因。</p>
+</div></details>
+
+<h2>今日新词</h2>
+<p>今天引入的十八个词，全部属于同一件事：把一段不受信任的代码关起来。往期已经讲过的词不重复列，要查的话看下一节那张累计表。</p>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>一句话</th></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>让不受信任的代码跑起来、但跑不出去的执行环境</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>内核里某类资源表的一份副本加它的编号；进程只查自己那一份，查不到就是看不见。共八种</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>把 root 的权力拆成的四十来个独立开关，<code>CAP_SYS_ADMIN</code> 是几乎所有隔离操作的入场券</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>把进程看到的根目录换成另一个目录。命名空间不做这件事，要单独做（Day 11）</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>用目录表示的一组进程，往目录里的文件写数字就是给这组设资源上限</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>两个都以微秒计：周期是墙上时钟划出的窗口长度，配额是这个窗口内允许消耗的 CPU 时间</td></tr>
+<tr><td>节流</td><td>throttling</td><td>额度用完后，把整组冻住直到窗口翻页。冻住的上限是周期减配额</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>内存超过上限且降不下来时，内核在这个组里挑一个进程直接 SIGKILL，代码捕获不到</td></tr>
+<tr><td>进程数上限</td><td><code>pids.max</code></td><td>限制一个组里最多能有多少进程，用来挡 fork 炸弹（一个不停复制自己的进程，几秒就能把机器的进程表填满）。撞顶时 fork 返回 EAGAIN</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>每个内核功能对应的固定编号，这台机器上定义了 373 个，最大 461</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>在系统调用入口挂一张名单，按号码决定放行还是打回</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>那张名单的实际形态：一段用 BPF 指令写的小程序，只能读系统调用号和参数本身</td></tr>
+<tr><td>不再获得新权限</td><td><code>NO_NEW_PRIVS</code></td><td>装过滤器前必须打开的开关，保证之后 exec 一个 setuid 程序也不能借机提权</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>一个系统能被外部输入触碰到的入口的总和。标准容器的攻击面是那两百多个还开着的系统调用背后的内核代码</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>本该被关住的代码最终在宿主上执行了自己的指令</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>跑在用户态、替宿主内核接住并实现应用系统调用的程序，gVisor 的 Sentry 是代表</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>把虚拟硬件砍到只剩必需几样的虚拟机，换来快启动和小内存开销</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>负责把一台虚拟机跑起来的那个程序，Firecracker 本身就是一个</td></tr>
+</table></div>
+<p>这十八个里，前九个明天还会全部用上一遍，后九个要到 Day 12 讲逃逸风险面时才会再密集出现。</p>
+
+<h2>已学词表</h2>
+<details><summary>Day 1 到今天的全部 89 个术语（点开）</summary><div class="inner">
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little's Law</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>Day 10</td></tr>
+</table></div>
+</div></details>
+
+<h2>专项深挖</h2>
+<p>今天放不下、但值得单独占一段时间的三块。每一段可以直接粘给 Claude。</p>
+
+<h4>一 · 多线程程序在 CPU 配额下的行为</h4>
+<pre><code>我已经理解了 cgroup 的 CPU 配额机制：配额和周期都以微秒计，配额是每个
+周期内整组能消耗的 CPU 时间，用完就冻住直到窗口翻页。我自己测过单线程
+的情况：份额 0.5、周期 100 毫秒时，间隔中位数几乎不变，P99 涨到五十多
+毫秒；把周期改成 10 毫秒，份额不变，P99 降到十几毫秒。
+
+我想搞清楚多线程的情况。请帮我设计并解释一组实验：同一个 cgroup 里跑
+1 / 2 / 4 / 8 个都在满负荷计算的线程，配额固定在 0.5 个核。我想知道：
+总吞吐会不会变、每个线程观察到的停顿分布会怎么变、内核是怎么把一份
+配额分给多个线程的（涉及 CFS 的 runtime 分配和 slice 机制）。
+
+产出形式：先给一段可以直接跑的 Python 脚本（标准库即可，不要装包），
+再给一张我该填的表格模板，最后解释我应该看到什么形状、以及看不到那个
+形状说明我哪里做错了。</code></pre>
+
+<h4>二 · 用户命名空间与非特权容器</h4>
+<pre><code>我今天做的所有隔离实验都是以 root 跑的，没有开用户命名空间。我知道
+man namespaces(7) 说创建命名空间一般需要 CAP_SYS_ADMIN，但用户命名空间
+从 Linux 3.8 起不需要任何特权。
+
+我想理解这个例外带来的两面性。请讲清楚：用户命名空间里的 uid 映射是
+怎么工作的（/proc/pid/uid_map 的写法和限制）；为什么进了用户命名空间
+之后能拿到该命名空间内的 root 却动不了宿主的文件；rootless 容器
+（Podman、rootless Docker）是怎么用它来避免守护进程跑 root 的；以及
+反过来，为什么很多发行版一度默认关掉非特权用户命名空间，历史上有哪几
+类漏洞是通过它触发的。
+
+产出形式：机制解释 + 一组我在自己机器上可以安全验证的命令（包括怎么
+确认我的内核允不允许非特权创建），不要给任何攻击性的利用代码。</code></pre>
+
+<h4>三 · 读懂 Docker 的默认 seccomp 名单</h4>
+<pre><code>我已经知道 Docker 的默认 seccomp 配置在 300 多个系统调用里禁了大约 44
+个，默认动作是返回 EPERM，也知道 seccomp 过滤器不能解引用指针所以按
+不了路径过滤。
+
+我想把那份 default.json 完整读一遍并且看懂结构。请带我逐段走读：
+defaultAction、architectures、syscalls 数组里 names / action / args 各
+是什么语义；includes / excludes 里的 caps 和 arches 条件是怎么用的；
+以及 args 那个字段能表达什么样的条件（它能比较寄存器里的数值，举一个
+真实例子，比如对 clone 的 flags 做位判断）。
+
+产出形式：按 JSON 的结构分段解释，每段配一小段真实的 default.json 片段。
+最后给我三个练习：让我自己判断三个具体的系统调用在默认配置下是被放行、
+被禁，还是有条件放行。</code></pre>
+
+<h2>延伸材料</h2>
+<p>六条，前三条是今天所有引文的出处，后三条是往上一层看的入口。按难度从易到难挑着读，不必按顺序。</p>
+<div class="scroll"><table>
+<tr><th>材料</th><th>为什么值得读</th><th>难度</th></tr>
+<tr><td><code>namespaces(7)</code> man 手册<br><span class="small">man7.org/linux/man-pages/man7/namespaces.7.html</span></td><td>八种命名空间的权威清单，每一种都链到自己的单独手册页。今天第 3 节那张表就是它的精简版。读完再去点 <code>mount_namespaces(7)</code>，明天用得上</td><td>中等，手册文体但结构清楚</td></tr>
+<tr><td>内核文档 · Control Group v2<br><span class="small">kernel.org/doc/html/latest/admin-guide/cgroup-v2.html</span></td><td>今天所有配额语义的出处。<code>cpu.max</code>、<code>memory.max</code>、<code>pids.max</code> 那几节各只有几段，先读这三段就够；「Unlike v1, cgroup v2 has only single hierarchy」那一句解释了为什么各家文档看着对不上</td><td>中等，只读你要用的那几节</td></tr>
+<tr><td>内核文档 · Seccomp BPF<br><span class="small">kernel.org/doc/html/latest/userspace-api/seccomp_filter.html</span></td><td>第 9、10 节引的每一句都在这里。特别是「BPF programs may not dereference pointers」和「Always check the arch value!」这两处，是写过滤器最常踩的两个坑</td><td>偏难，涉及 BPF 指令格式，但结论部分好读</td></tr>
+<tr><td>Docker 文档 · Seccomp security profiles<br><span class="small">docs.docker.com/engine/security/seccomp/</span></td><td>唯一一份把「工业界实际禁了哪些、为什么禁」逐条写出来的东西。那张表本身就是一份很好的威胁模型清单</td><td>容易，可以当清单查</td></tr>
+<tr><td>gVisor 文档 · Platforms 与 Security Model<br><span class="small">gvisor.dev/docs/architecture_guide/platforms/</span></td><td>看它怎么用 <code>SECCOMP_RET_TRAP</code> 把你今天学的机制反过来用。两页都不长，读完你对「用户态内核」不再是听个名词</td><td>中等，需要今天的 seccomp 基础</td></tr>
+<tr><td>Firecracker SPECIFICATION.md<br><span class="small">github.com/firecracker-microvm/firecracker</span></td><td>一份短得出奇的规格文件，把「≤125 毫秒启动、≤5 MiB 开销」这类承诺写成了可验收的条款。值得学的是这种把性能写进规格的做法</td><td>容易，几页纸</td></tr>
+</table></div>
+<p>如果今天只挑一条读，挑第四条那份 Docker 的清单：它最短，而且直接对应你上岗后要审的配置。</p>
+
+<div class="card five">
+<span class="tag">今日五句话</span>
+<h4>合上页面，用自己的话写五句</h4>
+<p>1 · 命名空间做到了「看不见」，它靠的是什么机制？为什么开了挂载命名空间之后还能读到宿主的文件？</p>
+<div class="write"></div>
+<p>2 · <code>cpu.cfs_quota_us=50000</code>、<code>cpu.cfs_period_us=100000</code> 这两个数，各自的单位分子和分母是什么？合起来是什么意思？</p>
+<div class="write"></div>
+<p>3 · 一个被限成半个 CPU 的程序，为什么间隔的中位数几乎不变而 P99 涨了十倍？想改善 P99 该动哪个数，动了之后总时长会变吗？</p>
+<div class="write"></div>
+<p>4 · seccomp 为什么写不出「不许打开 /etc/shadow」这条规则？内核给的理由是什么？</p>
+<div class="write"></div>
+<p>5 · 三把锁全上之后还剩什么没挡住？业界的两条应对路各自把代价付在了哪里？</p>
+<div class="write"></div>
+
+<h4>逐句自查</h4>
+<p><span class="qn">第 1 句</span>　机制要说到「内核里那张表被复制成多份，每份一个编号，进程只查自己那份」。第二问如果写成「因为没生效」就错了：它生效了，只是复制出来的那份挂载表内容和原来一模一样。要看不到宿主文件，得再做换根这一步。</p>
+<p><span class="qn">第 2 句</span>　两个都是微秒，但量的东西不同：周期量的是墙上时钟走过的时间，配额量的是这一组消耗的 CPU 时间。只写「50% 的 CPU」不算答对，因为那句话丢掉了周期，而周期正是第 3 句的答案所在。</p>
+<p><span class="qn">第 3 句</span>　要说出形状：全速跑满配额，然后被冻住到窗口翻页，所以一半以上的块跑得和不限时一样快，慢的全挤在被冻住的那几块上。改善 P99 要动周期而不是配额；周期变小之后总时长基本不变（实测 20.288 对 20.479），因为份额没变。如果你答「加大配额」，那是花钱解决问题，而且没回答为什么中位数不变。</p>
+<p><span class="qn">第 4 句</span>　因为过滤器不能解引用指针，路径是一个地址，它只看得到地址本身。内核给的理由是防 TOCTOU：如果允许过滤器去读那块内存，程序可以在检查之后、内核使用之前把内容换掉。只答「因为 seccomp 只认号码」对了一半，漏了「参数里的指针也读不了」这一层。</p>
+<p><span class="qn">第 5 句</span>　剩下的是共享同一个宿主内核，那两百多个还开着的系统调用背后是同一份内核代码。两条路：应用内核把代价付在每次系统调用上（gVisor 文档承认对系统调用密集的负载性能较差），microVM 把代价付在每次启动上（Firecracker 规格是 125 毫秒以内）。如果你写成「microVM 更安全所以更好」，那是漏掉了代价那一半。</p>
+</div>
+
+<h2>明日预告</h2>
+<p>今天三把锁全部拆开量过了，也看到了它们各自够不着的地方。其中最刺眼的一条是：探针在四种配置下都读到了宿主上那个标记文件——一整套隔离，对文件系统等于没做。</p>
+<p>明天把这个洞补上，顺便把三把锁第一次拼在一起：用 <code>unshare</code> 加 <code>pivot_root</code> 加 cgroup v2 手搓一个能跑代码的最小容器，然后拿今天这套探针逐项打一遍，看它到底挡住了什么、还漏着什么。今天你量的是零件，明天量的是装配好的整机。</p>
+
+<footer>
+AI Infra · Day 10 / 28 · 2026-08-28 · 阶段三 · Sandbox：Linux 系统工程<br>
+实验条件：2 核 Intel Xeon @ 2.80 GHz、8023 MB 内存，Linux 6.18.44，与 Day 7 ~ Day 9 不是同一台机器。Python 3.11.15、gcc 13.3.0、util-linux 2.39.3（<code>unshare</code>）、strace 6.8。cpu / memory / pids 三个控制器挂在 cgroup v1 上（<code>/sys/fs/cgroup/cpu</code> 等），该机的 cgroup v2 层级只挂了 hugetlb 一个控制器，所以配额数字全部取自 v1 文件。全程以 root 运行，未开用户命名空间；CPU 相关测量一律 <code>taskset -c 0</code> 钉在 0 号核上，单线程。microVM 与应用内核部分无实测，引用自各自官方文档与规格文件。
+</footer>
+
+</div>
+</body>
+</html>
