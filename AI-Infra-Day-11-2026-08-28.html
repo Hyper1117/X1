@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 11</title>
+<style>
+:root{
+  --bg:#faf6ef; --panel:#fffdf8; --ink:#2f2a24; --ink-soft:#5d564c; --ink-dim:#847b6e;
+  --line:#e2d8c8; --line-soft:#eee6d8;
+  --accent:#9a5b2c; --accent-soft:#f3e6d6;
+  --recall:#6a7f4f; --recall-bg:#f0f3e8;
+  --predict:#8a5a86; --predict-bg:#f5edf4;
+  --five:#3f6f80; --five-bg:#e9f1f3;
+  --key:#a8622a; --key-bg:#f8eee2;
+  --code-bg:#2b2721; --code-ink:#eae2d4; --code-dim:#a99e8c;
+  --term-bg:#f0e6d4;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#181613; --panel:#211e1a; --ink:#e8e1d5; --ink-soft:#bdb4a5; --ink-dim:#8e8577;
+    --line:#3a352e; --line-soft:#2c2823;
+    --accent:#d9975c; --accent-soft:#332a20;
+    --recall:#9fb87c; --recall-bg:#232719;
+    --predict:#c396bd; --predict-bg:#2a2129;
+    --five:#84b6c6; --five-bg:#1b2528;
+    --key:#e0a468; --key-bg:#2e2418;
+    --code-bg:#12100e; --code-ink:#e2dacb; --code-dim:#948a79;
+    --term-bg:#33291b;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#181613; --panel:#211e1a; --ink:#e8e1d5; --ink-soft:#bdb4a5; --ink-dim:#8e8577;
+  --line:#3a352e; --line-soft:#2c2823;
+  --accent:#d9975c; --accent-soft:#332a20;
+  --recall:#9fb87c; --recall-bg:#232719;
+  --predict:#c396bd; --predict-bg:#2a2129;
+  --five:#84b6c6; --five-bg:#1b2528;
+  --key:#e0a468; --key-bg:#2e2418;
+  --code-bg:#12100e; --code-ink:#e2dacb; --code-dim:#948a79;
+  --term-bg:#33291b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px; line-height:1.78; overflow-x:hidden;
+}
+.bar{
+  position:sticky; top:0; z-index:50; background:var(--panel);
+  border-bottom:1px solid var(--line); padding:9px 18px;
+  display:flex; gap:14px; align-items:baseline; flex-wrap:wrap;
+  font-size:13.5px; color:var(--ink-soft);
+}
+.bar .brand{color:var(--accent); font-size:15px; font-weight:700; letter-spacing:.02em}
+.mark{color:var(--accent); font-weight:600}
+.bar .sep{color:var(--line)}
+main{max-width:820px; margin:0 auto; padding:26px 20px 80px}
+h1{font-size:27px; line-height:1.45; margin:.2em 0 .1em; letter-spacing:.01em}
+.sub{color:var(--ink-dim); font-size:15px; margin:0 0 30px}
+h2{font-size:21px; margin:2.4em 0 .2em; padding-bottom:.3em; border-bottom:2px solid var(--accent-soft)}
+h2 .pn{color:var(--accent); font-size:14px; display:block; letter-spacing:.14em; margin-bottom:.15em}
+h3{font-size:17.5px; margin:2em 0 .5em; color:var(--ink)}
+h4{font-size:15.5px; margin:1.5em 0 .4em; color:var(--ink-soft)}
+p{margin:.85em 0}
+a{color:var(--accent)}
+.lead{font-size:18px; color:var(--accent); font-weight:600; margin:1.4em 0 .5em}
+.card{border-left:4px solid var(--line); background:var(--panel); border-radius:0 8px 8px 0; padding:14px 18px; margin:1.5em 0}
+.card>h4:first-child,.card>h3:first-child{margin-top:0}
+.recall{border-left-color:var(--recall); background:var(--recall-bg)}
+.predict{border-left-color:var(--predict); background:var(--predict-bg)}
+.five{border-left-color:var(--five); background:var(--five-bg)}
+.key{border-left-color:var(--key); background:var(--key-bg)}
+.key .lab{font-size:12.5px; letter-spacing:.16em; color:var(--key); display:block; margin-bottom:.2em}
+.tag{font-size:12.5px; letter-spacing:.14em; color:var(--ink-dim); display:block; margin-bottom:.3em}
+.term{background:var(--term-bg); border-radius:3px; padding:0 4px; font-weight:600}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.9em; background:var(--accent-soft); border-radius:3px; padding:1px 5px; overflow-wrap:anywhere}
+pre{background:var(--code-bg); color:var(--code-ink); border-radius:8px; padding:14px 16px;
+  overflow-x:auto; line-height:1.62; font-size:13.5px; margin:1.1em 0}
+pre code{background:none; padding:0; font-size:inherit; color:inherit; overflow-wrap:normal}
+pre .c{color:var(--code-dim)}
+.scroll{overflow-x:auto; margin:1.2em 0; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:min(100%,520px)}
+th,td{border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top}
+th{background:var(--accent-soft); font-weight:600; white-space:nowrap}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+tbody tr:nth-child(even){background:var(--panel)}
+details{border:1px solid var(--line); border-radius:8px; padding:10px 15px; margin:1em 0; background:var(--panel)}
+summary{cursor:pointer; font-weight:600; color:var(--accent)}
+details[open] summary{margin-bottom:.5em; border-bottom:1px solid var(--line-soft); padding-bottom:.4em}
+.write{border:1px dashed var(--line); border-radius:6px; min-height:52px; margin:.5em 0 1em; background:var(--bg)}
+.fig{margin:1.5em 0; padding:12px; background:var(--panel); border:1px solid var(--line); border-radius:8px}
+.fig svg{display:block; min-width:560px}
+.figcap{font-size:13px; color:var(--ink-dim); margin-top:.4em}
+footer{border-top:1px solid var(--line); margin-top:60px; padding-top:16px; font-size:13px; color:var(--ink-dim)}
+footer .l1{color:var(--ink-soft); font-weight:600; margin-bottom:.4em}
+ul,ol{padding-left:1.4em}
+li{margin:.35em 0}
+hr{border:none; border-top:1px solid var(--line-soft); margin:2.4em 0}
+.breath{color:var(--ink-soft); font-style:normal; border-left:2px solid var(--line); padding-left:14px; margin:1.4em 0}
+</style>
+</head>
+<body>
+<div class="bar"><span class="brand">AI Infra Day 11 / 28</span><span class="sep">·</span><span>阶段三 · Sandbox：Linux 系统工程</span><span class="sep">·</span><span>2026-08-28</span></div>
+<main>
+
+<h1>手搓一个最小容器：把三把锁装到一个自己的根上</h1>
+<p class="sub">AI Infra 速成 · Day 11 · 预计 3~4 小时（讲解约 1.5 小时 + 动手约 2 小时）</p>
+
+<h2><span class="pn">板块 0</span>温故 · 闭卷</h2>
+<p>先凭记忆答，答不出再展开。这三道分别来自 1 天前、3 天前、7 天前，间隔是照着遗忘曲线挑的。</p>
+
+<div class="card recall">
+<h4>Q1 · 1 天前（Day 10 · 隔离谱系）</h4>
+<p>启动开销那张表里有一行看起来很多余：<code>unshare</code> 一个命名空间都不开，只是白白多 exec 一次，中位数 2.44 毫秒。这一行是拿来排掉什么的？没有它，你会把「开 3 种命名空间比直接 exec 慢了 1.51 毫秒」这句话理解错在哪里？</p>
+<details><summary>展开答案</summary>
+<p>它排掉的竞争解释是：「慢下来的原因是命名空间本身贵。」</p>
+<p>每往上加一层隔离，就多了一个包装程序，而多 exec 一个程序这件事本身就要花时间——跟它开不开命名空间没关系。那一行把这笔钱单独称了出来：1.21 毫秒到 2.44 毫秒，包装本身要 1.23 毫秒。</p>
+<p>所以「3 种命名空间比直接 exec 慢 1.51 毫秒」这句话里，1.23 毫秒是包装的钱，只有 0.28 毫秒是命名空间的钱。把两笔混在一起，会得出「命名空间贵了五倍」的结论。</p>
+<p>今天这一页有一张同样形状的表，而且需要同样的对照行，因为今天要往上叠的层数更多。</p>
+</details>
+</div>
+
+<div class="card recall">
+<h4>Q2 · 3 天前（Day 8 · prefill-decode 与四指标）</h4>
+<p>一个流式服务本来生成一个 token 就推一次，现在改成攒够 4 个推一次，别的一律不动。ITL 的 P50 会往哪个方向走、大约几倍？TPOT 呢？这两个数里有一个是假动作，另一个是真的退化，分别是哪个？</p>
+<details><summary>展开答案</summary>
+<p>ITL 的 P50 会涨到大约四倍：实测 76.3 毫秒变成 342.2 毫秒。原因是 ITL 量的从来就是「相邻两块之间」，而现在每一块里装了 4 个 token。</p>
+<p>TPOT 分两种算法，差别就是整个陷阱。按收到几块算，80.4 毫秒变成 323.3 毫秒，看着慢了四倍；按分词器数出来的真实 token 数算，是 80.4 对 70.3 毫秒——反而快了一点，因为少做了四分之三的写和 flush。</p>
+<p>所以 ITL 和按块算的 TPOT 都是假动作，服务一点没变慢，变的是分母。真的退化在 TTFT：570.6 毫秒变成 829.2 毫秒，因为第一块要等 4 个 token 都生成完才出发。</p>
+<p>今天会有一次同样的分母陷阱：一个「起容器要多久」的数字，只要换一种数法就能差出好几倍。</p>
+</details>
+</div>
+
+<div class="card recall">
+<h4>Q3 · 7 天前（Day 4 · 事件循环与 GIL）</h4>
+<p>两段纯计算的代码，单次耗时几乎一样，都扔进同一个线程池外派。一段之后 /health 的 P99 掉回基准线，另一段几乎没改善。差别不在活有多重，那在哪？如果沙箱里跑的是模型生成的代码，这条判据还能用吗？</p>
+<details><summary>展开答案</summary>
+<p>差别在这段计算执行时放不放开 GIL。<code>hashlib.sha256</code> 在算的时候把 GIL 交出去，所以它在别的线程里跑，事件循环那个线程照样能推进：P99 从 217.0 毫秒掉到 5.2 毫秒，和什么都不干的基准（1.1 毫秒）是一个量级。<code>json.dumps</code> 全程握着 GIL，扔进线程池也只是换了个线程握着，P99 从 199.3 只降到 161.7 毫秒。</p>
+<p>判据是「这段 C 实现的代码有没有在计算期间放开 GIL」，不是「活重不重」。</p>
+<p>第二问的答案是不能用了，而且原因和 GIL 无关：模型生成的代码你事先读不到，没法查它调的每个库放不放 GIL。这正是沙箱存在的理由——判据从「我信得过这段代码的性质」换成「不管它是什么性质，它都出不去」。今天做的就是这个「出不去」。</p>
+</details>
+</div>
+
+<h2><span class="pn">板块 1</span>今日概览</h2>
+<div class="scroll">
+<table>
+<tr><th>项目</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 11 / 28 · 阶段三第二天 · Sandbox：Linux 系统工程（Day 10 ~ Day 14）</td></tr>
+<tr><td>今日主题</td><td>把 Day 10 那三把散着的锁装配成一个能跑代码的东西：先给它一个自己的根文件系统，再用 <code>unshare</code> 开命名空间、<code>pivot_root</code> 换根、cgroup 设配额、seccomp 挂名单，然后拿探针逐项打一遍，看装配好之后挡住了什么、还漏着什么</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+<p>用户命名空间与非特权容器。今天全程以 root 跑，因为八种命名空间里 user 那一种的权限规则和别的完全不同，混在装配里讲会把两件事搅在一起。它在页尾的专项深挖里单独成段。</p>
+<p>只读根文件系统、出网管控、磁盘配额。今天你会亲眼看到容器里写的文件落到了宿主的目录上——这个事实留着，明天 Day 12 整段讲怎么堵。今天先把「一个根」立起来。</p>
+<p>runc / containerd / OCI 的分层对应关系。今天手搓的这套东西在工业实现里对应哪一层，是 Day 13 的题目，那天的裁判是源码。</p>
+<p>镜像分层、懒加载、池化预热。今天会量出冷启动的钱花在哪儿，但不做优化——把优化留给 Day 14，那天才有完整的服务化上下文。</p>
+</td></tr>
+</table>
+</div>
+
+<h3>今天结束后你应该能做到这三件事</h3>
+<ol>
+<li>拿到一台干净的 Linux 机器，你能用不到三十行 shell 起一个真正隔离的执行环境，并且能逐条说出每一行在做什么、漏掉哪一行会出什么事。</li>
+<li>看到别人用 <code>chroot</code> 做代码沙箱，你能当场说出它不够在哪里，并且能给出一个两行的验证方法。</li>
+<li>被问到「起一个沙箱要多久、钱花在哪」，你能把这笔账拆成互不重叠的几项，并指出其中哪一项占了九成以上、值得下一步优化。</li>
+</ol>
+
+<h3>今天这一页怎么走</h3>
+<div class="scroll">
+<table>
+<tr><th>部分</th><th>它回答的问题</th></tr>
+<tr><td>第一部分 · 那个「根」是从哪来的</td><td>容器里的文件系统到底是什么东西？老办法 <code>chroot</code> 差在哪？</td></tr>
+<tr><td>第二部分 · 换根的正确做法</td><td><code>pivot_root</code> 比 <code>chroot</code> 多做了什么？为什么它对挂载传播这么挑剔？</td></tr>
+<tr><td>第三部分 · 装配</td><td>三把锁加一个根拼起来长什么样？拼好之后探针还能问出什么？</td></tr>
+<tr><td>第四部分 · 装好之后还漏着什么</td><td>起一次要多久、钱花在哪？还有哪三个口子明天要堵？</td></tr>
+</table>
+</div>
+<p>第一部分末尾有一个预测框。到那儿之前不要往下翻。</p>
+
+<h2><span class="pn">板块 2 · 第一部分</span>那个「根」是从哪来的</h2>
+
+<h3>1. 从 Day 10 留下的那个洞说起</h3>
+<p>昨天那张对照矩阵里，有一行从头到尾没变过：不管开几种命名空间、加不加配额、挂不挂 seccomp 名单，探针都能读到宿主上的标记文件，根目录第一层都是 26 个条目。</p>
+<p>当时给的解释是：挂载命名空间复制的是挂载点这张表，复制出来的那份内容和原来一模一样。换了一份完全相同的地图，看到的还是同一片地。</p>
+<p>今天要做的就是把地图换掉。</p>
+<p class="breath">这件事听起来是「再加一把锁」，其实不是。命名空间、配额、名单这三样是内核提供的机制，你只要开开关。而「一个自己的根」不是开关，是你得先准备出来的一堆文件。这是今天和昨天最大的体感差别。</p>
+
+<h3>2. 根文件系统：其实就是一个目录</h3>
+<p>你作为后端工程师，听到「容器有自己的文件系统」，第一反应可能是那里有个磁盘镜像文件，或者某种虚拟盘。都不是。</p>
+<p>它就是宿主上的一个普通目录，里面按 <code>/bin</code>、<code>/lib</code>、<code>/etc</code> 这套布局摆好了程序要用的文件。等会儿有一个内核调用会把「根」这个位置指到这个目录上，从此这个目录里的 <code>bin</code> 在里面看就叫 <code>/bin</code>。这个准备好的目录，就叫<span class="term">根文件系统（rootfs）</span>。</p>
+<p>怎么造一个？把要跑的程序复制进去，再把它运行时要装载的共享库也复制进去。找共享库不用猜，<code>ldd</code> 会把清单列出来：</p>
+<pre><code><span class="c"># ldd 列出这个二进制运行起来要装载哪些共享库，以及它们在宿主上的路径</span>
+$ ldd /bin/sh
+	linux-vdso.so.1 (0x00007f7b47fdf000)
+	libc.so.6 =&gt; /lib/x86_64-linux-gnu/libc.so.6 (0x00007f7b47c00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f7b47fe1000)</code></pre>
+<p>第一行的 <code>linux-vdso.so.1</code> 没有路径，因为它不是磁盘上的文件，是内核直接映射进每个进程的一小块代码，不用复制。剩下两行是真文件，照原路径复制过去就行。第三行那个 <code>ld-linux</code> 就是 Day 10 提过的动态链接器——程序启动时负责把这些库找出来装进内存的那一步。</p>
+<p>把这件事写成脚本，就是今天的第一个程序：</p>
+<pre><code><span class="c">#!/bin/bash
+# mkrootfs.sh：把几个命令、它们依赖的共享库、以及 Python 的标准库复制进一个目录</span>
+ROOT=${1:-/root/lab/rootfs}
+rm -rf "$ROOT"; mkdir -p "$ROOT"/{bin,lib,lib64,proc,sys,dev,tmp,oldroot,etc}
+BINS="/bin/sh /bin/ls /bin/cat /bin/ps /bin/hostname /bin/id /bin/mount /bin/umount /bin/sleep /bin/true /usr/bin/python3.11"
+for b in $BINS; do
+  cp -aL "$b" "$ROOT/bin/"
+  <span class="c"># 逐个共享库按原路径复制过去，路径必须一致，否则动态链接器找不到</span>
+  ldd "$b" 2>/dev/null | grep -o '/[^ ]*\.so[^ ]*' | while read -r so; do
+    d="$ROOT$(dirname "$so")"; mkdir -p "$d"; cp -aL "$so" "$d/"
+  done
+done
+ln -sf python3.11 "$ROOT/bin/python3"
+<span class="c"># Python 起来之后要 import 一堆纯 Python 写的标准库，这些文件不在 ldd 的清单里</span>
+cp -a /usr/lib/python3.11 "$ROOT/usr/lib/"
+<span class="c"># 标准库里还有一部分是编译成 .so 的扩展模块，它们各自又有自己的依赖</span>
+for so in "$ROOT"/usr/lib/python3.11/lib-dynload/*.so; do
+  ldd "$so" 2>/dev/null | grep -o '/[^ ]*\.so[^ ]*' | while read -r dep; do
+    d="$ROOT$(dirname "$dep")"; mkdir -p "$d"; cp -aL "$dep" "$d/"
+  done
+done</code></pre>
+<p>跑完之后应该看到一个 80 MB 上下、一千三百多个文件的目录。如果最后那个 <code>lib-dynload</code> 的循环漏掉了，症状很具体：<code>/bin/sh</code> 能跑，<code>python3</code> 起来之后 <code>import ctypes</code> 会报 <code>libffi.so.8: cannot open shared object file</code>——因为那个扩展模块的依赖不在 <code>ldd python3</code> 的清单里，它是模块自己的。</p>
+<p class="breath">这一步很朴素，但它解释了后面一个数字为什么那么大。三把锁是内核里的开关，开一下就有；根文件系统是一千多个文件，得一个一个复制过去。第四部分会看到这两件事的价钱差了多少。</p>
+
+<h3>3. 实验装置</h3>
+<p>今天所有数字来自同一套东西：外面一层 shell 脚本负责搭隔离，最里面套一个被测的 Python 程序。程序不知道自己被关在什么里面，它只负责回答问题或者一直算。</p>
+
+<div class="fig">
+<div class="scroll">
+<svg viewBox="0 0 700 400" width="700" height="400" role="img" aria-label="minibox 实验装置分层结构图" style="color:currentColor">
+<g fill="none" stroke="currentColor" stroke-width="1.2">
+  <rect x="8" y="8" width="684" height="250" rx="8" opacity=".55"/>
+  <rect x="24" y="44" width="400" height="204" rx="7" opacity=".55"/>
+  <rect x="40" y="80" width="368" height="152" rx="6" opacity=".55"/>
+  <rect x="56" y="116" width="336" height="100" rx="5" opacity=".55"/>
+  <rect x="72" y="150" width="304" height="52" rx="4" opacity=".9"/>
+  <rect x="448" y="60" width="228" height="86" rx="6" opacity=".55"/>
+  <rect x="448" y="160" width="228" height="86" rx="6" opacity=".55"/>
+  <path d="M376 176 L448 120" opacity=".7"/>
+  <path d="M376 180 L448 200" opacity=".7"/>
+  <rect x="8" y="278" width="684" height="112" rx="8" opacity=".55"/>
+</g>
+<g fill="currentColor" font-size="12.5" font-family="ui-monospace,Menlo,Consolas,monospace">
+  <text x="20" y="28" font-size="13.5">宿主内核 · Linux 6.18.44 · 2 核 Xeon · 全程 root</text>
+  <text x="36" y="64">① cgroup「minibox」 cpu / memory / pids</text>
+  <text x="52" y="100">② unshare 开的命名空间 pid mnt uts ipc net</text>
+  <text x="68" y="136">③ pivot_root 换到 rootfs（1332 个文件）</text>
+  <text x="84" y="170">④ seccomp_run 装名单，再 exec：</text>
+  <text x="84" y="192">   probe.py（问问题） 或 tick.py（一直算）</text>
+  <text x="460" y="82" font-size="13">指标来源 A：内核记的账</text>
+  <text x="460" y="102">cpu.stat / memory.failcnt</text>
+  <text x="460" y="120">pids.events</text>
+  <text x="460" y="138">外层 shell 跑完后去读</text>
+  <text x="460" y="182" font-size="13">指标来源 B：程序自己打的</text>
+  <text x="460" y="202">stdout 一行 JSON</text>
+  <text x="460" y="220">十三个问题的答案，或</text>
+  <text x="460" y="238">wall_s / cpu_s / gap 分布</text>
+  <text x="20" y="300" font-size="13.5">对照用的两条更短的路径（同一个 probe.py，外面少套几层）</text>
+  <text x="20" y="326">A 裸跑：宿主上直接 python3 probe.py</text>
+  <text x="20" y="350">B 不换根：①②④ 都在，唯独跳过 ③，根还是宿主那个</text>
+  <text x="20" y="374">C 全套：①②③④ 全上，也就是上面那张图</text>
+</g>
+</svg>
+</div>
+<p class="figcap">四层由外往里套。A 那条线是外层读内核计数器，B 那条线是里面的程序自己打到标准输出。两个来源互相独立，可以对账。</p>
+</div>
+
+<h4>一次测量里有什么</h4>
+<p>启动一次长这样，从外往里读，正好是上图从外往里的四层：</p>
+<pre><code>$ ./minibox.sh /root/lab/rootfs /bin/python3 /tmp/probe.py
+<span class="c">#   └ 这个脚本按 CG / PIVOT / SEC 三个开关决定装几层
+#                └ 根文件系统在宿主上的路径
+#                                    └ 在里面要跑的程序，路径是「换根之后」的路径</span></code></pre>
+<p>探针跑完往标准输出打一行 JSON。这就是后面几张表的原始形态：</p>
+<pre><code>{
+"进程数": 1,
+"主机名": "minibox",
+"网卡": "lo",
+"外网": "不能",
+"根目录条目数": 10,
+"挂载点条数": 2,
+"宿主标记文件": "失败:FileNotFoundError",
+"宿主 /root 目录": "失败:FileNotFoundError",
+"cpuinfo 的 CPU 数": 2,
+"os.cpu_count": 2,
+"meminfo 总内存 MB": 8023,
+"自己的 cgroup 路径": "/minibox",
+"发出 unshare(NEWUSER)": "被拒 errno=1"
+}</code></pre>
+<p>字段的意思：<code>根目录条目数</code>是 <code>len(os.listdir("/"))</code>；<code>挂载点条数</code>是 <code>/proc/self/mounts</code> 的行数，也就是这个进程眼里一共有几个挂载点；<code>宿主标记文件</code>是去读宿主上一个内容为「宿主机的暗号-a7f3」的文件，读到什么就打什么，读不到就打异常的名字。</p>
+
+<h4>哪些是真的，哪些是假的</h4>
+<p>下面这张表把简化掉的部分全列出来，它划定的是今天这些数字能撑住哪些结论。</p>
+<div class="scroll">
+<table>
+<tr><th>这部分</th><th>实际情况</th><th>所以今天不下这类结论</th></tr>
+<tr><td>身份</td><td>全程以 root 跑，没开用户命名空间</td><td>不下「非特权用户能不能搭出这套东西」的结论</td></tr>
+<tr><td>根文件系统</td><td>是宿主目录的一个绑定挂载，可读可写，没有分层、没有只读层</td><td>不下关于镜像分层、写时复制、只读根的结论，那是 Day 12 和 Day 14</td></tr>
+<tr><td>网络</td><td>只开了 net 命名空间就完事，没做任何把它接回外面的配置，所以里面除了本机回环口 lo 之外一张网卡都没有</td><td>不下「容器怎么联网」的结论。今天的「不通」是最简单的那种不通，怎么接通在页尾的专项深挖里</td></tr>
+<tr><td>cgroup 版本</td><td>这台机器上 cpu / memory / pids 挂在 cgroup v1，v2 那套只挂了一个跟大页有关的控制器，所以文件名全部是 v1 的</td><td>不下「v2 的数值和 v1 一样」的结论</td></tr>
+<tr><td>负载</td><td>被测程序是一个 SHA-256 循环，单线程，<code>taskset -c 0</code> 钉在 0 号核上；不是模型，也不是 agent 生成的代码</td><td>不下关于多线程程序在配额下行为的结论</td></tr>
+<tr><td>「宿主进程数」这一格</td><td>实测 58，但这个数每跑一次都不一样（同一分钟内量到过 58 和 61）</td><td>这一格只看数量级，不做前后相减</td></tr>
+<tr><td>机器</td><td>2 核 Intel Xeon @ 2.80 GHz、8023 MB 内存，和 Day 10 是同一台，和 Day 7 ~ Day 9 不是</td><td>今天的绝对数字只在本页内部横向比较</td></tr>
+<tr><td>重复性</td><td>同一档设置重复跑三遍，总时长落在 ±1% 之内（宿主裸跑三遍是 9.819 / 9.892 / 9.889 秒）</td><td>差异小于 2% 的两个数，今天一律当成没有差异</td></tr>
+</table>
+</div>
+
+<h4>跟着走一遍</h4>
+<p>装置里最该自己验一遍的是那条<code>ldd</code>链，因为后面「起一个容器要多久」的答案就藏在它的规模里。下面是从零造一次根文件系统时，各步产出的东西：</p>
+<div class="scroll">
+<table>
+<tr><th>步骤</th><th>做了什么</th><th class="n">之后目录大小</th><th class="n">之后文件数</th></tr>
+<tr><td>1</td><td>建 <code>bin lib lib64 proc sys dev tmp oldroot etc</code> 九个空目录</td><td class="n">40 KB</td><td class="n">0</td></tr>
+<tr><td>2</td><td>复制 11 个二进制 + 它们 <code>ldd</code> 出来的共享库</td><td class="n">16 MB</td><td class="n">28</td></tr>
+<tr><td>3</td><td>复制 <code>/usr/lib/python3.11</code> 整个标准库</td><td class="n">70 MB</td><td class="n">1320</td></tr>
+<tr><td>4</td><td>补上 <code>lib-dynload</code> 里每个扩展模块自己的依赖</td><td class="n">80 MB</td><td class="n">1332</td></tr>
+</table>
+</div>
+<p>这四行加起来可以自己核对：第 2 步 28 个文件里，11 个是二进制，17 个是共享库；第 3 步一下子多出 1292 个，全是 Python 标准库里的 <code>.py</code> 和 <code>.pyc</code>；第 4 步只多了 12 个文件却多了 10 MB，因为其中一个是 7.5 MB 的 <code>libpython3.11.so.1.0</code>。</p>
+<p>把这条链记住：<b>一个能跑 Python 的最小根，是一千多个文件、80 MB。</b>第四部分整节都在拆它带来的后果。</p>
+
+<h4>旋钮和它们的取值是怎么定的</h4>
+<div class="scroll">
+<table>
+<tr><th>旋钮</th><th>取值</th><th>这个值是怎么定出来的</th><th>哪一节动它</th></tr>
+<tr><td>装几层<br><code>CG</code> / <code>PIVOT</code> / <code>SEC</code></td><td>各自 0 或 1</td><td>三个独立开关，为的是每一列相对左边只多一样东西。全 1 是今天的完整装配</td><td>第 10、11、12 节</td></tr>
+<tr><td>一块的大小</td><td>1400 轮哈希 ≈ 5.0 毫秒</td><td>先测 400 / 800 / 1200 / 1600 轮，四档折算出来都在 280 ~ 285 轮每毫秒之间，取 281 反推 1400 轮 ≈ 4.98 毫秒。要比 CPU 周期（100 毫秒）小一到两个数量级，一个周期里才装得下十几块</td><td>第 12 节，全程锁死</td></tr>
+<tr><td>块数</td><td>2000 块</td><td>2000 × 5.0 毫秒 ≈ 10 秒 CPU 时间。算 P99 至少要有两千个样本；限成半个核之后总时长会翻倍到二十秒，三档跑三遍还在一分钟量级</td><td>全程锁死</td></tr>
+<tr><td>CPU 配额 / 周期</td><td>50000 / 100000 微秒</td><td>沿用 Day 10 的默认档，单位都是微秒：周期量墙上时钟，配额量这一组消耗的 CPU 时间。今天不扫这两个数，只用它来验证「装配好之后配额还生效」</td><td>第 12 节</td></tr>
+<tr><td>内存上限</td><td>268435456 字节（256 MiB）</td><td>沿用 Day 10 的值。今天不单独验它，只让它跟着装配一起装上</td><td>本页不动</td></tr>
+<tr><td>进程数上限</td><td>64</td><td>同上，沿用 Day 10 的值，跟着装配一起装上</td><td>本页不动</td></tr>
+<tr><td>被禁的系统调用号</td><td>272（<code>unshare</code>）</td><td>沿用 Day 10 那一个：它是命名空间和配额都堵不住、只有名单堵得住的那个动作，正好用来确认装配之后第三把锁还在</td><td>第 11 节</td></tr>
+<tr><td>启动测量的次数</td><td>每档 31 次取中位数</td><td>奇数次好取中位；31 次跑完一档不到两秒，八档加起来还能接受。之所以看中位而不是平均，是因为最慢的那几次会被宿主上别的进程干扰，平均值会被拖偏</td><td>第 13 节</td></tr>
+<tr><td>一路往上走几次</td><td><code>cd ..</code> 四十次</td><td>根文件系统在宿主上的路径只有四层深，四十次远远够走到顶；多走没有副作用，因为在根目录上 <code>cd ..</code> 还是根目录</td><td>第 5 节</td></tr>
+</table>
+</div>
+<p>后面每一节说「只改了一个变量」的时候，都可以回来对一下改的是哪一行。哪张表出自哪个程序，查下面这张：</p>
+<div class="scroll">
+<table>
+<tr><th>数字出现在</th><th>产出它的程序</th><th>它读的是什么</th></tr>
+<tr><td>造根文件系统那四步（第 3 节）</td><td><code>mkrootfs.sh</code></td><td>每步之后 <code>du -sh</code> 和 <code>find -type f | wc -l</code></td></tr>
+<tr><td>chroot 与换根的对照（第 4 ~ 6 节）</td><td><code>chroot_test.py</code> / <code>escape_try.py</code></td><td>程序自己数 <code>os.listdir("/")</code>，并试着读宿主标记文件</td></tr>
+<tr><td>挂载传播实验（第 9 节）</td><td><code>prop_test.sh</code></td><td><code>findmnt</code> 在命名空间内外各问一次</td></tr>
+<tr><td>完整对照矩阵（第 11 节）</td><td><code>probe.py</code></td><td>十三个问题，每个要么有答案要么记下异常名</td></tr>
+<tr><td>运行期开销（第 12 节）</td><td><code>tick.py</code></td><td>相邻两块之间的时间差，程序自己算完打到 stdout</td></tr>
+<tr><td>启动开销分解（第 13 节）</td><td><code>startcost.py</code></td><td><code>subprocess.run</code> 起 31 次，取中位数</td></tr>
+<tr><td>1 号进程实验（第 14 节）</td><td><code>pid1_test.sh</code></td><td>发完信号等 0.6 秒，用 <code>kill -0</code> 看进程还在不在</td></tr>
+</table>
+</div>
+<p>装置到此为止。</p>
+
+<h3>4. chroot：只改路径解析里的一个成分</h3>
+<p>换根这件事，Linux 上有个用了几十年的老办法叫 <code>chroot</code>。它的接口简单到只有一个参数：给它一个目录，从此这个进程解析绝对路径时，<code>/</code> 就指向那个目录。</p>
+<p>拿今天造好的根文件系统试一遍：</p>
+<pre><code><span class="c"># chroot_test.py 的前半段。三个小函数把「读不到」和「读到了」都变成能打印的东西，
+# 后面每个时刻都用同一组问题问一遍，才好逐行对照。</span>
+import os
+def mounts():
+    try: return sum(1 for _ in open("/proc/self/mounts"))   <span class="c"># 我眼里有几个挂载点</span>
+    except Exception as e: return type(e).__name__
+def mark():
+    try: return open("/hostmark.txt").read().strip()        <span class="c"># 宿主上那个暗号文件</span>
+    except Exception as e: return "读不到(" + type(e).__name__ + ")"
+def cwd():
+    try: return os.getcwd()
+    except Exception as e: return type(e).__name__
+print("宿主起点   条目数=%d 暗号=%s 挂载点=%s" % (len(os.listdir("/")), mark(), mounts()))
+os.chroot("/root/lab/rootfs")      <span class="c"># 只换根，当前工作目录一动不动</span>
+print("chroot 后  条目数=%d 暗号=%s 挂载点=%s cwd=%s" % (len(os.listdir("/")), mark(), mounts(), cwd()))</code></pre>
+<p>跑出来是这样：</p>
+<pre><code>宿主起点   条目数=26 暗号=宿主机的暗号-a7f3 挂载点=24
+chroot 后  条目数=10 暗号=读不到(FileNotFoundError) 挂载点=FileNotFoundError cwd=FileNotFoundError</code></pre>
+<p>前两格确实变了：26 个条目变成 10 个，昨天那个怎么都读得到的暗号，现在读不到了。Day 10 留下的那个洞，看起来堵上了。挂载点那一格读不到，是因为根文件系统里还没挂 <code>/proc</code>，那个文件不存在，这个不算异常。</p>
+<p>奇怪的是最后一格。<code>getcwd()</code> 报了个「文件不存在」——问自己在哪儿，答不上来。</p>
+<p>手册把原因写得很直白。<code>man 2 chroot</code> 的 NOTES 一开头就是：「This call does not change the current working directory, so that after the call '.' can be outside the tree rooted at '/'.」——这个调用不改变当前工作目录，所以调用之后，<code>.</code> 可以落在以 <code>/</code> 为根的那棵树之外。</p>
+<p>同一页还有一句更重的：「it is not intended to be used for any kind of security purpose, neither to fully sandbox a process nor to restrict filesystem system calls.」——它不是为任何安全目的设计的，既不用来完整地沙箱化一个进程，也不用来限制文件系统相关的系统调用。</p>
+<p class="breath">这句话在 Linux 手册里算是很少见的措辞。手册一般只描述行为，不劝你别用。它专门写了这么一段，说明这个误用普遍到值得写进文档。</p>
+<p>手册接着给了三步，短到可以直接抄：「the superuser can escape from a 'chroot jail' by doing: <code>mkdir foo; chroot foo; cd ..</code>」。三个动作，全是普通命令。</p>
+
+<div class="card predict">
+<span class="tag">预测 · 先写下来再往下翻</span>
+<h4>5. 同一段代码，两个环境</h4>
+<p>把手册那三步写成一段能跑的代码：一路 <code>cd ..</code> 四十次，走到再也上不去为止，然后 <code>chroot(".")</code> 把根定在落脚的地方，最后数一次根目录第一层有几个条目。</p>
+<pre><code><span class="c"># escape_try.py 的后半段，mounts / mark / cwd 三个小函数和上一节完全一样</span>
+for _ in range(40): os.chdir("..")     <span class="c"># 一路往上走，走到顶为止</span>
+os.chroot(".")                         <span class="c"># 把根定在落脚的地方</span>
+print("走完之后   条目数=%d 暗号=%s 挂载点=%s cwd=%s" % (len(os.listdir("/")), mark(), mounts(), cwd()))</code></pre>
+<p>这段代码要在两个环境里各跑一遍。两个环境的起点是一样的：根目录第一层都是 10 个条目，都读不到宿主的暗号。</p>
+<p>环境一是上一节那个 <code>chroot</code> 之后的进程。环境二是今天要装配的那个容器，换根用的不是 <code>chroot</code> 而是 <code>pivot_root</code>，别的都一样。</p>
+<p>问题一　环境一跑完，根目录第一层的条目数会是多少？</p>
+<div class="write"></div>
+<p>问题二　环境二跑完呢？</p>
+<div class="write"></div>
+<p>问题三　写一句理由：如果两个数不一样，差别是这两个换根方式的哪一点造成的？</p>
+<div class="write"></div>
+<p>提示：上一节那个 <code>getcwd()</code> 的异常不是噪音，它是这道题的全部线索。</p>
+</div>
+
+<h3>6. 揭晓：一个走了出去，一个原地没动</h3>
+<p>两个环境跑同一段代码，起点一样，终点差得很远：</p>
+<div class="scroll">
+<table>
+<tr><th>时刻</th><th>问的问题</th><th class="n">环境一 · chroot</th><th class="n">环境二 · pivot_root</th></tr>
+<tr><td rowspan="4">起点</td><td>根目录第一层条目数</td><td class="n">10</td><td class="n">10</td></tr>
+<tr><td>能读到宿主暗号吗</td><td class="n">读不到</td><td class="n">读不到</td></tr>
+<tr><td>挂载点条数</td><td class="n">读不到</td><td class="n">2</td></tr>
+<tr><td><code>getcwd()</code> 返回</td><td class="n">FileNotFoundError</td><td class="n">/</td></tr>
+<tr><td rowspan="4">走完之后</td><td>根目录第一层条目数</td><td class="n">26</td><td class="n">10</td></tr>
+<tr><td>能读到宿主暗号吗</td><td class="n">宿主机的暗号-a7f3</td><td class="n">读不到</td></tr>
+<tr><td>挂载点条数</td><td class="n">24</td><td class="n">2</td></tr>
+<tr><td><code>getcwd()</code> 返回</td><td class="n">/</td><td class="n">/</td></tr>
+</table>
+</div>
+<p>两个「读不到」是不同意思，先分开。起点那一行环境一读不到挂载点条数，是因为根文件系统里没有挂 <code>/proc</code>，那个文件根本不存在；对照一下宿主上直接跑的基准——26 个条目、24 个挂载点——就知道那 24 个挂载点一个都没少，只是暂时读不到而已。</p>
+<p><b>「走完之后」那四行是全部答案。</b>26 正是宿主根目录的条目数，环境一原样走了回去，连暗号都又读到了；环境二四行一个没动。</p>
+<p>为什么会这样，把两件事放在一起就清楚了。</p>
+<p>第一件是 <code>chroot</code> 只做了一件事：改路径解析的起点。它没有动当前工作目录，所以调用之后，那个「当前目录」还指着宿主上的某个位置。<code>cd ..</code> 用的不是绝对路径解析，它是从当前目录往上找父目录——这条路根本不经过被改掉的那个起点。于是一路往上就走回了宿主的根。</p>
+<p>第二件是挂载点那两个数：走完之后环境一眼里有 24 个挂载点，和宿主上直接跑时一模一样；环境二只有 2 个。<code>chroot</code> 从来不动挂载表，宿主上那 24 个挂载点在它的世界里始终都在，只是路径一时够不着；而换根之后的容器，挂载表里只剩自己的根和一个 <code>/proc</code>。它走不出去，不是因为够不着，是因为外面那些东西已经不在它的地图上了。</p>
+
+<div class="card key">
+<span class="lab">关键结论</span>
+<p><code>chroot</code> 换的是路径解析的起点，<code>pivot_root</code> 换的是挂载表里的根挂载。前者是一个能被绕过去的约定，后者是把外面那些挂载从这个进程的世界里摘掉。手册那句「不是为任何安全目的设计的」，说的就是这个区别。</p>
+</div>
+
+<h2><span class="pn">板块 2 · 第二部分</span>换根的正确做法</h2>
+
+<h3>7. 挂载表是可以自己改的</h3>
+<p>先把上一部分那个「挂载点条数」说清楚，因为后面每一步都在动它。</p>
+<p>你的进程解析一个路径时，内核要查一张表：哪个目录上盖着哪个文件系统。这张表就是 <code>/proc/self/mounts</code> 里的那些行，一行一个挂载点。宿主上是 24 行，容器里是 2 行。</p>
+<p>Day 10 说挂载命名空间「复制的是这张表」。<code>man 7 mount_namespaces</code> 的原话是：「the mount list of the child's namespace is a copy of the mount list in the parent process's mount namespace」——子命名空间的挂载表是父进程那张表的一份拷贝。</p>
+<p>拷贝的意义在于：从这一刻起，你在里面加一行、删一行，外面那张表不受影响。所以换根这件事的真正含义是——在自己那份拷贝上，把「根」这一行换成别的。</p>
+<p>要换成什么？<code>man 2 pivot_root</code> 有一条硬要求：「new_root must be a path to a mount point, but can't be '/'」——新根必须是一个挂载点，而且不能是 <code>/</code> 本身。</p>
+<p>可你手上的根文件系统只是个普通目录，不是挂载点。怎么把一个目录变成挂载点？</p>
+<pre><code><span class="c"># 把一个目录挂到它自己身上。挂载点表里因此多出一行，源和目标是同一个位置</span>
+$ mount --bind /root/lab/rootfs /root/lab/rootfs</code></pre>
+<p>这个动作叫<span class="term">绑定挂载（bind mount）</span>：把文件系统里已有的一棵子树，再挂到另一个位置上。两个位置看到的是同一份数据，改一边另一边立刻能看到。这里的用法是最省事的一种——源和目标写成同一个路径，唯一的效果就是让这个目录在挂载表里获得自己的一行。</p>
+<p class="breath">绑定挂载在容器世界里到处都是。往容器里塞一个配置文件、把宿主的某个数据目录给容器用，用的都是它。今天只用它最退化的那种形态。</p>
+
+<h3>8. 换根四步</h3>
+<p>准备好之后，换根是四个动作。先看它们连在一起长什么样，再逐个说：</p>
+<pre><code>mount --make-rprivate /            <span class="c"># ① 把整棵挂载树的传播类型设成 private</span>
+mount --bind "$ROOT" "$ROOT"       <span class="c"># ② 让 rootfs 目录成为一个挂载点</span>
+cd "$ROOT"
+pivot_root . oldroot               <span class="c"># ③ 旧根移到 ./oldroot，当前目录成为新的根挂载</span>
+cd /
+/bin/mount -t proc proc /proc      <span class="c"># ④ 进程号那张表换了，/proc 也要重挂才对得上</span>
+/bin/umount -l /oldroot            <span class="c"># ⑤ 摘掉旧根，摘完就再也走不回去</span></code></pre>
+<p>说是四步写了五行，因为第 ③ 步的效果要靠第 ⑤ 步才完整。</p>
+<p><code>pivot_root</code> 自己做的事，手册一句话说完：「it moves the root mount to the directory put_old and makes new_root the new root mount」——把根挂载移到 put_old 这个目录下，并让 new_root 成为新的根挂载。注意它只是<b>移动</b>，没有丢弃。旧根这时候还挂在 <code>/oldroot</code> 上，里面就是完整的宿主文件系统。</p>
+<p>所以第 ⑤ 步才是把门关上的那一下。<code>umount -l</code> 里的 <code>-l</code> 是<span class="term">惰性卸载（lazy unmount）</span>：立刻把这个挂载点从表里摘掉，至于还有没有进程正在用它，等它们用完了内核自己收拾。这里用惰性版本是因为普通的 <code>umount</code> 会因为「设备正忙」失败——刚换过来，还有引用挂在上面。</p>
+<p>第 ④ 步的理由写在 <code>man 7 pid_namespaces</code> 里，而且它说的正是今天这件事：「After creating a new PID namespace, it is useful for the child to change its root directory and mount a new procfs instance at /proc so that tools such as ps(1) work correctly.」——建了新的进程号命名空间之后，子进程最好换一下根目录，并在 <code>/proc</code> 上挂一份新的 procfs，这样 <code>ps</code> 之类的工具才能正常工作。procfs 就是 <code>/proc</code> 底下那个文件系统：它不占磁盘，内核把进程信息现编成文件的样子给你读。</p>
+<p>Day 10 那个「加了 <code>--pid</code> 却没加 <code>--mount-proc</code>，<code>/proc</code> 里还是宿主那一堆」的坑，就是漏了这一步。</p>
+
+<h3>9. 挂载传播：一个容易漏的方向</h3>
+<p class="lead">你在容器里挂上去的东西，会不会漏到宿主上？</p>
+<p>直觉上不会——都开了挂载命名空间了，表都是自己那份拷贝了，怎么会漏。</p>
+<p>但挂载表的拷贝不是完全断开的。内核提供了一套机制，让一个挂载点上发生的挂载和卸载事件，能自动传到别的挂载点上去。这套机制叫<span class="term">挂载传播（mount propagation）</span>，每个挂载点有一个传播类型，决定事件怎么走。<code>man 7 mount_namespaces</code> 给了四种，今天要用的是前两种：</p>
+<div class="scroll">
+<table>
+<tr><th>传播类型</th><th>手册怎么说</th><th>意思</th></tr>
+<tr><td><span class="term">MS_SHARED</span><br>共享挂载</td><td>「This mount shares events with members of a peer group. mount(2) and umount(2) events immediately under this mount will propagate to the other mounts that are members of the peer group.」</td><td>它属于一个<span class="term">对等组（peer group）</span>，这个挂载点底下发生的挂载和卸载，会传给组里的其他成员</td></tr>
+<tr><td><span class="term">MS_PRIVATE</span><br>私有挂载</td><td>「This mount is private; it does not have a peer group. mount(2) and umount(2) events do not propagate into or out of this mount.」</td><td>没有对等组，事件既不传进来也不传出去</td></tr>
+<tr><td><span class="term">MS_SLAVE</span><br>从属挂载</td><td>「events propagate into this mount from a (master) shared peer group. events under this mount do not propagate to any peer.」</td><td>单向：外面的挂载能传进来，里面的传不出去</td></tr>
+<tr><td>MS_UNBINDABLE</td><td>「This is like a private mount, and in addition this mount can't be bind mounted.」</td><td>私有，而且不许被绑定挂载</td></tr>
+</table>
+</div>
+<p>这四种里，共享是最需要留神的一种，而且它常常是默认状态。手册直接点名：「systemd(1) automatically remounts all mounts as MS_SHARED on system startup.」——systemd 在系统启动时把所有挂载重挂成共享。也就是说，你上岗后碰到的绝大多数生产机器，根挂载都是共享的。</p>
+<p>共享到底会漏成什么样，做一次就知道。实验很小：先让 <code>/tmp/prop</code> 成为一个挂载点，把它的传播类型设成共享或私有，然后在挂载命名空间里往它底下挂一个 tmpfs（内存里的临时文件系统，用它只是因为随手挂一个最省事），最后回到宿主上看那个位置成没成挂载点。</p>
+<pre><code><span class="c"># prop_test.sh 的主体，两种传播类型各跑一遍</span>
+mount --make-$mode /tmp/prop                 <span class="c"># $mode 取 shared 或 private</span>
+echo "传播类型 = $(findmnt -no PROPAGATION /tmp/prop)"   <span class="c"># findmnt 查挂载表，-no 只打指定那一列</span>
+<span class="c"># --propagation unchanged：让 unshare 别替你改传播类型，见下面那段</span>
+unshare --mount --propagation unchanged -- bash -c \
+  'mount -t tmpfs none /tmp/prop/x; echo "  命名空间里看：$(findmnt -no TARGET /tmp/prop/x)"'
+<span class="c"># 命名空间里的进程已经退出了，现在这条是宿主上的视角</span>
+findmnt -no TARGET /tmp/prop/x && echo "  宿主上看：也成了挂载点 → 漏出来了" \
+                               || echo "  宿主上看：不是挂载点 → 没漏"</code></pre>
+<p>两次的输出：</p>
+<pre><code>── 父挂载设成 shared ──
+传播类型 = shared
+  命名空间里看：/tmp/prop/x
+  宿主上看：也成了挂载点 → 漏出来了
+── 父挂载设成 private ──
+传播类型 = private
+  命名空间里看：/tmp/prop/x
+  宿主上看：不是挂载点 → 没漏</code></pre>
+<p>命名空间开了，挂载表复制了，东西照样漏了出去。这就是换根四步里第 ① 步 <code>mount --make-rprivate /</code> 存在的理由：进去之后第一件事，把整棵树的传播类型改成私有，切断这条通路。<code>-r</code> 是递归，意思是这棵树下面所有挂载点都改。</p>
+<p>还有一件事值得说，因为它解释了为什么很多人从来没撞见过这个坑。上面那条命令里有个 <code>--propagation unchanged</code>，如果去掉它，两种情况都不会漏。原因在 <code>man 1 unshare</code>：「The default is to set the propagation to private.」而且它写明了从哪一版开始——「unshare since util-linux version 2.27 automatically sets propagation to private in a new mount namespace to make sure that the new namespace is really unshared.」</p>
+<p>也就是说，命令行工具替你做了这一步。你要是直接调 <code>unshare(2)</code> 这个系统调用自己写容器，就没人替你做了。</p>
+<p>传播类型还管着另一件事。刚才那条硬要求还有下半句，<code>man 2 pivot_root</code> 写着：「The propagation type of the parent mount of new_root and the parent mount of the current root directory must not be MS_SHARED.」——新根的父挂载和当前根目录的父挂载，传播类型都不能是共享。违反了会怎样，试一次：</p>
+<pre><code>$ unshare --mount --propagation unchanged -- bash -c '
+    mount --make-shared /
+    mount --bind /root/lab/rootfs /root/lab/rootfs
+    cd /root/lab/rootfs; pivot_root . oldroot'
+pivot_root: failed to change root from `.' to `oldroot': Invalid argument</code></pre>
+<p>这个报错很不友好——「参数无效」，而你的两个参数都完全正确。真正的原因在第三个地方：父挂载的传播类型。上岗后你多半会在别人的机器上撞见它一次，记住这个对应关系能省掉半小时。</p>
+
+<div class="card key">
+<span class="lab">关键结论</span>
+<p>挂载命名空间给你的是一份拷贝，不是一堵墙。拷贝之间还连着挂载传播这条线，线的开关是每个挂载点的传播类型，而生产机器上的默认值往往是共享。所以进入命名空间后的第一个动作不是换根，是把传播类型改成私有——这一步既堵住了往外漏的路，也是 <code>pivot_root</code> 能不能成功的前提。</p>
+</div>
+
+<h2><span class="pn">板块 2 · 第三部分</span>装配</h2>
+
+<h3>10. minibox 全文</h3>
+<p>零件齐了：一个根文件系统、三把锁、一套换根动作。拼起来是不到四十行 shell。三个开关分别控制装不装配额、换不换根、挂不挂名单，为的是后面每一列相对左边只多一样东西。</p>
+<pre><code>#!/bin/bash
+<span class="c"># minibox：把配额、命名空间、换根、名单拼成一个能跑代码的最小容器。
+# 每一层都能单独关掉，用来看「只多这一层」带来了什么。
+#   CG=0/1  配额       PIVOT=0/1  换根      SEC=0/1  seccomp 名单
+# 用法：minibox.sh &lt;rootfs 目录&gt; &lt;要在里面跑的命令...&gt;</span>
+set -e
+ROOT=$1; shift
+CG=${CG:-1}; PIVOT=${PIVOT:-1}; SEC=${SEC:-1}
+CGROOT=/sys/fs/cgroup           <span class="c"># 这台机器上 cpu/memory/pids 挂在 cgroup v1 的各自目录下</span>
+NAME=minibox
+LAB=$(cd "$(dirname "$0")" &amp;&amp; pwd)
+
+if [ "$CG" = 1 ]; then
+  <span class="c"># 目录一删一建，计数器就归零，读到的是这一趟的净增量</span>
+  for c in cpu memory pids; do rmdir $CGROOT/$c/$NAME 2&gt;/dev/null || true; mkdir -p $CGROOT/$c/$NAME; done
+  echo 100000 &gt; $CGROOT/cpu/$NAME/cpu.cfs_period_us          <span class="c"># 窗口：100000 微秒墙上时钟</span>
+  echo  50000 &gt; $CGROOT/cpu/$NAME/cpu.cfs_quota_us           <span class="c"># 额度：每窗口 50000 微秒 CPU 时间</span>
+  echo 268435456 &gt; $CGROOT/memory/$NAME/memory.limit_in_bytes <span class="c"># 256 MiB</span>
+  echo 64 &gt; $CGROOT/pids/$NAME/pids.max                       <span class="c"># 最多 64 个进程</span>
+fi
+
+<span class="c"># --fork 是必须的：进程号那张表要在下一个进程身上才生效</span>
+exec unshare --pid --fork --mount --uts --ipc --net -- \
+  /bin/bash -c '
+    set -e
+    CG='"$CG"'; PIVOT='"$PIVOT"'; SEC='"$SEC"'; ROOT='"$ROOT"'; LAB='"$LAB"'
+    if [ "$CG" = 1 ]; then
+      for c in cpu memory pids; do echo $$ &gt; /sys/fs/cgroup/$c/minibox/tasks; done
+    fi
+    hostname minibox
+    if [ "$PIVOT" = 1 ]; then
+      <span class="c"># 父挂载若是 shared，里面挂的东西会漏回宿主，而且 pivot_root 会直接拒绝</span>
+      mount --make-rprivate /
+      <span class="c"># pivot_root 要求新根自己就是一个挂载点，所以把目录绑定挂载到它自己身上</span>
+      mount --bind "$ROOT" "$ROOT"
+      cd "$ROOT"
+      pivot_root . oldroot           <span class="c"># 旧根被移到 ./oldroot，当前目录成为新的根挂载</span>
+      cd /
+      /bin/mount -t proc proc /proc  <span class="c"># 进程号换了，/proc 也得重新挂一次才对得上</span>
+      /bin/umount -l /oldroot        <span class="c"># 摘掉旧根，摘完就再也走不回去</span>
+      SECBIN=/bin/seccomp_run
+    else
+      mount -t proc proc /proc       <span class="c"># 不换根时也要重挂 /proc，否则看到的还是宿主那一堆</span>
+      SECBIN=$LAB/seccomp_run
+    fi
+    if [ "$SEC" = 1 ]; then exec "$SECBIN" 272 "$@"; else exec "$@"; fi
+  ' -- "$@"</code></pre>
+<p>跑起来应该看到什么：<code>./minibox.sh /root/lab/rootfs /bin/sh -c 'hostname; ls /'</code> 打出 <code>minibox</code> 和十个条目。看到 <code>pivot_root: Invalid argument</code>，回去查第 9 节那个传播类型；看到 <code>/usr/bin/mount: No such file or directory</code>，是 bash 把 <code>mount</code> 的路径缓存了下来，而换根之后那个路径不存在了——这就是第 ④ ⑤ 两行为什么写成绝对路径 <code>/bin/mount</code>。</p>
+<p>有三处顺序是不能调的，调了就出问题：</p>
+<ul>
+<li>入组写在 <code>unshare</code> 之后。写在前面也能工作，但那样外层脚本自己也进了这个组，它消耗的 CPU 会算在容器头上。</li>
+<li><code>mount --make-rprivate</code> 写在 <code>mount --bind</code> 之前。反过来的话，那个绑定挂载本身就是以共享的身份建出来的。</li>
+<li>重挂 <code>/proc</code> 写在 <code>umount -l /oldroot</code> 之前。反过来也能成，但那一瞬间 <code>/proc</code> 是旧根带过来的那一份，中间要是出错，你看到的是宿主的进程表。</li>
+</ul>
+
+<h3>11. 完整对照矩阵</h3>
+<p>把同一个探针在三种配置下各跑一遍。三列从左到右依次加东西，C 列相对 B 列只多了换根这一件事。</p>
+<div class="scroll">
+<table>
+<tr><th>探针问的问题</th><th>A 裸跑</th><th>B 昨天的终点<br>命名空间+配额+名单</th><th>C 今天的 minibox<br>B 再加换根</th></tr>
+<tr><td>能看见几个进程</td><td>58</td><td>1</td><td>1</td></tr>
+<tr><td>主机名</td><td>vm</td><td>minibox</td><td>minibox</td></tr>
+<tr><td>网卡</td><td>lo ifb0 ifb1 eth0</td><td>lo</td><td>lo</td></tr>
+<tr><td>能连到 1.1.1.1 的 443 端口</td><td>能</td><td>不能</td><td>不能</td></tr>
+<tr><td>发出 unshare(NEWUSER)</td><td>允许</td><td>被拒 errno=1</td><td>被拒 errno=1</td></tr>
+<tr><td>根目录第一层条目数</td><td>26</td><td>26</td><td>10</td></tr>
+<tr><td>挂载点条数</td><td>24</td><td>25</td><td>2</td></tr>
+<tr><td>读宿主的 /hostmark.txt</td><td>能</td><td>能</td><td>FileNotFoundError</td></tr>
+<tr><td>列出宿主的 /root 目录</td><td>21 个条目</td><td>21 个条目</td><td>FileNotFoundError</td></tr>
+<tr><td>/proc/self/cgroup 里的路径</td><td>/</td><td>/minibox</td><td>/minibox</td></tr>
+<tr><td>/proc/cpuinfo 的 CPU 数</td><td>2</td><td>2</td><td>2</td></tr>
+<tr><td>os.cpu_count()</td><td>2</td><td>2</td><td>2</td></tr>
+<tr><td>/proc/meminfo 总内存</td><td>8023 MB</td><td>8023 MB</td><td>8023 MB</td></tr>
+</table>
+</div>
+<p>横着读这张表，三段各有各的意思。</p>
+<p>最上面五行是 Day 10 那三把锁的功劳，C 列相对 B 列一个字没变——这正是要的：换根不该影响它们，影响了说明装配把别的东西碰坏了。</p>
+<p>中间四行是今天挣来的。昨天那个「四列一模一样」的洞，在 C 列合上了：宿主的暗号读不到了，宿主的 <code>/root</code> 也列不出来了。挂载点从 25 掉到 2，这个数最能说明发生了什么——B 列那 25 个是宿主的 24 个加上重挂的 <code>/proc</code>，C 列那 2 个是自己的根加自己的 <code>/proc</code>。</p>
+<p>最下面四行是今天仍然没变的，它们才是要带走的边界。前三行 Day 10 已经钉过一次：cgroup 限的是「你能用多少」，不改「机器有多大」。</p>
+<p>剩下 <code>/proc/self/cgroup</code> 那一行是今天新冒出来的一个小口子。容器里读这个文件，读到的是 <code>/minibox</code>——宿主给这个 cgroup 起的名字，原样漏了进去。名字本身不值钱，但它泄露了宿主的组织方式：真实环境里这个路径常常长成 <code>/kubepods/burstable/pod3f2a.../abcd...</code>，里面带着调度层给这个容器安排的一串名字和它的编号。堵法是有的，而且今天的零件就够：入组之后再开一个 cgroup 命名空间，同一个文件就会读成 <code>/</code>。这是今天动手任务的加分题。</p>
+
+<h3>12. 装上之后，代码跑得慢了吗</h3>
+<p>隔离都是有代价的，那这一套装完，里面的代码变慢了多少？</p>
+<p>用 Day 10 那个 <code>tick.py</code>：每做完一小块固定的哈希就记一次时刻，把相邻两次的时间差收集起来。三档，每档跑三遍，全都 <code>taskset -c 0</code> 钉在 0 号核上。中间那档是把配额关掉的 minibox——只有隔离，没有限速。</p>
+<div class="scroll">
+<table>
+<tr><th>怎么跑</th><th class="n">总时长 s</th><th class="n">占 CPU s</th><th class="n">间隔 P50 ms</th><th class="n">间隔 P99 ms</th></tr>
+<tr><td>宿主上裸跑</td><td class="n">9.819 / 9.892 / 9.889</td><td class="n">9.843 / 9.917 / 9.914</td><td class="n">4.87 / 4.89 / 4.91</td><td class="n">5.38 / 5.57 / 5.45</td></tr>
+<tr><td>minibox，配额关掉</td><td class="n">10.026 / 9.923 / 9.919</td><td class="n">10.048 / 9.948 / 9.944</td><td class="n">4.96 / 4.91 / 4.91</td><td class="n">5.64 / 5.56 / 5.47</td></tr>
+<tr><td>minibox，全套</td><td class="n">20.160 / 20.028</td><td class="n">10.106 / 10.055</td><td class="n">4.98 / 4.96</td><td class="n">57.92 / 58.41</td></tr>
+</table>
+</div>
+<p>前两行几乎是同一组数字。总时长最大差 2.1%，间隔的 P50 和 P99 差得更少。装置那节定的红线是「差异小于 2% 当成没有差异」，这两行贴着红线，所以只能说到这一步：五种命名空间加一次换根加一张名单，对这个 CPU 密集的循环没有可测出来的减速。</p>
+<p>这个结果并不意外，而且有机制可循。命名空间只影响「查哪张表」，查表发生在系统调用里；换根只影响路径解析，同样发生在系统调用里；名单只在系统调用入口检查一次。而这个循环几乎不发系统调用，它就是在算哈希。Day 10 量过这条账的另一半：装上过滤器之后每次系统调用多花二十几纳秒，而启动一个空 Python 解释器要发 370 个系统调用，合起来 8.5 微秒。</p>
+<p>第三行的形状 Day 10 整节讲过，这里只做一件事：确认它在装配之后照样成立。占 CPU 的时间三行都在 10 秒上下，活儿没多也没少；总时长翻倍，P99 从 5 毫秒出头涨到 58 毫秒，而 P50 一动不动。</p>
+
+<div class="card key">
+<span class="lab">关键结论</span>
+<p>隔离和限速是两件事，代价的形状完全不同。命名空间、换根、名单这三样在运行期几乎不要钱，它们的账全部记在启动那一次上；配额则相反，启动时几乎不要钱，代价按秒摊在整个运行期里，而且只摊在尾巴上。给沙箱做性能预算时，这两笔要分开算。</p>
+</div>
+
+<h2><span class="pn">板块 2 · 第四部分</span>装好之后还漏着什么</h2>
+
+<h3>13. 起一次要多久，钱花在哪</h3>
+<p>沙箱和长跑的服务有个结构性差别：服务起一次跑一整天，沙箱是每来一段代码起一个、跑完就扔。所以启动开销不是一次性成本，它乘在每一次调用上。</p>
+<p>量法沿用 Day 10：用 <code>subprocess.run</code> 把一个几乎什么都不做的程序起 31 次，取中位数，逐层往上加。每一档正式计时之前先空跑一次不计入，为的是把第一次要读磁盘、要填页表的那部分开销排掉。这里有个陷阱要先排掉，也是 Day 10 那道温故题的内容——每加一层往往就多一个包装程序，而多 exec 一个程序本身就要花时间。所以表里放了两行专门的对照：B 行是「只多一层 <code>bash -c</code>，什么都不做」，D 行是「再多一层内层 <code>bash</code>，还是什么都不做」。</p>
+<div class="scroll">
+<table>
+<tr><th>怎么起</th><th class="n">中位 ms</th><th class="n">最快 ms</th><th class="n">最慢 ms</th><th class="n">比上一行多</th><th>多的是什么</th></tr>
+<tr><td>A 直接 exec /bin/true</td><td class="n">0.98</td><td class="n">0.89</td><td class="n">1.25</td><td class="n">—</td><td>基准</td></tr>
+<tr><td>B 外面包一层 bash -c</td><td class="n">2.58</td><td class="n">2.40</td><td class="n">5.51</td><td class="n">+1.60</td><td>包装本身（对照行）</td></tr>
+<tr><td>C 加 unshare 五种命名空间</td><td class="n">4.51</td><td class="n">4.16</td><td class="n">5.36</td><td class="n">+1.93</td><td>五种命名空间</td></tr>
+<tr><td>D 再套一层内层 bash</td><td class="n">6.09</td><td class="n">5.74</td><td class="n">6.79</td><td class="n">+1.58</td><td>又一次包装（对照行）</td></tr>
+<tr><td>E 再加换根四步</td><td class="n">14.45</td><td class="n">13.63</td><td class="n">16.90</td><td class="n">+8.36</td><td>rprivate + bind + pivot_root + 挂 proc + 摘旧根</td></tr>
+<tr><td>F 再加建 cgroup 并入组</td><td class="n">24.30</td><td class="n">22.23</td><td class="n">37.75</td><td class="n">+9.85</td><td>三个控制器各删建一个目录、写四个文件、入组</td></tr>
+<tr><td>G 再加装 seccomp 名单</td><td class="n">27.71</td><td class="n">22.77</td><td class="n">55.76</td><td class="n">+3.41</td><td>又一个包装程序 + 装过滤器</td></tr>
+<tr><td>H 里面换成 python3 -c pass</td><td class="n">40.98</td><td class="n">32.03</td><td class="n">75.74</td><td class="n">+13.27</td><td>Python 解释器起来</td></tr>
+<tr><td>I 宿主上直接 python3 -c pass</td><td class="n">11.16</td><td class="n">10.59</td><td class="n">11.83</td><td class="n">—</td><td>参照：同一件事不带隔离</td></tr>
+</table>
+</div>
+<p>先把两行对照的用处兑现出来。B 比 A 多 1.60 毫秒，D 比 C 多 1.58 毫秒——两次包装的价钱几乎一模一样。这两个数对上了，说明这套测法是稳的，也说明 E 行那 8.36 毫秒里没有混进包装的钱。</p>
+<p>然后是三笔真正的机制开销。五种命名空间 1.93 毫秒，换根四步 8.36 毫秒，建 cgroup 并入组 9.85 毫秒。<b>最便宜的是命名空间，最贵的两笔各是它的四五倍。</b></p>
+<p>cgroup 那 9.85 毫秒有点出乎意料，值得再拆一层。把里面几个动作单独称一遍：</p>
+<div class="scroll">
+<table>
+<tr><th>做什么</th><th class="n">中位 ms</th><th class="n">比基准多</th></tr>
+<tr><td>基准：bash -c exec /bin/true</td><td class="n">2.50</td><td class="n">—</td></tr>
+<tr><td>只 mkdir 三个 cgroup 目录</td><td class="n">7.19</td><td class="n">+4.69</td></tr>
+<tr><td>先 rmdir 再 mkdir 三个目录</td><td class="n">11.27</td><td class="n">+8.77</td></tr>
+<tr><td>再写四个配额文件</td><td class="n">11.44</td><td class="n">+8.94</td></tr>
+</table>
+</div>
+<p>钱全在建目录上。建三个目录 4.69 毫秒，一个一点五毫秒出头；先删再建又要多四毫秒。而写配额那四个文件只多了 0.17 毫秒，几乎免费。</p>
+<p>这两行的差别还提示了一个能省的地方：<code>rmdir</code> 那一步是为了让计数器归零才加的，生产上没这个需求。更进一步，如果沙箱是池化的——预先建好一批 cgroup 目录反复用，只在每次交接时重写配额——那 4.69 毫秒也能省掉，因为改配额几乎不要钱。这个思路 Day 14 会正式做。</p>
+<p>最后一行是拿来对照 H 行的。宿主上直接起一个空 Python 解释器要 11.16 毫秒，H 行相对 G 行多出来的是 13.27 毫秒——搬进容器之后多花两毫秒出头，还在同一个量级上，说明解释器启动这笔钱不是隔离造成的。也就是说，从 B 行到 G 行整段加起来（2.58 到 27.71，共 25.13 毫秒，其中有两次包装的钱）和「起一个什么都不做的 Python」是同一个量级。</p>
+<p>但这张表整个漏掉了一样东西，而那样东西比表上所有数字加起来还大：</p>
+<div class="scroll">
+<table>
+<tr><th>做什么</th><th class="n">中位 ms</th><th class="n">最快 ms</th><th class="n">最慢 ms</th></tr>
+<tr><td>从零复制一份 80 MB / 1332 个文件的根文件系统</td><td class="n">1327.10</td><td class="n">1257.37</td><td class="n">1414.33</td></tr>
+</table>
+</div>
+<p>一千三百多毫秒。上面那张表最贵的一行是 40.98 毫秒，两者差了三十多倍。</p>
+<p>这个比例决定了优化的先后顺序，而且它推翻的正是「隔离机制很贵」这个直觉。<span class="term">冷启动（cold start）</span>——从零起一个沙箱到它能跑代码——这段时间里，三把锁加换根占不到百分之二（25.13 除以 1327 加 40.98），剩下的全在准备文件和拉起语言运行时上。</p>
+<p class="breath">当然，真实的容器运行时不会每次都复制一份根文件系统：多个容器共用同一份只读的底层文件，谁改了什么才单独存一份，这一千三百毫秒因此变成接近零。但那正是重点：省下来的是这一千三百毫秒，不是那二十几毫秒。</p>
+
+<h3>14. 1 号进程不是普通进程</h3>
+<p>装配好之后有一件事变了，而且是在你没注意的地方变的。看第 11 节那张表的第一行：容器里能看见 1 个进程。那个进程的进程号是 1。</p>
+<p>在 Linux 上，1 号进程有一套和别人不一样的规矩。<code>man 7 pid_namespaces</code> 写得很直接：「Only signals for which the 'init' process has established a signal handler can be sent to the 'init' process by other members of the PID namespace.」——只有那些 init 进程自己装了处理函数的信号，才能被命名空间里的其他成员发给它。而且从外面发也一样：「a process in an ancestor namespace can...send signals to the 'init' process of a child PID namespace only if the 'init' process has established a handler for that signal.」</p>
+<p>这里的 SIGTERM 是「请你自己退出」那个信号：程序可以装一个处理函数接住它，善后完再退；Day 10 讲过的 SIGKILL 则是拦不住的那个。</p>
+<p>翻译成后果：一个没装 SIGTERM 处理函数的程序，当它是容器里的 1 号进程时，你发 SIGTERM 给它，它不会死。</p>
+<p>验一次。同一个 <code>sleep</code>，一次在宿主上直接跑（它是个普通进程），一次当 minibox 里的 1 号进程。两次都发 SIGTERM，等 0.6 秒，再用 <code>kill -0</code> 看它还在不在：</p>
+<pre><code>宿主上直接跑 sleep（不是 1 号进程）: SIGTERM 之后 → 已经退出
+minibox 里当 1 号进程的 sleep      : SIGTERM 之后 → 还活着，只能用 SIGKILL</code></pre>
+<p>这就是「<code>docker stop</code> 为什么要等十秒才真的停下来」的机制根源：先发 SIGTERM，等一段宽限期，超时了再发 SIGKILL。你的镜像里如果 1 号进程是个不处理 SIGTERM 的程序，那十秒每次都得等满。</p>
+<p>同一页手册还有一条要一起记住：「If the 'init' process of a PID namespace terminates, the kernel terminates all of the processes in the namespace via a SIGKILL signal.」——1 号进程一退出，内核用 SIGKILL 把这个命名空间里所有进程一起终结。对沙箱来说这是好消息：你只要能可靠地干掉 1 号进程，里面不管派生了多少子进程都会跟着走，不会有漏网的。</p>
+<p>还有个相关的小陷阱藏在 <code>man 1 unshare</code> 里：「Note that when unshare is waiting for the child process, then it ignores SIGINT and SIGTERM and does not forward any signals to the child.」——<code>unshare</code> 等子进程的时候会忽略 SIGINT 和 SIGTERM，也不转发任何信号。所以在这套装配下，信号得直接发给容器里那个进程在宿主上的进程号，发给外层脚本没用。</p>
+
+<h3>15. 还开着的三个口子</h3>
+<p>装配完了，探针也打过了。剩下这三样是明后天的题目，今天先看清楚它们长什么样。</p>
+<h4>一 · 根文件系统是可写的，而且写穿到宿主</h4>
+<p>容器里往 <code>/tmp</code> 写一个文件，然后回宿主上看那个目录：</p>
+<pre><code>$ ./minibox.sh /root/lab/rootfs /bin/sh -c 'echo "容器里写的字" &gt; /tmp/写进来的.txt'
+$ cat /root/lab/rootfs/tmp/写进来的.txt
+容器里写的字</code></pre>
+<p>原因在第 7 节：新根是宿主目录的一个绑定挂载，两边是同一份数据。所以容器里的代码能改这个目录里的任何东西——包括它自己的 <code>/bin/sh</code>。真跑不受信任的代码时，这一条是必须堵的。</p>
+<h4>二 · 机器有多大，它还是照实说</h4>
+<p>第 11 节最下面三行：<code>/proc/cpuinfo</code> 报 2 个 CPU，<code>os.cpu_count()</code> 返回 2，<code>/proc/meminfo</code> 报 8023 MB，而实际配额是半个核、256 MiB。这三个数从 A 列到 C 列一个字没变。</p>
+<p>Day 10 已经把机制讲透了，今天只补一句今天才有的：换根之后 <code>/proc</code> 是重新挂的一份，但它挂的还是宿主内核的那个 procfs，报的还是整台机器。换根改的是「哪个目录是根」，不是「procfs 里写什么」。</p>
+<h4>三 · 内核还是同一个</h4>
+<p>Day 10 第四部分的结论今天原样成立，而且现在你有了一个具体的东西来指着说。你手上这个容器，里面的代码能发的系统调用，走的是和宿主上一切程序完全相同的那一份内核代码。三把锁加一个根，缩小的是「能做什么」，缩小不了「做的时候碰到的是谁的代码」。</p>
+
+<div class="card key">
+<span class="lab">关键结论</span>
+<p>今天装出来的东西，把 Day 10 那张矩阵里「四列一模一样」的文件系统那几行改掉了，代价是启动时多花二十几毫秒——但真正的冷启动开销压根不在这里，它在准备那一千三百多个文件上，差了三十多倍。至于机器规格和共享内核这两条，装配一个也没动。</p>
+</div>
+
+<h2><span class="pn">板块 3</span>动手任务</h2>
+<p>两个任务，约两小时。任务 A 是把今天这套东西从零搭一遍，任务 B 把它接到你自己的服务上。</p>
+
+<h3>任务 A · 从零搭一个 minibox（约 1.2 小时）</h3>
+<h4>第 1 步：造根文件系统</h4>
+<p>照第 2 节那个脚本写一个 <code>mkrootfs.sh</code>。先只放 <code>/bin/sh</code> 和 <code>/bin/ls</code> 两个命令，跑通了再往 <code>BINS</code> 里加。</p>
+<p><span class="mark">验收标准</span>：<code>chroot rootfs /bin/sh</code> 能进到一个能敲 <code>ls</code> 的 shell 里。进不去的话，把 <code>ldd</code> 的输出和 rootfs 里的实际路径逐条对一遍——十有八九是某个库复制到了错的目录，而动态链接器只按原路径找。</p>
+
+<h4>第 2 步：先用 chroot，再亲手看它漏</h4>
+<p>把第 4 节和预测框那段代码写出来跑一遍，自己看到 26 → 10 → 26 这个来回。这一步别跳过：你以后一定会遇到有人用 <code>chroot</code> 当沙箱，那时候你需要能当场演示，而不是引用一句手册。</p>
+
+<h4>第 3 步：换成 pivot_root</h4>
+<p>照第 8 节那五行写。写完之后逐行注释掉一行再跑，把症状记下来。至少要看到这三种：</p>
+<ul>
+<li>去掉 <code>mount --bind</code> → <code>pivot_root</code> 报错，因为新根不是挂载点</li>
+<li>去掉 <code>mount -t proc</code> → 容器里 <code>ls /proc</code> 是空的，<code>ps</code> 什么也列不出来</li>
+<li>去掉 <code>umount -l /oldroot</code> → 容器里 <code>ls /oldroot</code> 能看到整个宿主文件系统</li>
+</ul>
+<p><span class="mark">验收标准</span>：在容器里跑第 3 节那个探针，「根目录第一层条目数」和「挂载点条数」两项要明显小于宿主，「宿主标记文件」那项要报读不到。</p>
+
+<h4>第 4 步：把三把锁加回去</h4>
+<p>把 Day 10 的 cgroup 那几行和 <code>seccomp_run</code> 接进来，凑成完整的 <code>minibox.sh</code>。然后跑第 11 节那张矩阵的三列。</p>
+<p><span class="mark">验收标准</span>：三列的差异只出现在你预期的那几行上。如果 C 列相对 B 列有多余的变化，说明装配把别的东西碰坏了，回去看顺序那三条。</p>
+
+<h4>常见坑</h4>
+<ul>
+<li><code>pivot_root: Invalid argument</code>：两个参数都对，问题在父挂载的传播类型。先 <code>mount --make-rprivate /</code>。</li>
+<li><code>/usr/bin/mount: No such file or directory</code>：bash 把命令路径缓存了，换根之后那个路径没了。用绝对路径 <code>/bin/mount</code>，或者在换根后加一句 <code>hash -r</code>。</li>
+<li><code>umount: /oldroot: target is busy</code>：刚换过来还有引用挂着，要用 <code>umount -l</code> 的惰性版本。</li>
+<li>容器里 <code>python3</code> 报 <code>libffi.so.8: cannot open shared object file</code>：<code>ldd python3</code> 的清单不含扩展模块自己的依赖，要对 <code>lib-dynload/*.so</code> 再跑一遍 <code>ldd</code>。</li>
+<li>容器起来了但 <code>hostname</code> 还是宿主的：漏了 <code>--uts</code>，或者 <code>hostname minibox</code> 那句在 <code>unshare</code> 外面。</li>
+<li>发 SIGTERM 杀不掉容器：见第 14 节。信号要发给容器里那个进程在宿主上的进程号，而且大概率得用 SIGKILL。</li>
+</ul>
+
+<h3>任务 B · 把你自己的服务关进去（约 45 分钟）</h3>
+<p>把 Day 1 那个最小 FastAPI 服务（没留着的话任何一个都行）放进 minibox 里跑，用你 Day 1 写的压测器从宿主打它。</p>
+<p>你会立刻撞上一个问题：net 命名空间里除了 <code>lo</code> 什么都没有，宿主上的压测器连不进去。这正是今天没讲的那部分，所以这次先把 <code>--net</code> 去掉，让容器和宿主共用网络——然后把「去掉 <code>--net</code> 之后，容器里的代码还能做什么」这个问题写下来，那是 Day 12 的内容。</p>
+<p>做三件事：</p>
+<ol>
+<li>服务在宿主上跑，压一遍，记 P50 和 P99。这是基线。</li>
+<li>服务在 minibox 里跑（<code>PIVOT=1 CG=0</code>，只隔离不限速），同样压一遍。</li>
+<li>打开配额（<code>CG=1</code>），再压一遍，跑完读 <code>cpu.stat</code>，记下 <code>nr_throttled</code> 除以 <code>nr_periods</code>。</li>
+</ol>
+<p><span class="mark">验收标准</span>：第一次和第二次的 P50、P99 应该都在几个百分点之内——如果第二次明显更差，先怀疑是不是服务在容器里找不到某个文件而走了慢路径，用 <code>strace -f -c</code> 数一下失败的系统调用。第三次的 P99 应该明显变差，而 P50 基本不动。</p>
+<p><span class="mark">常见坑</span>：服务在容器里起不来，报某个 <code>.so</code> 或者某个 Python 包找不到。别急着往 rootfs 里堆东西，先用 <code>strace -f -e trace=openat</code> 看它到底在找什么——这个过程本身就是在手工做「构建镜像」这件事，Day 14 会看到工业界怎么把它自动化。</p>
+
+<h3>加分题</h3>
+<ol>
+<li>第 11 节那个 <code>/proc/self/cgroup</code> 泄露：入组之后再 <code>unshare --cgroup</code>，确认那一行从 <code>/minibox</code> 变成 <code>/</code>。然后想一想，为什么这个顺序不能反过来。</li>
+<li><code>man 2 pivot_root</code> 的例子里有个更省事的写法：<code>chdir(new_root); pivot_root(".", "."); umount2(".", MNT_DETACH);</code>——新旧根用同一个点。把它翻译成 shell 试一遍，看能不能省掉 rootfs 里那个 <code>oldroot</code> 目录。</li>
+<li>把第 13 节那张启动开销表在你自己机器上重跑一遍。如果你的机器是 cgroup v2，那一行的数字会不会不一样？v2 只有一棵树，也就是只建一个目录而不是三个。</li>
+</ol>
+
+<h2><span class="pn">板块 4</span>上岗关联</h2>
+
+<h3>场景一 · 「我们的代码沙箱冷启动要一秒二」</h3>
+<p>产品说用户点一下「运行」，要等一秒多才看到输出。团队里有人提议「把 seccomp 关掉试试，那玩意儿肯定慢」。</p>
+<p>你手上现在有一张能立刻反驳的表：整套隔离机制加起来是二十几毫秒，占不到那一秒二的百分之二。真正的钱在准备根文件系统和拉起语言运行时上。你该做的第一件事不是关锁，是把这一秒二按第 13 节那个方法拆开——每一层都做一个对照行，直到某一行明显比上一行贵。</p>
+<p>拆完之后大概率会指向两件事：镜像/根文件系统的准备，和解释器的启动。这两件的解法分别是分层与池化预热，都是 Day 14 的内容。</p>
+
+<h3>场景二 · 「沙箱超时了但杀不掉」</h3>
+<p>你的 agent runtime 给每个工具调用设了 30 秒超时，超时就发 SIGTERM。线上发现有些沙箱超时之后又活了很久，直到某个兜底逻辑发 SIGKILL 才没。</p>
+<p>第 14 节就是答案：容器里的 1 号进程只接受它自己装了处理函数的信号。用户提交的代码通常不会装 SIGTERM 的处理函数，所以 SIGTERM 对它是空的。</p>
+<p>正确的做法有两层：一是终止路径上必须有 SIGKILL 兜底，而且宽限期要设成一个你能接受的值；二是让容器的 1 号进程是你自己写的一个小程序，它装好信号处理、把信号转给真正的用户代码、顺便回收派生出来的子进程。这个角色在容器生态里有个专门的名字，Day 13 读 <code>runc</code> 的时候会碰到它。</p>
+
+<h3>场景三 · 「同一段脚本，在我的机器上能起，到测试环境就报 Invalid argument」</h3>
+<p>典型的传播类型问题。你的开发机上根挂载可能是私有的，而测试环境跑着 systemd——手册那句「systemd 在系统启动时把所有挂载重挂成共享」正好解释了这个差异。</p>
+<p>排查顺序：<code>findmnt -no PROPAGATION /</code> 看一眼，是 <code>shared</code> 就在换根前补上 <code>mount --make-rprivate /</code>。这条经验值钱的地方在于，报错信息（「参数无效」）完全没指向真正的原因。</p>
+
+<h3>同事和面试官常问的</h3>
+<div class="scroll">
+<table>
+<tr><th>问题</th><th>答的要点</th></tr>
+<tr><td>chroot 和容器差在哪？</td><td>换的东西不一样：一个换路径解析的起点，一个换挂载表里的根挂载。前者不动挂载表，所以外面的东西还在它的世界里；而且它不动当前工作目录，从当前目录一路往上就能走回去。手册里明写着「不是为任何安全目的设计的」</td></tr>
+<tr><td>为什么要 pivot_root 而不是 chroot？</td><td>除了上一条，还因为 <code>pivot_root</code> 把旧根移到一个能被卸载的位置，卸载之后旧根就从这个进程的挂载表里彻底消失了。<code>chroot</code> 没有对应的动作</td></tr>
+<tr><td>容器里的 1 号进程有什么特别的？</td><td>两条：没装处理函数的信号发不进去；它一退出，内核用 SIGKILL 结束整个命名空间里的所有进程</td></tr>
+<tr><td>起一个容器慢，先看哪儿？</td><td>先按层拆，每层配一个只多包装不多机制的对照行。经验上隔离机制那部分是几十毫秒量级，文件准备和运行时启动是几百到上千毫秒量级</td></tr>
+<tr><td>容器里 <code>nproc</code> 为什么报的是宿主的核数？</td><td>它读的是「机器有多大」，cgroup 限的是「你能用多少」，两件事。要拿真实份额得去读配额文件，Day 10 那个 <code>usable_cpus()</code> 就是干这个的</td></tr>
+</table>
+</div>
+
+<h2><span class="pn">板块 5</span>自检问题</h2>
+
+<details><summary>Q1 · 你在一台机器上写好了换根脚本，同事在他的机器上跑，<code>pivot_root</code> 报 Invalid argument。两个参数你们逐字对过，完全一样。接下来查什么？</summary>
+<p>查两台机器上根挂载的传播类型：<code>findmnt -no PROPAGATION /</code>。</p>
+<p>手册的要求是「新根的父挂载和当前根目录的父挂载，传播类型都不能是 MS_SHARED」。这个条件不在你传的两个参数里，所以逐字对参数永远对不出问题——错误码指向的是「参数无效」，而真正无效的是环境。</p>
+<p>为什么两台机器会不一样：跑 systemd 的系统在启动时把所有挂载重挂成了共享。所以「我的机器能跑」这件事本身不说明脚本对，只说明你那台机器的根挂载碰巧是私有的。</p>
+<p>改法是在换根前加 <code>mount --make-rprivate /</code>。<b>这一句同时解决两个问题</b>：让 <code>pivot_root</code> 能过，以及切断容器里的挂载往宿主漏的那条路。</p>
+</details>
+
+<details><summary>Q2 · 有人说：「我们已经开了挂载命名空间，容器里挂什么都影响不到宿主。」这句话在什么条件下是对的，什么条件下是错的？你怎么用两条命令验证？</summary>
+<p>对不对取决于挂载点的传播类型，不取决于有没有开命名空间。命名空间给的是挂载表的一份拷贝，而拷贝之间还连着挂载传播这条线。父挂载是私有的时候这句话对；是共享的时候，命名空间里的挂载会传出去。</p>
+<p>验证两条命令：先 <code>findmnt -no PROPAGATION /</code> 看传播类型；再在命名空间里挂点东西，回宿主上用 <code>findmnt</code> 查那个位置在不在。</p>
+<p>这里有个容易被绕过去的地方：用 <code>unshare</code> 命令行工具做实验，你多半复现不出漏的那种情况——它从 util-linux 2.27 起默认把传播设成私有。要看到真实行为得加 <code>--propagation unchanged</code>。所以「我试过没漏」这个证据，要先确认是谁替你把它堵上的。</p>
+</details>
+
+<details><summary>Q3 · 你的沙箱冷启动 P99 是 1.4 秒。老板要求砍到 300 毫秒。按今天量到的比例，你会先动哪一块？为什么「把 seccomp 名单精简掉一半」这个提议不值得做？</summary>
+<p>先动准备根文件系统那一块。今天测到从零复制一份 80 MB / 1332 个文件的根，中位数是 1327 毫秒，而整套隔离机制加起来二十几毫秒。1.4 秒里绝大部分只可能在文件准备和运行时启动上。</p>
+<p>方向是让每次启动不再复制文件：让多个容器共用同一份只读的底层文件，谁改了什么才单独存一份。这是 Day 14 的题目。</p>
+<p>精简名单不值得做，有两个独立的理由。第一，量级不对：整个 seccomp 那一层只有三点几毫秒，全砍掉也够不到目标的零头。第二，Day 10 直接测过规则条数的影响——1 条、50 条、64 条三档的单次耗时范围互相重叠，看不出差别，贵的是「有没有过滤器」而不是「名单多长」。所以这个提议既解决不了问题，还会削弱防护。</p>
+</details>
+
+<details><summary>Q4 · 容器里跑的代码把 <code>/bin/sh</code> 改了。你回宿主上一看，宿主的 <code>/bin/sh</code> 好好的。那被改的是什么？这件事危险在哪？</summary>
+<p>被改的是根文件系统那个目录里的 <code>/bin/sh</code>，也就是宿主上 <code>rootfs/bin/sh</code> 这个文件。它没影响宿主自己的 <code>/bin/sh</code>，因为那是两个不同的文件。</p>
+<p>危险在于这个目录是被复用的。今天的绑定挂载是可读可写的，容器里的写直接落在宿主的那个目录上。下一个用同一个 rootfs 起来的容器，拿到的就是被改过的 <code>/bin/sh</code>。一段不受信任的代码通过这条路影响了后面所有的执行——它没有逃逸到宿主，但污染了执行环境。</p>
+<p>顺带说，这也是为什么「跑完就把目录删了重建」这个笨办法是有效的，代价就是第 13 节那 1327 毫秒。明天讲的只读根加可写层，是同时要正确性和速度的做法。</p>
+</details>
+
+<h2><span class="pn">板块 6</span>今日新词</h2>
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td>宿主上一个按 <code>/bin</code> <code>/lib</code> 这套布局摆好文件的普通目录，换根之后它就是容器眼里的 <code>/</code></td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td>把已有的一棵目录子树再挂到另一个位置，两处看到同一份数据；挂到自己身上可以让一个普通目录变成挂载点</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td>一个挂载点上发生的挂载/卸载事件自动传到别的挂载点上的机制，方向由传播类型决定</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td>属于一个对等组，事件在组内互相传播；systemd 在启动时把所有挂载设成这种</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td>没有对等组，事件既不传进来也不传出去；换根前要把整棵树设成这种</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td>单向传播：外面的挂载能传进来，里面的传不出去</td></tr>
+<tr><td>对等组</td><td>peer group</td><td>共享挂载互相传播事件的那个集合</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount（<code>umount -l</code> / <code>MNT_DETACH</code>）</td><td>立刻把挂载点从表里摘掉，还在用它的进程等用完了内核自己收拾</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td>进程号命名空间里的第一个进程；没装处理函数的信号发不进去，它一退出整个命名空间被 SIGKILL 清空</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td>从零起一个沙箱到它能跑代码这段时间；今天测到它九成以上花在准备文件和拉起运行时上</td></tr>
+</table>
+</div>
+
+<h2><span class="pn">板块 7</span>已学词表</h2>
+<details><summary>Day 1 到今天的全部 99 个术语（点开）</summary>
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th>引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little's Law</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td>Day 11</td></tr>
+<tr><td>对等组</td><td>peer group</td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount / MNT_DETACH</td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td>Day 11</td></tr>
+</table>
+</div>
+</details>
+
+<h2><span class="pn">板块 8</span>专项深挖</h2>
+<p>今天放不下、但值得单独占一段时间的三块。每一段可以直接粘给 Claude。</p>
+
+<div class="card">
+<h4>一 · 用户命名空间与非特权容器</h4>
+<p>我今天手搓了一个最小容器：<code>unshare</code> 开五种命名空间、绑定挂载加 <code>pivot_root</code> 换根、cgroup 设配额、seccomp 挂名单。全程以 root 跑，没开用户命名空间。我知道 <code>man 7 namespaces</code> 说创建命名空间一般需要 CAP_SYS_ADMIN，但用户命名空间从 Linux 3.8 起不需要任何特权。</p>
+<p>我想理解这个例外带来的两面性。请讲清楚：<code>/proc/&lt;pid&gt;/uid_map</code> 的写法和限制，以及为什么它要求写的时候必须是一次性写完；为什么进了用户命名空间之后能拿到该命名空间内的 root，却动不了宿主的文件；rootless 容器（Podman、rootless Docker）怎么用它避免守护进程跑 root；以及反过来，为什么一些发行版一度默认关掉非特权用户命名空间。</p>
+<p>产出形式：机制解释，加一组我在自己机器上可以安全验证的命令（包括怎么确认我的内核允不允许非特权创建），最后把我今天那个 <code>minibox.sh</code> 改成不需要 root 的版本，逐行说明哪几行必须变。不要给任何攻击性的利用代码。</p>
+</div>
+
+<div class="card">
+<h4>二 · 挂载传播的四种类型和它们的真实用途</h4>
+<p>我已经会用 <code>mount --make-rprivate /</code>，也亲手测出过父挂载是共享时，命名空间里的挂载会漏到宿主上。我知道四种传播类型的定义，但只真正用过 private 这一种。</p>
+<p>我想搞懂另外两种在生产里是干嘛用的。具体想问：为什么容器运行时常常把某些挂载设成 slave 而不是 private——「外面能传进来，里面传不出去」这个不对称在什么场景下正是想要的（我猜和宿主上挂载新磁盘、或者 Kubernetes 的挂载传播设置有关，但说不清）；<code>unbindable</code> 这种极端类型解决的是什么问题；以及一个挂载点的传播类型在 <code>/proc/self/mountinfo</code> 里是怎么表示的，怎么从那些字段里读出对等组的编号。</p>
+<p>产出形式：先用一组我能在单机上跑的实验把 slave 和 private 的差别演示出来（两个命名空间加宿主，三方对照），再解释每种类型对应的真实场景。最后教我怎么读懂 <code>/proc/self/mountinfo</code> 那一行的全部字段。</p>
+</div>
+
+<div class="card">
+<h4>三 · 把手搓的容器接上网络</h4>
+<p>我今天开了 net 命名空间，容器里除了 <code>lo</code> 什么都没有，所以宿主上的压测器连不进去。我理解这是最简单的那种「不通」，但我不知道怎么把它接通。</p>
+<p>我想学会自己接一次。请讲清楚：veth 对是什么、为什么它必须成对出现、怎么把一端放进命名空间；网桥在这里扮演什么角色、和直接给 veth 配地址有什么区别；出方向要靠 NAT 才能访问外网，那条 iptables/nftables 规则每个字段是什么意思；以及端口映射本质上是什么。</p>
+<p>产出形式：从我现有的 <code>minibox.sh</code> 出发，一步一步加，每加一步都给一条能验证的命令和预期输出。做完之后我应该能从宿主 <code>curl</code> 到容器里的服务。另外请告诉我这套手工做法和容器运行时实际的做法差在哪。</p>
+</div>
+
+<h2><span class="pn">板块 9</span>延伸材料</h2>
+<p>前五条是今天全部引文的出处，都不长，可以当参考手册查着读。</p>
+<div class="scroll">
+<table>
+<tr><th>材料</th><th>为什么值得读</th><th>难度</th></tr>
+<tr><td><code>pivot_root(2)</code><br><a href="https://man7.org/linux/man-pages/man2/pivot_root.2.html">man7.org/linux/man-pages/man2/pivot_root.2.html</a></td><td>今天第 8 节那五行的全部依据。特别读 NOTES 里那段解释「为什么 <code>pivot_root</code> 比 <code>chroot</code> 好」的话，以及 EXAMPLES 里新旧根用同一个点的那个写法</td><td>中等，短，但限制条件那几条要一条条对</td></tr>
+<tr><td><code>chroot(2)</code><br><a href="https://man7.org/linux/man-pages/man2/chroot.2.html">man7.org/linux/man-pages/man2/chroot.2.html</a></td><td>整页就一屏，NOTES 那段是今天预测框的原始出处。手册很少这么直白地劝人别用某个东西，值得看看它是怎么说的</td><td>容易，最短的一条</td></tr>
+<tr><td><code>mount_namespaces(7)</code><br><a href="https://man7.org/linux/man-pages/man7/mount_namespaces.7.html">man7.org/linux/man-pages/man7/mount_namespaces.7.html</a></td><td>四种传播类型的权威定义，以及 systemd 把一切设成共享那句话。读完再去看 <code>/proc/self/mountinfo</code> 那一节，能对上今天的实验</td><td>偏难，共享子树那部分要慢慢读，先只读传播类型的定义</td></tr>
+<tr><td><code>pid_namespaces(7)</code><br><a href="https://man7.org/linux/man-pages/man7/pid_namespaces.7.html">man7.org/linux/man-pages/man7/pid_namespaces.7.html</a></td><td>第 14 节那两条规矩的出处。它还顺带写了「建了新进程号命名空间之后最好换根并重挂 procfs」，等于把今天这一整天的动机写在了手册里</td><td>中等，1 号进程那几段最有用</td></tr>
+<tr><td><code>unshare(1)</code><br><a href="https://man7.org/linux/man-pages/man1/unshare.1.html">man7.org/linux/man-pages/man1/unshare.1.html</a></td><td>命令行工具的手册，但里面藏着两个会影响你判断的默认行为：默认把传播设成私有，以及等子进程时不转发信号。这类「工具替你做了什么」的信息，只有手册会写</td><td>容易，当查询手册用</td></tr>
+<tr><td>内核文档 · Shared Subtrees<br>（<code>Documentation/filesystems/sharedsubtree.rst</code>，Ram Pai 等）</td><td>传播类型这套设计的原始文档，比 man 手册多了大量图示和推导过程。想彻底搞懂对等组是怎么形成和分裂的，只能读它。没给链接是因为它在内核源码树里，版本之间路径变过</td><td>难，建议在做完专项深挖第二段之后再读</td></tr>
+</table>
+</div>
+<p>只挑一条的话挑第二条：它最短，而且直接对应你上岗后一定会遇到的那次争论。</p>
+
+<h2><span class="pn">板块 10</span>今日五句话</h2>
+<div class="card five">
+<span class="tag">合上页面，用自己的话写五句</span>
+<p>1 · <code>chroot</code> 和 <code>pivot_root</code> 各自换掉了什么？为什么前者能被 <code>cd ..</code> 走出去而后者不能？</p>
+<div class="write"></div>
+<p>2 · 换根四步里，<code>mount --bind "$ROOT" "$ROOT"</code> 这一步在解决什么问题？不做它会看到什么错？</p>
+<div class="write"></div>
+<p>3 · 已经开了挂载命名空间，为什么还要 <code>mount --make-rprivate /</code>？这一句同时解决了哪两件事？</p>
+<div class="write"></div>
+<p>4 · 从零起一个能跑 Python 的沙箱，时间花在哪几块、各占多少？如果要砍到三分之一，先动哪一块？</p>
+<div class="write"></div>
+<p>5 · 容器里的 1 号进程和普通进程有哪两条规矩不同？这两条各自对你的沙箱终止逻辑意味着什么？</p>
+<div class="write"></div>
+</div>
+
+<h3>逐句自查</h3>
+<div class="scroll">
+<table>
+<tr><th>句</th><th>写成什么样就错了</th></tr>
+<tr><td>第 1 句</td><td>要说到两个不同的对象：一个换路径解析的起点，一个换挂载表里的根挂载。第二问如果写成「因为 <code>chroot</code> 权限不够」就错了，它成功了；正确的理由是它不动当前工作目录，而 <code>cd ..</code> 是从当前目录找父目录，这条路不经过被改掉的起点。补一句挂载点条数（24 对 2）能让答案更硬</td></tr>
+<tr><td>第 2 句</td><td>要点是 <code>pivot_root</code> 要求新根必须是一个挂载点，而你手上只有一个普通目录。如果只写「为了让它变成挂载点」，还差半句——为什么挂到自己身上就行：因为绑定挂载的效果就是在挂载表里加一行，源和目标写成同一个路径时，除了加这一行没有别的效果。不做它会看到 <code>pivot_root: Invalid argument</code>，和传播类型那个错撞成同一个错误码，这也是它值得记的原因</td></tr>
+<tr><td>第 3 句</td><td>两件事缺一不可：一是切断挂载往宿主漏的通路，二是满足 <code>pivot_root</code> 对父挂载传播类型的要求。只写第一件，会漏掉「为什么在别人机器上直接报错」；只写第二件，会漏掉真正的安全后果。如果你写成「因为命名空间不够」，那是把机制说反了——命名空间生效了，漏出去的路径是传播，不是命名空间失效</td></tr>
+<tr><td>第 4 句</td><td>要给出量级而不只是排序：文件准备一千三百多毫秒，Python 解释器十几毫秒，整套隔离机制二十几毫秒。如果你把顺序写对了但量级写成「差不多」，就丢掉了这道题的全部价值——正是那三十多倍的差距决定了先动哪一块。第二问答「优化 seccomp」或者「少开几个命名空间」都错，那两块加起来还不到目标的零头</td></tr>
+<tr><td>第 5 句</td><td>两条规矩：没装处理函数的信号发不进去；它一退出内核把整个命名空间 SIGKILL 清空。第二问要把两条都翻译成动作——第一条意味着终止路径必须有 SIGKILL 兜底，第二条意味着你不必逐个追杀子进程。只答「要用 kill -9」是只答了一半</td></tr>
+</table>
+</div>
+
+<h2><span class="pn">板块 11</span>明日预告</h2>
+<p>今天这个容器已经有了自己的根，但那个根是可读可写的，而且写下去的东西直接落在宿主的目录上——第 15 节那个「容器里写的字」原样出现在了宿主的文件里。同一个 rootfs 起第二个容器，拿到的就是被上一个改过的环境。</p>
+<p>明天 Day 12 把配额和边界这一块补全：只读根加可写层、磁盘和出网的配额怎么设、文件系统隔离还有哪些绕法，然后照着一张清单把今天这个 minibox 的逃逸风险面自己审一遍。今天你把门装上了，明天检查每一扇窗。</p>
+
+</main>
+<footer>
+<div class="l1">AI Infra · Day 11 / 28 · 2026-08-28 · 阶段三 · Sandbox：Linux 系统工程</div>
+<p>实验条件：2 核 Intel Xeon @ 2.80 GHz、8023 MB 内存，Linux 6.18.44，与 Day 10 是同一台机器，与 Day 7 ~ Day 9 不是。Python 3.11.15、gcc 13.3.0、util-linux 2.39.3（<code>unshare</code> / <code>pivot_root</code> / <code>findmnt</code>）。cpu / memory / pids 三个控制器挂在 cgroup v1（<code>/sys/fs/cgroup/cpu</code> 等），该机的 cgroup v2 层级只挂了 hugetlb 一个控制器，所以配额文件名全部取自 v1。宿主根挂载的传播类型是 private，共享传播的实验是在一个专门建出来的 tmpfs 挂载点上做的。全程以 root 运行，未开用户命名空间；CPU 相关测量一律 <code>taskset -c 0</code> 钉在 0 号核上，单线程。</p>
+</footer>
+</body>
+</html>
