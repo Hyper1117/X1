@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 14</title>
+<style>
+:root{
+  --bg:#faf6ef; --fg:#2e2a24; --muted:#6f675c; --card:#fffdf8; --line:#e3d9c8;
+  --accent:#a2601f; --accent2:#3f6b52; --accent3:#7a3f6b; --codebg:#26221d; --codefg:#eee6d8;
+  --th:#f2ebdd; --mark:#f6e5c4;
+}
+@media (prefers-color-scheme: dark){
+ :root{
+  --bg:#17150f; --fg:#e8e1d4; --muted:#a49a89; --card:#1f1c15; --line:#3a3428;
+  --accent:#d99a4e; --accent2:#79b494; --accent3:#c79ac0; --codebg:#0f0d09; --codefg:#e8e1d4;
+  --th:#272317; --mark:#4a3a1c;
+ }
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{margin:0;background:var(--bg);color:var(--fg);
+ font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+ line-height:1.78;font-size:16.5px;-webkit-text-size-adjust:100%}
+.bar{position:sticky;top:0;z-index:50;background:var(--card);border-bottom:1px solid var(--line);
+ padding:.5rem 1rem;font-size:.82rem;color:var(--muted);display:flex;gap:.9rem;flex-wrap:wrap;align-items:center}
+.bar .bd{color:var(--accent);font-weight:700}
+.rf{color:var(--accent);font-weight:600}
+tr.tot td{background:var(--th);font-weight:600}
+main{max-width:820px;margin:0 auto;padding:1.4rem 1.05rem 4rem}
+h1{font-size:1.62rem;line-height:1.4;margin:1.2rem 0 .3rem;letter-spacing:.01em}
+h2{font-size:1.24rem;margin:2.6rem 0 .5rem;padding-top:.9rem;border-top:2px solid var(--line)}
+h3{font-size:1.06rem;margin:1.9rem 0 .35rem;color:var(--accent)}
+h4{font-size:.98rem;margin:1.3rem 0 .3rem;color:var(--accent2)}
+p{margin:.7rem 0}
+.sub{color:var(--muted);font-size:.95rem;margin-top:.1rem}
+.lead{font-size:1.04rem;font-weight:600;color:var(--accent3);margin:1.1rem 0 .4rem}
+.card{border-left:4px solid var(--accent);background:var(--card);border-radius:0 8px 8px 0;
+ padding:.85rem 1rem;margin:1.2rem 0}
+.card.p{border-left-color:var(--accent3)}
+.card.f{border-left-color:var(--accent2)}
+.card.k{border-left-color:#b5562f}
+.card>.tag{font-size:.76rem;letter-spacing:.14em;color:var(--muted);text-transform:none;display:block;margin-bottom:.25rem}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:1rem 0;border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:520px;background:var(--card)}
+th,td{border:1px solid var(--line);padding:.42rem .6rem;text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+pre{background:var(--codebg);color:var(--codefg);padding:.85rem 1rem;border-radius:8px;
+ overflow-x:auto;font-size:.845rem;line-height:1.62;margin:.9rem 0}
+pre code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;
+ background:var(--th);padding:.06em .34em;border-radius:4px;overflow-wrap:anywhere;word-break:break-word}
+pre code{background:none;padding:0}
+.term{background:var(--mark);border-radius:3px;padding:.03em .28em;font-weight:600}
+details{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.6rem .9rem;margin:.8rem 0}
+summary{cursor:pointer;font-weight:600;color:var(--accent2)}
+details[open] summary{margin-bottom:.5rem}
+.write{border:1px dashed var(--line);border-radius:8px;min-height:4.4rem;margin:.6rem 0;
+ background:repeating-linear-gradient(transparent,transparent 1.75rem,var(--line) 1.75rem,var(--line) calc(1.75rem + 1px))}
+figure{margin:1.2rem 0}
+figcaption{font-size:.85rem;color:var(--muted);margin-top:.4rem}
+svg{color:var(--fg);display:block}
+footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);font-size:.83rem;color:var(--muted)}
+ul,ol{padding-left:1.35rem}
+li{margin:.3rem 0}
+.small{font-size:.88rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="bar"><span class="bd">Day 14 / 28</span><span>阶段三 · Sandbox：Linux 系统工程（块二收尾）</span><span>2026-08-31</span></div>
+<main>
+
+<h1>沙箱接上 HTTP 之后，那一百毫秒还剩多少</h1>
+<p class="sub">昨天你把手搓的一百行摆在 runc 旁边逐条对完。今天给它装上接口、装上并发管住的闸门、装上超时和回收，然后把冷启动这个数字当成正经指标来打。</p>
+
+<h2>板块 0 · 温故 · 闭卷</h2>
+<p>三道题，先凭记忆答，答不出再展开。</p>
+
+<div class="card">
+<span class="tag">Q1 · 1 天前（Day 13 · runc、containerd 与 OCI 分层）</span>
+<p>昨天读到 <code>exec fifo</code>：<code>runc init</code> 把命名空间、根、配额都装好之后，卡在这个命名管道的写端等着，<code>runc start</code> 打开读端才放行 <code>execve</code>。</p>
+<p>现在你要做一个"提前建好一批沙箱放着等请求"的池子。按这个机制，池里的沙箱应该停在哪个状态？为什么这个状态是唯一可选的那个——停在 <code>running</code> 不行吗，停在还没 <code>create</code> 不行吗？</p>
+<details><summary>展开答案</summary>
+<p>停在 <code>created</code>。</p>
+<p>推理分两头。停在还没 <code>create</code> 等于什么都没提前做，池子是空的，省不下任何东西。停在 <code>running</code> 则意味着 <code>execve</code> 已经发生了——容器里那个进程已经在跑 <code>config.json</code> 里写死的那条命令。可是请求还没来，你还不知道要跑什么代码，这个进程只能跑一个"什么也不干"的占位程序。</p>
+<p>而 <code>created</code> 这个状态恰好卡在中间：命名空间建好了、rootfs 挂好了、cgroup 装好了、能力砍好了，唯独 <code>execve</code> 还没发生。规范给这个状态的定义就是"环境已就绪但用户程序还没执行"。它是唯一一个"活儿全干完了，但还没定死要跑什么"的时刻。</p>
+<p>接今天：今天会量出停在 <code>created</code> 到底替你省下多少，答案会比你按昨天那张表推的要少。</p>
+</details>
+</div>
+
+<div class="card">
+<span class="tag">Q2 · 3 天前（Day 11 · 手搓最小容器）</span>
+<p>Day 11 那个实验：同一个 <code>sleep</code> 二进制，在宿主上直接跑，发 SIGTERM 它就退了；在容器里当 1 号进程跑，发 SIGTERM 它还活着。</p>
+<p>二进制没变、信号没变，差别到底在内核的哪一条规则上？再往下一步：一个沙箱服务给每次执行设了超时，超时先发 SIGTERM、等一个宽限期、再发 SIGKILL。对"用户随手提交的一段代码"来说，这个宽限期通常在做什么？</p>
+<details><summary>展开答案</summary>
+<p>差别在进程号命名空间给 1 号进程开的特例：命名空间里的其他成员发信号给 1 号进程，只有 1 号进程自己装了处理函数的那些信号才送得到；从祖先命名空间往里发也受同一条限制。SIGKILL 不在此列，它拦不住。</p>
+<p>在宿主上跑的 <code>sleep</code> 是个普通进程，SIGTERM 的默认动作是终止，于是它退了。当它是容器里的 1 号进程时，它没装 SIGTERM 处理函数，这个信号就被内核直接丢掉了——不是它"接住了不理"，是根本没送到。</p>
+<p>所以对用户随手提交的代码，宽限期几乎总是在纯粹地空等：那段代码不会装信号处理函数，SIGTERM 对它是一个空动作，宽限期到点之后才轮到真正管用的 SIGKILL。</p>
+<p>接今天：今天会把这个空等的钱量出来，还会回答一个 Day 11 没碰的问题——用户代码要是还派生了一个孙子进程，SIGKILL 打在 1 号进程身上，孙子会怎样。</p>
+</details>
+</div>
+
+<div class="card">
+<span class="tag">Q3 · 7 天前（Day 7 · 内存层级与缺页）</span>
+<p>Day 7 那组对照：扫过 1 GB 的匿名内存，第一遍四百多毫秒，第二遍三十几毫秒。加上 <code>MAP_POPULATE</code> 之后，262 144 次缺页原封不动地搬到了 <code>mmap</code> 那一步，第一遍立刻掉到和第二遍同一个量级。</p>
+<p>今天的主角是"提前把沙箱建好放着"。请说出它和 <code>MAP_POPULATE</code> 在结构上是同一个动作的哪几点，以及它们各自把成本搬到了哪里去。</p>
+<details><summary>展开答案</summary>
+<p>三点是同一个形状。</p>
+<p>一，总工作量一点没少。<code>MAP_POPULATE</code> 没有让那 262 144 次缺页消失，它只是让它们在别的时刻发生；提前建好的沙箱也一样，命名空间、挂载、cgroup 该建的一样要建。</p>
+<p>二，搬走的是"谁来等"。缺页的四百毫秒本来落在第一遍扫描那个调用者头上，搬走之后落在 <code>mmap</code> 调用上；建沙箱的开销本来落在第一个请求头上，搬走之后落在服务空闲的时候。</p>
+<p>三，代价都是提前占住资源。<code>MAP_POPULATE</code> 让你在真正用之前就吃掉了 1 GB 物理内存；预先建好的沙箱同样在没人用的时候就占着内存和进程号。</p>
+<p>接今天：今天这一页有三条优化路线，它们全都是这个形状——把同一笔钱挪到请求路径之外。区别只在于挪走的那一段有多大。</p>
+</details>
+</div>
+
+<h2>板块 1 · 今日概览</h2>
+
+<div class="scroll">
+<table>
+<tr><th style="width:22%">项</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 14 / 28 · 阶段三 · Sandbox：Linux 系统工程（块二第 5 天，收尾）</td></tr>
+<tr><td>今日主题</td><td>把沙箱包成一个 HTTP 服务：生命周期、超时与强制终止、并发闸门；然后把冷启动拆成互不重叠的几段，用三条路线各砍掉其中一段，最后看 P99 掉到哪里</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+<p style="margin:.2rem 0">多机与调度。一台机器上的沙箱服务已经够一整天了；"请求该发给哪台机器"是另一个层次的问题，它和会话粘性、缓存命中率绑在一起，Day 25 有完整的上下文再讲。</p>
+<p style="margin:.2rem 0">进程级快照与恢复（CRIU、microVM 快照）。这条路要么需要内核里没编进来的功能，要么需要虚拟机，今天这台机器上量不出可信的数字。它写进了页尾的专项深挖，那里给了一段可以直接用的题目。</p>
+<p style="margin:.2rem 0">镜像仓库与分发。今天所有沙箱共用一份已经躺在本地的镜像目录，"镜像怎么从仓库到本地"这一段整个不在今天的范围里。</p>
+</td></tr>
+</table>
+</div>
+
+<h4>今天结束后你应该能做到这三件事</h4>
+<ol>
+<li>把一次沙箱冷启动拆成互不重叠的若干段，每一段都给得出一个数，而且这些数加起来正好等于端到端的那个数。</li>
+<li>拿到"冷启动 P99 太高"这个需求，你能说出三条优化路线各自砍掉的是哪一段、各自要付什么代价，并且能说明为什么其中一条的收益比另外两条大一个数量级。</li>
+<li>给一个执行服务设并发上限时，你能说出这个数应该从哪两个量倒推出来，并且能演示把它设大一倍和设小一半各会让 P99 变成什么样。</li>
+</ol>
+
+<h4>今天这一页怎么走</h4>
+<div class="scroll">
+<table>
+<tr><th style="width:34%">部分</th><th>它回答的问题</th></tr>
+<tr><td>第一部分 · 接上请求</td><td>一个只会被手敲的命令，变成一个能接住并发请求的服务，中间要补哪几样东西？</td></tr>
+<tr><td>第二部分 · 一百毫秒拆开看</td><td>从收到请求到用户代码跑完，钱具体花在哪几段？哪一段最大？</td></tr>
+<tr><td>第三部分 · 三条路各砍掉哪一段</td><td>预热池、懒加载、预导入之后 fork，各自动的是哪一段，砍下来多少？</td></tr>
+<tr><td>第四部分 · 停下来的那一侧</td><td>超时、强制终止、回收——为什么这几件事更容易毁掉 P99？</td></tr>
+</table>
+</div>
+
+<h2>板块 2 · 第一部分 · 接上请求</h2>
+
+<h3>1. 你现在手上的东西还不能接请求</h3>
+<p>过去四天做出来的是一条命令。你在终端里敲它，它起一个容器，跑完，退出，你看到输出。</p>
+<p>而你要做的那个东西，收到的是这样一件事：一个模型决定调用工具，工具是"执行这段 Python"，于是一段代码通过 HTTP 落到你的服务上，几十毫秒或者几秒之后要返回结果。同时可能还有另外十几段代码在跑。</p>
+<p>中间缺的东西比想象的多。把它们一条条列出来：</p>
+<div class="scroll">
+<table>
+<tr><th>缺的东西</th><th>不补会怎样</th><th>今天在哪一节补</th></tr>
+<tr><td>一个接口，能把代码递进去、把结果拿回来</td><td>没法被别的程序调用</td><td>第 2 节</td></tr>
+<tr><td>不让阻塞动作压在事件循环上</td><td>一个请求在挂载 overlay，其余所有请求一起卡住</td><td>第 3 节</td></tr>
+<tr><td>同时在跑的沙箱有个上限</td><td>来多少起多少，机器被自己压垮</td><td>第 4 节</td></tr>
+<tr><td>等不到位置的请求要么排队要么被拒</td><td>队列无限长，晚来的请求等到天荒地老</td><td>第 4 节</td></tr>
+<tr><td>跑太久要能停掉，而且要停干净</td><td>一个死循环占着一个位置不放</td><td>第 12 节</td></tr>
+<tr><td>用完的沙箱要回收，而且不能拖慢下一个请求</td><td>回收的钱直接加在 P99 上</td><td>第 13、14 节</td></tr>
+</table>
+</div>
+<p>这张表就是今天的施工图。前四行今天上半页做完，后两行留到第四部分，因为它们的坑最深。</p>
+
+<h3>2. 实验装置</h3>
+<p>今天的数字来自四个程序，都跑在同一台机器、同一次会话里。两个是被测对象，两个是探针；探针一律住在被测对象之外的进程里。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 384" width="900" height="384" role="img" aria-label="沙箱服务与三个探针的结构图" style="min-width:760px">
+<defs>
+<marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+<path d="M0,0 L8,3 L0,6 z" fill="currentColor"/>
+</marker>
+</defs>
+<g fill="none" stroke="currentColor" stroke-width="1.4">
+<rect x="6" y="44" width="180" height="92" rx="7"/>
+<rect x="300" y="16" width="252" height="156" rx="7"/>
+<rect x="630" y="16" width="262" height="156" rx="7"/>
+<rect x="316" y="58" width="220" height="28" rx="4" stroke-dasharray="4 3"/>
+<rect x="316" y="94" width="220" height="28" rx="4" stroke-dasharray="4 3"/>
+<rect x="316" y="130" width="220" height="28" rx="4" stroke-dasharray="4 3"/>
+<rect x="644" y="54" width="234" height="52" rx="4" stroke-dasharray="4 3"/>
+<rect x="644" y="114" width="234" height="46" rx="4" stroke-dasharray="4 3"/>
+<rect x="6" y="252" width="380" height="76" rx="7"/>
+<rect x="430" y="252" width="380" height="76" rx="7"/>
+<path d="M188,90 L294,90" marker-end="url(#ar)"/>
+<path d="M554,94 L624,94" marker-end="url(#ar)"/>
+<path d="M761,174 L761,222 L196,222 L196,248" marker-end="url(#ar)"/>
+<path d="M761,222 L620,222 L620,248" marker-end="url(#ar)"/>
+</g>
+<g fill="currentColor" font-family="ui-monospace,Menlo,monospace">
+<text x="16" y="64" font-size="12.5" font-weight="700">P3 · bench.py</text>
+<text x="16" y="83" font-size="11.5">开环压测器，独立进程</text>
+<text x="16" y="102" font-size="11.5">泊松到达，不等回包就发下一条</text>
+<text x="16" y="121" font-size="11.5">⏱ 端到端延迟在这一侧算</text>
+
+<text x="310" y="38" font-size="12" font-weight="700">P2 · sandboxd.py（uvicorn + FastAPI）</text>
+<text x="324" y="77" font-size="11.5">等待队列，上限 QMAX，满了回 429</text>
+<text x="324" y="113" font-size="11.5">许可 MAXC：同时在跑的沙箱数上限</text>
+<text x="324" y="149" font-size="11.5">预热池 POOL：常驻沙箱，用完还回</text>
+
+<text x="640" y="38" font-size="12.5" font-weight="700">沙箱 · 一个 runc 容器</text>
+<text x="654" y="74" font-size="11.5">rootfs = 一次 overlay 挂载</text>
+<text x="654" y="94" font-size="10.5">下层 公用镜像 61.13 MiB / 1304 文件</text>
+<text x="654" y="134" font-size="11.5">上层 tmpfs 64 MiB，一次性</text>
+<text x="654" y="153" font-size="11.5">进程：runner.py 或 zygote.py</text>
+
+<text x="16" y="274" font-size="12.5" font-weight="700">P1 · coldstart.py</text>
+<text x="16" y="293" font-size="11.5">绕开服务，直接对容器量每一段</text>
+<text x="16" y="312" font-size="11.5">⏱ 分段耗时与四条路径的对照都出自它</text>
+
+<text x="440" y="274" font-size="12.5" font-weight="700">P4 · kill_bench.py</text>
+<text x="440" y="293" font-size="11.5">只量终止那一侧：宽限期、SIGKILL、回收</text>
+<text x="440" y="312" font-size="11.5">⏱ 用 cgroup 里还剩几个任务判断杀干净没有</text>
+
+<text x="192" y="82" font-size="11">HTTP POST /run</text>
+<text x="558" y="86" font-size="11">runc 命令</text>
+<text x="558" y="110" font-size="11">或写命名管道</text>
+<text x="240" y="242" font-size="11">这两个探针绕开服务</text>
+</g>
+</svg>
+</div>
+<figcaption>两个被测对象：整套服务（P2 加沙箱），以及单独一个沙箱。三个计时点分别在压测器一侧、P1 一侧、容器内部。</figcaption>
+</figure>
+
+<h4>一次请求里有什么</h4>
+<p>压测器发出去的是这么一行，<code>code</code> 是要在沙箱里执行的 Python 源码，约定把结果放进名叫 <code>RESULT</code> 的变量：</p>
+<pre><code>POST /run  {"code": "RESULT = sum(i*i for i in range(1000))"}</code></pre>
+<p>服务回的是这么一行，这是预热池模式下真实的一条。<code>ms</code> 是服务自己看到的端到端耗时，<code>queue_ms</code> 是这条请求在等许可上花掉的时间：</p>
+<pre><code>{"ok": true, "ret": 332833500, "ms": 5.0678, "queue_ms": 0.0078}</code></pre>
+<p>容器里那一侧另外打三个时刻。它们取的是 <code>CLOCK_MONOTONIC</code>，和宿主一侧同一个时钟源（同一个内核、没有开时间命名空间），所以两侧的数可以直接相减：</p>
+<pre><code>{"boot": 366.473493426, "imported": 366.511047909, "done": 366.511224093, "ret": 332833500}
+   boot     解释器起来、跑到 runner.py 第一行的时刻
+   imported 那一组库全部导入完的时刻
+   done     用户代码执行完的时刻</code></pre>
+
+<h4>哪些是真的，哪些是假的</h4>
+<div class="scroll">
+<table>
+<tr><th>简化掉的地方</th><th>后果</th></tr>
+<tr><td>镜像是本地一个 61.13 MiB、1304 个文件的目录，不是从仓库拉下来的</td><td>今天所有数字都不含"把镜像弄到本地"这一段。真实环境里第一次拉镜像是秒级甚至分钟级的事，今天一个字都不下结论</td></tr>
+<tr><td>沙箱里跑的是 CPython，装的库只有标准库</td><td>不下任何关于"装了 numpy / torch 的镜像冷启动多少"的结论。那种镜像的导入耗时和今天不在一个量级</td></tr>
+<tr><td>用户代码是一段纯 CPU 的求和，不读网络、不读磁盘</td><td>今天量到的"用户代码"那一段是一个下界。真实工具调用里这一段通常是大头，今天故意把它压小，好让启动开销看得见</td></tr>
+<tr><td>机器只有 2 个逻辑核</td><td>并发上限那几个数字只在"上限和核数"这个比值上有意义，绝对值换台机器就变</td></tr>
+<tr><td>控制组是 cgroup v1，没有统一层级</td><td>不使用 <code>cgroup.kill</code> 那类 v2 才有的一次性杀干净的手段，今天的终止路径是 v1 上能做到的那一版</td></tr>
+<tr><td>沙箱之间不互相通信，没有网络接口</td><td>不下任何关于网络隔离开销的结论</td></tr>
+</table>
+</div>
+
+<h4>跟着一条真实记录走一遍</h4>
+<p>下面这条是 P1 在冷路径上留下的一条真实记录，所有数字都是相对这次请求起点的毫秒数。第三列是这一段自己的长度，把第三列从上加到下，正好等于最后一行。</p>
+<div class="scroll">
+<table>
+<tr><th>时刻</th><th>发生了什么</th><th class="n">这一段多长</th></tr>
+<tr><td class="n">0.00</td><td>服务决定给这条请求造一个沙箱</td><td class="n">—</td></tr>
+<tr><td class="n">6.81</td><td>tmpfs 挂好、overlay 挂好、<code>config.json</code> 写好</td><td class="n">6.81</td></tr>
+<tr><td class="n">7.00</td><td><code>task.json</code>（那段用户代码）写进上层</td><td class="n">0.19</td></tr>
+<tr><td class="n">35.52</td><td><code>runc create</code> 返回：命名空间、rootfs、cgroup 全装好，容器进程卡在 <code>exec fifo</code></td><td class="n">28.52</td></tr>
+<tr><td class="n">41.29</td><td><code>runc start</code> 这条命令自己返回</td><td class="n">5.77</td></tr>
+<tr><td class="n">50.66</td><td>容器里的解释器跑到 <code>runner.py</code> 第一行（容器打的 <code>boot</code>）</td><td class="n">9.37</td></tr>
+<tr><td class="n">83.59</td><td>那一组库导入完（容器打的 <code>imported</code>）</td><td class="n">32.93</td></tr>
+<tr><td class="n">83.84</td><td>用户代码跑完（容器打的 <code>done</code>）</td><td class="n">0.25</td></tr>
+<tr><td class="n">90.68</td><td>宿主从管子上读到 EOF，说明容器里的进程已经退干净</td><td class="n">6.84</td></tr>
+<tr><td class="n">96.66</td><td><code>runc delete</code> 返回</td><td class="n">5.98</td></tr>
+<tr><td class="n">103.52</td><td>overlay 和 tmpfs 拆掉，目录删干净</td><td class="n">6.86</td></tr>
+</table>
+</div>
+<p>把第三列加起来：<code>6.81 + 0.19 + 28.52 + 5.77 + 9.37 + 32.93 + 0.25 + 6.84 + 5.98 + 6.86 = 103.52</code>。和最后一行对得上，中间没有漏掉的时间。</p>
+<p>请自己做一遍这个加法。后面每一张表都是在动这十一行里的某几行，只有先确认这十一行是完整的、不重叠的，那些表才读得懂。</p>
+
+<h4>参数表</h4>
+<div class="scroll">
+<table>
+<tr><th>旋钮</th><th class="n">取值</th><th>这个值怎么定出来的</th><th>哪一节会动它</th></tr>
+<tr><td>镜像大小</td><td class="n">61.13 MiB / 1304 个文件</td><td>照 Day 11 那份根文件系统的规模选的（那天是 80 MB、1332 个文件），好让两天的数字能横着比。里面只放了 CPython 和它的标准库</td><td>第 9 节</td></tr>
+<tr><td>上层 tmpfs 容量</td><td class="n">64 MiB / 8192 个 inode</td><td>够放几个临时文件、又远小于内存上限，免得像 Day 12 那样"容量还剩很多但内存先撞上"</td><td>不动</td></tr>
+<tr><td>沙箱 CPU 配额</td><td class="n">quota 100000 / period 100000</td><td>一个整核。这台机器 2 个核，给一个核意味着单个沙箱吃不满整机</td><td>不动</td></tr>
+<tr><td>沙箱内存上限</td><td class="n">512 MiB</td><td>解释器加标准库实测占 8 MiB 上下，留六十倍余量，确保今天没有一次执行是被内存上限影响的</td><td>不动</td></tr>
+<tr><td>沙箱进程数上限</td><td class="n">64</td><td>用户代码最多派生一个孙子进程，64 是一个不会被碰到的天花板</td><td>不动</td></tr>
+<tr><td>用户代码（轻）</td><td class="n">求和到 1000</td><td>用来量启动开销时，用户代码本身必须小到可以忽略。实测这一段 0.17 毫秒，占端到端不到千分之三</td><td>第 5~10 节</td></tr>
+<tr><td>用户代码（重）</td><td class="n">求和到 800000</td><td>压测时反过来，需要用户代码有明确的服务时间。在这台机器上用同一个解释器实测 34 毫秒，于是单核容量约 29 次/秒、双核约 58 次/秒——到达率的上下界就是从这两个数倒推的</td><td>第 4、11 节</td></tr>
+<tr><td>到达率 λ</td><td class="n">5、8、35 次/秒</td><td>35 取在双核容量 58 的六成上，既有排队又不至于发散；5 取在冷路径也能勉强撑住的位置；8 用来量服务这一层自己的开销</td><td>第 4、11 节</td></tr>
+<tr><td>并发上限 MAXC</td><td class="n">1、2、4、8</td><td>围着核数 2 上下各取一档、再取两档远大于核数的，看曲线往哪边倒</td><td>第 4 节</td></tr>
+<tr><td>预热池大小 POOL</td><td class="n">4 或 8</td><td>压测时恒大于等于 MAXC，这样"池空了"这件事不会混进并发上限那组数据里</td><td>第 8、11 节</td></tr>
+<tr><td>宽限期</td><td class="n">0.5 秒</td><td>取一个明显大于测量噪声、又小到不必等半分钟的值。第 12 节的结论对宽限期取多少都成立</td><td>第 12 节</td></tr>
+<tr><td>每档样本</td><td class="n">先跑 3 次不计数，再取 12~30 次</td><td>Day 6 那条"扔掉开头"。压测那几档是先压 3 秒不计数，再计 20 秒</td><td>全页</td></tr>
+</table>
+</div>
+
+<p>最后一张对照表，把每一张数据表和产出它的程序对上。想复现其中任何一行，先从这里找到程序，再回到上面的参数表看那一档的旋钮怎么拧。</p>
+<div class="scroll">
+<table>
+<tr><th>表</th><th>出自</th><th>怎么读到这些数</th></tr>
+<tr><td>表 A 冷启动分段</td><td>P1 <code>coldstart.py cold</code></td><td>标准输出里的 <code>segments</code> 一段</td></tr>
+<tr><td>表 B 四条路径</td><td>P1 <code>coldstart.py modes</code></td><td>标准输出里的 <code>modes</code> 一段</td></tr>
+<tr><td>表 C 为什么 exec 反而慢</td><td>P1 里的分段函数</td><td>把 <code>t0→boot</code> 和 <code>boot→imported</code> 分开统计</td></tr>
+<tr><td>表 D 页缓存冷热</td><td>P1 <code>cache_bench</code></td><td>每次冷档之前执行一次 <code>drop_caches</code></td></tr>
+<tr><td>表 E 回收一个沙箱</td><td>P1 <code>delete_bench.py</code></td><td>四种组合各自的耗时</td></tr>
+<tr><td>表 F 并发上限扫描</td><td>P2 + P3</td><td>压测器的标准输出，每档换一个新起的服务进程</td></tr>
+<tr><td>表 G 冷路径 vs 预热池</td><td>P2 + P3</td><td>同上，只换 <code>MODE</code> 环境变量</td></tr>
+<tr><td>表 H 终止路径</td><td>P4 <code>kill_bench.py</code></td><td>每一行是一次完整的"超时到回收"</td></tr>
+</table>
+</div>
+
+<h3>3. 这条路上每一个动作都是阻塞的</h3>
+<p>你作为后端工程师，写这个服务的第一版大概长这样：一个 <code>POST /run</code>，里面调 <code>subprocess.run</code> 把 <code>runc</code> 跑起来，等它返回，把结果发回去。逻辑上没有任何问题。</p>
+<p>问题在于这个函数里没有一个动作是能让出去的。挂 tmpfs、挂 overlay、<code>runc create</code>、<code>runc start</code>、从管子上读输出、<code>runc delete</code>、卸载——全是同步系统调用。Day 4 的结论在这里原样成立：写在 <code>async def</code> 里的同步调用，会把整个事件循环按住，此刻所有别的请求都停在原地。</p>
+<p>Day 4 给过的解法是把这类活儿甩给线程池。今天的服务里每一处阻塞动作都走了这条路：</p>
+<pre><code># 错的：整个事件循环停在这一行上
+@app.post("/run")
+async def run(req):
+    out = cold_run(req.code)          # 里面全是同步的 mount / runc / read
+    return out
+
+# 对的：甩给线程池，事件循环立刻回去伺候别的请求
+@app.post("/run")
+async def run(req):
+    out = await asyncio.to_thread(cold_run, req.code)
+    return out</code></pre>
+<p>跑起来看什么：两个版本在只有一条请求的时候完全一样快，差别只在并发的时候才出现。想亲眼看到差别，把第一版跑起来，一边发一条会跑三秒的代码，一边发一条一毫秒就完事的代码——后者会等满三秒。这也是验证你自己有没有写错的最快办法。</p>
+<p class="small">这里说的"甩给线程池"，就是 Day 4 那个 <code>run_in_executor</code>。<code>asyncio.to_thread</code> 是它的现代写法，底层是同一件事。</p>
+
+<h3>4. 闸门：许可、队列、拒绝</h3>
+<p>事件循环不卡了，新问题立刻来：请求来多少，服务就起多少个沙箱。一百条请求同时到，就是一百个容器在两个核上抢。</p>
+<p>需要一个数：同时最多允许几个沙箱在跑。这个数叫 <span class="term">并发上限（concurrency limit）</span>，实现它的东西是一个计数器，谁要跑先拿一张 <span class="term">许可（semaphore）</span>，跑完还回去。拿不到的就等着。</p>
+<p>光有上限还不够。等着的那些请求排成一条队，队伍要是没有长度限制，晚来的请求会一直排到客户端自己超时——它们占着连接、占着内存，最后没有一个人拿到结果。所以队列也要有上限，超了直接回一个"现在满了"。这个动作叫 <span class="term">准入控制（admission control）</span>，而"上游发太快时，用拒绝或者变慢把压力顶回去"这件事整体叫 <span class="term">背压（backpressure）</span>。</p>
+<p>三样东西的代码合起来只有几行：</p>
+<pre><code>if state["waiting"] &gt;= QMAX:        # 队列满了：不排无限长的队，当场回 429
+    return Response(status_code=429)
+state["waiting"] += 1
+try:
+    async with state["sem"]:        # 许可：同时在跑的沙箱不超过 MAXC 个
+        return await run_in_sandbox(req.code)
+finally:
+    state["waiting"] -= 1</code></pre>
+<p>剩下的问题是 MAXC 取几。</p>
+
+<h4>把上限扫一遍</h4>
+<p>先说压测器怎么发请求。它不等上一条回来就发下一条，这是 Day 1 那个开环压测；相邻两条之间隔多久，取自一个平均值等于 1/λ 的指数分布随机数——也就是说间隔忽长忽短，长期平均下来每秒 λ 条。这种发法叫<span class="term">泊松到达（Poisson arrivals）</span>。用它而不用"每 28.6 毫秒准时发一条"，是因为 Day 6 那个锁相：等间隔的压力很容易和被测系统里某个周期性的节拍对上，量出来的数会失真。</p>
+<p>参数这样定：用重的那段用户代码（单次 34 毫秒 CPU），λ 固定在 35 次/秒，预热池给到 8 个（恒大于任何一档的 MAXC，保证池不会空），只改 MAXC 一个旋钮，别的全锁死。压测器压 3 秒不计数，再计 20 秒。</p>
+<div class="scroll">
+<table>
+<caption class="small" style="text-align:left;padding-bottom:.3rem">表 F · 到达率 35 次/秒下，改并发上限。单位毫秒，端到端延迟由压测器一侧测得。</caption>
+<tr><th>MAXC</th><th class="n">计入的请求数</th><th class="n">P50</th><th class="n">P90</th><th class="n">P99</th><th>失败数</th></tr>
+<tr><td>1</td><td class="n">680</td><td class="n">4162.0</td><td class="n">6004.1</td><td class="n">6259.2</td><td>0</td></tr>
+<tr><td>2</td><td class="n">684</td><td class="n">48.4</td><td class="n">97.7</td><td class="n">189.9</td><td>0</td></tr>
+<tr><td>4</td><td class="n">683</td><td class="n">58.5</td><td class="n">117.3</td><td class="n">218.4</td><td>0</td></tr>
+<tr><td>8</td><td class="n">682</td><td class="n">58.6</td><td class="n">123.2</td><td class="n">216.6</td><td>0</td></tr>
+</table>
+</div>
+<p>第一行和其余三行不在一个世界里。MAXC 设成 1 的时候，服务一次只跑一个沙箱，光用户代码就要 34 毫秒，一秒最多跑 29 个上下；而请求以 35 次/秒进来。进得比出得快，队伍就只会越排越长，延迟一路往上爬——这正是 Day 2 那个利用率超过 1 的形状，量到的四秒不是一个稳定值，它还在涨。</p>
+<p>后三行才是可以互相比较的。MAXC 从 2 加到 4，P50 从 48.4 涨到 58.5，P99 从 189.9 涨到 218.4；再从 4 加到 8，几乎没有变化。</p>
+<p>这里要说清楚为什么加上限反而更慢。这台机器只有 2 个核，用户代码是纯 CPU 的。允许 4 个沙箱同时跑，并不会让这两个核多出算力来，只会让四份活儿在同样两个核上轮流切换——总吞吐一点没涨（三行的请求数几乎一样），但每一份活儿的完成时间都被拉长了。等于把排队从服务门口挪进了操作系统的调度器里，而挪进去之后你就管不着它了。</p>
+
+<div class="card f">
+<span class="tag">关键结论</span>
+<p>并发上限不是"越大越安全"的旋钮。它的合理取值由两件事夹出来：下界是"到达率乘以服务时间"，低于它队伍会发散；上界是这台机器真正能并行干活的资源数，超过它只会把排队藏进调度器。这台机器上这两个数分别是 <code>35 × 0.034 ≈ 1.2</code> 和 <code>2</code>，取 2 正好。</p>
+</div>
+
+<h2>板块 2 · 第二部分 · 一百毫秒拆开看</h2>
+
+<h3>5. 分段：十一行里哪一行最贵</h3>
+<p>闸门装好了，接下来的问题换成"一次执行本身为什么要一百毫秒"。把第 2 节走过的那十一行跑 30 遍，每一段单独统计。用的是轻的那段用户代码，好让启动开销占满视野。</p>
+<div class="scroll">
+<table>
+<caption class="small" style="text-align:left;padding-bottom:.3rem">表 A · 冷路径分段。单位毫秒，热身 3 次后取 30 次，min / P50 / P90 / max 都是把 30 个样本排好序直接取的。</caption>
+<tr><th>这一段在做什么</th><th class="n">min</th><th class="n">P50</th><th class="n">P90</th><th class="n">max</th></tr>
+<tr><td>挂 tmpfs、挂 overlay、写 <code>config.json</code></td><td class="n">6.05</td><td class="n">6.61</td><td class="n">7.48</td><td class="n">8.34</td></tr>
+<tr><td>把用户代码写进上层</td><td class="n">0.09</td><td class="n">0.10</td><td class="n">0.20</td><td class="n">0.27</td></tr>
+<tr><td><code>runc create</code></td><td class="n">18.69</td><td class="n">25.65</td><td class="n">36.18</td><td class="n">37.03</td></tr>
+<tr><td><code>runc start</code> 发出 → 解释器跑到第一行</td><td class="n">13.20</td><td class="n">14.28</td><td class="n">15.82</td><td class="n">22.70</td></tr>
+<tr><td>导入那一组库</td><td class="n">30.40</td><td class="n">31.89</td><td class="n">35.24</td><td class="n">37.79</td></tr>
+<tr><td>跑用户代码</td><td class="n">0.16</td><td class="n">0.17</td><td class="n">0.22</td><td class="n">0.23</td></tr>
+<tr><td>进程退出 → 宿主读到 EOF</td><td class="n">5.89</td><td class="n">6.16</td><td class="n">7.90</td><td class="n">8.67</td></tr>
+<tr><td><code>runc delete</code></td><td class="n">4.88</td><td class="n">5.46</td><td class="n">6.34</td><td class="n">7.38</td></tr>
+<tr><td>拆 overlay 与 tmpfs</td><td class="n">6.07</td><td class="n">6.71</td><td class="n">7.55</td><td class="n">8.20</td></tr>
+<tr class="tot"><td>请求路径合计（到进程退干净为止）</td><td class="n">77.63</td><td class="n">86.45</td><td class="n">95.16</td><td class="n">106.88</td></tr>
+<tr class="tot"><td>全程合计（含回收）</td><td class="n">89.50</td><td class="n">98.61</td><td class="n">109.00</td><td class="n">121.26</td></tr>
+</table>
+</div>
+<p class="small">补一句读法：前九行的 P50 加起来是 97.03，而"全程合计"那一行的 P50 是 98.61。两个数不完全相等是正常的——百分位不是可加的量，每一行的 P50 来自各自那 30 个样本里的第 15 个，未必是同一次运行。要看严格相加的版本，回第 2 节那条单次记录。</p>
+<p>三段占掉了绝大部分：<code>runc create</code> 25.65、解释器起来 14.28、导入库 31.89。加起来 71.8 毫秒，是请求路径 86.45 的八成三。</p>
+<p>而导入那一段是单项最大的。这件事值得停一下：<b>那一组库全是标准库，一行第三方代码都没有，就已经比建整个容器还贵。</b></p>
+
+<h4>把这个数放回 Day 11 的位置上</h4>
+<p>Day 11 量到"从零复制一份 80 MB、1332 个文件的根文件系统"要 1327 毫秒，而当时整套隔离机制加起来只有二十几毫秒，两者差三十多倍，结论是"优化不该从锁下手"。Day 12 用 overlay 把那一步换掉了：今天表 A 第一行，同样规模的根，准备成本 6.61 毫秒。</p>
+<p>一千三百毫秒变成六点六毫秒之后，排行榜整个重排了。最大的那一项不再是文件系统，也不是隔离机制，而是"把一个 Python 解释器带着它的标准库拉起来"。</p>
+
+<h3>6. 动笔之前，先押三个数</h3>
+<p>下面三条路都要试，试之前先各押一个数。三条路做的事分别是：</p>
+<ul>
+<li>路线甲：提前把 tmpfs、overlay、<code>runc create</code> 都做完，沙箱停在 <code>created</code> 等着。请求来了只发 <code>runc start</code>。</li>
+<li>路线乙：让容器一直 <code>running</code>（里面跑一个什么也不干的占位进程），请求来了用 <code>runc exec</code> 在里面起一个新解释器。</li>
+<li>路线丙：容器一直 <code>running</code>，里面那个进程已经把那一组库导入完了，请求来了它 <code>fork</code> 一个孩子去执行。</li>
+</ul>
+
+<div class="card p">
+<span class="tag">预测</span>
+<p>冷路径的请求路径 P50 是 86.45 毫秒。写下三个数再往下翻。</p>
+<p>① 甲能把 86.45 降到多少？</p>
+<p>② 乙和甲，哪个更快？快多少？</p>
+<p>③ 丙能降到多少？</p>
+<div class="write"></div>
+</div>
+
+<h3>7. 揭晓：省下容器那一段，只省掉三成八</h3>
+<p>四条路径各跑 30 次，同一台机器、同一次会话、同一段轻用户代码。第一行是把冷路径重新量了一遍，好让四行之间可比：</p>
+<div class="scroll">
+<table>
+<caption class="small" style="text-align:left;padding-bottom:.3rem">表 B · 四条路径的端到端耗时。单位毫秒，热身 3 次后取 30 次。计时都从"决定执行"开始，到"结果回到宿主"为止，不含回收。</caption>
+<tr><th>路径</th><th class="n">min</th><th class="n">P50</th><th class="n">P90</th><th class="n">max</th></tr>
+<tr><td>冷路径：现挂 overlay、现 create、现起解释器</td><td class="n">78.35</td><td class="n">85.39</td><td class="n">96.30</td><td class="n">98.85</td></tr>
+<tr><td>甲 · 停在 <code>created</code>，只 <code>runc start</code></td><td class="n">51.31</td><td class="n">53.23</td><td class="n">59.95</td><td class="n">72.62</td></tr>
+<tr><td>乙 · 常驻容器，每次 <code>runc exec</code> 一个新解释器</td><td class="n">61.74</td><td class="n">66.69</td><td class="n">78.30</td><td class="n">87.39</td></tr>
+<tr><td>丙 · 常驻容器，预导入之后 <code>fork</code></td><td class="n">1.30</td><td class="n">1.47</td><td class="n">1.61</td><td class="n">1.87</td></tr>
+</table>
+</div>
+<p>先用第一行校一下尺子。表 A 里同一件事量到的是 86.45，这里是 85.39，两次独立的 30 样本差了 1.06 毫秒——这个差就是同一件事量两遍的自然浮动，后面几行的比较全部以本表第一行为基准，别拿它去减表 A 的数。</p>
+<p>甲把 85.39 降到 53.23，省下 32.2 毫秒，正好对上表 A 里"挂 overlay 6.61 加 runc create 25.65"这两行。它省得干净，但也只省到这里——剩下那 53 毫秒里，解释器起来和导入库这两段就占了四十几毫秒（下面表 C 甲那一列，15.77 加 33.00），一分没动。</p>
+<p>乙比甲慢，这一条大概率和你押的相反。容器明明一直开着，什么都不用重建，怎么反而更贵？</p>
+
+<h4>为什么"一直开着"反而更慢</h4>
+<p>把两条路径各自的第一段单独量出来，答案就在表面上：</p>
+<div class="scroll">
+<table>
+<caption class="small" style="text-align:left;padding-bottom:.3rem">表 C · 甲和乙的分段对照。单位毫秒，热身 3 次后取 20 次的 P50。</caption>
+<tr><th>这一段</th><th class="n">甲（<code>runc start</code>）</th><th class="n">乙（<code>runc exec</code>）</th></tr>
+<tr><td>命令发出 → 容器里的解释器跑到第一行</td><td class="n">15.77</td><td class="n">30.46</td></tr>
+<tr><td>解释器第一行 → 那一组库导入完</td><td class="n">33.00</td><td class="n">31.56</td></tr>
+</table>
+</div>
+<p>第二行两边一样，说明导入这件事和走哪条路无关。差别全在第一行的 14.7 毫秒上。</p>
+<p>原因是这两条命令干的活不是一回事。<code>runc start</code> 面对的是一个已经完全建好、只差 <code>execve</code> 的进程——它要做的只是打开 <code>exec fifo</code> 的读端，让那个进程往下走。<code>runc exec</code> 面对的是一个空手来的新请求：先把 <code>runc</code> 这个二进制拉起来（单独量这一步是 4.06 毫秒），再 fork 一个进程去加入那五个已经存在的命名空间，再给它装 cgroup、砍能力、装过滤器，最后才 <code>execve</code>。</p>
+<p>做个参照：在这台机器上，光是 fork+exec 一个什么也不干的 <code>/bin/true</code> 就要 1.03 毫秒。<code>runc exec</code> 那 30 毫秒里，真正"因为它是容器"而多出来的部分，就藏在这一串装配动作里。</p>
+<p>丙那一行是 1.47 毫秒，比冷路径快 58 倍。它做对的事只有一件：把解释器启动和库导入这两段，从每个请求各付一次，变成整个容器生命期只付一次。</p>
+
+<div class="card f">
+<span class="tag">这一段的落点</span>
+<p>"保温"保的是什么，比"保不保温"重要得多。同样是让容器常驻，乙保住了命名空间和 rootfs，省下 19 毫秒；丙保住了一个已经导入完库的解释器进程，省下 84 毫秒。这一页最大的那一笔钱，不在容器那一层。</p>
+</div>
+
+<h2>板块 2 · 第三部分 · 三条路各砍掉哪一段</h2>
+<p>上一节的三个数已经把结论给了。这一部分讲的是怎么真把它们用起来，以及每一条各自要付什么——因为三条路没有一条是白拿的。</p>
+
+<h3>8. 路线一 · 预热池：把建沙箱挪到没人看的时候</h3>
+<p>甲那条路的做法有个名字：<span class="term">预热池（warm pool）</span>。服务空闲的时候先建好一批沙箱停在 <code>created</code>，请求来了从池里取一个，用完扔掉，再补一个新的进去。</p>
+<p class="small">这个"预热"和 Day 6 那个"预热"是两回事。Day 6 说的是量任何东西之前先跑几轮不计数，把缓存之类一次性的开销先付掉，那是测量方法；这里说的是提前把资源建好放着，那是服务设计。同一个词，两件事。</p>
+<p>池子不是免费的，代价有三笔，都能量出来。</p>
+<h4>第一笔：补一个进池子要多久</h4>
+<p>量"从零建一个沙箱到它可以接活"这一段，实测 P50 是 103.35 毫秒。这个数决定了池子的补充速度：一个后台补充协程，一秒最多补 9 个进去。</p>
+<p>它同时给出了池大小的下界。Day 2 的利特尔法则在这里可以直接用：池里需要常备的数量，等于"到达率 × 一个沙箱从被取走到被补回来的时间"。到达率 35 次/秒、补一个 0.103 秒，就是 3.6 个——池子小于 4 个，稳定状态下就会经常见底。</p>
+<h4>第二笔：占着的内存</h4>
+<p>同时开四个预热沙箱，每个的 cgroup 记账在 7.76 到 8.04 MiB 之间，四个合起来 31.74 MiB；同一时刻整机的 <code>MemAvailable</code>（内核给出的"还能拿来用"的内存估计）下降了 27.38 MiB。两个数量级一致，可以按"每个预热沙箱八兆内存"来估。</p>
+<p>八兆很便宜，但要注意这是一个只装了标准库的镜像。换成一个预先 <code>import torch</code> 的沙箱，这个数会完全不同——那时候池子多大就不再是延迟问题，而是内存问题。</p>
+<h4>第三笔：池空了怎么办</h4>
+<p>这一笔最容易被忽略。池子见底的时候，请求有两条路：等一个新的补进来，或者当场走冷路径。前者让这条请求多等一百毫秒，后者让它多等三十毫秒——但无论哪条，这条请求的耗时都和池子里有货时完全不同。</p>
+<p>把两条路的数摆出来就知道差多少。命中池子的请求走的是表 B 第二行那 53 毫秒；当场走冷路径的走的是第一行那 85 毫秒；选择等一个新的补进来，最坏要多等一整个补充周期，也就是第 8 节开头那 103 毫秒。三个数互相之间差一到两倍。</p>
+<p>于是延迟分布不再是一个包，而是分成了几坨。Day 6 讲过这个形状，它叫双峰分布。它的麻烦之处在于，平均值会落在两坨中间那个根本没有请求的位置上，看平均值等于什么都没看。这种服务只能看百分位。</p>
+
+<h3>9. 路线二 · 懒加载：一次执行只碰了镜像的百分之三</h3>
+<p class="lead">六毫秒的那一段，凭什么值得单开一条优化路线？</p>
+<p>第二条路动的是表 A 第一行那 6.61 毫秒——听上去不值得动，六毫秒而已。但这个数字有个前提：镜像已经躺在本地，而且刚被读过。把这两个前提拿掉一个，数字就变了。</p>
+<p>把页缓存清空，再跑同一条冷路径：</p>
+<div class="scroll">
+<table>
+<caption class="small" style="text-align:left;padding-bottom:.3rem">表 D · 页缓存冷热对整条冷路径的影响。单位毫秒，热身 2 次后取 12 次。冷档在每一次之前执行 <code>sync; echo 3 &gt; /proc/sys/vm/drop_caches</code>，这个动作本身不计入。</caption>
+<tr><th>情况</th><th class="n">min</th><th class="n">P50</th><th class="n">P90</th><th class="n">max</th></tr>
+<tr><td>页缓存是热的（镜像刚被读过）</td><td class="n">82.80</td><td class="n">91.09</td><td class="n">98.66</td><td class="n">101.07</td></tr>
+<tr><td>页缓存被清空（镜像要从盘上读）</td><td class="n">122.01</td><td class="n">131.70</td><td class="n">145.46</td><td class="n">147.64</td></tr>
+</table>
+</div>
+<p>差 40.6 毫秒。这 40.6 毫秒不在表 A 的任何一行里单独出现，它散在每一次读文件的动作上：读解释器、读动态库、读那一堆 <code>.pyc</code>。页缓存热的时候这些读都不碰磁盘，冷的时候每一次都碰。</p>
+<p>那么这次执行到底要读多少东西？用 <code>strace</code>（把一个进程发出的每一个系统调用逐条打出来的工具）把一次执行的所有 <code>openat</code> 和 <code>read</code> 记下来数一遍：</p>
+<div class="scroll">
+<table>
+<tr><th>量</th><th class="n">整个镜像</th><th class="n">一次执行真正碰到的</th><th class="n">占比</th></tr>
+<tr><td>文件数</td><td class="n">1304</td><td class="n">93</td><td class="n">7.1%</td></tr>
+<tr><td>字节数</td><td class="n">61.13 MiB</td><td class="n">1.88 MiB</td><td class="n">3.1%</td></tr>
+</table>
+</div>
+<p>读得最多的八个文件全是标准库的 <code>.pyc</code>，最大的一个是 <code>ssl</code> 那份，143.8 KiB。</p>
+<p>现在把这两组数放在一起推一遍。启动这件事只需要镜像里 3.1% 的字节；而"把镜像准备好"这个动作，在传统做法里意味着把 100% 的字节都落到本地磁盘上。这两个数之间的差距，就是 <span class="term">懒加载（lazy loading / lazy pulling）</span> 那条路要吃掉的东西：不等整个镜像落地就先把容器起来，文件系统按需去远端取还没到的那些块。这条路在生态里已经有现成实现，<code>stargz-snapshotter</code> 和 <code>soci-snapshotter</code> 都属于这一类。</p>
+<p class="small">今天这台机器上镜像本来就在本地，所以量不出懒加载能省多少——上面那 3.1% 只说明"省的空间存在"，不说明具体省多少。想知道具体数字，页尾的专项深挖里有一段可以直接用的题目。</p>
+<p>还有一条更朴素的推论：既然热的页缓存值 40.6 毫秒，那么让同一份镜像被反复使用、别被别的东西挤出去，本身就是一项优化。预热池顺带就把这件事做了——池里那几个沙箱一直在碰同一份镜像。</p>
+
+<h3>10. 路线三 · 预导入之后 fork</h3>
+<p>第三条路动的是最大的那两段。做法是：容器里常驻一个进程，它一起来就把那一组库全部导入好，然后停在那儿等活；来一个任务就 <code>fork</code> 一个孩子，孩子直接带着已经导入好的模块去执行。这种"预先把重活干完、之后靠 fork 复制"的进程有个名字，叫 <span class="term">受精卵进程（zygote）</span>，也叫 fork 服务器（fork server）。</p>
+<p>它便宜在哪，可以直接接上 Day 12 那个词。<code>fork</code> 出来的孩子和父亲共享同一批内存页，只有被写的那些页才会真的复制一份——这就是 Day 12 讲 overlay 上层时用的写时复制，同一个机制换了个场合。父进程已经导入好的那些模块，孩子一个字节都不用重新算，也不用重新解析一遍。</p>
+<p>核心循环只有十几行：</p>
+<pre><code># 开工之前先把重活干完：这一段只在容器起来时执行一次
+import json, re, base64, urllib.request, http.client, datetime, statistics, hashlib
+
+while True:
+    with open('/app/rt/req') as f:       # 阻塞在命名管道上，等宿主写进一行
+        line = f.readline()
+    task = json.loads(line)
+    pid = os.fork()                      # 全天最便宜的一步
+    if pid == 0:                         # 孩子：带着已经导入好的模块直接干活
+        g = {}
+        exec(task['code'], g)
+        with open('/app/rt/resp', 'w') as o:
+            o.write(json.dumps({"ret": g.get('RESULT')}) + "\n")
+        os._exit(0)                      # 用 _exit，不跑父进程注册的退出钩子
+    os.waitpid(pid, 0)                   # 收尸，否则进程号表会被僵尸占满</code></pre>
+<p>跑起来应该看到：每次调用一点几毫秒返回，而且这个数不随调用次数变化。要是你看到它一次比一次慢，先去 <code>ps</code> 里数一下僵尸进程——十有八九是 <code>waitpid</code> 那行漏了，Day 13 讲过这个坑。</p>
+<p>代价也很实在，有两条。</p>
+<p>一，隔离的粒度变粗了。冷路径上，每个任务有自己的容器、自己的进程号表、自己的一次性可写层；用 zygote 之后，同一个容器里连续跑的多个任务共享同一个内核视图和同一个可写层。孩子进程之间靠的是普通的进程边界，不是容器边界。跑互不信任的用户代码时，这个差别是致命的——通常的做法是一个 zygote 只服务一个用户会话，会话结束整个容器扔掉。</p>
+<p>二，它只对"重活能预先干完"的场景有效。父进程导入的是哪几个库，是你在容器起来的时候就写死的。用户代码要是 <code>import</code> 了一个你没预导入的东西，那部分开销原样回来。</p>
+
+<h3>11. 三条路在同一个到达率下量一遍</h3>
+<p>前面都是单次延迟。接上服务、加上并发和排队之后，差距会被放大还是缩小？把 MAXC 锁死在 2，用重的那段用户代码，到达率取 5 次/秒（这个值取得很低，因为冷路径在更高的到达率下会直接发散），只改执行路径这一个旋钮：</p>
+<div class="scroll">
+<table>
+<caption class="small" style="text-align:left;padding-bottom:.3rem">表 G · 到达率 5 次/秒、MAXC=2 下的端到端延迟。单位毫秒，压 3 秒不计数后计 20 秒，共 115 条。</caption>
+<tr><th>执行路径</th><th class="n">P50</th><th class="n">P90</th><th class="n">P99</th><th class="n">max</th></tr>
+<tr><td>冷路径：每个请求现建现拆</td><td class="n">313.8</td><td class="n">698.0</td><td class="n">1277.0</td><td class="n">1328.9</td></tr>
+<tr><td>预热池 + zygote</td><td class="n">38.6</td><td class="n">42.6</td><td class="n">55.5</td><td class="n">69.3</td></tr>
+</table>
+</div>
+<p>P50 差 8 倍，P99 差 23 倍。差距在尾巴上被放大了，这一点值得单说。</p>
+<p>冷路径单次量出来是 86 毫秒，加上重用户代码的 34 毫秒，一次执行大约 120 毫秒。可表里的 P50 是 313.8——多出来的将近两百毫秒不是执行本身，是排队。到达率只有 5 次/秒，为什么会排上队？因为冷路径每个请求要付的 CPU 不止那 34 毫秒的用户代码，挂载、<code>runc create</code>、<code>runc delete</code>、卸载全都在烧同样那两个核。于是有效容量比"120 毫秒一个、两个并发"算出来的 16 次/秒低得多，5 次/秒已经把机器压得相当满了。</p>
+<p>同一组配置把到达率抬到 12 次/秒，冷路径的 P50 变成 9157 毫秒——那已经不是"慢"，是队列在发散。而预热池加 zygote 那条路，在 35 次/秒下的 P99 也只有 189.9 毫秒（表 F 第二行）。</p>
+
+<h2>板块 2 · 第四部分 · 停下来的那一侧</h2>
+<p>到这里，启动那一侧已经从 86 毫秒压到 1.5 毫秒。接下来这一部分讲的是另一半：怎么把一个沙箱停掉、怎么把它回收。这半边的坑更深，因为它的开销不出现在正常请求上——只出现在出问题的那些请求上，也就是 P99 那一批。</p>
+
+<h3>12. 超时：宽限期在多数情况下是白等</h3>
+<p>服务给每次执行设了超时。到点之后的标准做法是两步：先发 SIGTERM 给它一个自己收尾的机会，等一个<span class="term">宽限期（grace period）</span>，还不退就发 SIGKILL。</p>
+<p>温故第二题已经把机制说了：容器里的 1 号进程只接收它自己装了处理函数的信号。用户提交的代码不会装。所以这个宽限期对它们来说是纯粹的空等。</p>
+<p>把这条路完整走一遍量下来。被测的用户代码是一段死循环，不装任何信号处理函数，而且还 <code>fork</code> 了一个孙子进程，孙子每 50 毫秒往一个文件里写一次当前时刻。宽限期取 0.5 秒，跑 5 次：</p>
+<div class="scroll">
+<table>
+<caption class="small" style="text-align:left;padding-bottom:.3rem">表 H · 一次超时终止的完整路径。5 次运行的取值范围。</caption>
+<tr><th>观测项</th><th>结果</th></tr>
+<tr><td>SIGTERM 之前，cgroup 里的任务数</td><td>2（1 号进程和它的孙子）</td></tr>
+<tr><td>宽限期结束时，容器状态</td><td>5 次全是 <code>running</code></td></tr>
+<tr><td>宽限期结束时，cgroup 里的任务数</td><td>5 次全是 2</td></tr>
+<tr><td>SIGKILL 发出 → cgroup 里一个任务都不剩</td><td>6.32 ~ 8.24 毫秒</td></tr>
+<tr><td>孙子进程最后一次心跳</td><td>都落在 SIGKILL 之前 25.6 ~ 28.1 毫秒</td></tr>
+<tr><td>整条终止路径</td><td>519.28 ~ 521.71 毫秒</td></tr>
+</table>
+</div>
+<p>三件事从这张表里读出来。</p>
+<p>第一，宽限期整个是浪费。五百毫秒过去，容器状态没变，cgroup 里还是两个任务。真正起作用的是后面那一下 SIGKILL，它用不到十毫秒就清空了。<b>整条终止路径 520 毫秒里，有 500 毫秒是白等的。</b></p>
+<p>第二，孙子进程跟着死了，而且没人单独去杀它。心跳文件停在 SIGKILL 之前，说明它是被同一下带走的。机制是进程号命名空间的一条规则：这个命名空间的 1 号进程一旦终止，内核会把命名空间里剩下的所有进程全部用 SIGKILL 收走。这一条对沙箱很重要——它意味着你不需要自己去追用户代码派生出来的进程树，杀 1 号就够了，前提是这个沙箱确实有自己的进程号命名空间。</p>
+<p>第三，"杀干净了没有"这件事，判据不该是容器状态，该是 cgroup 里还剩几个任务。状态是 runc 记在自己那份状态文件里的东西，而 cgroup 的任务列表是内核在数。今天这个探针读的就是后者。</p>
+<p>那宽限期还要不要？要，但要分开对待。你自己写的那个 1 号进程（如果你按 Day 13 说的放了一个进去）应该装 SIGTERM 处理函数，让它有机会把结果刷出去、把日志写完；而对用户代码，宽限期应该取一个很小的值，因为等下去几乎不会有收益。把这两件事用同一个数配置，是常见的错法。</p>
+
+<h3>13. 回收：一个 <code>-f</code> 值一百毫秒</h3>
+<p>沙箱停了之后还要拆。表 A 里 <code>runc delete</code> 那一行是 5.46 毫秒，看起来无关紧要。但那一行量的是一种特定情况，换一种就完全不同了：</p>
+<div class="scroll">
+<table>
+<caption class="small" style="text-align:left;padding-bottom:.3rem">表 E · 四种回收组合。单位毫秒，热身 2 次后取 12 次。</caption>
+<tr><th>容器状态与命令</th><th class="n">min</th><th class="n">P50</th><th class="n">P90</th><th class="n">max</th></tr>
+<tr><td>已经退出的容器 · <code>runc delete</code></td><td class="n">5.63</td><td class="n">5.76</td><td class="n">6.07</td><td class="n">6.31</td></tr>
+<tr><td>已经退出的容器 · <code>runc delete -f</code></td><td class="n">106.51</td><td class="n">106.71</td><td class="n">107.22</td><td class="n">107.24</td></tr>
+<tr><td>create 过但没 start 过 · <code>runc delete</code></td><td class="n">106.68</td><td class="n">107.27</td><td class="n">107.81</td><td class="n">108.31</td></tr>
+<tr><td>create 过但没 start 过 · <code>runc delete -f</code></td><td class="n">106.58</td><td class="n">107.10</td><td class="n">107.89</td><td class="n">109.58</td></tr>
+</table>
+</div>
+<p>第一行和第二行是同一个容器、同一个状态，唯一差别是命令后面多了一个 <code>-f</code>。<b>多出来的是 101 毫秒</b>，而且四种情况里但凡走到 100 毫秒这一档的，抖动都极小——min 和 max 只差不到 3 毫秒。这种"贵得非常整齐"的形状通常意味着底下有一个固定的等待，而不是有活要干。</p>
+<p>翻源码，八行就找到了。runc v1.3.5 的 <code>delete.go</code> 第 16 到 25 行：</p>
+<pre><code>func killContainer(container *libcontainer.Container) error {
+	_ = container.Signal(unix.SIGKILL)
+	for i := 0; i &lt; 100; i++ {
+		time.Sleep(100 * time.Millisecond)
+		if err := container.Signal(unix.Signal(0)); err != nil {
+			return container.Destroy()
+		}
+	}
+	return errors.New("container init still running")
+}</code></pre>
+<p>把这段逐行读：先发一发 SIGKILL，然后进循环。循环体的第一句是 <code>Sleep(100ms)</code>，第二句才去探测进程还在不在。也就是说，哪怕进程在 SIGKILL 之后一微秒就没了，这个函数也一定会睡满第一个 100 毫秒才发现。101 毫秒这个数就是这么来的。</p>
+<p>接着看这个函数在什么时候被调用。同一个文件第 73 到 87 行：</p>
+<pre><code>if force {
+	return killContainer(container)
+}
+s, err := container.Status()
+...
+switch s {
+case libcontainer.Stopped:
+	return container.Destroy()
+case libcontainer.Created:
+	return killContainer(container)
+default:
+	return fmt.Errorf("cannot delete container %s that is not stopped: %s", id, s)
+}</code></pre>
+<p>两条路通向那 100 毫秒。带 <code>-f</code> 是一条，无条件走 <code>killContainer</code>；不带 <code>-f</code> 但容器状态是 <code>Created</code> 是另一条。只有"状态是 <code>Stopped</code> 且不带 <code>-f</code>"这一种组合，才走 <code>Destroy()</code> 直接拆，也就是表 E 第一行那 5.76 毫秒。</p>
+<p>源码里第 68 到 72 行的注释解释了 <code>-f</code> 为什么对已经停掉的容器也要这么干：容器万一没有自己的进程号命名空间，它的 cgroup 里可能还留着别的进程，所以要无差别地补一刀。这个设计对通用场景是对的，只是对"每秒要拆几十个沙箱"的服务来说代价太高。</p>
+<p>第三行的含义对预热池是直接的坏消息：池里那些 create 好但一直没被用掉的沙箱，你要关服务、要缩池、要换镜像，每拆一个都是 107 毫秒。池子有 32 个，光是拆就是三秒半。</p>
+
+<h3>14. 把回收挪出请求路径</h3>
+<p>把前两节的数加起来看一次最糟的执行：用户代码死循环，超时 SIGTERM 空等 500 毫秒，SIGKILL 7 毫秒，<code>runc delete -f</code> 107 毫秒，拆 overlay 7 毫秒。终止和回收合起来 621 毫秒——在"这次执行被允许跑多久"之外，又多出来大半秒。</p>
+<p>如果这 621 毫秒发生在请求路径上，它就直接写进这条请求的延迟里；更糟的是，如果许可是在回收完成之后才归还的，那么这 621 毫秒里所有排队的请求都在跟着等。</p>
+<p>这就引出了这一部分唯一的设计原则：把不需要用户等的事情，从<span class="term">请求路径（request path）</span>上挪走。具体到这里是三件事——</p>
+<ol>
+<li>许可在"结果已经拿到"的那一刻就归还，不等回收。</li>
+<li>回收交给一个后台任务去做，请求这一侧只把沙箱标记成待拆。这种做法叫<span class="term">异步回收</span>。</li>
+<li>补池子也归后台。请求路径上只有"取一个"，没有"造一个"。</li>
+</ol>
+<p>做完这三件事之后，那 621 毫秒还在，机器还是要付它。变化的只是谁在等：不再是某一条倒霉的请求，而是后台那条协程。这一点要说清楚，免得把"挪走"当成"消失"——如果后台的回收速度长期跟不上请求速度，池子会持续见底，冷路径会持续被走到，账最后还是要还。</p>
+
+<div class="card k">
+<span class="tag">关键结论</span>
+<p>今天这一页从头到尾只做了一件事：把一次执行拆成一串互不重叠的段，然后逐段问"这一段能不能不在请求路径上发生"。预热池挪走了建容器那两段（表 B 上量到 32.2 毫秒），zygote 又挪走了解释器启动与库导入那两段（表 A 上合计 46.17 毫秒），异步回收挪走了终止与拆卸那 621 毫秒。一段都没有消失，全部还在机器上，只是换了个时刻发生。</p>
+</div>
+
+<h2>板块 3 · 动手任务</h2>
+<p>两个任务，约两小时。任务 A 是把今天这套东西搭出来并量一遍，任务 B 把它接到你自己手上的东西上。</p>
+
+<h3>任务 A · 从一条命令做到一个能压测的服务（约 1.4 小时）</h3>
+
+<h4>第 1 步：造一个装得下解释器的镜像目录</h4>
+<p>Day 11 那个 <code>mkrootfs.sh</code> 里只放了 <code>sh</code> 和 <code>ls</code>。这次要放下 <code>python3</code>、它的标准库目录、以及 <code>ldd</code> 列出来的那几个动态库。</p>
+<p>验收标准：<code>chroot 你的镜像目录 /usr/bin/python3 -c "import json,re,urllib.request; print('ok')"</code> 能打出 <code>ok</code>。</p>
+<p>常见坑：报 <code>No module named 'encodings'</code>，说明标准库目录没复制全或者位置不对——CPython 是按编译时写死的相对路径找标准库的，<code>/usr/lib/python3.11</code> 这个层级不能改。</p>
+
+<h4>第 2 步：把冷路径跑通，并且把十一段都量出来</h4>
+<p>照第 2 节那张走一遍的表，自己实现一遍：挂 tmpfs、挂 overlay、写 <code>config.json</code>、<code>runc create</code>、写任务、<code>runc start</code>、读输出、<code>runc delete</code>、卸载。</p>
+<p>关键是让容器里的进程自己打三个 <code>CLOCK_MONOTONIC</code> 时刻出来，否则你只能量到一个总数，拆不开。</p>
+<p>验收标准：把各段加起来，和端到端那个数的差不超过 1 毫秒。差得多说明有一段没被算进去。</p>
+<p>常见坑：<code>runc create</code> 挂住不返回。原因是你用管子接了它的标准错误——容器进程会继承这个管子，而它此刻正卡在 <code>exec fifo</code> 上不退出，于是永远读不到 EOF。把标准错误接到临时文件上就好了。这个坑今天这套代码踩过一次。</p>
+
+<h4>第 3 步：包成 HTTP，加上许可和队列</h4>
+<p>用 FastAPI 加 uvicorn。每一个阻塞动作都要用 <code>asyncio.to_thread</code> 甩出去。</p>
+<p>验收标准：一边发一条会跑 3 秒的代码，一边发一条 1 毫秒的代码，后者必须立刻返回。做不到就说明还有同步调用留在事件循环上。</p>
+<p>常见坑：许可用 <code>threading.Semaphore</code> 而不是 <code>asyncio.Semaphore</code>。前者会把事件循环整个按住，症状和上面那条一模一样，但更难查，因为代码里看不到明显的同步调用。</p>
+
+<h4>第 4 步：加一个 zygote 池，把两条路的数放在一起</h4>
+<p>照第 10 节那个循环写。宿主一侧和容器一侧用两个命名管道通信，管道建在 overlay 的上层里，两边都看得见。</p>
+<p>验收标准：连续调用一百次，耗时不应该有上升趋势。有上升就去数僵尸进程。</p>
+<p>常见坑：命名管道的读写两侧同时只能有一对。多个请求并发打同一个 zygote 容器时，两条响应会串在一起。今天这套代码是靠"一个容器同一时刻只服务一个请求"绕过去的——用完还回池子之前，别人拿不到它。</p>
+
+<h4>第 5 步：把并发上限扫一遍</h4>
+<p>写一个开环压测器（独立进程），到达率固定，把 MAXC 从 1 扫到 8，画出 P50 和 P99。</p>
+<p>验收标准：你应该能在自己的机器上找到那个拐点，并且它应该和你的核数有关。找不到拐点，多半是用户代码太轻，服务时间被 HTTP 开销淹没了——把它调重到几十毫秒再试。</p>
+<p>常见坑：压测器和服务跑在同一个 Python 进程里。Day 6 那条规矩，今天照样管用。</p>
+
+<h3>任务 B · 接到你自己手上的东西（约 0.6 小时）</h3>
+<p>挑一个你自己写过的、会启动子进程或者调外部命令的服务，做两件事：</p>
+<ol>
+<li>把它的"一次调用"按今天的方式拆成互不重叠的段，每段一个数，加起来等于端到端。不用做优化，先把账拆出来。</li>
+<li>找出这些段里，哪些是"每次都要重做但其实可以提前做好"的。这一步的判据很具体：这一段的结果，在请求到来之前是不是就已经确定了？是的话它就能挪走。</li>
+</ol>
+<p>验收标准：你能指着其中一段说出"这一段占 X%，它可以提前做，因为它不依赖请求内容"。</p>
+
+<h3>加分题</h3>
+<ul>
+<li>把 zygote 那个容器改成"同一个容器连续服务多个任务"，然后想办法证明前一个任务能不能影响后一个：在第一个任务里写一个文件到 <code>/tmp</code>，在第二个任务里读它。读到了说明隔离粒度确实变粗了。再想一想，什么时候这种粗粒度是可以接受的。</li>
+<li>今天量到 <code>runc delete -f</code> 恒定花 101 毫秒，源码里那个 <code>Sleep</code> 是写死的。假设你不能改 runc，有没有办法让"拆掉一个 created 状态的容器"不付这 100 毫秒？提示：读一遍 <code>delete.go</code> 那个 <code>switch</code>，看看有没有别的路径能把容器先弄到 <code>Stopped</code>。</li>
+<li>把镜像换成一个装了较大第三方库的版本，重跑第 9 节那两个数（碰到的文件占比、字节占比）。占比是变大还是变小？这个变化对懒加载的收益意味着什么？</li>
+<li>今天的宽限期是死的 0.5 秒。设计一个"自适应"的宽限期：怎么在运行时判断这个容器的 1 号进程到底装没装 SIGTERM 处理函数？提示是 <code>/proc/&lt;pid&gt;/status</code> 里有一行叫 <code>SigCgt</code>。</li>
+</ul>
+
+<h2>板块 4 · 工作现场</h2>
+
+<h3>场景一 · 「沙箱冷启动 P99 一秒四，砍到 300 毫秒」</h3>
+<p>Day 11 里这个场景出现过一次，当时你只能说"钱不在锁上"。今天你有完整的一套动作。</p>
+<p>第一步不是优化，是拆账。按第 2 节那十一行在你自己的系统上做一遍，要求各段加起来等于端到端。这一步做完，方向基本就定了。</p>
+<p>如果大头在容器创建，预热池能砍掉它，但要先算三个数：补一个进池子要多久、池子要多大（到达率乘以补充时间）、每个占多少内存。</p>
+<p>如果大头在语言运行时启动和依赖导入——按今天这个镜像的比例，这是最可能的情况——那预热池只能帮你砍掉三成八，真正的解法是预导入之后 fork，代价是隔离粒度变粗，需要用"一个会话一个容器"来补。</p>
+<p>如果大头在镜像准备，先分清是"镜像不在本地"还是"镜像在本地但页缓存是冷的"。这两件事的解法完全不同，前者是懒加载，后者是让镜像别被挤出内存。</p>
+
+<h3>场景二 · 「压力一上来延迟就崩，但 CPU 只有六成」</h3>
+<p>典型症状是 P50 还行、P99 高得离谱，而机器看起来没满。</p>
+<p>先查并发上限设成了多少。如果它明显大于核数，你看到的就是第 4 节那张表：吞吐一点没涨，每份活儿都被拉长。CPU 六成而延迟崩，通常还意味着有一部分时间花在了不占 CPU 的地方——比如等回收、等池子补货。</p>
+<p>再查许可是什么时候归还的。如果归还发生在回收之后，那么每一次回收的 100 多毫秒都在挡着后面的队伍。这一条在代码里通常是一个位置很不起眼的 <code>finally</code>。</p>
+
+<h3>场景三 · 「超时了，但是沙箱没死透」</h3>
+<p>Day 11 已经解释了 SIGTERM 为什么无效。今天补两条可操作的。</p>
+<p>一是判据要换。别用"容器状态变了没有"判断死没死，用 cgroup 里还剩几个任务。前者是 runc 记的账，后者是内核在数。</p>
+<p>二是别自己去追进程树。只要这个沙箱有自己的进程号命名空间，杀掉 1 号进程，内核会把里面剩下的全收走——今天量到的是不到十毫秒清空。反过来说，如果你发现杀了 1 号还有残留，那要怀疑的是这个沙箱压根没有自己的进程号命名空间。</p>
+
+<h3>同事和面试官常问的</h3>
+<ul>
+<li>「你们的沙箱冷启动多少？」——这个问题问得不完整，回答的时候要先把口径说清楚：算不算镜像准备、算不算语言运行时启动、算不算回收。同一套系统这三个口径能差三倍。</li>
+<li>「为什么不直接用 <code>docker run</code>？」——因为它每次要走一遍高层运行时那一整套（Day 13 那张分层图），而你需要的只是最底下那一层的 create 和 start，还需要能把 create 提前。</li>
+<li>「预热池要开多大？」——到达率乘以"一个沙箱从被取走到被补回来"的时间，这是下界；上界是内存。两个数都要当场给得出来源。</li>
+<li>「fork 出来的沙箱安全吗？」——分场景。同一个用户的连续任务之间可以接受，不同用户之间不行，因为孩子进程之间只有普通的进程边界。</li>
+</ul>
+
+<h2>板块 5 · 自检问题</h2>
+
+<details>
+<summary>Q1 · 你把并发上限从 2 调到 8，吞吐一点没涨，P99 从 190 毫秒涨到 217 毫秒。有人说"那把它调回 2 就行了"。这个结论对不对？在什么情况下调大是对的？</summary>
+<p>结论在今天这个负载下对，但它不是一条普遍规则。</p>
+<p>今天的用户代码是纯 CPU 的，两个核就是两份并行能力的上限，允许更多沙箱同时跑只会让它们互相切换。换成一个大部分时间在等网络的用户代码，情况完全反过来：一个沙箱在等回包的时候不占 CPU，这时候并发上限设成 2 就会让机器大量空闲。</p>
+<p>所以正确的说法是：并发上限的上界是"这台机器上真正被这类任务占满的那种资源"的数量。任务是 CPU 密集的，上界就是核数；任务是等待密集的，上界要大得多，真正的约束会变成内存或者别的东西。这正是 Day 4 那对 CPU 密集与 IO 密集的区分，换了个场合再出现一次。</p>
+</details>
+
+<details>
+<summary>Q2 · 表 B 里，甲（提前 create）省下 32.2 毫秒，丙（预导入之后 fork）省下 83.9 毫秒。那么把两者叠起来，是不是能省 116 毫秒？</summary>
+<p>不能，而且这个问题本身有个陷阱：总共才 85.39 毫秒，省不出 116。</p>
+<p>原因是这两条路砍的段有重叠。丙那条路里，容器是常驻的，所以"挂 overlay 加 runc create"这两段本来就已经不在请求路径上了——甲省的那 32.2 毫秒，丙已经顺带省了。丙那 1.47 毫秒里剩下的东西只有：写一次管道、fork 一次、执行、写回一次。</p>
+<p>这类"能不能叠加"的问题，判断方法是回到表 A 那张分段表，看两条路各自划掉的是哪几行。划掉的行有交集，收益就不能相加。</p>
+</details>
+
+<details>
+<summary>Q3 · 你的预热池有 32 个沙箱，需要滚动更新镜像，于是要把它们全拆了重建。你估计"拆一个几毫秒，32 个不到一秒"。实际上会是多久？为什么？</summary>
+<p>大约三秒半，是估计的三倍多。</p>
+<p>池里的沙箱停在 <code>created</code> 状态，而 <code>runc delete</code> 对这个状态走的不是直接销毁那条路。源码 <code>delete.go</code> 那个 <code>switch</code> 里，只有 <code>Stopped</code> 才走 <code>Destroy()</code>，<code>Created</code> 走的是 <code>killContainer</code>；而 <code>killContainer</code> 的循环体第一句就是睡 100 毫秒。所以每拆一个至少 107 毫秒，32 个就是 3.4 秒。</p>
+<p>"几毫秒"那个估计来自表 A 里 <code>runc delete</code> 那一行，但那一行量的是已经退出的容器。同一条命令，容器状态不同，代价差近二十倍——这是今天最值得记住的一个反直觉点。</p>
+</details>
+
+<details>
+<summary>Q4 · 有人提议：既然宽限期对用户代码是白等，干脆超时直接发 SIGKILL，省下这 500 毫秒。这个提议哪里对、哪里不对？</summary>
+<p>对的部分：针对用户提交的代码，宽限期确实几乎不产生收益，缩到很小甚至零是合理的。</p>
+<p>不对的部分是"直接"这个词把两个不同的进程混成了一个。如果你按 Day 13 的建议，在容器里放了一个自己写的 1 号进程（它装了信号处理、负责转发信号和收养孤儿），那么 SIGTERM 对它是有效的，它需要那一点时间把已经产生的输出刷出去、把退出码报上去。直接 SIGKILL 会让这些丢掉。</p>
+<p>正确的形状是两层：外层给你自己那个 1 号进程一个很短的宽限期（几十毫秒量级，够它刷一次缓冲），内层由它自己决定要不要给用户代码宽限。用同一个数配置这两层，要么白等，要么丢数据。</p>
+</details>
+
+<h2>板块 6 · 今日新词</h2>
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>预热池</td><td>warm pool</td><td>服务空闲时提前建好一批停在 <code>created</code> 的沙箱放着，请求来了直接取；和 Day 6 那个测量意义上的"预热"不是一回事</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td>zygote / fork server</td><td>常驻进程，起来时就把重活（导入库）干完，之后每来一个任务 fork 一个孩子，孩子直接带着结果</td></tr>
+<tr><td>懒加载</td><td>lazy loading / lazy pulling</td><td>不等整个镜像落到本地就先把容器起起来，缺的块按需去远端取</td></tr>
+<tr><td>并发上限</td><td>concurrency limit</td><td>同时允许多少个任务真正在跑的那个数</td></tr>
+<tr><td>许可</td><td>semaphore</td><td>实现并发上限的计数器：干活前领一张，干完还回去，领不到就等</td></tr>
+<tr><td>准入控制</td><td>admission control</td><td>队伍太长时不再收新请求，当场回一个明确的拒绝</td></tr>
+<tr><td>背压</td><td>backpressure</td><td>下游忙不过来时，用拒绝或者变慢把压力顶回给上游，而不是无限吞下</td></tr>
+<tr><td>泊松到达</td><td>Poisson arrivals</td><td>压测时相邻两次请求的间隔取自指数分布；间隔随机，避免和被测系统里的周期节拍锁相</td></tr>
+<tr><td>宽限期</td><td>grace period</td><td>发出 SIGTERM 之后、动用 SIGKILL 之前留给对方自己收尾的那段时间</td></tr>
+<tr><td>请求路径</td><td>request path</td><td>用户真正在等的那一段。同一笔开销在不在这段里，对延迟的影响完全不同</td></tr>
+<tr><td>异步回收</td><td>deferred cleanup</td><td>把拆沙箱、补池子这类不需要用户等的动作交给后台，请求这一侧只做标记</td></tr>
+</table>
+</div>
+
+<h2>板块 7 · 已学词表</h2>
+<details><summary>Day 1 到今天的全部术语，标注首次引入于第几天（点开，共 154 条）</summary>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little&#x27;s Law</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td>Day 11</td></tr>
+<tr><td>对等组</td><td>peer group</td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount / MNT_DETACH</td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td>Day 11</td></tr>
+<tr><td>叠加文件系统</td><td>overlayfs / overlay filesystem</td><td>Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td>lowerdir / upperdir / workdir</td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td>copy-on-write / copy_up</td><td>Day 12</td></tr>
+<tr><td>白障</td><td>whiteout</td><td>Day 12</td></tr>
+<tr><td>只读根</td><td>read-only rootfs</td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td>tmpfs</td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td>page cache</td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td>shmem</td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td>inode</td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td>size= / nr_inodes=</td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td>buffered write</td><td>Day 12</td></tr>
+<tr><td>直写</td><td>direct I/O (O_DIRECT)</td><td>Day 12</td></tr>
+<tr><td>回写</td><td>writeback</td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td>blkio throttle / io.max</td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td>major:minor</td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td>veth pair</td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td>SNAT / MASQUERADE</td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td>packet filter / netfilter (iptables)</td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td>DROP / REJECT</td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td>egress allowlist</td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td>capability bounding set</td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td>masking</td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td>least privilege</td><td>Day 12</td></tr>
+<tr><td>开放容器倡议</td><td>OCI / Open Container Initiative</td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td>runtime-spec</td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td>image-spec</td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td>distribution-spec</td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td>filesystem bundle</td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td>config.json</td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td>low-level runtime / runtime engine</td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td>high-level runtime</td><td>Day 13</td></tr>
+<tr><td>libcontainer</td><td>libcontainer</td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td>runc init</td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td>binary cloning / exeseal</td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td>__attribute__((constructor))</td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td>nsexec stage 0 / 1 / 2</td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td>exec fifo</td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td>creating / created / running / stopped</td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td>lifecycle hooks</td><td>Day 13</td></tr>
+<tr><td>垫片</td><td>shim</td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td>ttRPC</td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td>subreaper / PR_SET_CHILD_SUBREAPER</td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td>zombie process</td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td>CRI / Container Runtime Interface</td><td>Day 13</td></tr>
+<tr><td>预热池</td><td>warm pool</td><td>Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td>zygote / fork server</td><td>Day 14</td></tr>
+<tr><td>懒加载</td><td>lazy loading / lazy pulling</td><td>Day 14</td></tr>
+<tr><td>并发上限</td><td>concurrency limit</td><td>Day 14</td></tr>
+<tr><td>许可</td><td>semaphore</td><td>Day 14</td></tr>
+<tr><td>准入控制</td><td>admission control</td><td>Day 14</td></tr>
+<tr><td>背压</td><td>backpressure</td><td>Day 14</td></tr>
+<tr><td>泊松到达</td><td>Poisson arrivals</td><td>Day 14</td></tr>
+<tr><td>宽限期</td><td>grace period</td><td>Day 14</td></tr>
+<tr><td>请求路径</td><td>request path</td><td>Day 14</td></tr>
+<tr><td>异步回收</td><td>deferred cleanup</td><td>Day 14</td></tr>
+</table></div>
+</details>
+
+<h2>板块 8 · 专项深挖</h2>
+<p>三段可以直接粘给 Claude 的题目。它们都是今天碰到边但没展开的东西，各自够占半天。</p>
+
+<div class="card f">
+<span class="tag">深挖一 · 快照恢复</span>
+<p>我是一名后端工程师，正在做 CPU 上的沙箱执行服务。我已经量清楚了一次冷启动的分段：挂 overlay 6.6 毫秒、runc create 25.7 毫秒、解释器启动 14.3 毫秒、导入标准库 31.9 毫秒。我用预热池砍掉了前两段，用 zygote（预导入之后 fork）砍掉了后两段，端到端从 86 毫秒降到 1.5 毫秒。</p>
+<p>现在我想搞懂第三条我还没走过的路：进程级和虚拟机级的快照恢复。请你讲清楚 CRIU 的工作原理（它到底把哪些内核状态导出来了、哪些东西是它恢复不了的），以及 Firecracker 那类 microVM 的快照恢复在机制上和 CRIU 有什么本质不同。我特别想知道：为什么快照恢复能做到 zygote 做不到的事，代价分别是什么，以及在什么情况下它比 zygote 更值得上。给我一个能在单机 Linux 上跑的最小验证方案，说清楚需要哪些内核配置。</p>
+</div>
+
+<div class="card f">
+<span class="tag">深挖二 · 懒加载的真实收益</span>
+<p>我做过一个测量：一个 61 MiB、1304 个文件的 Python 镜像，跑一次执行只打开了 93 个文件、读了 1.88 MiB，占字节数的 3.1%。我据此认为懒加载（不等整个镜像落地就先起容器）应该有可观收益，但我手上的镜像本来就在本地，没法量出真实数字。</p>
+<p>请你带我把 stargz-snapshotter 和 soci-snapshotter 这两条路弄清楚：它们各自改的是镜像格式的哪一部分、按需取块的粒度是什么、第一次访问一个还没到本地的文件时那条路径上发生了什么。然后帮我设计一个能量出真实收益的实验——要包含一个模拟的远端仓库和一个可控的网络延迟。最后请指出这条路的代价：什么样的负载用了懒加载反而会更慢。</p>
+</div>
+
+<div class="card f">
+<span class="tag">深挖三 · 从 cgroup v1 到 v2 的终止路径</span>
+<p>我在一台只有 cgroup v1 的机器上量了沙箱的终止路径：给容器 1 号进程发 SIGKILL 之后，cgroup 里的任务在 6 到 8 毫秒内清空，包括用户代码 fork 出来的孙子进程。我读到 cgroup v2 有一个 <code>cgroup.kill</code> 接口，看起来能做同一件事但机制不同。</p>
+<p>请你讲清楚这两条路的区别：进程号命名空间的 1 号进程终止时内核收走其余进程，和 v2 的 <code>cgroup.kill</code> 一次性杀掉整组，分别是内核里哪一段代码在做，各自在什么情况下会失效（比如进程处于不可中断睡眠、比如容器没有自己的进程号命名空间）。我要的是一份能让我判断"这个沙箱到底杀干净了没有"的检查清单，每一项都给出可执行的验证命令。</p>
+</div>
+
+<h2>板块 9 · 延伸材料</h2>
+<ul>
+<li><span class="rf">runc 的 <code>delete.go</code></span>（<code>github.com/opencontainers/runc</code>，v1.3.5 标签下的 <code>delete.go</code>）——今天第 13 节那 101 毫秒的全部答案就在这个文件的 89 行里。<span class="small">难度：容易，不用会 Go 也读得懂，是全天性价比最高的一篇。</span></li>
+<li><span class="rf">OCI runtime-spec 的 <code>runtime.md</code></span>（<code>github.com/opencontainers/runtime-spec</code>）——把容器四个状态之间的转换关系和六个生命周期钩子的位置定死的那一份。<span class="small">难度：中等，规范体的文字读起来慢，但今天"池里的沙箱停在 created"这句话的依据就在这里。</span></li>
+<li><span class="rf">stargz-snapshotter</span>（<code>github.com/containerd/stargz-snapshotter</code>）——懒加载这条路最成熟的实现，仓库首页那几张图把"按需取块"讲得很清楚。<span class="small">难度：中等偏上，需要先弄清 containerd 那一层是怎么给容器铺出根文件系统的，也就是 Day 13 那张分层图里高层运行时那一格的活。</span></li>
+<li><span class="rf">CRIU</span>（<code>github.com/checkpoint-restore/criu</code>）——进程级快照恢复。<span class="small">难度：高。它的文档会逼你把前面十几天学的命名空间、挂载、进程号全部串起来，适合等 Agent Runtime 那一块做完再来读。</span></li>
+<li><span class="rf">Firecracker</span>（<code>github.com/firecracker-microvm/firecracker</code>）——Day 10 那张隔离谱系表里最右边那一格的具体实现，它的快照恢复是另一条思路。<span class="small">难度：高，而且和你现在这台机器没有直接关系，当成方向感来读。</span></li>
+</ul>
+
+<h2>板块 10 · 今日五句话</h2>
+<p>合上页面，用自己的话回答下面五个问题，每题一两句。</p>
+<div class="card p">
+<span class="tag">五句话</span>
+<ol>
+<li>一次冷启动里最大的那一段是什么？它比第二大的那一段大多少？</li>
+<li>预热池把沙箱停在哪个状态？为什么不能停在别的状态？</li>
+<li>常驻容器加 <code>runc exec</code>，为什么比"提前 create 然后 start"还慢？</li>
+<li>并发上限的下界和上界分别由什么决定？在今天这台机器上这两个数是多少？</li>
+<li>同一条 <code>runc delete</code>，什么时候要 5 毫秒、什么时候要 107 毫秒？</li>
+</ol>
+<div class="write"></div>
+</div>
+
+<h4>逐句自查</h4>
+<ul>
+<li>第 1 句如果写成"runc create"就错了。分段表里 create 是 25.65 毫秒，导入库是 31.89 毫秒，后者更大。这一句要答对的关键是记住"解释器和它的库"整体（14.28 加 31.89 共 46.17 毫秒）才是真正的大头，而它和容器完全没关系。</li>
+<li>第 2 句如果只写了"created"而说不出理由，只算答对一半。理由必须包含两头：<code>running</code> 意味着 <code>execve</code> 已经发生、跑什么已经定死；还没 <code>create</code> 意味着什么都没提前做。</li>
+<li>第 3 句如果写成"exec 要多走一层网络/多一次进程通信"就错了，两条路都不走网络。正确的答案是 <code>exec</code> 要现拉起 runc 二进制、现建一个新进程去加入命名空间并重装一遍 cgroup、能力、过滤器；而 <code>start</code> 面对的进程这些活儿在 create 的时候就干完了。</li>
+<li>第 4 句如果只答了"等于核数"就漏了一半。下界是到达率乘服务时间（今天是 35 × 0.034 ≈ 1.2），低于它队伍发散；上界才是核数 2。两个数缺一不可，而且换成等待密集的任务，上界会完全不同。</li>
+<li>第 5 句如果答成"加了 <code>-f</code> 就慢"就漏了第三行。<code>-f</code> 是其中一条路，容器状态是 <code>Created</code> 是另一条；只有"<code>Stopped</code> 且不带 <code>-f</code>"这一种组合才是 5 毫秒。</li>
+</ul>
+
+<h2>板块 11 · 明日预告</h2>
+<p>今天把沙箱那一侧收尾了。第三块从明天开始，回到推理服务本身。</p>
+<p>今天有一个动作反复出现：把一笔开销从请求路径上挪到别的时刻，代价是提前占住内存。明天 Day 15 讲 KV Cache，那一整天都是这个交易的极端版本——一个推理服务会把几十 GB 内存提前占住，只为了不在每个 token 上重算一遍。而占住之后紧接着的问题是怎么分配它：整块预留会碎成什么样，按页分配的块表长什么样，内存不够时是把它换出去还是干脆重算。Day 9 那个"抢占与重算"的开关，明天会知道它背后在权衡什么。</p>
+
+<footer>
+<p>AI Infra · Day 14 / 28 · 2026-08-31 · 阶段三 · Sandbox：Linux 系统工程（块二收尾）</p>
+<p>实验条件：2 核 Intel Xeon @ 2.10 GHz、8023 MB 内存、Linux 6.18.44、页大小 4096 字节。runc 1.3.5（<code>spec: 1.2.1</code>）、Python 3.11.15、FastAPI 0.141.1、uvicorn 0.46.0、httpx 0.28.1。全程以 root 运行，未开用户命名空间。</p>
+<p>cpu / memory / pids / devices / blkio 等控制器挂在 cgroup v1（<code>/sys/fs/cgroup/&lt;控制器&gt;/</code>），该机没有 cgroup v2 统一层级，因此终止路径未使用 <code>cgroup.kill</code>。沙箱镜像为手工组装的 CPython 根文件系统，1304 个文件、61.13 MiB，只含标准库。每个沙箱的 rootfs 是一次 overlay 挂载，下层为该镜像目录、上层为 64 MiB 的 tmpfs；cgroup 限额为 CPU 一个整核、内存 512 MiB、进程数 64；网络命名空间为空，未建 veth。</p>
+<p>一手材料版本：runc v1.3.5（标签 <code>v1.3.5</code>，提交 488fc13e），本页所有「第 N 行」均指这一份的 <code>delete.go</code>。</p>
+</footer>
+
+</main>
+</body>
+</html>
