@@ -1,0 +1,1040 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 13</title>
+<style>
+:root{
+  --bg:#faf6ef; --fg:#2f2823; --muted:#6f6257; --card:#fffdf8; --card2:#f6efe3;
+  --line:#e3d7c4; --line2:#cfc0a8;
+  --accent:#b0592a; --accent2:#3d6b58; --accent3:#7a5aa0; --accent4:#a3792a;
+  --code-bg:#2a2521; --code-fg:#ece3d5; --code-dim:#a2947f;
+  --term-bg:#f4e4cb; --term-fg:#7a4a1c;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1a1714; --fg:#e7dfd2; --muted:#a1968a; --card:#221e1a; --card2:#282320;
+    --line:#3a332c; --line2:#4d443a;
+    --accent:#e08a52; --accent2:#7fc0a3; --accent3:#b79ae0; --accent4:#dab765;
+    --code-bg:#12100e; --code-fg:#e7dfd2; --code-dim:#8a7f70;
+    --term-bg:#3a2e1e; --term-fg:#f0cf9a;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",sans-serif;
+  font-size:16.5px; line-height:1.78; overflow-x:hidden;
+}
+.wrap{max-width:820px; margin:0 auto; padding:0 18px 80px}
+.bar{
+  position:sticky; top:0; z-index:50; background:var(--card);
+  border-bottom:1px solid var(--line); backdrop-filter:saturate(1.2) blur(6px);
+}
+.bar .in{max-width:820px; margin:0 auto; padding:9px 18px; display:flex; gap:14px; align-items:baseline; flex-wrap:wrap; font-size:13.5px}
+.bar b{color:var(--accent); font-weight:700; letter-spacing:.02em}
+.bar span{color:var(--muted)}
+h1{font-size:1.66rem; line-height:1.45; margin:1.5rem 0 .4rem; letter-spacing:.01em}
+h2{font-size:1.24rem; margin:2.6rem 0 .7rem; padding-bottom:.35rem; border-bottom:2px solid var(--line2)}
+h2 .kicker{display:block; font-size:.72rem; letter-spacing:.16em; color:var(--muted); font-weight:600; margin-bottom:.15rem}
+h3{font-size:1.06rem; margin:1.9rem 0 .5rem}
+h4{font-size:.98rem; margin:1.3rem 0 .35rem; color:var(--muted)}
+p{margin:.72rem 0}
+a{color:var(--accent)}
+.sub{color:var(--muted); font-size:.95rem}
+.lead{font-size:1.08rem; color:var(--accent); font-weight:600; margin:1.1rem 0 .5rem}
+.term{background:var(--term-bg); color:var(--term-fg); padding:.05em .34em; border-radius:4px; font-weight:600; white-space:nowrap}
+code{
+  background:var(--card2); border:1px solid var(--line); border-radius:4px;
+  padding:.06em .32em; font-size:.87em; overflow-wrap:anywhere;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+pre{
+  background:var(--code-bg); color:var(--code-fg); border-radius:8px;
+  padding:14px 16px; overflow-x:auto; line-height:1.62; font-size:13.2px; margin:.9rem 0;
+}
+pre code{background:none; border:none; padding:0; color:inherit; font-size:inherit; white-space:pre}
+pre .c{color:var(--code-dim)}
+.scroll{overflow-x:auto; margin:.9rem 0; border-radius:8px}
+table{border-collapse:collapse; width:100%; font-size:14.4px; min-width:460px; background:var(--card)}
+th,td{border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top}
+th{background:var(--card2); font-weight:700}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
+.card{border-left:5px solid var(--line2); background:var(--card); border-radius:0 8px 8px 0; padding:.9rem 1.1rem; margin:1.2rem 0}
+.card>:first-child{margin-top:0} .card>:last-child{margin-bottom:0}
+.card .tag{display:inline-block; font-size:.74rem; letter-spacing:.14em; font-weight:700; margin-bottom:.3rem}
+.recall{border-left-color:var(--accent2)} .recall .tag{color:var(--accent2)}
+.predict{border-left-color:var(--accent3); background:var(--card2)} .predict .tag{color:var(--accent3)}
+.five{border-left-color:var(--accent4)} .five .tag{color:var(--accent4)}
+.key{border-left-color:var(--accent); background:var(--card2)} .key .tag{color:var(--accent)}
+.breath{color:var(--muted); font-style:normal; border-top:1px dashed var(--line2); border-bottom:1px dashed var(--line2); padding:.55rem 0; margin:1.2rem 0}
+details{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:.5rem .9rem; margin:.7rem 0}
+details[open]{padding-bottom:.9rem}
+summary{cursor:pointer; font-weight:650; padding:.25rem 0}
+.write{border:1px dashed var(--line2); border-radius:6px; min-height:74px; margin:.5rem 0 .9rem; background:var(--card2)}
+.write.s{min-height:44px}
+figure{margin:1.2rem 0}
+figcaption{font-size:.86rem; color:var(--muted); margin-top:.35rem}
+svg{display:block; color:var(--fg)}
+svg text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+footer{margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line2); font-size:13.5px; color:var(--muted)}
+ol,ul{padding-left:1.35rem} li{margin:.3rem 0}
+hr{border:0; border-top:1px solid var(--line); margin:2rem 0}
+</style>
+</head>
+<body>
+
+<div class="bar"><div class="in">
+  <b>Day 13 / 28</b><span>阶段三 · Sandbox：Linux 系统工程</span><span>2026-08-30</span>
+</div></div>
+
+<div class="wrap">
+
+<h1>你手搓的那一百行，在工业界叫 runc</h1>
+<p class="sub">今天不再往容器上加零件。今天把昨天那一百行 shell 摆在 runc 的源码旁边，一行一行找对应。</p>
+
+<!-- ============ 0 温故 ============ -->
+<h2><span class="kicker">板块 0</span>温故 · 闭卷</h2>
+<p>先凭记忆答，答不出再展开。</p>
+
+<div class="card recall">
+<div class="tag">Q1 · 1 天前（Day 12 · 只读根、配额、出网、逃逸自查）</div>
+<p>Day 12 最后一步用 <code>setpriv</code> 清空能力边界集、把用户号换成 65534，并且强调这一步必须排在换根、重挂 <code>/proc</code>、装 seccomp 名单之后。如果有人把它提到 <code>pivot_root</code> 之前，第一个失败的会是哪个动作，报什么错？为什么后面几步也一样过不去？</p>
+<div class="write"></div>
+<details><summary>展开答案</summary>
+<p>第一个失败的是 <code>mount --bind "$ROOT" "$ROOT"</code>，也就是 <code>pivot_root</code> 之前那一步绑定挂载，报 <code>EPERM</code>（Operation not permitted）。</p>
+<p>推理是这样的：挂载、换根、重挂 <code>/proc</code>、往 <code>/proc/sys</code> 上盖东西，这几个动作都要求进程持有 <code>CAP_SYS_ADMIN</code>。<code>setpriv --bounding-set=-all</code> 把边界集清空，等于把这个进程以后能拿到的能力上限设成零；<code>--reuid=65534</code> 这个动作本身又会把当前有效能力一起清掉。两件事叠起来，之后所有需要特权的系统调用都会返回 <code>EPERM</code>。</p>
+<p>装 seccomp 名单也一样过不去，除非先设了 <code>NO_NEW_PRIVS</code>——不设的话，装过滤器这个动作本身要 <code>CAP_SYS_ADMIN</code>。</p>
+<p>接今天：这个顺序不是 Day 12 拍脑袋定的，runc 的源码里就是这么排的。今天第 8 节会把那几行找出来，顺便解释为什么 seccomp 在 runc 里有<em>两个</em>可能的位置。</p>
+</details>
+</div>
+
+<div class="card recall">
+<div class="tag">Q2 · 3 天前（Day 10 · 隔离谱系与安全边界）</div>
+<p>沙箱里跑 <code>nproc</code>，看到的是宿主的核数，哪怕 cgroup 只给了半个 CPU。namespace、cgroup、seccomp 三把锁里，为什么没有一把管得了这件事？要让它看到"半个"，得换成什么手段？</p>
+<div class="write"></div>
+<details><summary>展开答案</summary>
+<p>三把锁各管一件事，而这件事三样都不沾边：</p>
+<ul>
+<li>namespace 管的是"哪些编号你看得见"——进程号、挂载表、主机名、网络设备。内核里没有"CPU 命名空间"这一类，所以 <code>/proc/cpuinfo</code> 里那几行不归它管。</li>
+<li>cgroup 管的是"你能用多少"，它改的是调度器给这个组多少时间片，不改任何一个文件的内容。</li>
+<li>seccomp 管的是"这个系统调用号许不许发"。读 <code>/proc/cpuinfo</code> 用的是 <code>openat</code> 和 <code>read</code>，这两个调用你不可能禁掉，禁了什么都跑不了。</li>
+</ul>
+<p>要让它看对，三条路：应用自己去读 cgroup 的配额文件算出可用核数（Java 和 Go 的新版本都这么做）；或者在容器里用一个用户态文件系统把 <code>/proc/cpuinfo</code> 顶掉；或者干脆上 microVM，让它有一个自己的内核，那个内核确实只有半个 CPU。</p>
+<p>接今天：runc 也不做这件事。今天会把 runc 默认那份配置从头读一遍，你会看到里面没有任何一项能改 <code>/proc/cpuinfo</code>——它管的是边界，不是幻觉。</p>
+</details>
+</div>
+
+<div class="card recall">
+<div class="tag">Q3 · 7 天前（Day 6 · 测量本身也会说谎）</div>
+<p>Day 6 有一条硬规矩：探针不能住在被测对象的进程里。今天量启动耗时的脚本是一个 Python 程序，它用 <code>subprocess</code> 把被测命令 fork 出去，在前后各读一次时钟。这算不算把探针塞进了被测对象？有没有别的东西混进了每一档的数字里？</p>
+<div class="write"></div>
+<details><summary>展开答案</summary>
+<p>不算。Day 6 那条规矩防的是探针和被测对象抢同一份资源——同一个 GIL、同一个事件循环、同一个线程池。这里被测对象是一个独立的进程，计时进程在它 fork 之前和 wait 之后各读一次时钟，两者不共享任何运行时结构。</p>
+<p>但确实有东西混进来了：Python 起一个子进程本身要 fork、要 exec、要 wait，这层开销被算进了每一档。所以表 A 第一行"直接跑 <code>/bin/true</code>，不隔离"那 2.7 毫秒不是零，它是这套测量方法的地板。比较各档时应该看它们相对这个地板的增量。</p>
+<p>接今天：今天所有耗时表都出自同一个脚本、同一次运行，每档先跑 3 次不计数再取 30 次——这也是 Day 6 那条"扔掉开头"。</p>
+</details>
+</div>
+
+<!-- ============ 1 今日概览 ============ -->
+<h2><span class="kicker">板块 1</span>今日概览</h2>
+
+<div class="scroll">
+<table>
+<tr><th style="width:22%">项</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 13 / 28 · 阶段三 · Sandbox：Linux 系统工程（块二第 4 天）</td></tr>
+<tr><td>今日主题</td><td>runc、containerd、OCI 规范的分层关系；你手搓的每一段在工业实现里落到哪个文件的哪一行</td></tr>
+<tr><td>时间预算</td><td>3~4 小时（讲解约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>镜像分层、懒加载、快照恢复——这些是明天冷启动那一整天的主线，今天讲会把它切碎；CRI 与 Kubernetes 那一层只画到接口位置，不展开；用户命名空间与非特权容器留在专项深挖里</td></tr>
+</table>
+</div>
+
+<h4>今天结束后你应该能做到这三件事</h4>
+<ol>
+<li>拿一个目录和一份 <code>config.json</code> 做出 OCI bundle，用 <code>runc</code> 把它跑起来，并且说清楚 <code>config.json</code> 里每个字段对应你昨天 shell 里的哪一行。</li>
+<li>回答"为什么 <code>create</code> 和 <code>start</code> 是两条命令"，并用测出来的数字说明这对沙箱预热池意味着什么。</li>
+<li>在别人说"我们用的是 Docker / containerd / Kubernetes"时，指出容器实际上是谁 fork 出来的，以及每一层各决定了配置里的哪些字段。</li>
+</ol>
+
+<h4>今天这一页怎么走</h4>
+<p>第一部分把词对上：你昨天做的那个东西，规范里叫什么名字，配置写在哪。<br>
+第二部分把同一件事的两份实现摆在一起，用一个探针脚本量出差别，再回源码里找出每一条差别是哪几行写的。<br>
+第三部分算钱：多做十倍的事，启动到底贵了多少。<br>
+第四部分往上走一层，看 <code>create</code> 和 <code>start</code> 为什么要分开，以及 runc 之上还站着谁。</p>
+
+<!-- ============ 2 核心讲解 ============ -->
+<h2><span class="kicker">板块 2 · 第一部分</span>你那一百行，在规范里叫什么名字</h2>
+
+<h3>1. 从 Day 12 结尾那个问题说起</h3>
+<p>昨天收工的时候，你手上是一个不到一百行的 shell 脚本。它能起一个进程，这个进程有自己的进程号表、自己的挂载表、自己的主机名、自己的网络栈；它的根是只读的，写进去的东西落在一个一次性的上层；它的 CPU、内存、进程数、磁盘都有上限；它出不了网，除了你放行的那一个地址；跑代码的那个用户不是 root，也没有任何能力。</p>
+<p>这套东西在 2013 年之后的容器生态里已经被人写过很多遍了。写得最多的那一份叫 <span class="term">runc</span>，它是一个 Go 程序，代码量大概是你那一百行的两千倍。今天要做的事很简单：把两份放在一起，逐条对。</p>
+<p class="breath">对之前先说清楚一件事：runc 不是"更好的 minibox"，它和 minibox 是同一个角色。这个角色在生态里有个位置，先把这个位置认出来，后面的分层才立得住。</p>
+
+<h3>2. bundle：一个目录、一份 JSON、一个 rootfs</h3>
+<p>你昨天的脚本，输入是两样东西：一个 rootfs 目录的路径，加上一串写死在脚本里的参数（配额多少、挂哪些东西、丢哪些能力）。这两样东西一个在文件系统里，一个在代码里。</p>
+<p>规范做的第一件事，就是把第二样也搬到文件系统里，和第一样放进同一个目录。这个目录叫<span class="term">文件系统包（filesystem bundle）</span>，它只需要满足两条：</p>
+<div class="scroll">
+<table>
+<tr><th style="width:26%">东西</th><th>规定</th></tr>
+<tr><td><span class="term">运行时配置文件（config.json）</span></td><td>必须存在，必须叫这个名字，必须在包目录的根下</td></tr>
+<tr><td>容器的根文件系统</td><td>是 <code>config.json</code> 里 <code>root.path</code> 指到的那个目录</td></tr>
+</table>
+</div>
+<p class="sub">出处：OCI runtime-spec，<code>bundle.md</code> 第 13–17 行。规范用的是 MUST，不是 SHOULD。</p>
+<p>就这么两条。没有规定目录叫什么名字、放在哪、rootfs 是怎么铺出来的——铺 rootfs 是别人的活，今天第 15 节会说是谁的。把配置从代码里搬到一个 JSON 文件里，这个动作看着平淡，但它是整个生态能分层的原因：从此"谁来算出这份配置"和"谁来照着这份配置干活"可以是两个程序。</p>
+
+<h3>3. 实验装置</h3>
+<p>今天的数字来自两个被测对象和一个探针，都跑在同一台机器、同一次会话里。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 800 352" width="800" height="352" role="img" aria-label="实验装置结构图">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.4">
+  <rect x="10" y="10" width="780" height="332" rx="10" stroke-dasharray="5 4" opacity=".55"/>
+  <rect x="26" y="44" width="216" height="104" rx="8"/>
+  <rect x="296" y="30" width="242" height="86" rx="8"/>
+  <rect x="296" y="142" width="242" height="86" rx="8"/>
+  <rect x="592" y="72" width="186" height="116" rx="8"/>
+  <rect x="26" y="248" width="752" height="76" rx="8" stroke-dasharray="4 3" opacity=".8"/>
+  <path d="M242 84 L292 68" marker-end="url(#ar)"/>
+  <path d="M242 112 L292 180" marker-end="url(#ar)"/>
+  <path d="M538 74 L588 112" marker-end="url(#ar)"/>
+  <path d="M538 184 L588 150" marker-end="url(#ar)"/>
+  </g>
+  <g fill="currentColor" font-size="13">
+    <text x="40" y="68" font-weight="700">bench.py / walk.py</text>
+    <text x="40" y="90" font-size="12">宿主上的 Python 进程</text>
+    <text x="40" y="109" font-size="12">fork 出被测命令，前后各读一次时钟</text>
+    <text x="40" y="128" font-size="12">耗时和 CPU 时间都在这一侧算出来</text>
+
+    <text x="310" y="54" font-weight="700">minibox.sh</text>
+    <text x="310" y="76" font-size="12">bash + unshare + mount + pivot_root</text>
+    <text x="310" y="96" font-size="12">配置写在脚本正文里</text>
+
+    <text x="310" y="166" font-weight="700">runc（Go 二进制）</text>
+    <text x="310" y="188" font-size="12">读 tbundle/config.json</text>
+    <text x="310" y="208" font-size="12">配置写在 JSON 文件里</text>
+
+    <text x="606" y="96" font-weight="700">容器内</text>
+    <text x="606" y="118" font-size="12">/bin/true（量启动用）</text>
+    <text x="606" y="138" font-size="12">或 probe.sh（量能力用）</text>
+    <text x="606" y="159" font-size="12">probe 读 /proc/self/*</text>
+    <text x="606" y="178" font-size="12">结果打到 stdout</text>
+
+    <text x="40" y="274" font-weight="700">一手材料（不跑，只读）</text>
+    <text x="40" y="296" font-size="12">runc v1.3.3 源码 · containerd v2.1.4 源码 · OCI runtime-spec</text>
+    <text x="40" y="315" font-size="12">本页每一处「第 N 行」都指这三份</text>
+  </g>
+</svg>
+</div>
+<figcaption>两个被测对象干同一件事，配置的存放位置不同。计时在宿主一侧，能力探测在容器一侧。</figcaption>
+</figure>
+
+<h4>一次测量里有什么</h4>
+<p>量启动耗时时，被测的一"次"就是下面这一条命令，从 fork 到 wait 返回：</p>
+<pre><code>cd /root/lab/tbundle &amp;&amp; runc run b$$ ; runc delete b$$</code></pre>
+<p>探针那一侧，被测的一"次"是 <code>probe.sh</code> 打出的 15 行。每行三段，用制表符分开：编号、问的是什么、结果。真实的一行长这样：</p>
+<pre><code>4	能力边界集 CapBnd	0000000020000420</code></pre>
+<p>那串十六进制是 Day 12 见过的能力位图：第 5、10、29 位是 1，其余全 0，也就是 <code>CAP_KILL</code>、<code>CAP_NET_BIND_SERVICE</code>、<code>CAP_AUDIT_WRITE</code> 三个。</p>
+
+<h4>哪些是真的，哪些是假的</h4>
+<div class="scroll">
+<table>
+<tr><th style="width:30%">简化掉的地方</th><th>后果</th></tr>
+<tr><td>rootfs 是 2.1 MB 的 busybox，37 个文件，不是真实的 Python 或推理镜像</td><td>今天不下任何关于"镜像大小怎么影响冷启动"的结论——那是明天整天的主线</td></tr>
+<tr><td>机器上没有 containerd 守护进程在跑，第 14、15 节全部来自源码和官方文档</td><td>今天不给任何关于 shim 开销、containerd 吞吐的数字</td></tr>
+<tr><td>网络命名空间是空的，没建 veth、没配源地址伪装</td><td>启动耗时里不含建网卡的钱；真实沙箱这一项要另算</td></tr>
+<tr><td>用的是 <code>runc spec</code> 生成的默认 <code>config.json</code>，不是 Docker 或 containerd 的默认值</td><td>那两家的默认值今天只从源码里读出来对照，没有实际跑过</td></tr>
+<tr><td>这台机器的 cpu / memory / pids 挂在 cgroup v1</td><td>runc 在 v2 下走另一条代码路径，本页的耗时数字不能直接搬到 v2 机器上</td></tr>
+<tr><td>全程以 root 搭建，没开用户命名空间</td><td>不下关于非特权容器（rootless）的结论</td></tr>
+<tr><td>计时含 Python 起子进程的开销</td><td>表 A 第一行那 2.7 毫秒就是这层地板，各档要看相对它的增量</td></tr>
+</table>
+</div>
+
+<h4>跟着走一遍</h4>
+<p><code>walk.py</code> 把一次完整的生命周期逐步走了一遍，每步打一个时间戳（从脚本启动算起的毫秒数）和当时观察到的东西。下面是真实那一遍的输出，一行不删：</p>
+<pre><code>     0.0	开始
+    39.3	runc create 返回	这一步 39.3 毫秒
+    46.7	runc state 报的状态	created，pid=17554
+    53.4	宿主上这个 pid 是什么	/tmp/src/runc/runc init
+    57.2	状态目录里有什么	exec.fifo  state.json
+    64.6	runc start 返回	这一步 7.4 毫秒
+    71.8	状态变成	running，pid=17554
+    79.7	同一个 pid 现在是什么	/bin/sh -c sleep 300
+    82.9	状态目录里还剩什么	state.json
+   140.9	runc kill 返回	这一步 57.9 毫秒（含 50 毫秒等待）
+   148.7	状态变成	stopped
+   156.0	runc delete 返回	这一步 7.3 毫秒
+   156.1	状态目录还在吗	已经没了</code></pre>
+<p>你可以自己做一遍加法。四条真正干活的命令：<code>create</code> 39.3 + <code>start</code> 7.4 + <code>kill</code> 7.9 + <code>delete</code> 7.3 = 61.9 毫秒。中间那一次故意的 50 毫秒等待。剩下的 156.0 − 61.9 − 50 = 44.1 毫秒，全部是七次查询（三次 <code>runc state</code>、两次 <code>ps</code>、两次 <code>ls</code>）的开销，把日志里那七个间隔加起来正好是 44.0。</p>
+<p>三次 <code>runc state</code> 分别花了 7.4、7.2、7.8 毫秒，而表 A 里"只起 runc 这个二进制"那一档是 5.4 毫秒。差出来的一点几毫秒就是读一次 <code>state.json</code>、解析、打印。这条对得上，说明计时口径没有跑偏。</p>
+
+<h4>旋钮和它们的取值是怎么定出来的</h4>
+<div class="scroll">
+<table>
+<tr><th style="width:16%">旋钮</th><th style="width:18%">取值</th><th>这个值是怎么定出来的</th><th style="width:12%">哪一节会动它</th></tr>
+<tr><td>每档重复次数</td><td>30</td><td>要报 P90 就至少得让第 90 个百分位落在一个真实样本上；30 次时它落在排序后第 27 个。再往上加收益递减，而四张表加起来已经要起六百多次容器</td><td>表 A / B / D</td></tr>
+<tr><td>热身次数</td><td>3</td><td>Day 6 那条"扔掉开头"。第一次跑要把二进制从磁盘读进页缓存，3 次足够让 2.1 MB 的 busybox 和 16.2 MB 的 runc 都进去</td><td>全部</td></tr>
+<tr><td>CPU 时间那档的次数</td><td>20</td><td><code>getrusage</code> 报的是累计量，精度受时钟节拍限制；20 次取平均已经把单次的量化误差摊平，而且这一档不需要百分位</td><td>表 C</td></tr>
+<tr><td>容器里跑什么</td><td>/bin/true</td><td>要量的是"启动"本身。<code>/bin/true</code> 是 busybox 的一个符号链接，进去就退出，负载趋近于零</td><td>表 A / B / C</td></tr>
+<tr><td>kill 之后的等待</td><td>50 毫秒</td><td>内核收尸不是同步的。不等就 <code>delete</code>，runc 会报 container is not stopped。50 毫秒是试出来的一个稳妥值，比它小会偶发失败</td><td>表 D</td></tr>
+<tr><td>cgroup 配额</td><td>50000 / 100000 微秒<br>256 MiB · 64 个进程</td><td>原样沿用 Day 10 和 Day 11 的取值，为的是本页 minibox 那几档和那两天同口径</td><td>表 B</td></tr>
+<tr><td>runc 那一档的配置</td><td>runc spec 默认值<br>加一个 tmpfs 的 /tmp</td><td>默认值不给可写的 <code>/tmp</code>，而探针第 11 项要在那里造设备节点。不给的话，失败原因会是"根只读"而不是"设备被禁"，两个原因混在一起就没法归因</td><td>表 E</td></tr>
+</table>
+</div>
+
+<p>本页哪张表出自哪个程序：</p>
+<div class="scroll">
+<table>
+<tr><th>表</th><th>出自</th><th>数字从哪读</th></tr>
+<tr><td>表 A / B / C / D</td><td><code>bench.py</code></td><td>脚本 stdout，四段各一张</td></tr>
+<tr><td>表 E（容器里看到什么）</td><td><code>probe.sh</code>，分别在 minibox 和 runc 下各跑一次</td><td>两次 stdout 按编号并成一张</td></tr>
+<tr><td>表 F（27 个挂载点）</td><td><code>runc run</code> 里执行 <code>cat /proc/self/mountinfo</code></td><td>第 5、4、倒数第 3、倒数第 2 列</td></tr>
+<tr><td>表 G（把配额那一档拆开）</td><td><code>iso.py</code></td><td>脚本 stdout</td></tr>
+<tr><td>「跟着走一遍」那段日志</td><td><code>walk.py</code></td><td>原样贴出，未删行</td></tr>
+<tr><td>所有「第 N 行」</td><td>runc v1.3.3 / containerd v2.1.4 / runtime-spec 三份源码</td><td>见页尾实验条件里的版本号</td></tr>
+</table>
+</div>
+
+<h3>4. 三份规范，各管一段</h3>
+<p>OCI 这三个字母是 <span class="term">开放容器倡议（Open Container Initiative）</span>，一个 2015 年成立的标准组织。它出了三份规范，名字很像，管的东西完全不同。分清楚它们，你就知道一个问题该去哪一份里找答案。</p>
+<div class="scroll">
+<table>
+<tr><th style="width:24%">规范</th><th>管什么</th><th>今天用到的部分</th></tr>
+<tr><td><span class="term">运行时规范（runtime-spec）</span></td><td>拿到一个已经铺好的目录之后，怎么把它变成一个跑着的进程</td><td><code>config.json</code> 的全部字段、生命周期的四个状态、六个钩子</td></tr>
+<tr><td><span class="term">镜像规范（image-spec）</span></td><td>一个镜像由哪些层组成、每层怎么打包、怎么寻址</td><td>今天完全不碰，明天 Day 14 的主线</td></tr>
+<tr><td><span class="term">分发规范（distribution-spec）</span></td><td>镜像仓库的 HTTP 接口长什么样</td><td>今天不碰</td></tr>
+</table>
+</div>
+<p>今天全程只在第一份里。<strong><code>config.json</code> 是整个体系里唯一的接口</strong>：上面那一层的活是算出这份 JSON，下面那一层的活是照着它干。你昨天那个脚本之所以不是 runc 的替代品而是它的同类，正是因为它也在做"照着一份配置干活"这件事——只是那份配置写在脚本正文里，没人能从外面替换。</p>
+
+<h2><span class="kicker">板块 2 · 第二部分</span>同一件事，runc 是怎么做的</h2>
+
+<h3>5. 关进去之后，里面看到的东西不一样了</h3>
+<p>先不看源码，先看结果。<code>probe.sh</code> 是一个 15 项的探针脚本，在容器里跑，逐项问"这一项被挡住了没有"。同一份 rootfs、同一个探针，分别放进 minibox 和 runc 跑一次，两次输出按编号并成表 E。</p>
+<div class="scroll">
+<table>
+<tr><th class="n" style="width:6%">#</th><th style="width:30%">问什么</th><th>minibox（Day 11–12 那份的裸装）</th><th>runc（默认 config.json）</th></tr>
+<tr><td class="n">1</td><td>自己的进程号</td><td class="n">1</td><td class="n">1</td></tr>
+<tr><td class="n">2</td><td>主机名</td><td>minibox</td><td>runc</td></tr>
+<tr><td class="n">3</td><td>挂载点条数</td><td class="n">3</td><td class="n">27</td></tr>
+<tr><td class="n">4</td><td>能力边界集 CapBnd</td><td><code>000001fffeffffff</code></td><td><code>0000000020000420</code></td></tr>
+<tr><td class="n">5</td><td>NoNewPrivs</td><td class="n">0</td><td class="n">1</td></tr>
+<tr><td class="n">6</td><td>Seccomp 模式</td><td class="n">0</td><td class="n">0</td></tr>
+<tr><td class="n">7</td><td>根目录能写吗</td><td>能写</td><td>不能：Read-only file system</td></tr>
+<tr><td class="n">8</td><td><code>/proc/timer_list</code> 行数</td><td class="n">236</td><td class="n">0</td></tr>
+<tr><td class="n">9</td><td>能写 sysrq-trigger 吗</td><td>能写</td><td>不能</td></tr>
+<tr><td class="n">10</td><td>能改 core_pattern 吗</td><td>能改</td><td>不能</td></tr>
+<tr><td class="n">11</td><td>能造块设备节点吗</td><td>能造</td><td>不能：Operation not permitted</td></tr>
+<tr><td class="n">12</td><td>还能挂文件系统吗</td><td>能挂</td><td>不能：permission denied</td></tr>
+<tr><td class="n">13</td><td>看得见几个进程</td><td class="n">4</td><td class="n">4</td></tr>
+<tr><td class="n">14</td><td>打开文件数上限</td><td class="n">20000</td><td class="n">1024</td></tr>
+<tr><td class="n">15</td><td><code>/dev</code> 下有几项</td><td class="n">5</td><td class="n">14</td></tr>
+</table>
+</div>
+<p>头两项一样，说明两边确实在做同一件事：进程号表换了、主机名换了。第 13 项也一样——两边都只看得见自己那几个进程。</p>
+<p>真正的差别从第 3 项开始。第 4、5、7、9、10 这五项，正好就是 Day 12 最后那节手工加固做的事：砍能力、设 <code>NO_NEW_PRIVS</code>、只读根、盖住 <code>/proc</code> 的几个入口、把 <code>/proc/sys</code> 变只读。你花了一节课加上去的东西，runc 在默认配置里就有了。</p>
+<p>第 6 项两边都是 0，这个要说清楚，因为它反直觉：<strong>runc 默认不装 seccomp 名单</strong>。OCI 那份默认 <code>config.json</code> 里根本没有 <code>seccomp</code> 这个键。你在 Docker 里见到的那份四百多条的白名单，是更上面一层塞进来的，第 15 节会说是谁塞的。</p>
+<p>第 11、12 项是新东西。第 11 项失败于设备白名单——runc 把 cgroup 的 devices 控制器配成了"默认全禁"，所以造块设备节点被拦住。第 14 项也是新东西，那是 <code>rlimits</code> 里的 <code>RLIMIT_NOFILE</code>，两边差了将近二十倍。</p>
+
+<h3>6. 那 27 个挂载点是哪来的</h3>
+<p>minibox 只有 3 个挂载点（根、<code>/proc</code>、<code>/tmp</code>），runc 有 27 个。把容器里的 <code>/proc/self/mountinfo</code> 原样倒出来（表 F），一条一条看它们分别是什么：</p>
+<div class="scroll">
+<table>
+<tr><th class="n" style="width:6%">#</th><th style="width:30%">挂在哪</th><th style="width:26%">来源里的哪一段</th><th>类型</th></tr>
+<tr><td class="n">1</td><td><code>/</code></td><td><code>/root/lab/bundle/rootfs</code></td><td>ext4</td></tr>
+<tr><td class="n">2–8</td><td><code>/proc</code> <code>/dev</code> <code>/dev/pts</code> <code>/dev/shm</code> <code>/dev/mqueue</code> <code>/sys</code> <code>/sys/fs/cgroup</code></td><td><code>/</code></td><td>各自的文件系统类型</td></tr>
+<tr><td class="n">9–17</td><td><code>/sys/fs/cgroup/</code> 下九个控制器</td><td><code>/m3</code>（容器自己那个组）</td><td>cgroup</td></tr>
+<tr><td class="n">18</td><td><code>/tmp</code></td><td><code>/</code></td><td>tmpfs</td></tr>
+<tr><td class="n">19–23</td><td><code>/proc/bus</code> <code>/proc/fs</code> <code>/proc/irq</code> <code>/proc/sys</code> <code>/proc/sysrq-trigger</code></td><td><code>/bus</code> <code>/fs</code> <code>/irq</code> <code>/sys</code> <code>/sysrq-trigger</code></td><td>proc</td></tr>
+<tr><td class="n">24, 27</td><td><code>/proc/acpi</code> <code>/sys/firmware</code></td><td><code>/</code></td><td>tmpfs（只读）</td></tr>
+<tr><td class="n">25, 26</td><td><code>/proc/keys</code> <code>/proc/timer_list</code></td><td><code>/null</code></td><td>tmpfs</td></tr>
+</table>
+</div>
+<p>第三列是 <code>mountinfo</code> 里最能说明问题的一列，它写的是"来源文件系统里的哪个子树被挂过来了"。19–23 那五条的来源就是它们自己（<code>/proc/sys</code> 的来源是 procfs 里的 <code>/sys</code>），这是把一棵已有的树绑到自己身上、再重挂成只读——Day 12 那两行 <code>mount --bind</code> 加 <code>mount -o remount,bind,ro</code> 干的就是这件事。</p>
+<p>25、26 两条的来源写着 <code>/null</code>，暴露得更彻底：那是 <code>/dev/null</code> 被绑到了这两个路径上。<code>/dev</code> 是个 tmpfs，所以这两条的类型也就跟着显示成 tmpfs。这正是 Day 12 那个 <code>mount --bind /dev/null /proc/xxx</code>。</p>
+<p>24、27 两条不一样，来源是 <code>/</code>、类型是只读 tmpfs——因为 <code>/proc/acpi</code> 和 <code>/sys/firmware</code> 是目录不是文件，往目录上绑 <code>/dev/null</code> 会失败，得盖一个空的只读 tmpfs。同一个"遮住"的意图，目标是文件还是目录，手法不同。</p>
+
+<h3>7. 每一条差别都能在源码里指到行</h3>
+<p>上面那些不是猜的。runc 这个命令行工具本身很薄，真正干活的代码在一个叫 <span class="term">libcontainer</span> 的 Go 库里，命名空间、rootfs、cgroup、能力全在那里面。跟 rootfs 有关的三个函数放在 <code>libcontainer/rootfs_linux.go</code>，正好对应你写过的三段 shell。</p>
+<p>先看换根。你昨天写的是 <code>pivot_root . oldroot</code>，而且必须先在 rootfs 里建一个 <code>oldroot</code> 目录，否则报 <code>No such file or directory</code>。runc 不建这个目录：</p>
+<pre><code><span class="c">// libcontainer/rootfs_linux.go:1145 起，func pivotRoot(rootfs string)</span>
+<span class="c">// 1146-1150 行的注释：文档说不行，但 pivot_root(".", ".") 其实是合法的。</span>
+<span class="c">// 结果是 / 变成新根，而 /proc/self/cwd 还指着旧根。既然 cwd 可以拿来</span>
+<span class="c">// 做文章，那就不必在 rootfs 里创建任何目录。</span>
+oldroot, _ := unix.Open("/", unix.O_DIRECTORY|unix.O_RDONLY, 0)   <span class="c">// 1152：先把旧根打开，攥住这个编号</span>
+newroot, _ := unix.Open(rootfs, unix.O_DIRECTORY|unix.O_RDONLY, 0) <span class="c">// 1158</span>
+unix.Fchdir(newroot)                                              <span class="c">// 1165：切到新根</span>
+unix.PivotRoot(".", ".")                                          <span class="c">// 1169：两个参数都是点</span>
+unix.Fchdir(oldroot)                                              <span class="c">// 1178：靠 fd 走回旧根</span>
+mount("", ".", "", unix.MS_SLAVE|unix.MS_REC, "")                 <span class="c">// 1187：把旧根改成 rslave</span>
+unmount(".", unix.MNT_DETACH)                                     <span class="c">// 1191：惰性卸载，和你昨天写的 umount -l 同一个标志</span>
+unix.Chdir("/")                                                   <span class="c">// 1196</span></code></pre>
+<p>这段是 Go，但每一行都对得上你写过的 shell。差别只有两处，而且两处都有理由。第一处是 <code>pivot_root(".", ".")</code>：两个参数都是当前目录，旧根被叠在新根的同一个挂载点上，然后靠一开始打开旧根拿到的那个编号（<span class="term">文件描述符 file descriptor</span>）走回去把它卸掉——进程打开一个目录会拿到一个编号，之后哪怕路径已经不通了，拿这个编号还能回到那个目录。<strong>这样 rootfs 里就不需要预留任何目录</strong>——上面第 3 节那个 bundle 的 rootfs 里确实没有 <code>oldroot</code>，而 minibox 那份里有一个。</p>
+<p>第二处在 1187 行：旧根被改成 <code>rslave</code> 而不是你写的 <code>rprivate</code>。1182–1186 行的注释解释了原因——用 <code>rprivate</code> 时遇到过竞态，容器这边还攥着某个挂载的引用，宿主那边的程序以为它已经没有挂载了，然后出事。<code>rslave</code> 保留了"宿主的变化传进来"这个方向，只切断"容器的变化传出去"。Day 11 讲挂载传播时留的那个"四种类型各有什么真实用途"，这就是其中一个。</p>
+<p class="breath">读到这里可以停一下：你昨天遇到的每一个坑——绑定挂载要先 <code>make-rprivate</code>、卸旧根要用惰性卸载、<code>/proc</code> 要重挂——在这份代码里都能找到对应的一行，而且旁边通常有一段注释写着当年是怎么踩到的。</p>
+<p>另外两个函数更短，直接对上 Day 12 的 <code>harden.sh</code>：</p>
+<div class="scroll">
+<table>
+<tr><th style="width:34%">runc 里的函数</th><th style="width:28%">你 Day 12 写的</th><th>做法</th></tr>
+<tr><td><code>readonlyPath</code>（1276 行）</td><td><code>mount --bind</code> 再 <code>remount,bind,ro</code></td><td>1277 行先绑到自己身上，1290 行重挂加 <code>MS_RDONLY</code>——同样是两步，一步做不到</td></tr>
+<tr><td><code>maskPaths</code>（1341 行）</td><td><code>mount --bind /dev/null &lt;路径&gt;</code></td><td>1342 行打开 <code>/dev/null</code>；1369 行往下判断目标是不是目录，是目录就改盖只读 tmpfs</td></tr>
+</table>
+</div>
+<p>1284–1288 行还多做了一件你没做的事：重挂之前先 <code>statfs</code> 读出原挂载的 <code>nosuid</code> / <code>nodev</code> / <code>noexec</code> 三个标志，重挂时原样带上。不带的话，这一次重挂会把原来有的保护标志抹掉——这是内核 <code>mount</code> 接口的一个陷阱，重挂传的是完整的标志集，不是增量。</p>
+
+<h3>8. 降权的顺序，和 seccomp 为什么有两个位置</h3>
+<p>温故 Q1 那个顺序，在 runc 里写在 <code>libcontainer/standard_init_linux.go</code> 的 <code>Init()</code> 函数里，从上到下就是执行顺序：</p>
+<div class="scroll">
+<table>
+<tr><th class="n" style="width:10%">行号</th><th style="width:34%">干什么</th><th>对应你写过的</th></tr>
+<tr><td class="n">91</td><td><code>prepareRootfs</code>：挂 <code>config.json</code> 里那一串、换根</td><td>Day 11 的 <code>pivot_root</code> 四步</td></tr>
+<tr><td class="n">121</td><td><code>sethostname</code></td><td><code>hostname minibox</code></td></tr>
+<tr><td class="n">138</td><td>把 <code>readonlyPaths</code> 逐条变只读</td><td>Day 12 <code>harden.sh</code> 后两行</td></tr>
+<tr><td class="n">144</td><td>把 <code>maskedPaths</code> 逐条盖住</td><td>Day 12 <code>harden.sh</code> 前面那个 for 循环</td></tr>
+<tr><td class="n">151</td><td><code>prctl(PR_SET_NO_NEW_PRIVS, 1)</code></td><td><code>setpriv --no-new-privs</code></td></tr>
+<tr><td class="n">178</td><td>装 seccomp——只在<em>没</em>设 NO_NEW_PRIVS 时走这里</td><td>Day 10 那个 <code>seccomp_run</code></td></tr>
+<tr><td class="n">188</td><td><code>finalizeNamespace</code>：砍能力边界集、换用户号</td><td><code>setpriv --bounding-set=-all --reuid=65534</code></td></tr>
+<tr><td class="n">226</td><td>装 seccomp——设了 NO_NEW_PRIVS 时走这里</td><td>—</td></tr>
+<tr><td class="n">297</td><td><code>execve</code> 用户进程</td><td><code>exec "$@"</code></td></tr>
+</table>
+</div>
+<p>换根在最前，降权在第 188 行，中间隔着所有需要 <code>CAP_SYS_ADMIN</code> 的动作——和 Day 12 推出来的顺序一模一样。</p>
+<p>有意思的是 seccomp 出现了两次。175–177 行的注释把理由写得很清楚：装 seccomp 过滤器本身是一个特权操作，除非你已经设了 <code>NO_NEW_PRIVS</code>。所以逻辑是这样的：</p>
+<ul>
+<li>没设 <code>NO_NEW_PRIVS</code> → 装名单需要能力，只能赶在砍能力之前装，走 178 行。</li>
+<li>设了 <code>NO_NEW_PRIVS</code> → 装名单不需要能力了，那就拖到离 <code>execve</code> 越近越好，走 226 行。221–223 行给的理由是：装得越晚，装完之后还要发生的系统调用就越少，用户的名单里需要放行的条目也就越少。</li>
+</ul>
+<p>这是个很实际的设计取舍。你写沙箱的名单时会体会到：名单越靠后装，你就越不用为运行时自己的准备动作开口子。</p>
+<p>第 188 行那个 <code>finalizeNamespace</code> 内部还有一段顺序，在 <code>libcontainer/init_linux.go</code>：337 行先砍边界集，341 行设 <code>KEEP_CAPS</code>，344 行换用户号，357 行清掉 <code>KEEP_CAPS</code>，360 行按配置装回该有的能力。中间那个 <code>KEEP_CAPS</code> 是必需的——Day 12 提过，换 uid 这个动作本身会把当前能力清空，而 runc 需要在换完之后还留下 <code>config.json</code> 里指定的那几个，所以得先跟内核打个招呼"这次换 uid 别清"。</p>
+
+<h2><span class="kicker">板块 2 · 第三部分</span>多做十倍的事，多花多少钱</h2>
+
+<h3>9. 先猜一个数</h3>
+<p class="lead">同一个 <code>/bin/true</code>，一个用 minibox 起，一个用 runc 起，差多少？</p>
+<p>把两边做的事摆平：minibox 给的是 5 个命名空间、一次换根、cgroup 三项配额，一共 3 个挂载点。runc 给的是同样的 5 个命名空间、同样的换根、同样的 cgroup，外加 27 个挂载点、持有的能力从 40 个砍到 3 个、只读根、10 条遮罩、5 条只读、设备白名单、打开文件数上限。</p>
+
+<div class="card predict">
+<div class="tag">预测</div>
+<p>动笔写下三个数，写完再往下翻。</p>
+<p>① runc 起一次的 P50，是 minibox 的几倍？</p>
+<div class="write s"></div>
+<p>② 一次启动烧掉的 CPU 时间（用户态加内核态），哪边多？大概多几成？</p>
+<div class="write s"></div>
+<p>③ 这些 CPU 时间里，用户态和内核态谁占大头——minibox 是哪边，runc 是哪边？</p>
+<div class="write s"></div>
+</div>
+
+<h3>10. 揭晓：钱一分没多花，只是换了个地方花</h3>
+<p>先看墙上时钟，表 A 六档：</p>
+<div class="scroll">
+<table>
+<tr><th>档位</th><th class="n">min</th><th class="n">P50</th><th class="n">P90</th><th class="n">max</th></tr>
+<tr><td>直接跑 <code>/bin/true</code>，不隔离</td><td class="n">2.6</td><td class="n">2.7</td><td class="n">3.0</td><td class="n">3.1</td></tr>
+<tr><td>只起一个 bash</td><td class="n">3.2</td><td class="n">3.4</td><td class="n">4.0</td><td class="n">5.3</td></tr>
+<tr><td>只起 runc 这个二进制（<code>--version</code>）</td><td class="n">5.1</td><td class="n">5.4</td><td class="n">6.0</td><td class="n">6.5</td></tr>
+<tr><td><code>unshare</code> 五个命名空间跑 <code>/bin/true</code></td><td class="n">4.3</td><td class="n">4.6</td><td class="n">5.3</td><td class="n">5.4</td></tr>
+<tr><td>minibox 完整</td><td class="n">29.8</td><td class="n">38.3</td><td class="n">44.2</td><td class="n">54.1</td></tr>
+<tr><td><code>runc run</code> 加 <code>runc delete</code></td><td class="n">28.8</td><td class="n">41.8</td><td class="n">51.8</td><td class="n">63.9</td></tr>
+</table>
+</div>
+<p class="sub">单位毫秒（ms）。每档热身 3 次后取 30 次，min / P50 / P90 / max 都是把这 30 个样本排好序之后直接取的，没有做任何拟合或插值。</p>
+<p>倍数不是几倍，是一点几成，而且两档的分布几乎叠在一起：runc 的最好情况（28.8）反而比 minibox 的最好情况（29.8）更快，P50 上贵了 3.5 毫秒，而两档各自的 P50 到 P90 就跨了六到十毫秒。也就是说这两档的差距，比它们各自的抖动还小。</p>
+<p>再看 CPU 时间——这一档才是答案所在：</p>
+<div class="scroll">
+<table>
+<tr><th>档位</th><th class="n">用户态</th><th class="n">内核态</th><th class="n">合计</th></tr>
+<tr><td>直接跑 <code>/bin/true</code>，不隔离</td><td class="n">2.6</td><td class="n">0.0</td><td class="n">2.6</td></tr>
+<tr><td>minibox 完整</td><td class="n">22.9</td><td class="n">7.2</td><td class="n">30.1</td></tr>
+<tr><td><code>runc run</code> 加 <code>runc delete</code></td><td class="n">13.6</td><td class="n">19.2</td><td class="n">32.8</td></tr>
+</table>
+</div>
+<p class="sub">单位毫秒 CPU 时间 / 每次启动。用 <code>getrusage(RUSAGE_CHILDREN)</code> 前后取差，包含所有被 wait 到的子孙进程，20 次取平均。</p>
+<p>合计几乎一样：30.1 对 32.8。但拆开就完全反过来了。<strong>minibox 的钱四分之三花在用户态，runc 的钱六成花在内核态。</strong></p>
+<p>这个倒转不难解释。minibox 是一个 bash 脚本，它要起两个 bash 解释器，还要 fork-exec 出十来个独立的小程序：三次 <code>rmdir</code>、三次 <code>mkdir</code>、一次 <code>unshare</code>、一次 <code>hostname</code>、四次 <code>mount</code>、一次 <code>pivot_root</code>、一次 <code>umount</code>。每一个都要被内核装载进内存、初始化、跑几微秒的活、再退出。这些开销全部记在用户态账上，而且和"隔离"这件事本身没有半点关系。</p>
+<p>runc 是一个静态编译的 Go 二进制，配置解析完之后直接发系统调用。它内核态花得多，是因为它真的在内核里干活——27 次 <code>mount</code>、一串 <code>prctl</code>、写 cgroup 文件、<code>pivot_root</code>。花在内核态的每一毫秒都买到了一项具体的约束。</p>
+<div class="card key">
+<div class="tag">关键结论</div>
+<p>"做的事多"和"启动慢"之间没有必然联系。决定启动开销的是你用什么东西去发那些系统调用，不是你发了多少个。一个 shell 脚本哪怕只做三件事，光是把那些小程序拉起来就已经比一个二进制做二十七件事更贵了。</p>
+<p>这条在挑沙箱实现时很实用：看到某个方案"功能少所以应该更快"，先去看它是不是用脚本串起来的。</p>
+</div>
+
+<h3>11. minibox 那 38 毫秒到底花在哪</h3>
+<p>把 minibox 的两个开关分别关掉再测一遍（表 B），就能把它拆开：</p>
+<div class="scroll">
+<table>
+<tr><th>档位</th><th class="n">min</th><th class="n">P50</th><th class="n">P90</th><th class="n">max</th></tr>
+<tr><td>只有命名空间（<code>CG=0 PIVOT=0</code>）</td><td class="n">15.1</td><td class="n">15.7</td><td class="n">16.6</td><td class="n">17.9</td></tr>
+<tr><td>加换根（<code>CG=0 PIVOT=1</code>）</td><td class="n">20.9</td><td class="n">21.7</td><td class="n">23.3</td><td class="n">24.3</td></tr>
+<tr><td>加配额（<code>CG=1 PIVOT=0</code>）</td><td class="n">26.3</td><td class="n">33.6</td><td class="n">46.2</td><td class="n">51.2</td></tr>
+<tr><td>两样都加（<code>CG=1 PIVOT=1</code>）</td><td class="n">30.1</td><td class="n">39.0</td><td class="n">42.3</td><td class="n">47.9</td></tr>
+</table>
+</div>
+<p>拿第一行当底，后两行各自减掉它，就是各自那一样东西的价钱：换根 21.7 − 15.7 = 6.0 毫秒，配额 33.6 − 15.7 = 17.9 毫秒。两样加起来 15.7 + 6.0 + 17.9 = 39.6，而实测两样都加是 39.0——差 0.6 毫秒，说明这两样基本不互相影响，可以当成独立的加项。</p>
+<p>顺便可以拿这张表校一下测量本身的精度：最后一行和表 A 里 minibox 那一行量的是同一个配置，两次独立的 30 样本分别给出 39.0 和 38.3。这 0.7 毫秒就是同一件事量两遍的自然差距，它给了你一把尺子——第 10 节 minibox 和 runc 那 3.5 毫秒的差，是它的五倍，比噪声大，但也就大这么多。</p>
+<p>最贵的一项是配额，而且贵在一个和配额无关的地方。把脚本里那几段单独拎出来量一遍（表 G），就看得见钱去哪了：</p>
+<div class="scroll">
+<table>
+<tr><th>单独量这一段</th><th class="n">min</th><th class="n">P50</th><th class="n">P90</th></tr>
+<tr><td>空 bash（地板）</td><td class="n">3.1</td><td class="n">3.3</td><td class="n">3.4</td></tr>
+<tr><td>bash 里连跑 6 次 <code>/bin/true</code></td><td class="n">10.9</td><td class="n">11.3</td><td class="n">12.1</td></tr>
+<tr><td>bash 里跑那三对 <code>rmdir</code> + <code>mkdir</code></td><td class="n">12.5</td><td class="n">12.8</td><td class="n">13.7</td></tr>
+<tr><td>bash 里只写那四个配额文件（目录已存在）</td><td class="n">3.1</td><td class="n">3.2</td><td class="n">3.5</td></tr>
+</table>
+</div>
+<p class="sub">单位毫秒。口径与前面几张表相同：热身 3 次后取 30 次。</p>
+<p>最后一行是关键：目录已经在的时候，把四个配额数字写进去，和空跑一个 bash 量不出差别。也就是说"设配额"这件事本身几乎免费。</p>
+<p>贵的是第三行——三对 <code>rmdir</code> + <code>mkdir</code>，扣掉地板是 9.5 毫秒。而第二行告诉你这 9.5 毫秒里有 8.0 毫秒纯粹是"起六个小程序"的价钱：同样在 bash 里跑六次 <code>/bin/true</code>，扣掉地板正好 8.0 毫秒。一个进程从被 <code>fork</code> 出来到退出，在这台机器上就值一点三毫秒，跟它干了什么无关。</p>
+<p>runc 做同一件事，是几个 <code>mkdirat</code> 加几次 <code>write</code>，一次 fork 都不用。</p>
+<p class="breath">顺带回收一个 Day 11 的悬念：那天你量到"三把锁全上，启动贵了多少"。今天这张表告诉你，那个数字里有一大半根本不是锁的钱，是 bash 的钱。</p>
+
+<h2><span class="kicker">板块 2 · 第四部分</span>create、start，和 runc 之上的那一层</h2>
+
+<h3>12. 为什么起一个容器要两条命令</h3>
+<p class="lead">如果 <code>runc run</code> 就能一步起来，为什么规范里还要单独定义 <code>create</code> 和 <code>start</code>？</p>
+<p>规范给容器定了四个<span class="term">容器状态（container state）</span>，写在 runtime-spec 的 <code>runtime.md</code> 第 19–22 行：</p>
+<div class="scroll">
+<table>
+<tr><th style="width:18%">状态</th><th>含义（规范原文的意思）</th></tr>
+<tr><td><code>creating</code></td><td>正在创建</td></tr>
+<tr><td><code>created</code></td><td>创建操作已完成，但用户指定的那个程序既没退出、也还没被执行</td></tr>
+<tr><td><code>running</code></td><td>用户指定的程序已经开始执行，还没退出</td></tr>
+<tr><td><code>stopped</code></td><td>容器进程已经退出</td></tr>
+</table>
+</div>
+<p><code>created</code> 这个状态是整个设计的关键：环境全部搭好了，但用户的程序一行都还没跑。同一份文档第 57–79 行把生命周期拆成 13 步，第 2 步造环境、第 6 步才调 <code>start</code>、第 8 步才真正 <code>execve</code> 用户程序，中间第 3、4、5 步和第 7 步留给了四类<span class="term">生命周期钩子（lifecycle hooks）</span>——规范一共定义了六个这样的插入点，允许你在容器起来的特定时刻插进一段自己的程序，网络插件和设备注入都靠它。</p>
+<p>规范只说"必须有这个状态"，没说怎么实现。runc 的实现在上面走一遍那段日志里已经全露出来了：<code>create</code> 返回之后，<code>runc state</code> 报 <code>created</code>，pid 是 17554，而宿主上那个 pid 的命令行是 <code>runc init</code>——不是 <code>sleep 300</code>。状态目录里有两个文件，其中一个是 <code>exec.fifo</code>。</p>
+<p>这个 <span class="term">执行栅栏（exec fifo）</span>是一个命名管道。<code>runc init</code> 把该做的都做完之后，停在这里等：</p>
+<pre><code><span class="c">// libcontainer/standard_init_linux.go:254 起</span>
+<span class="c">// 等 fifo 的另一端被打开，再 exec 用户进程。</span>
+fifoFile, err := pathrs.Reopen(l.fifoFile, unix.O_WRONLY|unix.O_CLOEXEC)  <span class="c">// 258</span>
+fifoFile.Write([]byte("0"))   <span class="c">// 263：写这一个字节会阻塞，直到有人来读</span>
+...
+system.Exec(name, l.config.Args, l.config.Env)   <span class="c">// 297：这才 execve 用户的程序</span>
+</code></pre>
+<p>命名管道有一条内核规定：写端打开时如果还没有读端，写操作就一直卡着。所以 <code>runc init</code> 卡在 263 行。<code>runc start</code> 干的事只有一件——把这个 fifo 打开读一下。写端一通，263 行返回，297 行 <code>execve</code>，进程的映像被换成用户的程序，pid 不变。日志里那个 17554 前后一致，命令行从 <code>runc init</code> 变成 <code>/bin/sh -c sleep 300</code>，就是这一下。</p>
+<p>这个设计值多少钱，表 D 说了算：</p>
+<div class="scroll">
+<table>
+<tr><th>子命令</th><th class="n">min</th><th class="n">P50</th><th class="n">P90</th><th class="n">max</th></tr>
+<tr><td><code>runc create</code></td><td class="n">23.4</td><td class="n">28.7</td><td class="n">33.9</td><td class="n">36.2</td></tr>
+<tr><td><code>runc start</code></td><td class="n">6.6</td><td class="n">7.5</td><td class="n">8.1</td><td class="n">9.0</td></tr>
+<tr><td><code>runc kill</code></td><td class="n">6.6</td><td class="n">7.3</td><td class="n">8.5</td><td class="n">11.3</td></tr>
+<tr><td><code>runc delete</code></td><td class="n">6.9</td><td class="n">7.6</td><td class="n">8.0</td><td class="n">8.2</td></tr>
+</table>
+</div>
+<p>起一个容器要付的是前两条：28.7 + 7.5 = 36.2 毫秒，其中 <code>create</code> 占了 79%。<code>start</code> 那 7.5 毫秒里还有 5.4 毫秒是把 runc 这个二进制拉起来的钱——回表 A 第三行。真正属于 <code>start</code> 自己的活，只有两毫秒出头。</p>
+<div class="card key">
+<div class="tag">关键结论</div>
+<p><code>create</code> 做完了几乎所有的活，<code>start</code> 只是去捅一下那根管子。这意味着一个沙箱池可以把容器预先造到 <code>created</code> 停住，请求真来的时候只付 <code>start</code> 那一笔。在这台机器上，这是把 36 毫秒挪成 7.5 毫秒。</p>
+<p>代价是每个预热的容器都占着一个 <code>runc init</code> 进程、一套命名空间和一整套挂载点。池子开多大，是这笔内存和那笔延迟之间的权衡。</p>
+</div>
+
+<h3>13. <code>runc init</code> 是同一个二进制，但它到得比 Go 还早</h3>
+<p>上面那个停在半路的进程叫 <span class="term">初始化进程（runc init）</span>。它不是另一个程序，就是 runc 自己，多带了一个参数：</p>
+<pre><code><span class="c">// libcontainer/container_linux.go:508 起</span>
+safeExe, err = exeseal.CloneSelfExe(c.stateDir)   <span class="c">// 508：先把自己这个二进制复制一份</span>
+exePath = "/proc/self/fd/" + strconv.Itoa(int(safeExe.Fd()))  <span class="c">// 512</span>
+cmd := exec.Command(exePath, "init")              <span class="c">// 517：拿这份副本，带一个 init 参数起自己</span>
+</code></pre>
+<p>489–493 行的注释说明了为什么要复制：万一容器里的程序设法覆盖了这个二进制文件，也只能糟蹋掉这一份副本，动不了系统上别的容器。这个先复制再执行的做法叫 <span class="term">二进制自克隆（binary cloning）</span>，是 2019 年那个著名漏洞（容器内进程通过 <code>/proc/self/exe</code> 改写宿主上的 runc 二进制）之后加的防线。</p>
+<p>配置不走命令行参数，走一根管子：536–546 行把三个文件描述符号塞进环境变量 <code>_LIBCONTAINER_INITPIPE</code>、<code>_LIBCONTAINER_SYNCPIPE</code>、<code>_LIBCONTAINER_LOGPIPE</code>。子进程从那些管子里读配置、往回报进度。</p>
+<p>还有一层更隐蔽的东西。创建命名空间这件事必须在 Go 运行时起来之前做完——Go 程序一启动就有一堆线程，而 <code>unshare</code> 某些命名空间只对单线程进程有效。runc 的办法是塞一段 C 进去，用 <span class="term">构造函数钩子（constructor）</span>让它在 <code>main</code> 之前跑：</p>
+<pre><code><span class="c">// libcontainer/nsenter/nsenter.go 全文，一共 12 行</span>
+/*
+#cgo CFLAGS: -Wall
+extern void nsexec();
+void __attribute__((constructor)) init(void) {
+	nsexec();
+}
+*/
+import "C"</code></pre>
+<p><code>__attribute__((constructor))</code> 是 GCC 的一个标注，被它标上的函数会在 <code>main</code> 之前由动态链接器调用。<code>nsexec()</code> 的第一件事（<code>nsexec.c</code> 第 716–719 行）是查环境变量 <code>_LIBCONTAINER_INITPIPE</code>：查不到就直接返回，让 Go 正常启动——这说明同一个二进制既是 <code>runc run</code> 也是 <code>runc init</code>，靠环境变量分岔。</p>
+<p>查得到的话，它就进入一套<span class="term">三段式创建（stage 0 / 1 / 2）</span>，<code>nsexec.c</code> 第 820 行的 <code>switch (setjmp(env))</code> 是分岔点：</p>
+<div class="scroll">
+<table>
+<tr><th style="width:22%">阶段</th><th class="n" style="width:12%">行号</th><th>它的活</th></tr>
+<tr><td>stage 0（父）</td><td class="n">828</td><td>造出 stage 1，替它写 uid_map / gid_map，再把最终的 pid 报给上面</td></tr>
+<tr><td>stage 1（子）</td><td class="n">986</td><td>先 <code>setns</code> 加入指定的命名空间，再 <code>unshare</code> 出要新建的那些，然后造出 stage 2</td></tr>
+<tr><td>stage 2（孙）</td><td class="n">1153</td><td>它才是新进程号表里的 1 号进程，做完扫尾就把控制权交回 Go</td></tr>
+</table>
+</div>
+<p>为什么非要三段？795–806 行的注释给了理由：进程号命名空间只对<em>之后创建的子进程</em>生效，调 <code>unshare(CLONE_NEWPID)</code> 的那个进程自己还在旧表里。所以必须再 fork 一次，新表里的 1 号进程才存在——这正是你昨天 <code>unshare</code> 命令行上那个 <code>--fork</code> 参数在做的事，Day 11 的脚本注释里写着"进程号那张表要在下一个进程身上才生效"。runc 多出来的第三段，是为了让父进程还能拿到孙子的 pid 报上去。</p>
+
+<h3>14. runc 之上：containerd 和它派出去的那个 shim</h3>
+<p>runc 是个一次性的命令行工具：起一个容器，返回，退出。它不常驻，不监听端口，不知道机器上有多少容器在跑。干这种活的程序有个统称，叫<span class="term">低层运行时（low-level runtime）</span>，也叫运行时引擎。</p>
+<p>常驻的那些事——管镜像、把 rootfs 铺出来、算出 <code>config.json</code>、记住机器上有哪些容器、对外提供接口——归<span class="term">高层运行时（high-level runtime）</span>。containerd 是这一层里最常见的一个，Kubernetes 的 kubelet 通过一套叫 <span class="term">容器运行时接口（CRI）</span>的接口跟它说话。</p>
+<p>containerd 的官方文档（<code>core/runtime/v2/README.md</code>）开门见山写着一句：这个守护进程<em>不直接拉起容器</em>。它拉起的是一个叫<span class="term">垫片（shim）</span>的中间进程，由 shim 去 fork-exec 真正的 runc。containerd 和 shim 之间说话走的是 Unix 套接字上的一个轻量远程调用协议，叫 <span class="term">ttRPC</span>——名字里那个 tt 是 “tiny” 的意思，它是 gRPC 的一个精简版，为的是让每台机器上成百上千个 shim 进程不至于各自扛一份沉重的运行时。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 800 320" width="800" height="320" role="img" aria-label="containerd 到容器进程的分层">
+<g fill="none" stroke="currentColor" stroke-width="1.4">
+  <rect x="20" y="24" width="150" height="56" rx="8"/>
+  <rect x="20" y="120" width="150" height="72" rx="8"/>
+  <rect x="230" y="120" width="170" height="72" rx="8"/>
+  <rect x="460" y="120" width="150" height="72" rx="8"/>
+  <rect x="640" y="120" width="140" height="72" rx="8"/>
+  <rect x="230" y="232" width="550" height="62" rx="8" stroke-dasharray="4 3"/>
+  <path d="M95 80 L95 116" marker-end="url(#ar)"/>
+  <path d="M170 156 L226 156" marker-end="url(#ar)"/>
+  <path d="M400 156 L456 156" marker-end="url(#ar)"/>
+  <path d="M610 156 L636 156" marker-end="url(#ar)"/>
+  <path d="M315 192 L315 228" marker-end="url(#ar)" stroke-dasharray="3 3"/>
+</g>
+<g fill="currentColor" font-size="13">
+  <text x="34" y="48" font-weight="700">ctr / docker</text>
+  <text x="34" y="68" font-size="12">nerdctl / kubelet</text>
+
+  <text x="34" y="144" font-weight="700">containerd</text>
+  <text x="34" y="164" font-size="12">守护进程</text>
+  <text x="34" y="182" font-size="12">铺 rootfs、算 config.json</text>
+
+  <text x="244" y="144" font-weight="700">containerd-shim-runc-v2</text>
+  <text x="244" y="164" font-size="12">每容器（或每 pod）一个</text>
+  <text x="244" y="182" font-size="12">守着 ttRPC 套接字</text>
+
+  <text x="474" y="144" font-weight="700">runc</text>
+  <text x="474" y="164" font-size="12">跑完就退出</text>
+  <text x="474" y="182" font-size="12">照着 config.json 干活</text>
+
+  <text x="654" y="144" font-weight="700">容器进程</text>
+  <text x="654" y="164" font-size="12">新表里的 1 号</text>
+  <text x="654" y="182" font-size="12">父进程是 shim</text>
+
+  <text x="244" y="256" font-weight="700">shim 长期活着的三个理由</text>
+  <text x="244" y="276" font-size="12">① containerd 重启不影响容器  ② 攥着容器的 stdout/stderr  ③ 收尸并上报退出码</text>
+</g>
+</svg>
+</div>
+<figcaption>containerd 不 fork 容器，它 fork shim；shim 才 fork runc。虚线框是 shim 为什么必须常驻。</figcaption>
+</figure>
+
+<p><strong>containerd 不自己拉容器，它拉的是 shim</strong>，这一层看起来多余，其实解决的是一个很具体的问题：runc 跑完就退出，那容器进程的父进程是谁？如果是 containerd 自己，那 containerd 一升级重启，所有容器的 stdio 就断了、退出码也没人收。有了 shim，containerd 可以随时重启，容器照常跑着，重启完再通过套接字连回去。</p>
+<p>文档里还提到一件事：一个 shim 可以带多个容器。containerd 那个 runc shim 是按标签分组的，Kubernetes 同一个 pod 里的容器带着同一个 sandbox-id 标签，于是归同一个 shim 管。这就是"pod 里的容器共享命名空间"在进程层面的落地方式。</p>
+
+<h3>15. 那个接信号、转信号、收尸的角色，叫 subreaper</h3>
+<p>Day 11 场景二留过一个问题：容器里的 1 号进程只处理它自己装了处理函数的信号，用户提交的代码通常什么都没装，所以 <code>SIGTERM</code> 对它是空的。当时说正确做法是让 1 号进程是你自己写的一个小程序，负责接信号、转信号、顺便回收派生出来的子进程，并且说这个角色有个专门的名字。</p>
+<p>名字是 <span class="term">子收割者（subreaper）</span>，它其实是内核的一个进程属性：</p>
+<pre><code><span class="c">// containerd pkg/sys/reaper/reaper_utils_linux.go:26</span>
+func SetSubreaper(i int) error {
+	return unix.Prctl(unix.PR_SET_CHILD_SUBREAPER, uintptr(i), 0, 0, 0)
+}</code></pre>
+<p>平时一个进程死了，它的孤儿子进程会被过继给 1 号进程，由 1 号进程收尸。设了 <code>PR_SET_CHILD_SUBREAPER</code> 之后，这条链上的孤儿会被过继给<em>最近的那个 subreaper</em>，而不是一路飘到 1 号。没人收尸的进程会一直停在<span class="term">僵尸（zombie）</span>状态占着进程号表的一个位置，攒多了就把 <code>pids.max</code> 撑满——Day 10 设的那个 64。</p>
+<p>containerd 的 shim 启动时第一批动作里就有这一下（<code>pkg/shim/shim.go</code> 第 243–247 行调 <code>subreaper()</code>，Linux 上的实现在 <code>pkg/shim/shim_linux.go</code> 第 29–31 行，就是上面那个 <code>Prctl</code>）。runc 自己也有同一套逻辑：<code>signals.go</code> 第 21–27 行按需把自己设成 subreaper，第 86–121 行那个循环就是完整的角色定义——收到 <code>SIGCHLD</code> 就调 <code>reap()</code>（127 行，<code>wait4</code> 加 <code>WNOHANG</code> 循环到收干净为止），收到 <code>SIGWINCH</code> 就调整终端大小，收到别的一律 <code>kill(pid1, 信号)</code> 转给容器的 1 号进程。</p>
+<p>最后一件事：谁决定 <code>config.json</code> 里的什么。同一个字段在不同层有不同的默认值，这张表值得记住：</p>
+<div class="scroll">
+<table>
+<tr><th style="width:24%">字段</th><th>OCI 默认（<code>runc spec</code> 生成的）</th><th>containerd 的默认</th></tr>
+<tr><td>能力集</td><td>3 个：<code>CAP_AUDIT_WRITE</code>、<code>CAP_KILL</code>、<code>CAP_NET_BIND_SERVICE</code></td><td>14 个，多出 <code>CAP_CHOWN</code>、<code>CAP_MKNOD</code>、<code>CAP_NET_RAW</code>、<code>CAP_SETUID</code> 等（<code>pkg/oci/spec.go</code> 118–135 行）</td></tr>
+<tr><td>seccomp</td><td>没有这个键，也就是不装</td><td>一份默认动作为"报错误码"、放行 414 个系统调用名的白名单（<code>contrib/seccomp/seccomp_default.go</code>，487 行是默认动作）</td></tr>
+<tr><td>rootfs 从哪来</td><td>规范只说 <code>root.path</code> 指向一个目录，怎么来的不管</td><td>由镜像层叠出来——明天的主线</td></tr>
+<tr><td>遮罩与只读路径</td><td>10 条遮罩、5 条只读</td><td>沿用同一套，并按运行时特性增删</td></tr>
+</table>
+</div>
+<p>把这张表和第 5 节那个"runc 默认没有 seccomp"对起来看，就明白为什么同一个 <code>docker run</code> 和你手写的 <code>runc run</code> 安全性差那么远：差的不在 runc，在上面那层往 <code>config.json</code> 里填了多少东西。</p>
+
+<!-- ============ 3 动手任务 ============ -->
+<h2><span class="kicker">板块 3</span>动手任务</h2>
+
+<h3>任务 A · 把 minibox 换成 runc，逐条对齐（约 1.2 小时）</h3>
+<p>目标不是"学会用 runc"，是让你手上那份配置和 runc 的配置能一条条对上，对不上的地方你说得出为什么。</p>
+
+<h4>第 1 步：拿到 runc</h4>
+<p>发行版包管理器里通常就有（<code>apt install runc</code> 之类）。想读源码就自己编，Go 1.21 以上、装了 <code>libseccomp-dev</code> 就能编：</p>
+<pre><code>git clone --depth 1 --branch v1.3.3 https://github.com/opencontainers/runc.git
+cd runc &amp;&amp; make BUILDTAGS="seccomp urfave_cli_no_docs"
+./runc --version   <span class="c"># 应该打出 runc version 1.3.3 和它对应的 spec 版本</span></code></pre>
+<p>看到 <code>Package libseccomp was not found</code>，是缺开发头文件，装 <code>libseccomp-dev</code> 再编。</p>
+
+<h4>第 2 步：造一个 bundle</h4>
+<p>用你 Day 11 造的那个 rootfs 就行，不用重造。这一步做完你会有一份 169 行的 <code>config.json</code>，先整份读一遍，边读边在旁边标注"这一条我 Day 11/12 写在哪一行"。</p>
+<pre><code>mkdir -p ~/lab/bundle &amp;&amp; cd ~/lab/bundle
+cp -a ~/lab/rootfs .          <span class="c"># Day 11 那个 rootfs</span>
+runc spec                     <span class="c"># 生成默认 config.json</span>
+<span class="c"># terminal 改成 false，否则要接一个控制台套接字才能跑</span>
+python3 -c "
+import json; c=json.load(open('config.json'))
+c['process']['terminal']=False
+c['process']['args']=['/bin/sh','-c','hostname; id; grep Cap /proc/self/status']
+json.dump(c,open('config.json','w'),indent=2)"
+runc run demo</code></pre>
+<p>应该看到主机名 <code>runc</code>、uid 0、以及一个只剩三位为 1 的 <code>CapBnd</code>。如果报 <code>rootfs ... not a directory</code>，是 <code>root.path</code> 和你实际的目录名对不上。</p>
+
+<h4>第 3 步：用探针把差别量出来</h4>
+<p>把本页第 5 节那 15 项探针自己写一份（不要抄结论，自己写脚本），分别在你的 minibox 和 runc 下各跑一次，做成一张两列对照表。然后逐项回答：这一项是 <code>config.json</code> 里哪个字段管的？</p>
+
+<h4>第 4 步：把 create 和 start 分开跑一遍</h4>
+<pre><code>runc create c1               <span class="c"># 注意：容器的 stdout 会被继承，别用管道接它</span>
+runc state c1 | grep status  <span class="c"># 应该是 created</span>
+ps -p $(runc state c1 | python3 -c "import json,sys; print(json.load(sys.stdin)['pid'])") -o args=
+ls /run/runc/c1              <span class="c"># 应该看到 exec.fifo 和 state.json</span>
+runc start c1                <span class="c"># 再看一遍上面两条，pid 不变，命令行变了，fifo 没了</span></code></pre>
+<p>看到 <code>runc create</code> 一直不返回，多半是你把它的 stdout 接到了管道或者 <code>$(...)</code> 里——容器进程继承了那个管子并且不关，读的一方就一直等。</p>
+
+<h4>验收标准</h4>
+<ul>
+<li>你的对照表里，每一项差别都能指到 <code>config.json</code> 的一个具体字段，或者写明"这一项不是配置管的"。</li>
+<li>你能说出 <code>created</code> 状态下那个进程的命令行是什么，以及它在等谁。</li>
+<li>用你自己机器上的数字回答：<code>create</code> 和 <code>start</code> 各占整个启动的几成。</li>
+</ul>
+
+<h4>常见坑</h4>
+<ul>
+<li><code>runc</code> 必须以 root 跑，或者配好用户命名空间。非 root 直接跑会在造 cgroup 那步失败。</li>
+<li>容器 ID 不能重名。上一次没 <code>delete</code> 干净，下一次 <code>create</code> 会报 already exists。<code>runc list</code> 看有哪些残留。</li>
+<li><code>runc delete</code> 要求状态是 <code>stopped</code>。<code>kill</code> 之后立刻 <code>delete</code> 会失败，等几十毫秒。</li>
+<li>默认 <code>config.json</code> 的根是只读的。想写东西得自己加一个 tmpfs 挂载点，或者把 <code>root.readonly</code> 改成 false。</li>
+</ul>
+
+<h3>任务 B · 给你自己的服务做一个 bundle（约 45 分钟）</h3>
+<p>挑一个你自己写过的 Python 服务（Day 1 那个最小服务就行）。用 Day 12 那个 rootfs 做底，写一份 <code>config.json</code> 让它跑起来，要求：</p>
+<ul>
+<li>根只读，另外挂一个 tmpfs 的 <code>/tmp</code> 给它写临时文件。</li>
+<li>能力集在默认那 3 个的基础上，只加你确实需要的（提示：监听 1024 以上的端口一个都不用加）。</li>
+<li>CPU 和内存配额沿用你 Day 10 那两个值，写在 <code>linux.resources</code> 里，别再用手写的 cgroup 目录。</li>
+<li>量一遍：从 <code>create</code> 开始到服务能接第一个请求，各段各多久。</li>
+</ul>
+
+<h4>加分题</h4>
+<p>做一个"池"：预先 <code>create</code> 出 8 个容器停在 <code>created</code>，来一个请求 <code>start</code> 一个。量出 P50 和 P99，和"每次都从 <code>create</code> 开始"比。然后回答一个更难的问题——这 8 个停着的容器，各自占了多少内存？（提示：<code>runc init</code> 进程占的常驻内存，加上那 27 个挂载点里 tmpfs 那几条已经用掉的部分。）</p>
+
+<!-- ============ 4 上岗关联 ============ -->
+<h2><span class="kicker">板块 4</span>上岗关联</h2>
+
+<h3>场景一 · 「沙箱冷启动 P99 一百多毫秒，能不能降下来」</h3>
+<p>先别急着换 microVM 或者改镜像。第一件事是把这一百多毫秒按 <code>create</code> / <code>start</code> / 用户代码三段拆开——本页表 D 那个拆法在你的机器上同样能做。如果大头在 <code>create</code>，池化预热就能直接把它挪到请求路径之外，这是最便宜的一招。如果大头在用户代码启动（比如 Python 导入一堆库），那再多的容器优化都没用，该优化的是别的东西。</p>
+
+<h3>场景二 · 「安全同学问：我们的沙箱和 Docker 比差在哪几条」</h3>
+<p>这个问题有一个可以直接执行的答法：把你们沙箱实际用的那份 <code>config.json</code> 导出来，和 containerd 那份默认值逐字段 diff。能力集、seccomp、<code>maskedPaths</code>、<code>readonlyPaths</code>、<code>devices</code>、<code>rlimits</code>——六项对完，差别就是一张表。比"我觉得我们挺严的"有说服力得多。</p>
+
+<h3>场景三 · 「agent 跑了一天，机器上多出来几百个僵尸进程」</h3>
+<p>典型症状是 <code>pids.max</code> 撑满，新的工具调用起不来。往上找：容器的 1 号进程是不是用户代码本身？用户代码 fork 了子进程之后没有 <code>wait</code>？那些子进程死了之后过继给谁？答案通常是——过继给了那个不会收尸的 1 号进程。修法是第 15 节那个角色：让 1 号进程是一个会 <code>wait4</code> 的小程序，或者在外面那层设 subreaper 兜住。</p>
+
+<h4>同事和面试官常问的</h4>
+<ul>
+<li>Docker、containerd、runc 三者是什么关系？谁 fork 谁？</li>
+<li>为什么 OCI 要把 <code>create</code> 和 <code>start</code> 分成两步？只有 <code>run</code> 会缺什么？</li>
+<li><code>runc init</code> 为什么要把自己的二进制复制一份再执行？</li>
+<li>容器里的 1 号进程和普通进程有什么不同？为什么 <code>SIGTERM</code> 经常没反应？</li>
+<li>Docker 默认那份 seccomp 白名单是谁给的？runc 自己有没有？</li>
+<li>为什么创建 PID 命名空间必须再 fork 一次？</li>
+</ul>
+
+<!-- ============ 5 自检 ============ -->
+<h2><span class="kicker">板块 5</span>自检问题</h2>
+
+<details><summary>1 · 有人把 <code>config.json</code> 里的 <code>process.args</code> 改了，但容器已经 <code>create</code> 过、还没 <code>start</code>。<code>start</code> 之后跑的是新的还是旧的？</summary>
+<p>旧的。runtime-spec 第 61 行有一句明确规定：<code>create</code> 这一步之后对 <code>config.json</code> 的任何修改都不得影响这个容器。</p>
+<p>runc 的实现让这条规定成为必然：<code>create</code> 的时候配置已经通过管子传给了 <code>runc init</code>，并且序列化进了 <code>state.json</code>。<code>runc init</code> 停在 <code>exec.fifo</code> 上时，它要执行的 <code>args</code> 早就在自己的内存里了，<code>start</code> 只是捅一下管子，根本不会再去读那个 JSON 文件。</p>
+<p>错在哪：容易以为 <code>start</code> 是"这时候才去读配置执行"。不是——<code>start</code> 什么都不读。</p>
+</details>
+
+<details><summary>2 · 你在 <code>config.json</code> 里既设了 <code>noNewPrivileges: true</code>，又给了一份 seccomp 名单，名单里忘了放行 <code>execve</code>。容器起得来吗？</summary>
+<p>起不来，而且失败的位置很特别：装名单会成功，<code>execve</code> 那一下会被自己的名单挡住。</p>
+<p>推理：设了 <code>NO_NEW_PRIVS</code>，runc 走 <code>standard_init_linux.go</code> 第 226 行那条路，也就是把 seccomp 拖到尽可能晚才装。那个位置在第 297 行 <code>execve</code> 之前一点点。装完之后紧接着就是 <code>execve</code>，而它不在白名单里，内核直接拒绝。</p>
+<p>如果没设 <code>NO_NEW_PRIVS</code>，走的是 178 行那条路，装得更早，同样会死在 <code>execve</code>——只是中间还隔着降权那一堆动作，报错的调用栈不一样。</p>
+<p>错在哪：以为"名单是给用户代码用的，运行时自己的动作不受限"。恰恰相反，名单一旦装上，装它的那个进程自己第一个受约束，而它接下来必然要发 <code>execve</code>。</p>
+</details>
+
+<details><summary>3 · 表 A 里 minibox 和 runc 的 P50 差不到四毫秒，但表 C 显示两者的用户态 CPU 差了将近一倍。为什么墙上时钟没体现出这个差别？</summary>
+<p>因为这台机器有 2 个核，而这两个装置在启动过程里都不是单线程串行的。minibox 那些 fork 出来的小程序、runc 的 Go 运行时和它的子进程，都能在两个核上重叠跑。CPU 时间是把所有核上的时间加起来，墙上时钟只算最长的那条路径。</p>
+<p>换个说法：CPU 时间量的是"一共烧了多少"，墙上时钟量的是"等了多久"。有并行的时候前者可以大于后者。这也是为什么这两个指标都要报——只看墙上时钟，你会以为 minibox 和 runc 一样省；只看 CPU 时间，你会以为 runc 更贵。</p>
+<p>顺带一个推论：如果把机器压满（比如同时起 50 个沙箱），CPU 时间才是决定吞吐的那个量，那时 minibox 那种把钱烧在 fork-exec 上的做法会明显吃亏。</p>
+</details>
+
+<details><summary>4 · 你的沙箱池预先 <code>create</code> 了 20 个容器停在 <code>created</code>。这时候有人在宿主上 <code>kill -9</code> 掉了其中一个的 <code>runc init</code> 进程。<code>runc state</code> 会报什么？<code>runc start</code> 会怎样？</summary>
+<p><code>runc state</code> 会报 <code>stopped</code>。判断"还活着没有"靠的是 <code>state.json</code> 里记的 <code>init_process_pid</code> 加上 <code>init_process_start</code>（进程的启动时刻），进程没了就查不到，状态落到 <code>stopped</code>。</p>
+<p><code>runc start</code> 会失败。runtime-spec 第 127 行规定得很直白：对一个不处于 <code>created</code> 状态的容器执行 <code>start</code>，必须不产生任何效果并且报错。</p>
+<p>对池子的含义：<code>created</code> 不是一个可以放着不管的状态。池子必须自己定期核对每个坑位的状态，发现掉了的就补一个新的——这跟连接池探活是同一类问题。</p>
+</details>
+
+<!-- ============ 6 今日新词 ============ -->
+<h2><span class="kicker">板块 6</span>今日新词</h2>
+<div class="scroll">
+<table>
+<tr><th style="width:24%">中文</th><th style="width:30%">英文原词</th><th>一句话解释</th></tr>
+<tr><td>开放容器倡议</td><td>OCI / Open Container Initiative</td><td>制定容器格式与运行时标准的组织，出了运行时、镜像、分发三份规范</td></tr>
+<tr><td>运行时规范</td><td>runtime-spec</td><td>规定拿到一个 bundle 之后怎么把它变成跑着的进程，今天全程只用这一份</td></tr>
+<tr><td>镜像规范</td><td>image-spec</td><td>规定镜像由哪些层组成、怎么打包寻址，明天用</td></tr>
+<tr><td>分发规范</td><td>distribution-spec</td><td>规定镜像仓库的 HTTP 接口</td></tr>
+<tr><td>文件系统包</td><td>filesystem bundle</td><td>一个目录，里面必须有 <code>config.json</code> 和 <code>root.path</code> 指向的根文件系统</td></tr>
+<tr><td>运行时配置文件</td><td>config.json</td><td>bundle 里那份 JSON，是上下两层之间唯一的接口</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td>low-level runtime / runtime engine</td><td>照着 <code>config.json</code> 真正建命名空间、装配额、换根的那个程序，runc 是最常见的一个</td></tr>
+<tr><td>高层运行时</td><td>high-level runtime</td><td>管镜像、算配置、管生命周期、对外提供接口的那一层，containerd 属于这一层</td></tr>
+<tr><td>libcontainer</td><td>libcontainer</td><td>runc 里干实际活的那个 Go 库，命名空间、rootfs、cgroup、能力全在里面</td></tr>
+<tr><td>初始化进程</td><td><code>runc init</code></td><td>runc 用同一个二进制加一个 <code>init</code> 参数起出来的子进程，它才是容器里的 1 号</td></tr>
+<tr><td>二进制自克隆</td><td>binary cloning / exeseal</td><td>起 <code>runc init</code> 之前先把自己复制一份，防止容器内进程改写宿主上的 runc</td></tr>
+<tr><td>构造函数钩子</td><td><code>__attribute__((constructor))</code></td><td>GCC 的标注，让一段 C 函数在 <code>main</code> 之前执行；runc 靠它抢在 Go 运行时起线程之前建命名空间</td></tr>
+<tr><td>三段式创建</td><td>nsexec stage 0 / 1 / 2</td><td>父、子、孙三个进程分工建命名空间，第三段才是新进程号表里的 1 号</td></tr>
+<tr><td>执行栅栏</td><td>exec fifo</td><td>一个命名管道，<code>runc init</code> 卡在写端等着；<code>start</code> 打开读端才放行 <code>execve</code></td></tr>
+<tr><td>容器状态</td><td>creating / created / running / stopped</td><td>规范定义的四个状态；<code>created</code> 表示环境已就绪但用户程序还没执行</td></tr>
+<tr><td>生命周期钩子</td><td>lifecycle hooks</td><td>规范定义的六个插入点：prestart、createRuntime、createContainer、startContainer、poststart、poststop</td></tr>
+<tr><td>垫片</td><td>shim</td><td>containerd 和 runc 之间常驻的中间进程，攥着容器的 stdio、收尸、上报退出码</td></tr>
+<tr><td>ttRPC</td><td>ttRPC</td><td>containerd 与 shim 之间用的轻量 RPC 协议，走 Unix 套接字</td></tr>
+<tr><td>子收割者</td><td>subreaper / PR_SET_CHILD_SUBREAPER</td><td>一个进程属性；设了之后，这条子树里的孤儿进程过继给它而不是 1 号进程</td></tr>
+<tr><td>僵尸进程</td><td>zombie process</td><td>已经退出但没人 <code>wait</code> 收走退出码的进程，占着进程号表的位置</td></tr>
+<tr><td>容器运行时接口</td><td>CRI / Container Runtime Interface</td><td>Kubernetes 与容器运行时之间的接口，containerd 通过它接 kubelet</td></tr>
+</table>
+</div>
+
+<!-- ============ 7 已学词表 ============ -->
+<h2><span class="kicker">板块 7</span>已学词表</h2>
+<details>
+<summary>Day 1 到今天的全部术语（点开）</summary>
+<div class="scroll">
+<table>
+<tr><th style="width:30%">中文</th><th style="width:44%">英文原词</th><th class="n">引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little's Law</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td>Day 11</td></tr>
+<tr><td>对等组</td><td>peer group</td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount / MNT_DETACH</td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td>Day 11</td></tr>
+<tr><td>叠加文件系统</td><td>overlayfs / overlay filesystem</td><td>Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td>lowerdir / upperdir / workdir</td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td>copy-on-write / copy_up</td><td>Day 12</td></tr>
+<tr><td>白障</td><td>whiteout</td><td>Day 12</td></tr>
+<tr><td>只读根</td><td>read-only rootfs</td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td>tmpfs</td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td>page cache</td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td>shmem</td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td>inode</td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td>size= / nr_inodes=</td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td>buffered write</td><td>Day 12</td></tr>
+<tr><td>直写</td><td>direct I/O (O_DIRECT)</td><td>Day 12</td></tr>
+<tr><td>回写</td><td>writeback</td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td>blkio throttle / io.max</td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td>major:minor</td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td>veth pair</td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td>SNAT / MASQUERADE</td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td>packet filter / netfilter (iptables)</td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td>DROP / REJECT</td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td>egress allowlist</td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td>capability bounding set</td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td>masking</td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td>least privilege</td><td>Day 12</td></tr>
+<tr><td>开放容器倡议</td><td>OCI / Open Container Initiative</td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td>runtime-spec</td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td>image-spec</td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td>distribution-spec</td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td>filesystem bundle</td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td>config.json</td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td>low-level runtime / runtime engine</td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td>high-level runtime</td><td>Day 13</td></tr>
+<tr><td>libcontainer</td><td>libcontainer</td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td>runc init</td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td>binary cloning / exeseal</td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td>__attribute__((constructor))</td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td>nsexec stage 0 / 1 / 2</td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td>exec fifo</td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td>creating / created / running / stopped</td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td>lifecycle hooks</td><td>Day 13</td></tr>
+<tr><td>垫片</td><td>shim</td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td>ttRPC</td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td>subreaper / PR_SET_CHILD_SUBREAPER</td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td>zombie process</td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td>CRI / Container Runtime Interface</td><td>Day 13</td></tr>
+</table>
+</div>
+</details>
+
+<!-- ============ 8 专项深挖 ============ -->
+<h2><span class="kicker">板块 8</span>专项深挖</h2>
+<p>今天没放下、但值得单独学的三块。每段都可以直接粘给 Claude。</p>
+
+<h4>一 · 六个生命周期钩子分别在什么时刻、能干什么</h4>
+<pre><code>我在学 OCI runtime-spec。我已经清楚 create/start/kill/delete 四条命令、
+四个状态（creating/created/running/stopped），以及 runc 用 exec.fifo 让
+runc init 停在 execve 之前这套机制。
+
+现在我想把六个钩子搞透：prestart、createRuntime、createContainer、
+startContainer、poststart、poststop。请给我：
+(1) 每个钩子精确的触发时刻——特别是它跑在哪个命名空间里、哪个 rootfs 视角下、
+    以宿主的身份还是容器的身份；
+(2) prestart 为什么被标记为废弃，createRuntime 和 createContainer 是怎么
+    把它拆成两个的；
+(3) 每个钩子的一个真实用途，最好是网络插件和 GPU 设备注入这两类；
+(4) 一个能在单机 runc 上跑起来的最小例子，让我亲眼看到钩子执行的顺序。
+输出成一份带可运行代码的说明文档。</code></pre>
+
+<h4>二 · mountinfo 的第四列会漏出宿主的信息</h4>
+<pre><code>我在读容器里的 /proc/self/mountinfo。我注意到 cgroup 那几条挂载的第四列
+（挂载来源在源文件系统里的路径）写的是容器自己那个 cgroup 目录的路径，
+而这个路径在某些控制器上包含了宿主上的完整层级，等于把宿主的目录结构
+漏进了容器。
+
+我想搞清楚：
+(1) mountinfo 各列的确切含义，特别是第 4 列（root）和第 5 列（mount point）；
+(2) 哪些字段会漏出宿主的信息，除了 cgroup 路径还有什么；
+(3) 攻击者拿到这些信息能做什么，历史上有没有相关的 CVE；
+(4) 工业界怎么堵——cgroup 命名空间（CLONE_NEWCGROUP）解决了多少，
+    还剩什么没解决。
+我的背景：懂 namespace / cgroup / 挂载传播，不懂内核代码。</code></pre>
+
+<h4>三 · rootless 容器：没有 root 怎么建命名空间</h4>
+<pre><code>我已经会用 runc 以 root 身份跑容器，也读过 runc 的 nsexec.c 三段式创建。
+今天的实验全程是 root，我想补上非特权那条路。
+
+请讲清楚：
+(1) 用户命名空间怎么让一个普通用户拿到"容器内的 root"，uid_map/gid_map
+    的写入为什么必须由父进程完成（这一点在 nsexec.c stage 0 里能看到）；
+(2) newuidmap/newgidmap 这两个 setuid 程序的作用，以及 /etc/subuid 的格式；
+(3) rootless 下哪些功能会退化：cgroup 配额、网络、挂载，各自退化成什么样，
+    有什么替代方案（比如 slirp4netns、cgroup v2 的委派）；
+(4) 对"跑不可信代码的沙箱"这个场景，rootless 到底是加了一层防线还是减了功能。
+给我一份能在 Ubuntu 上跟着做的实操步骤，每步说明预期输出。</code></pre>
+
+<!-- ============ 9 延伸材料 ============ -->
+<h2><span class="kicker">板块 9</span>延伸材料</h2>
+<div class="scroll">
+<table>
+<tr><th style="width:34%">材料</th><th style="width:12%">难度</th><th>为什么值得读</th></tr>
+<tr><td>OCI runtime-spec：<code>runtime.md</code> 与 <code>config-linux.md</code><br><span class="sub">github.com/opencontainers/runtime-spec</span></td><td>低</td><td>两份加起来一小时能读完，而且是规范原文，不是二手解释。<code>config-linux.md</code> 把每个 Linux 专属字段的语义写得很干净，是你写 <code>config.json</code> 时最该开着的那一页</td></tr>
+<tr><td>containerd <code>core/runtime/v2/README.md</code><br><span class="sub">github.com/containerd/containerd</span></td><td>低</td><td>本页第 14 节的一手来源。文档里那张 Flow 图把 containerd、shim、runc 三者的调用顺序画全了，比任何博客都准</td></tr>
+<tr><td>runc <code>libcontainer/nsenter/nsexec.c</code></td><td>高</td><td>一千两百行 C，但注释密度极高，很多段落直接写着"当年为什么这么改、哪个内核版本修的"。读它是理解命名空间创建顺序最直接的方式。建议只读第 690–1200 行那一段</td></tr>
+<tr><td>runc <code>libcontainer/rootfs_linux.go</code></td><td>中</td><td>你昨天写的每一段 shell 都能在这里找到对应函数。<code>pivotRoot</code>、<code>readonlyPath</code>、<code>maskPaths</code> 三个函数加起来不到两百行，读完你手上那份脚本的每个坑都有出处</td></tr>
+<tr><td>Aleksa Sarai 关于 CVE-2019-5736 的公开分析<br><span class="sub">runc 维护者本人写的漏洞复盘，检索标题即可找到</span></td><td>中</td><td>解释了本页第 13 节那个"为什么要把二进制复制一份"。这是一个非常适合讲给面试官听的故事，因为它把 <code>/proc/self/exe</code> 这个看似无害的路径和容器逃逸连了起来</td></tr>
+</table>
+</div>
+
+<!-- ============ 10 五句话 ============ -->
+<h2><span class="kicker">板块 10</span>今日五句话</h2>
+<div class="card five">
+<div class="tag">合上页面，用自己的话写五句</div>
+<p>1 · OCI bundle 是什么？它只规定了哪两样东西？</p>
+<div class="write s"></div>
+<p>2 · <code>created</code> 这个状态里，那个进程正在干什么？它在等谁？</p>
+<div class="write s"></div>
+<p>3 · runc 做的事比 minibox 多十倍，为什么启动没有慢十倍？钱花的地方有什么不同？</p>
+<div class="write s"></div>
+<p>4 · 为什么 runc 要把创建命名空间的代码写成 C 的构造函数，而不是写在 Go 的 <code>main</code> 里？</p>
+<div class="write s"></div>
+<p>5 · 一个容器里攒了一堆僵尸进程，往上要查哪两件事？</p>
+<div class="write s"></div>
+</div>
+
+<h4>逐句自查</h4>
+<ul>
+<li>第 1 句如果写成"bundle 就是镜像"就错了。镜像是分层的、要解开才能用，bundle 是已经解开摊平的一个目录加一份 JSON；从镜像变成 bundle 是上一层的活。规范对 bundle 只有两条要求：<code>config.json</code> 必须在根下且必须叫这个名字，rootfs 是 <code>root.path</code> 指到的目录。</li>
+<li>第 2 句如果只写"容器已经创建好了"就没答到点上。要具体到进程：那是 <code>runc init</code>，命名空间、挂载、能力、cgroup 全部就位，它卡在往 <code>exec.fifo</code> 写一个字节的那次系统调用上，等一个读端出现。用户的程序一行都还没跑。</li>
+<li>第 3 句如果写成"因为 runc 用 Go 写的比 shell 快"，只对了一半，而且丢了最重要的部分。关键是钱花在哪：minibox 的开销四分之三在用户态，来自反复 fork-exec 十几个小程序；runc 的开销六成在内核态，来自真正的 mount、prctl、写 cgroup。前者的钱和隔离无关，后者的钱每一分都买到了约束。</li>
+<li>第 4 句如果只写"为了早点执行"就不够。要说出机制：Go 运行时一启动就是多线程的，而建命名空间这个动作对多线程进程有限制；构造函数在 <code>main</code> 之前、Go 运行时起线程之前执行，那时进程还是单线程的。</li>
+<li>第 5 句如果只写"1 号进程没收尸"就漏了一半。两件事：一是容器里的 1 号进程是谁——如果是用户代码本身，它多半不会 <code>wait</code>；二是外面那层有没有设 subreaper 兜住。两条都不成立，僵尸就会一直堆到 <code>pids.max</code>。</li>
+</ul>
+
+<!-- ============ 11 明日预告 ============ -->
+<h2><span class="kicker">板块 11</span>明日预告</h2>
+<p>今天量到的 <code>create</code> 那 28.7 毫秒，是在一个 2.1 MB、37 个文件的 busybox rootfs 上量的。真实沙箱的根文件系统是几百兆、几万个文件的镜像，而且它不是躺在那儿等你用的——它得从若干层叠出来。</p>
+<p>明天 Day 14 把沙箱做成服务：HTTP 接口、生命周期、超时与强制终止、并发管理，然后正面打冷启动。镜像分层与懒加载、池化预热、快照恢复三条路各能砍掉哪一段，今天表 D 那四行会是明天的起点——你已经知道 <code>create</code> 占七成，明天要看的是那七成里有多少是"把 rootfs 铺出来"。</p>
+
+<footer>
+<p>AI Infra · Day 13 / 28 · 2026-08-30 · 阶段三 · Sandbox：Linux 系统工程</p>
+<p>实验条件：2 核 Intel Xeon @ 2.80 GHz、8023 MB 内存，Linux 6.18.44。CPU 主频与 Day 12 那台不同（那天是 2.10 GHz），本页数字只在页内横向比较。Go 1.24.7、Python 3.11.15、util-linux 2.39.3、BusyBox 1.36.1、libseccomp 2.5.5、页大小 4096 字节。</p>
+<p>一手材料版本：runc v1.3.3（提交 d842d77，自行编译，BUILDTAGS 为 <code>seccomp urfave_cli_no_docs</code>）、containerd v2.1.4（提交 75cb2b7，只读源码未运行）、OCI runtime-spec 提交 6999a89。本页所有「第 N 行」均指这三份。</p>
+<p>cpu / memory / pids / devices / blkio 等控制器挂在 cgroup v1（<code>/sys/fs/cgroup/&lt;控制器&gt;/</code>），该机没有 cgroup v2 统一层级。测试用根文件系统为 busybox 静态版，37 个文件、2.1 MB，含五个手工建的设备节点。全程以 root 运行，未开用户命名空间；网络命名空间为空，未建 veth。</p>
+</footer>
+
+</div>
+</body>
+</html>
