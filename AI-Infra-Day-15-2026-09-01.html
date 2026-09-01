@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 15</title>
+<style>
+:root{
+  --bg:#faf6ef; --fg:#2b2721; --muted:#6f665b; --line:#e2d8c8; --card:#fffdf8;
+  --accent:#a8641e; --accent2:#3f6f5f; --accent3:#7a4a86; --accent4:#8a5a2b;
+  --codebg:#22201d; --codefg:#e9e2d6; --mark:#f2e4cd; --th:#f4ecdf;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171513; --fg:#e6e0d6; --muted:#a49b8e; --line:#332e28; --card:#1e1c19;
+    --accent:#d8a05e; --accent2:#79b39c; --accent3:#bb92c9; --accent4:#c99a63;
+    --codebg:#0e0d0c; --codefg:#e2dbcf; --mark:#3a3126; --th:#241f1a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171513; --fg:#e6e0d6; --muted:#a49b8e; --line:#332e28; --card:#1e1c19;
+  --accent:#d8a05e; --accent2:#79b39c; --accent3:#bb92c9; --accent4:#c99a63;
+  --codebg:#0e0d0c; --codefg:#e2dbcf; --mark:#3a3126; --th:#241f1a;
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px;line-height:1.78;
+}
+.wrap{max-width:820px;margin:0 auto;padding:0 20px 80px}
+.bar{
+  position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);
+  padding:9px 20px;font-size:13.5px;color:var(--muted);
+  display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;
+}
+.bar b{color:var(--accent);font-size:15px;letter-spacing:.3px}
+h1{font-size:27px;line-height:1.45;margin:34px 0 6px;letter-spacing:-.2px}
+.sub{color:var(--muted);font-size:15px;margin:0 0 30px}
+h2{font-size:21px;margin:46px 0 12px;padding-top:14px;border-top:2px solid var(--line);letter-spacing:-.1px}
+h3{font-size:17.5px;margin:32px 0 8px}
+h4{font-size:15.5px;margin:22px 0 6px;color:var(--muted)}
+p{margin:13px 0}
+ul,ol{margin:13px 0;padding-left:22px}
+li{margin:6px 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--line)}
+.lead{font-size:18px;color:var(--accent2);margin:22px 0 12px;font-weight:600}
+.term{background:var(--mark);border-radius:3px;padding:0 4px;font-weight:600}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.9em;background:var(--mark);border-radius:3px;padding:1px 5px;
+  overflow-wrap:anywhere;word-break:break-word;
+}
+pre{
+  background:var(--codebg);color:var(--codefg);border-radius:8px;padding:15px 16px;
+  overflow-x:auto;font-size:13.3px;line-height:1.62;margin:14px 0;
+}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;overflow-wrap:normal;word-break:normal;white-space:pre}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:16px 0;border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14.2px;min-width:520px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.card{border-left:4px solid var(--line);background:var(--card);border-radius:0 8px 8px 0;padding:14px 18px;margin:20px 0}
+.card>*:first-child{margin-top:0}.card>*:last-child{margin-bottom:0}
+.recall{border-left-color:var(--accent3)}
+.predict{border-left-color:var(--accent)}
+.five{border-left-color:var(--accent2)}
+.key{border-left-color:var(--accent4)}
+.card .tag{font-size:12.5px;letter-spacing:1.4px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px}
+details{border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:14px 0;background:var(--card)}
+details>summary{cursor:pointer;font-weight:600;color:var(--accent2)}
+details[open]>summary{margin-bottom:8px}
+.write{border:1px dashed var(--line);border-radius:6px;min-height:64px;margin:10px 0;background:var(--bg)}
+.small{font-size:14px;color:var(--muted)}
+em{font-style:normal;background:linear-gradient(transparent 60%, var(--mark) 60%);padding:0 1px}
+.qn{display:inline-block;font-size:13px;letter-spacing:.5px;color:var(--accent);border:1px solid var(--line);border-radius:4px;padding:0 7px;margin-right:7px}
+figure{margin:18px 0}
+figcaption{font-size:13.5px;color:var(--muted);margin-top:6px}
+svg{display:block;color:var(--fg)}
+footer{margin-top:56px;padding-top:18px;border-top:2px solid var(--line);font-size:13.5px;color:var(--muted)}
+hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+</style>
+</head>
+<body>
+<div class="bar"><b>AI Infra · Day 15 / 28</b><span>阶段二 · 推理服务与 KV Cache</span><span>2026-09-01</span></div>
+<div class="wrap">
+
+<h1>一条 2048 个 token 的对话，光是「记住前面说过什么」就要 128 MiB</h1>
+<p class="sub">推理服务这条线接回来 · 把「内存不够」这四个字拆成字节、块，和一次可以称重的取舍</p>
+
+<h2>板块 0 · 温故 · 闭卷</h2>
+<p>三道题，分别来自昨天、三天前、七天前。合上前面的页面，在心里答完再展开。</p>
+
+<div class="card recall">
+<span class="tag">第 1 题 · 来自 Day 14</span>
+<p>你的预热池里停着 32 个沙箱，状态都是 created。现在要换镜像，把它们全部拆掉重建。你按分段表里 <code>runc delete</code> 那一行的 5 毫秒估算，认为 32 个一秒之内搞定。实际会是多久？为什么？</p>
+<details><summary>看答案</summary>
+<p>三秒半左右，是你估计的二十倍。</p>
+<p>分段表里那 5 毫秒量的是<em>已经退出</em>（Stopped）的容器。同一条命令，容器状态不同，代价差近二十倍：Stopped 那一档中位 5.76 毫秒，其余三档全部落在 107 毫秒上。</p>
+<p>机制在 runc 的 <code>delete.go</code> 里：只有「Stopped 且不带 <code>-f</code>」才直接走销毁；Created 状态走的是杀进程那条路，而那个循环体的第一句就是睡 100 毫秒，第二句才去看进程还在不在。哪怕进程一微秒就没了，也得睡满第一个 100 毫秒。</p>
+<p>识别信号也值得记住：那一档四种情况的最小值和最大值只差不到 3 毫秒。贵得这么整齐，通常说明底下压着一个固定的等待，而不是真有活要干。</p>
+<p class="small">接今天：今天也有一笔钱是「提前占住资源，换请求路径上不花时间」。区别是昨天占住的是几十毫秒和几 MiB，今天占住的是几十 GB，而且占住之后立刻会碰到一个新问题——怎么分。</p>
+</details>
+</div>
+
+<div class="card recall">
+<span class="tag">第 2 题 · 来自 Day 12</span>
+<p>容器往下层一个 12 MB 的文件里改了 1 个字节，上层目录多出多少字节？如果它只是把这个文件从头读到尾呢？另外：那次实测里上层实占 12322396 字节，而 tmpfs 报的已用是 12324864，差的 2468 字节是什么？</p>
+<details><summary>看答案</summary>
+<p>改 1 个字节，上层多出 12322396 字节——整个文件的完整副本。机制是写时复制：内核在写之前先把这个文件从下层整份搬到上层，副本多大只跟原文件多大有关，跟你改了几个字节没关系。</p>
+<p>只读不写，上层是 0 字节。这正是同一份下层能被大量容器共用、互不影响的原因。</p>
+<p>那 2468 字节：文件系统按整页分配，一页 4096 字节。12324864 除以 4096 正好是 3009，而 12322396 除以 4096 是 3008.4——3008 页装不下，只能给 3009 页，最后那一页有 2468 字节是空着的。</p>
+<p class="small">接今天：这最后一页空着的部分今天有名字，而且它会从 2468 字节放大到几十 GB 里的一大块。今天整页都在处理它和它的孪生兄弟。</p>
+</details>
+</div>
+
+<div class="card recall">
+<span class="tag">第 3 题 · 来自 Day 8</span>
+<p>那张引擎步统计表里，发压速率从每秒 0.5 条加到 3.0 条，prefill 步的耗时中位数一直卡在 83 毫秒左右纹丝不动，decode 步却从 31.7 涨到 101.6 毫秒。两种步用的是同一份权重、同一个函数。为什么一个不动、一个涨三倍？</p>
+<details><summary>看答案</summary>
+<p>因为一次前向的成本主要是「把 512 MiB 权重完整读一遍」，这一步顺带算了几列，对总时间影响不大。</p>
+<p>prefill 恒定不是因为 prompt 短，是因为同时到达的几条请求的 prompt 会被拼进同一次矩阵乘法。列数从 8 变成 24，对一次要读 512 MiB 的乘法来说几乎不额外收费。</p>
+<p>decode 会涨，是因为同时在生成的请求数从 1 涨到 9，列数确实多了。Day 8 那张单次前向表里，一列到八列的总耗时本来就要涨两倍多，量级对得上。</p>
+<p>于是那两个指标涨的是两样不同的东西：首 token 延迟涨的八点九倍全是排队，每输出 token 耗时涨的两倍多全是批量。</p>
+<p class="small">接今天：那一页的装置里明确写着「注意力和 KV cache 完全没有，所以今天所有绝对时间都是下限」。今天把这一项补上——你会看到在长上下文、大批量下，它不是小数点后的修正，它能超过权重那一项。</p>
+</details>
+</div>
+
+<h2>板块 1 · 今日概览</h2>
+<div class="scroll">
+<table>
+<tr><th style="width:22%">项目</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 15 / 28 · 阶段二第三天（推理服务与 KV Cache）</td></tr>
+<tr><td>今日主题</td><td>把「内存不够」拆开：一个 token 的中间结果值多少字节、这些字节按什么粒度分配、分配方式怎么决定同时能跑几条、以及装不下的时候把它搬走还是干脆重算</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+<p>跨请求复用。今天讲的是「同一条请求自己的那份中间结果怎么放」，而两条不同请求共用同一段前缀是另一件事，它有自己的一整套数据结构和命中率指标，Day 16 单独讲。</p>
+<p>引擎的完整代码路径。今天会引用 vLLM 里管内存的那几处源码，但「一条请求从进来到吐出第一个 token，代码依次走过哪些文件」是 Day 17 的整天题目，那天的裁判是源码本身。</p>
+<p>KV cache 的压缩与量化算法。把 KV 从 float16 压到 8 位或更低是一个算法问题，不是基础设施问题，也在这 28 天明确排除的范围里。页尾的专项深挖给了一段可以直接用的题目。</p>
+</td></tr>
+</table>
+</div>
+
+<h3>今天结束后你应该能做到这三件事</h3>
+<ol>
+<li>拿到一个模型的配置文件，当场逐项算出「这个服务一条 2048 token 的请求要吃掉多少内存」，并且说清楚式子里每一项是什么。</li>
+<li>看到一个推理服务并发上不去、抢占计数一直涨，能分清是「内存真的不够」还是「内存够但分配方式浪费掉了」，并说出该动哪个旋钮。</li>
+<li>面对「被踢掉的请求应该搬走还是重算」，能写出一个只含机器常数和模型形状的比值，代进你自己那台机器的数得到答案。</li>
+</ol>
+
+<h3>今天这一页怎么走</h3>
+<ul>
+<li>第一部分回答「这几十 GB 到底是什么」：为什么非存不可，以及一个 token 值多少字节。</li>
+<li>第二部分回答「为什么放不下」：整块预留和按需增长各自坏在哪，以及操作系统七十年前用什么办法绕开了它。</li>
+<li>第三部分回答「块该开多大」：一次预测，然后是一个跟直觉相反的测量结果。</li>
+<li>第四部分回答「装不下的时候怎么办」：把搬走和重算这两条路放到同一杆秤上称。</li>
+</ul>
+
+<h2>板块 2 · 核心讲解</h2>
+
+<h3>第一部分 · 这几十 GB 到底是什么</h3>
+
+<h4>1. 模型每吐一个字，真的要把前面说过的话重读一遍吗</h4>
+
+<p class="lead">如果生成第 501 个字要用到前面 500 个字的中间结果，那这些中间结果是每次现算，还是存着？</p>
+
+<p>Day 8 留了一句没展开的话：生成第 t+1 个 token 要用到前面 t 个 token 的中间结果。今天先把「中间结果」这四个字换成具体的东西。</p>
+
+<p>模型每读进一个 token，会给它算出两样东西。一样是「我是什么」，供后面的 token 拿来匹配；另一样是「匹配上了之后你能从我这里拿走什么」。你可以先当成图书馆卡片：一张卡片上有书名（用来找），也有书的内容摘要（找到之后要读的）。</p>
+
+<p>生成下一个 token 的时候，模型拿当前这个 token 的一个向量，去跟前面每一个 token 的「书名」比一遍，比出一组权重，再按这组权重把前面每一个 token 的「摘要」加权加起来。这就是它「回头看」的全部动作。类比到此为止，机制的细节今天不需要，你只要接受一件事：<em>这个动作需要前面每一个 token 的那两样东西，一个都不能少</em>。</p>
+
+<p>这两样东西模型不会凭空知道，是把 token 过一遍网络算出来的。所以只有两条路。</p>
+
+<p>一条是每一步都现算：生成第 t+1 个 token 时，把前面 t 个 token 重新过一遍网络，把它们的那两样东西再算一次，用完扔掉。另一条是第一次算出来就留着，后面每一步只算新来的那一个。</p>
+
+<p>先不看时间，只数次数。第一条路生成 T 个 token，要算的 token 次数是 1 + 2 + … + T，也就是 T×(T+1)/2 次；第二条路是 T 次。T 取 500，两个数是 125250 和 500，相差 250 倍。</p>
+
+<p>把这两样东西存下来、后面每一步直接取用，这个做法就叫 <span class="term">KV cache（键值缓存）</span>。那两样东西分别叫 <span class="term">键（key）</span> 和 <span class="term">值（value）</span>，名字就是从这儿来的——「书名」是键，「摘要」是值。</p>
+
+<p>今天整页处理的都是它。而它带来的第一个问题，从名字里就能看出来：缓存要占地方。</p>
+
+<h4>2. 今天的实验台</h4>
+
+<p>今天没有服务、没有压测器，也没有 GPU。六个互不通信的小程序，各自量一件事。先把它们摆出来，后面每张表都能对回到其中一个。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 790 340" width="790" height="340" role="img" aria-label="今天六个程序的结构图">
+<style>
+.bx{fill:none;stroke:currentColor;stroke-width:1.4}
+.tt{font:12.5px system-ui,-apple-system,sans-serif;fill:currentColor}
+.tb{font:bold 12.5px system-ui,-apple-system,sans-serif;fill:currentColor}
+.ts{font:11px system-ui,-apple-system,sans-serif;fill:currentColor;opacity:.72}
+.ar{stroke:currentColor;stroke-width:1.2;fill:none;opacity:.65}
+</style>
+<defs><marker id="a15" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+<path d="M0,0 L7,3 L0,6 z" fill="currentColor" opacity=".65"/></marker></defs>
+
+<rect class="bx" x="8" y="86" width="176" height="168" rx="7"/>
+<text class="tb" x="20" y="108">本页的模型设定</text>
+<text class="ts" x="20" y="128">8 层</text>
+<text class="ts" x="20" y="146">hidden = 4096</text>
+<text class="ts" x="20" y="164">32 个查询头</text>
+<text class="ts" x="20" y="182">8 个键值头</text>
+<text class="ts" x="20" y="200">每头维度 128</text>
+<text class="ts" x="20" y="218">KV 用 float32</text>
+<text class="ts" x="20" y="236">上限 2048 个 token</text>
+
+<line class="ar" x1="186" y1="130" x2="236" y2="60" marker-end="url(#a15)"/>
+<line class="ar" x1="186" y1="170" x2="236" y2="160" marker-end="url(#a15)"/>
+<line class="ar" x1="186" y1="212" x2="236" y2="264" marker-end="url(#a15)"/>
+
+<rect class="bx" x="238" y="18" width="252" height="82" rx="7"/>
+<text class="tb" x="250" y="40">P1 · 字节账</text>
+<text class="ts" x="250" y="60">numpy 按公式申请 KV，写一遍</text>
+<text class="ts" x="250" y="78">再读 /proc/self/status 的 VmRSS</text>
+
+<rect class="bx" x="238" y="112" width="252" height="96" rx="7"/>
+<text class="tb" x="250" y="140">P2 / P5 / P7 · 分配器</text>
+<text class="ts" x="250" y="160">纯 Python，池子 8192 个 token 位</text>
+<text class="ts" x="250" y="178">三种分法跑同一批 120 条请求</text>
+<text class="ts" x="250" y="196">P7 换成真的块对象和空闲链表</text>
+
+<rect class="bx" x="238" y="218" width="252" height="100" rx="7"/>
+<text class="tb" x="250" y="240">P3 / P4 / P6 · 时间</text>
+<text class="ts" x="250" y="260">numpy：256 MiB 池子里散着读</text>
+<text class="ts" x="250" y="278">256 MiB 内存到内存拷贝</text>
+<text class="ts" x="250" y="296">8 层 4096×4096 的前向</text>
+
+<line class="ar" x1="492" y1="59" x2="536" y2="59" marker-end="url(#a15)"/>
+<line class="ar" x1="492" y1="160" x2="536" y2="160" marker-end="url(#a15)"/>
+<line class="ar" x1="492" y1="268" x2="536" y2="268" marker-end="url(#a15)"/>
+
+<rect class="bx" x="538" y="26" width="244" height="66" rx="7"/>
+<text class="ts" x="550" y="48">预测的字节数</text>
+<text class="ts" x="550" y="70">对上 RSS 的涨幅</text>
+
+<rect class="bx" x="538" y="126" width="244" height="66" rx="7"/>
+<text class="ts" x="550" y="148">总步数 · 平均并发 · 利用率</text>
+<text class="ts" x="550" y="170">抢占次数 · 白算掉的 token 数</text>
+
+<rect class="bx" x="538" y="235" width="244" height="66" rx="7"/>
+<text class="ts" x="550" y="257">散着读比连着读慢多少毫秒</text>
+<text class="ts" x="550" y="279">搬运速率 · 一次前向要多久</text>
+
+<text class="ts" x="8" y="30">指标全部在程序自己那一侧算出来，</text>
+<text class="ts" x="8" y="48">没有客户端、没有网络、没有时钟对齐问题。</text>
+</svg>
+</div>
+<figcaption>六个程序互不通信，共用左边那一组模型设定。右边一列是每个程序真正打印出来的数。</figcaption>
+</figure>
+
+<h4>2.1 一次测量里到底有什么</h4>
+
+<p>P2 那个分配器里，一条「请求」就是三个整数，没有文字、没有分词器：</p>
+
+<pre><code>{"id": 7, "prompt_len": 231, "output_len": 88}</code></pre>
+
+<p>意思是：这条请求进来时已经有 231 个 token 要一次算完，之后要一个一个生成 88 个。分配器只关心这两个长度，因为内存占用只跟长度有关，跟内容无关。跑一次就是一条命令：</p>
+
+<pre><code>$ python3 p2_alloc.py
+内存池 8192 个 token 位 = 512 MiB，120 条请求，prompt 64~512 token，输出 16~512 token，max_num_seqs=16
+这批请求最终真正用到的 token 总量 66755，平均一条 556</code></pre>
+
+<p>P1 那一侧输出的是两行数字的对照——一行是按公式算的，一行是操作系统报的：</p>
+
+<pre><code>预测字节数              536870912 字节 = 512.0 MiB
+写过一遍之后 RSS 涨了  536969216 字节 = 512.1 MiB</code></pre>
+
+<h4>2.2 哪些是真的，哪些是假的</h4>
+
+<p>下面这张表划定的是今天这些数字能撑住哪些结论。写着「没有」的那几行，今天一律不下结论。</p>
+
+<div class="scroll">
+<table>
+<tr><th style="width:26%">这一块</th><th>真的还是假的</th></tr>
+<tr><td>字节账</td><td>真的。公式逐项列出来，再用进程的 RSS 对了一遍，误差在万分之二。</td></tr>
+<tr><td>权重的形状</td><td>形状是真的：8 层各一个 4096×4096 的矩阵，合计 512 MiB，和 Day 8、Day 9 是同一套骨架，方便横着比。但用的是 float32，真服务一般是 float16。</td></tr>
+<tr><td>token 本身</td><td>假的。没有分词器，没有真文本，prompt 长度和输出长度都是随机数。所以今天不下任何关于中英文、关于具体模型输出的结论。</td></tr>
+<tr><td>注意力的计算</td><td>没有。P3 量的是「把散落在池子里的块读出来要多久」，不是真的注意力核。所以今天不下「注意力这一步要多少算力」的结论，只下「这些字节读起来贵不贵」的结论。</td></tr>
+<tr><td>GPU、显存、PCIe</td><td>完全没有。这台机器只有两个 CPU 核和内存条。第四部分那个「搬走还是重算」的比值，在这台机器上算出来的答案<em>不能直接搬到 GPU 上</em>——那一节给的是式子和验算方法，不是结论。</td></tr>
+<tr><td>调度器</td><td>极简：每一步每条在跑的序列各长一个 token，装不下就踢掉最新到达的那条。没有分块预填充、没有混合批、没有优先级。</td></tr>
+<tr><td>请求到达</td><td>120 条一次全到，离线跑完。不是泊松到达。所以今天不下任何关于排队延迟、首 token 延迟的结论——那些数 Day 8、Day 9 已经量过，今天量的是内存。</td></tr>
+</table>
+</div>
+
+<h4>2.3 跟着一条请求走一遍</h4>
+
+<p>拿 P5 打出来的一条真实轨迹。这条请求 prompt 有 100 个 token，要生成 40 个，块大小是 16 个 token 一块。每一行你都可以自己做加法验：块数乘 16 等于占住的 token 位，占住的减去真正装了的就是空着的。</p>
+
+<div class="scroll">
+<table>
+<tr><th>时刻</th><th class="n">序列里有几个 token</th><th class="n">占了几块</th><th class="n">占住的 token 位</th><th class="n">其中空着</th><th class="n">占住的字节</th></tr>
+<tr><td>prefill 之前</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td></tr>
+<tr><td>prefill 算完 100 个</td><td class="n">100</td><td class="n">7</td><td class="n">112</td><td class="n">12</td><td class="n">7.00 MiB</td></tr>
+<tr><td>再生成 1 个</td><td class="n">101</td><td class="n">7</td><td class="n">112</td><td class="n">11</td><td class="n">7.00 MiB</td></tr>
+<tr><td>再生成 11 个</td><td class="n">111</td><td class="n">7</td><td class="n">112</td><td class="n">1</td><td class="n">7.00 MiB</td></tr>
+<tr><td>再生成 12 个</td><td class="n">112</td><td class="n">7</td><td class="n">112</td><td class="n">0</td><td class="n">7.00 MiB</td></tr>
+<tr><td>再生成 13 个</td><td class="n">113</td><td class="n">8</td><td class="n">128</td><td class="n">15</td><td class="n">8.00 MiB</td></tr>
+<tr><td>再生成 28 个</td><td class="n">128</td><td class="n">8</td><td class="n">128</td><td class="n">0</td><td class="n">8.00 MiB</td></tr>
+<tr><td>再生成 40 个</td><td class="n">140</td><td class="n">9</td><td class="n">144</td><td class="n">4</td><td class="n">9.00 MiB</td></tr>
+</table>
+</div>
+
+<p>最后一行的验算：9 块乘 16 是 144 个 token 位，真正装了 140 个，空着 4 个，也就是 256 KiB。「空着」那一列的走势值得单独看一眼——它在 15 和 0 之间来回跳，每次跳到 0 的下一步就要新拿一块。第三部分整节都在讲这一列。</p>
+
+<h4>2.4 旋钮和它们的来历</h4>
+
+<div class="scroll">
+<table>
+<tr><th>旋钮</th><th class="n">取值</th><th>这个值是怎么定出来的</th><th>哪一节动它</th></tr>
+<tr><td>层数</td><td class="n">8</td><td>沿用 Day 8、Day 9 的骨架，好和那两天横着比</td><td>第 4 节的换算表</td></tr>
+<tr><td>hidden 维度</td><td class="n">4096</td><td>同上；32 个查询头除下来正好是每头 128 维</td><td>锁死</td></tr>
+<tr><td>键值头个数</td><td class="n">8</td><td>32 个查询头配 8 个键值头，是 4 比 1 的分组比例；这一项是内存公式里最能拉开差距的一项</td><td>第 4 节</td></tr>
+<tr><td>KV 的数据类型</td><td class="n">float32</td><td>numpy 的 float16 乘法要软件模拟，跑不动。换成 float16 所有字节数减半，公式和形状不变</td><td>第 4 节</td></tr>
+<tr><td>内存池</td><td class="n">8192 个 token 位</td><td>正好等于 512 MiB，和权重那 512 MiB 一样大，两个量好对着看</td><td>锁死</td></tr>
+<tr><td>上下文长度上限</td><td class="n">2048</td><td>整块预留那一栏要用它来定「预留多少」；它同时决定块表最宽有几个条目</td><td>第 5 节、第 11 节</td></tr>
+<tr><td>块大小</td><td class="n">16 个 token</td><td>vLLM 的默认值，源码里是一个常量（<code>vllm/config/cache.py</code> 第 79 行）</td><td>第 11 节扫 1 到 256</td></tr>
+<tr><td>同时最多几条</td><td class="n">16</td><td>Day 9 的 <code>max_num_seqs</code>，锁住并发的上界，免得内存和并发两个变量一起动</td><td>锁死</td></tr>
+<tr><td>prompt / 输出长度</td><td class="n">64~512 / 16~512</td><td>输出长度必须不一样，否则「谁先跑完、谁的位子空出来」这件事不成立（Day 9 证明过这是连续批处理收益的唯一来源）</td><td>锁死</td></tr>
+<tr><td>P3 的池子</td><td class="n">256 MiB</td><td>必须明显大于这台机器 33 MiB 的 L3，否则量到的是缓存不是内存</td><td>锁死</td></tr>
+<tr><td>P3 每次读多少</td><td class="n">8 MiB</td><td>正好等于一条 2048 token 的序列在一层里的 K，即 2048 × 4096 字节</td><td>锁死</td></tr>
+<tr><td>P7 的空闲块结构</td><td class="n">双向链表</td><td>照 vLLM 的 <code>FreeKVCacheBlockQueue</code> 的做法：每块一个对象，自己串链表而不用 deque</td><td>第 11 节</td></tr>
+<tr><td>预热</td><td class="n">先跑一遍不计时</td><td>不让第一次调用的内存分配和缺页落进测量里，这是 Day 6 和 Day 7 各踩过一次的坑</td><td>锁死</td></tr>
+<tr><td>重复次数</td><td class="n">41 / 101 次</td><td>取中位数，同时用第 10 到第 90 百分位把噪声底量出来</td><td>锁死</td></tr>
+</table>
+</div>
+
+<p>后面每一节说「只改了一个变量」的时候，都可以回到这张表看改的是哪一行。反过来，想知道某个数是谁打印的，查下面这张：</p>
+
+<div class="scroll">
+<table>
+<tr><th>表</th><th>出自</th><th>它读的是什么</th></tr>
+<tr><td>每 token 字节数 / 换算表 / RSS 对照</td><td><code>p1_kvmem.py</code></td><td>公式的逐项乘法，以及 <code>/proc/self/status</code> 里的 <code>VmRSS</code> 三次差值</td></tr>
+<tr><td>三种分配方式 / 块大小的利用率与抢占</td><td><code>p2_alloc.py</code></td><td>分配器自己的计数器：步数、每步在跑几条、占住多少 token 位、抢占了几次</td></tr>
+<tr><td>散着读 vs 连着读 / 对照</td><td><code>p3b_control.py</code></td><td><code>time.perf_counter()</code> 首尾相减，101 次取中位，同一批参数跑两遍：一遍段随机撒开，一遍段挨着放</td></tr>
+<tr><td>搬走 vs 重算 / 一步要读多少字节</td><td><code>p4_swap_vs_recompute.py</code></td><td>拷贝耗时、前向耗时，以及按公式算出的字节数</td></tr>
+<tr><td>块大小与分配器自身耗时</td><td><code>p7_bookkeeping.py</code></td><td>把整个分配过程首尾计时，每档跑 3 遍取中位；块换成对象、空闲块串成双向链表</td></tr>
+<tr><td>一条请求的块轨迹</td><td><code>p5_trace.py</code></td><td>纯算术，没有计时</td></tr>
+<tr><td>存下来 vs 每步重算</td><td><code>p6_whycache.py</code></td><td>两个循环各跑 3 遍取中位</td></tr>
+</table>
+</div>
+
+<h4>3. 存下来到底省了多少</h4>
+
+<p>上一节数的是次数，250 倍。次数不等于时间——Day 7 和 Day 8 都反复撞到同一件事：一次前向的成本主要由「把权重完整读一遍」决定，多喂几列几乎不额外收费。所以省下来的时间会比省下来的次数少。少多少，跑一次就知道。</p>
+
+<p>P6 做的事情很简单：用同一套 8 层骨架生成 48 个 token。第一种每步只喂一列，就是存下来的样子；第二种第 t 步喂 t 列，就是每步把前面全部重算一遍的样子。</p>
+
+<div class="scroll">
+<table>
+<tr><th>做法</th><th class="n">总共喂进去几列</th><th class="n">总耗时（中位，3 次）</th></tr>
+<tr><td>存下来：每步只喂 1 列</td><td class="n">48</td><td class="n">1666 ms</td></tr>
+<tr><td>不存：第 t 步喂 t 列</td><td class="n">1176</td><td class="n">9089 ms</td></tr>
+<tr><td>倍数</td><td class="n">24.5×</td><td class="n">5.5×</td></tr>
+</table>
+</div>
+
+<p>两个倍数差了四倍多，而这个差距不是误差，是 Day 7 那条屋顶线在这里第三次出现：喂 1 列和喂 30 列，权重都只读一遍，所以后者的单位成本便宜得多。工作量涨 24.5 倍，时间只涨 5.5 倍。</p>
+
+<p>但 5.5 倍仍然是 5.5 倍，而且这个倍数会随生成长度继续涨——这里只生成了 48 个 token，真实对话动辄几百上千。</p>
+
+<div class="card key">
+<span class="tag">关键结论</span>
+<p>KV cache 不是让计算变快的技巧，它是一笔交换：把「每一步重算前面所有 token」换成「一直占着内存」。今天剩下的四分之三，全都在处理这笔交换的另一头。</p>
+</div>
+
+<h4>4. 一个 token 值多少字节</h4>
+
+<p>现在逐项算。一条序列里的每一个 token，在每一层里都留下一个键和一个值。</p>
+
+<p>一个键有多大？它是按「头」分开存的。模型把 hidden 那 4096 维切成若干个头各自算，本页的设定是 32 个 <span class="term">查询头（query head）</span>，每个头 <span class="term">每头维度（head_dim）</span> 是 128 维。但键和值不必跟查询头一样多：让几个查询头共用一份键值，能直接把这块内存除以那个倍数，这个做法叫 <span class="term">分组查询注意力（GQA, grouped-query attention）</span>。本页设的是 8 个 <span class="term">键值头（KV head）</span>，也就是四个查询头共用一份。</p>
+
+<p>于是一层里、一个 token 的键，占的是「键值头个数 × 每头维度 × 每个数几个字节」。值一样大。再乘层数，就是这个 token 的全部：</p>
+
+<pre><code>每 token 字节数 = 2 × 层数 × 键值头个数 × 每头维度 × 每个数的字节数
+              = 2 ×  8  ×      8      ×    128    ×      4
+              = 65536 字节 = 64 KiB</code></pre>
+
+<p>开头那个 2 是键和值各一份。代进本页的设定，一个 token 是 64 KiB。顺带留意中间那一步：<em>一层里一个 token 的键正好是 4096 字节</em>，和 Day 7 那个操作系统内存页一样大。这是巧合，别把两种「页」当成一回事——第二部分会专门说清楚它们的关系。</p>
+
+<p>换几组设定代进去，看这个数能拉开多大：</p>
+
+<div class="scroll">
+<table>
+<tr><th>设定</th><th class="n">每 token</th><th class="n">2048 个 token</th><th class="n">32768 个 token</th></tr>
+<tr><td>本页设定 · float32</td><td class="n">64.0 KiB</td><td class="n">128.0 MiB</td><td class="n">2.00 GiB</td></tr>
+<tr><td>本页设定 · float16</td><td class="n">32.0 KiB</td><td class="n">64.0 MiB</td><td class="n">1.00 GiB</td></tr>
+<tr><td>不用 GQA（32 个键值头）· float16</td><td class="n">128.0 KiB</td><td class="n">256.0 MiB</td><td class="n">4.00 GiB</td></tr>
+<tr><td>32 层 · 8 个键值头 · float16</td><td class="n">128.0 KiB</td><td class="n">256.0 MiB</td><td class="n">4.00 GiB</td></tr>
+</table>
+</div>
+
+<p>最后两行是同一个数从两个方向来的：把键值头从 8 个放回 32 个，和把层数从 8 层加到 32 层，对内存的影响完全一样，都是四倍。式子里这两项就是并排相乘的，谁翻四倍都一样。这也解释了为什么长上下文的模型几乎都用 GQA——不用它，同样一张卡能同时服务的人数直接除以四。</p>
+
+<p>公式好写，但它对不对得用外面的裁判验一次。P1 按这个公式申请了 8192 个 token 的 KV，然后真的把每一个字节都写了一遍，前后读三次进程的驻留内存（RSS，也就是真正被物理内存撑着的那部分）：</p>
+
+<div class="scroll">
+<table>
+<tr><th>时刻</th><th class="n">RSS 相对起点涨了</th></tr>
+<tr><td>按公式算出来应该是</td><td class="n">536870912 字节</td></tr>
+<tr><td>申请完，一个字节没写</td><td class="n">32768 字节</td></tr>
+<tr><td>把每个字节都写过一遍</td><td class="n">536969216 字节</td></tr>
+</table>
+</div>
+
+<p>最后一行除以第一行是 1.0002，公式站得住。中间那一行是 Day 7 讲过的：申请只是在页表上记一笔，物理内存要等你第一次真的碰它才分下来。真实的推理服务启动时会一次性把这几十 GB 全部碰一遍，正是为了不让这笔缺页开销落到最早那批用户头上。</p>
+
+<p>有了每 token 的字节数，容量问题就变成一道除法。给 KV cache 40 GiB，本页设定按 float16 算，装得下 1310720 个 token。按每条 2048 个 token 算，就是 640 条。换句话说，「这台机器能同时服务多少人」这个问题，答案的分母是一个你现在能自己算出来的数。</p>
+
+<h3>第二部分 · 放不下的，从来不是内存</h3>
+
+<h4>5. 一条请求刚进来，你怎么知道该给它留多少</h4>
+
+<p class="lead">这条请求最后会长到多长？在它跑完之前，谁也不知道。</p>
+
+<p>你是后端工程师，手上有一个 512 MiB 的池子，请求一条一条进来。最自然的写法是：请求进来时算出它最多可能要多少，一次性划一块连续的空间给它，跑完再还回来。</p>
+
+<p>「最多可能要多少」是一个已知量，就是上下文长度上限，本页设的是 2048 个 token。所以每条请求进来就占住 2048 × 64 KiB = 128 MiB。</p>
+
+<p>这个写法在别的地方是对的。给一个固定大小的缓冲区、给一个已知长度的数组，一次划够是最省事也最快的做法。但这里有个前提不成立：<em>你不知道这条请求最后会长到多长</em>。这不是实现问题，是任务本身的性质——模型什么时候停下来，要等它真的吐出停止符才知道。Day 9 的自检题里已经出现过这句话，当时用它解释「为什么只做准入控制不够、必须有抢占」。今天它换了个身份，变成内存浪费的来源。</p>
+
+<p>回到 2.3 节那条轨迹。那条请求最后只长到 140 个 token，可它一进来就占住了 2048 个位子。占住 2048、用掉 140，利用率 6.8%。剩下 93.2% 的内存被划走了，谁也不能用，但里面什么都没有。这一条特别短，整批 120 条请求平均下来是多少，第 8 节会给。</p>
+
+<p>这种「已经划给某个人、但他实际没用上」的浪费，叫 <span class="term">内部碎片（internal fragmentation）</span>。「内部」的意思是浪费发生在已分配的那一块<em>里面</em>。Day 12 那 2468 字节就是它最小的一个样本：文件系统按整页分配，最后一页只用了一小截，剩下的空着但已经算你头上了。今天这个数从 2468 字节放大到 120 MiB。</p>
+
+<p><strong>整块预留这个做法，浪费的比例不取决于你的代码写得好不好，只取决于「请求实际长度」和「长度上限」这两个数差多远。</strong>而这两个数天然差得很远：上限要按最长的那条设，实际长度大部分请求都短得多。</p>
+
+<h4>6. 那就别一次划够，让它慢慢长</h4>
+
+<p>下一个自然的改法：进来时只按 prompt 长度划一小块，不够了再往后要一截。这正是动态数组的做法，你写过很多次。</p>
+
+<p>问题是「往后要一截」这个动作有个隐含条件：紧挨着你这块的后面得是空的。而在你后面很可能已经坐了别人。这时只有两条路：搬家，把整段复制到别处一块够大的空地上；或者搬不动，就得把某条请求整个踢下去腾地方。把已分配的东西挪到一起、腾出大片连续空间的动作叫 <span class="term">紧凑（compaction）</span>，它不便宜——搬一条 2048 token 的序列，是 128 MiB 的复制。</p>
+
+<p>更麻烦的是另一种情况：池子里明明还剩很多空闲字节，但它们碎成了几十个小段，每一段都不够装下一条请求要的那么长。总量够，连续的段不够。</p>
+
+<p>这种「空闲的总量足够、但没有一段连续的空间够大」的浪费，叫 <span class="term">外部碎片（external fragmentation）</span>。「外部」的意思是浪费发生在已分配的块<em>之间</em>。</p>
+
+<p>这两种碎片是一对：你为了消灭内部碎片而按需分配，就会制造外部碎片；你为了消灭外部碎片而一次划够，就会制造内部碎片。第 8 节把这一对放在同一批请求上跑一遍，看代价各是多少。</p>
+
+<h4>7. 这道题操作系统在七十年前解过一次</h4>
+
+<p>Day 7 讲过页表和地址翻译缓存，讲过大页省的是翻译的钱。但那一天从「内存是按块管理的」直接开始，跳过了一个问题：<em>为什么要按块管理</em>？</p>
+
+<p>答案就是上面这两种碎片。早期的系统给进程分配的是一整段连续的物理内存，于是进程反复启动和退出之后，物理内存被切得七零八落，明明还剩几百兆，却没有一段连续的够装下一个新进程。分页的做法是：把地址空间切成固定大小的块（x86 上是 4096 字节），进程要几块给几块，<strong>这些块在物理内存里爱在哪就在哪，不要求连着；进程看到的连续，是页表翻译出来的假象。</strong></p>
+
+<p>代价是多了一层间接：每次访问都要先查一次表，才知道这一页真正在哪。Day 7 的地址翻译缓存就是为了让这一层查表尽量便宜。</p>
+
+<p>把这套办法照搬到 KV cache 上，就是今天的主角。内存池切成固定大小的 <span class="term">块（block）</span>，每一块装固定个数 token 的键和值；一条序列要多少块给多少块，块之间不要求连续；每条序列配一张 <span class="term">块表（block table）</span>，记着它的第几块在池子里的哪个位置。计算的时候按块表去取。这个做法叫 <span class="term">分页注意力（PagedAttention）</span>。</p>
+
+<p>vLLM 里这几件事都能在源码里指着看。一块装几个 token 是个常量，默认 16：</p>
+
+<pre><code># vllm/config/cache.py:79
+DEFAULT_BLOCK_SIZE: ClassVar[int] = 16</code></pre>
+
+<p>一块占多少字节，是第 4 节那个公式去掉层数、加上块大小的样子。<code>num_heads</code> 就是键值头个数（第 405 行），<code>num_states</code> 在最常见的情况下就是块大小（第 180 行）：</p>
+
+<pre><code># vllm/v1/kv_cache_interface.py:412
+return (self.head_size + self.head_size_v) * get_dtype_size(self.dtype)
+
+# vllm/v1/kv_cache_interface.py:415-416
+def unpadded_page_size_bytes(self) -> int:
+    return self.num_heads * self.num_states * self.state_content_size_bytes</code></pre>
+
+<p>把这两行连起来读：一块的字节数 = 键值头个数 × 块大小 × (键的维度 + 值的维度) × 每个数的字节数。这和你在第 4 节手算的那一行是同一个式子，只是把「每 token」换成了「每块」，并且把键和值写成了相加而不是乘 2。</p>
+
+<p>而「这台机器能开多少块」，就是一道除法，源码里也是一行：</p>
+
+<pre><code># vllm/v1/core/kv_cache_utils.py:1440
+num_blocks = available_memory // bytes_per_block</code></pre>
+
+<p>分子那个「可用内存」是怎么来的，是第 14 节的旋钮。分母你现在会算了。</p>
+
+<p>最后说清楚两种「页」的区别，免得后面混。操作系统的页是硬件的事：页表由内核填，翻译由 CPU 里的专门电路做，一页固定 4096 字节。KV cache 的块是纯软件的事：块表就是一个普通数组，取块由代码自己做，一块装多少个 token 由你配。两者只是借用了同一个想法，没有任何机制上的关系。第 4 节那个「一层一个 token 的键正好 4096 字节」纯属数字上的巧合。</p>
+
+<p>vLLM 的设计文档里给出了这些块在内存里的排布方式，K 和 V 是两个独立的张量：</p>
+
+<pre><code># docs/design/paged_attention.md
+const scalar_t* __restrict__ k_cache,   // [num_blocks, num_kv_heads, head_size/x, block_size, x]
+const scalar_t* __restrict__ v_cache,   // [num_blocks, num_kv_heads, head_size, block_size]</code></pre>
+
+<p>最外面那一维是块号——池子就是一个大数组，块表里存的就是这一维的下标。这也说明第 3 部分要量的东西是什么：按块号跳着取，比顺着取要贵多少。</p>
+
+<h4>8. 三种分法，同一批请求各跑一遍</h4>
+
+<p>现在把三种做法放到同一个池子、同一批 120 条请求上。池子 8192 个 token 位，同时最多 16 条，其余全锁死。三种做法唯一的差别就是「一条请求进来占住多少、怎么长」。</p>
+
+<div class="scroll">
+<table>
+<tr><th>分配方式</th><th class="n">总步数</th><th class="n">平均并发</th><th class="n">内存利用率</th><th class="n">抢占次数</th><th class="n">白算掉的 token</th><th class="n">搬家次数</th></tr>
+<tr><td>① 整块预留 2048</td><td class="n">7820</td><td class="n">3.91</td><td class="n">23.1%</td><td class="n">0</td><td class="n">0</td><td class="n">0</td></tr>
+<tr><td>② 按需连续增长</td><td class="n">4351</td><td class="n">12.62</td><td class="n">77.9%</td><td class="n">10200</td><td class="n">2876859</td><td class="n">196</td></tr>
+<tr><td>③ 分块，一块 16 个</td><td class="n">2190</td><td class="n">14.10</td><td class="n">98.4%</td><td class="n">36</td><td class="n">12654</td><td class="n">0</td></tr>
+</table>
+</div>
+
+<p>三行从上往下读是一条递进，但每一行坏的地方不一样。</p>
+
+<p>第一行的病是内部碎片：利用率只有 23.1%，四分之三的内存被划走却空着，于是平均只能同时跑 3.91 条——池子里只放得下四块 128 MiB。它一次抢占都没有，因为每条请求要的东西一开始就给足了，中途永远不会不够。稳定，但是浪费。</p>
+
+<p>第二行的病藏在最后三列。利用率 77.9% 看着不错，并发也上去了，可它抢占了 10200 次。抢占的代价 Day 9 讲过：进度清零、整个 prompt 重来。把这些重来的 token 数加起来是 2876859 个，而这批请求真正需要的总量只有 66755 个——白算掉的工作量是有用工作量的 43 倍。196 次搬家还是小头。这就是外部碎片的样子：总量够，但要一段连着的够长的就是找不到，于是反复踢人、反复重算。</p>
+
+<p>第三行几乎没有病。利用率 98.4%，差的那 1.6% 就是 2.3 节里「空着」那一列——每条序列最后一块没装满的部分。抢占 36 次是真的内存到顶了，不是找不着连续空间。</p>
+
+<p>把第一行和第三行放一起最能说明问题：同一个池子、同一批请求，只改了「怎么分」这一件事，跑完的步数从 7820 降到 2190，同时在跑的序列数从 3.91 涨到 14.10。没有换机器，没有换模型，没有多一个字节的内存。</p>
+
+<div class="card key">
+<span class="tag">关键结论</span>
+<p><strong>推理服务喊「内存不够」的时候，缺的经常不是字节，是连续的字节。</strong></p>
+<p>分块把「连续」这个要求去掉，代价是多一层间接寻址和每条序列最后一块的零头。这两笔代价具体多大，就是下一部分要称的东西。</p>
+</div>
+
+<h3>第三部分 · 一块装多少个 token</h3>
+
+<h4>9. 动笔之前，先押三个数</h4>
+
+<p class="lead">块表这一层要多花多少钱？分块把「一段连续的 KV」变成了「散落在池子各处的一堆块」，读的时候要跳着取。</p>
+
+<p>Day 7 那一天量过一个数量级：同一块 256 MB 的内存，顺着跳每次 7 纳秒，随机跳每次 198 纳秒，差二十六倍。当时页面上留了一句「KV cache 用一个个固定大小的块存储、再用一张表把块串起来，代价就是访问从顺序变成了跳跃，这个代价具体有多大，你今天已经有能力自己测了」。今天来兑现它。</p>
+
+<p>下面三个数，先写下来再往下翻。第三部分和第四部分的表会逐个揭晓。</p>
+
+<div class="card predict">
+<span class="tag">预测 · 先写下来</span>
+<p><span class="qn">问题一</span>一条 2048 个 token 的序列，它在某一层里的键是 8 MiB。把这 8 MiB 切成 128 块（每块 16 个 token，也就是 64 KiB 一段），随机撒在一个 256 MiB 的池子里，再全部读出来。和这 8 MiB 连着放、一次读出来相比，慢多少？</p>
+<div class="write"></div>
+<p><span class="qn">问题二</span>如果块小到只有 64 字节一段（也就是把上面那 8 MiB 切成十三万段），同样读出来，慢多少？</p>
+<div class="write"></div>
+<p><span class="qn">问题三</span>第 8 节那张表里，块大小 16 的内存利用率是 98.4%。把块大小加到 256 个 token，其余全不动，利用率会掉到多少？</p>
+<div class="write"></div>
+<p class="small">提示：问题一和问题二问的是同一件事的两个极端，它们的答案不在一个量级上。问题三可以用 2.3 节那条轨迹的思路自己估——一条序列平均会浪费掉半块。</p>
+</div>
+
+<h4>10. 揭晓：那一层间接，在 64 KiB 上量不出来</h4>
+
+<p>怎么量才公平：同一个取数函数、同样 8 MiB、同一个 256 MiB 的池子，唯一改的是那些段在池子里是随机撒开还是挨着放。挨着放的那一列就是地板，两列相减就是「散着放」这件事本身的价钱。</p>
+
+<div class="scroll">
+<table>
+<tr><th>一次连续读</th><th class="n">要读几段</th><th class="n">段随机撒开</th><th class="n">段挨着放</th><th class="n">差值</th><th class="n">挨着放那列 P10~P90</th></tr>
+<tr><td>64 字节</td><td class="n">131072</td><td class="n">5.787 ms</td><td class="n">2.161 ms</td><td class="n">+3.625</td><td class="n">2.113 ~ 2.271</td></tr>
+<tr><td>128 字节</td><td class="n">65536</td><td class="n">3.455 ms</td><td class="n">2.117 ms</td><td class="n">+1.337</td><td class="n">2.054 ~ 2.231</td></tr>
+<tr><td>256 字节</td><td class="n">32768</td><td class="n">2.578 ms</td><td class="n">2.018 ms</td><td class="n">+0.559</td><td class="n">1.970 ~ 2.100</td></tr>
+<tr><td>1 KiB</td><td class="n">8192</td><td class="n">2.537 ms</td><td class="n">1.917 ms</td><td class="n">+0.620</td><td class="n">1.858 ~ 2.020</td></tr>
+<tr><td>4 KiB</td><td class="n">2048</td><td class="n">2.141 ms</td><td class="n">2.021 ms</td><td class="n">+0.121</td><td class="n">1.985 ~ 2.113</td></tr>
+<tr><td>16 KiB</td><td class="n">512</td><td class="n">1.988 ms</td><td class="n">1.929 ms</td><td class="n">+0.059</td><td class="n">1.875 ~ 2.112</td></tr>
+<tr><td>64 KiB</td><td class="n">128</td><td class="n">1.954 ms</td><td class="n">1.962 ms</td><td class="n">−0.009</td><td class="n">1.868 ~ 2.107</td></tr>
+<tr><td>1 MiB</td><td class="n">8</td><td class="n">1.980 ms</td><td class="n">1.932 ms</td><td class="n">+0.049</td><td class="n">1.871 ~ 2.101</td></tr>
+</table>
+</div>
+
+<p>先看最后一列，它是这张表能不能信的前提。挨着放那一列的第 10 到第 90 百分位，最窄的一行跨 0.13 毫秒，最宽的一行跨 0.24 毫秒。所以「差值」这一列里小于 0.15 毫秒的行，今天一律当成量不出差别。</p>
+
+<p>按这条红线读下来：从 4 KiB 往上的四行全都落在噪声里，其中 64 KiB 那行的差值干脆是负的。真正贵起来是从一千字节往下开始的，到 64 字节一段时多花了 3.6 毫秒——比地板本身还多。</p>
+
+<p>本页块大小 16 的那一块，一层里的键正好是 16 × 4096 = 65536 字节，落在「64 KiB」那一行上。值是另外一块同样大的连续内存——第 7 节最后那两行代码里 K 和 V 是两个独立的张量，所以读的时候是两段 64 KiB，不是一段 128 KiB。<strong>也就是说，块表带来的那一层间接寻址，在真实的块大小上量不出来。</strong></p>
+
+<p>为什么和 Day 7 那个二十六倍差这么多？因为跳的粒度完全不同。Day 7 每次只跳去读 64 字节的一个缓存行，跳一次只赚 64 字节，全靠地址翻译和预取器；这里每跳一次要连着读 64 KiB，等于一千个缓存行连着走，硬件预取器有的是时间跟上，那一次跳的成本被摊到一千次读里。<em>块表之所以便宜，不是因为间接寻址便宜，是因为块本来就够大。</em></p>
+
+<p>顺带说一个量测上的坑，免得你自己跑的时候被这张表的绝对值骗了。同样这 8 MiB，如果换成 numpy 的整段拷贝，只要 0.9 毫秒；上面那个 2.2 毫秒的地板里，一多半是取数函数自己的开销，不是内存慢。这不影响结论——两列用的是同一个函数、同样的字节数，函数开销在相减的时候消掉了。但如果你只跑「随机撒开」那一列、拿它和一个整段拷贝比，就会得出块表贵一倍多的错误结论。</p>
+
+<h4>11. 那块大小到底该定多少</h4>
+
+<p>读那一侧从 4 KiB 往上就是平的，等于没有约束。所以块大小的取值由另外两笔钱决定，一头拉一个方向。</p>
+
+<p>往大了开，浪费变多：每条序列最后一块平均空着半块，块越大这半块越贵。往小了开，块的个数变多，而每一块在实现里都是一个实实在在的对象——vLLM 给每块建一个 <code>KVCacheBlock</code>，空闲的那些串成一个双向链表（<code>FreeKVCacheBlockQueue</code>，源码注释里专门解释了为什么不用现成的 deque：为了能 O(1) 地从链表中间摘掉一块）。块小一倍，这些对象就多一倍，每一步的取块还块也多一倍。</p>
+
+<p>把这两笔钱和刚才那笔读的钱放进同一张表。前三列是同一批 120 条请求跑出来的，最后一列是算出来的：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">块大小</th><th class="n">池子里有几块</th><th class="n">内存利用率</th><th class="n">抢占次数</th><th class="n">分配器自身耗时</th><th class="n">散读多花</th><th class="n">块表最宽几条</th></tr>
+<tr><td class="n">1</td><td class="n">8192</td><td class="n">100.0%</td><td class="n">28</td><td class="n">27.7 ms</td><td class="n">+0.121 ms</td><td class="n">2048</td></tr>
+<tr><td class="n">4</td><td class="n">2048</td><td class="n">99.7%</td><td class="n">28</td><td class="n">14.4 ms</td><td class="n">+0.059 ms</td><td class="n">512</td></tr>
+<tr><td class="n">16</td><td class="n">512</td><td class="n">98.4%</td><td class="n">36</td><td class="n">10.9 ms</td><td class="n">0</td><td class="n">128</td></tr>
+<tr><td class="n">32</td><td class="n">256</td><td class="n">96.8%</td><td class="n">65</td><td class="n">10.8 ms</td><td class="n">0</td><td class="n">64</td></tr>
+<tr><td class="n">64</td><td class="n">128</td><td class="n">93.8%</td><td class="n">139</td><td class="n">10.6 ms</td><td class="n">0</td><td class="n">32</td></tr>
+<tr><td class="n">128</td><td class="n">64</td><td class="n">88.3%</td><td class="n">427</td><td class="n">11.1 ms</td><td class="n">0</td><td class="n">16</td></tr>
+<tr><td class="n">256</td><td class="n">32</td><td class="n">78.8%</td><td class="n">954</td><td class="n">11.9 ms</td><td class="n">0</td><td class="n">8</td></tr>
+</table>
+</div>
+
+<p>竖着读「内存利用率」和「分配器自身耗时」这两列，它们朝相反的方向走，而且各自都有一段平台。利用率从 1 到 16 只掉了 1.6 个百分点，之后开始加速下滑；分配器耗时从 1 到 8 掉了一大半，从 16 往后基本不动。两段平台的交界处就在 16 附近，这也是 vLLM 那个默认值所在的位置。</p>
+
+<p>「抢占次数」那一列是利用率的影子：块越大浪费越多，池子的有效容量就越小，装不下的次数自然涨。从 36 涨到 954，是二十六倍。</p>
+
+<p>问题三的答案是 78.8%。如果你押的数明显更高，多半是漏了一件事：浪费的不是「平均半块」这个绝对量，而是它相对于序列长度的比例。块 256 个 token、序列平均 556 个 token，平均浪费 128 个——那是序列长度的两成多。</p>
+
+<h3>第四部分 · 装不下的时候，搬走还是重算</h3>
+
+<h4>12. 现在这两条路可以放到同一杆秤上</h4>
+
+<p>Day 9 讲过抢占：内存不够时把一条正在跑的请求拉下来，vLLM 拉的是最新到达的那条。当时留了一句「被拉下来之后有两条路——把它的 KV 扔掉、回来重算，或者搬到 CPU 内存里存着、回来再搬回去；这两条路的取舍要等把内存账算清楚才谈得下去」。现在算清楚了。</p>
+
+<p>两条路各自要付的东西，形状完全不同。搬走付的是字节：一条上下文 S 个 token 的序列，KV 是 S × 每 token 字节数，出去一趟回来一趟，要搬两遍。重算付的是运算：把这条序列的 prompt 重新做一次 prefill。</p>
+
+<p>先量这台机器的两个数。内存到内存拷贝 256 MiB，中位 23.2 毫秒，折算 11.56 GB/s——这个速率是读一遍加写一遍算出来的。一次 8 层前向、只喂一列，最快 33.6 毫秒。然后按上下文长度扫一遍：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">上下文长度</th><th class="n">这条序列的 KV</th><th class="n">搬出去 + 搬回来</th><th class="n">重算一次 prefill</th><th class="n">倍数</th></tr>
+<tr><td class="n">128</td><td class="n">8.0 MiB</td><td class="n">1.5 ms</td><td class="n">405.3 ms</td><td class="n">279×</td></tr>
+<tr><td class="n">256</td><td class="n">16.0 MiB</td><td class="n">2.9 ms</td><td class="n">716.7 ms</td><td class="n">247×</td></tr>
+<tr><td class="n">512</td><td class="n">32.0 MiB</td><td class="n">5.8 ms</td><td class="n">1234.2 ms</td><td class="n">212×</td></tr>
+<tr><td class="n">1024</td><td class="n">64.0 MiB</td><td class="n">11.6 ms</td><td class="n">2394.0 ms</td><td class="n">206×</td></tr>
+<tr><td class="n">2048</td><td class="n">128.0 MiB</td><td class="n">23.2 ms</td><td class="n">4517.9 ms</td><td class="n">194×</td></tr>
+</table>
+</div>
+
+<p>最右边那一列的走势比它的绝对值更值得看：上下文从 128 涨到 2048，是十六倍，可这个倍数只从 279 慢慢滑到 194。序列越长，两边同时变贵，比值基本不动。</p>
+
+<p>这不是巧合，把两边写成式子就看得出来。重算那一边，Day 8 已经确认 prefill 是受算力限制的，时间大约是「运算量 ÷ 算力」，而运算量是「2 × 参数量 × S」。搬那一边是「2 × S × 每 token 的 KV 字节数 ÷ 搬运速率」。两个式子相除：</p>
+
+<pre><code>搬运时间   每 token 的 KV 字节数 × 算力
+——————— = ————————————————————————————
+重算时间      参数量 × 搬运速率</code></pre>
+
+<p><strong>S 被约掉了：一条序列多长，不影响该选哪条路。</strong>式子右边只剩四个量，把这台机器的数代进去：</p>
+<div class="scroll">
+<table>
+<tr><th>式子里的项</th><th class="n">本机的值</th><th>从哪儿来</th></tr>
+<tr><td>每 token 的 KV 字节数</td><td class="n">64 KiB</td><td>第 4 节的公式</td></tr>
+<tr><td>算力</td><td class="n">119 GFLOP/s</td><td>S 取 2048 时的前向，运算量除以耗时</td></tr>
+<tr><td>参数量</td><td class="n">1.34 亿</td><td>8 层 × 4096 × 4096</td></tr>
+<tr><td>搬运速率</td><td class="n">11.56 GB/s</td><td>256 MiB 内存到内存拷贝</td></tr>
+<tr><td>相除得到</td><td class="n">0.0051</td><td>也就是搬比重算快约 196 倍</td></tr>
+</table>
+</div>
+<p>196 这个数和上面那张表最后一行的 194 对得上。</p>
+
+<p>短序列那几行比 196 高一些，原因也在式子里：那个式子把重算写成「运算量 ÷ 算力」，前提是 prefill 已经落到算力那一边。S 只有 128 的时候它还没完全落进去，这台机器在那个形状上只跑到 86 GFLOP/s，到 S 等于 2048 时是 119。也就是说短序列的重算单位成本更高，于是搬显得更划算。这是 Day 7 那条屋顶线在今天最后一次露面。</p>
+
+<p>式子右边四项，两项是机器的属性（算力、搬运速率），两项是模型的属性（每 token 的 KV 字节数、参数量）。没有一项跟负载有关。所以这是一个可以在部署之前一次算清楚的问题，不需要压测。</p>
+
+<p>但这台机器上的 0.0051 不能搬到 GPU 上去。GPU 的算力比这里的 CPU 高三四个数量级，而「搬运速率」在那边是 PCIe 而不是内存条。式子不变，两个分子分母的数全变了。vLLM 的文档里写着它的选择：</p>
+
+<pre><code># docs/configuration/optimization.md
+In vLLM V1, the default preemption mode is `RECOMPUTE` rather than `SWAP`,
+as recomputation has lower overhead in the V1 architecture.</code></pre>
+
+<p>拿你手上那张卡的算力和 PCIe 速率代进去，是今天加分题里的一道。</p>
+
+<h4>13. 一步 decode 到底要读多少字节</h4>
+
+<p>还有一笔账，是 Day 8 欠下的。那天的装置表里写着「注意力和 KV cache 完全没有，所以今天所有绝对时间都是下限，真服务只会更慢」。慢多少，现在能算了。</p>
+
+<p>一步 decode 要读两样东西。权重是所有请求共用的，读一遍，这一项是常数，本页骨架是 512 MiB。KV 是每条请求各自的，每条要把自己全部上下文读一遍，这一项等于「批量 × 上下文长度 × 每 token 字节数」。</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">批量</th><th class="n">每条的上下文</th><th class="n">权重</th><th class="n">KV</th><th class="n">KV 占这一步总字节的</th></tr>
+<tr><td class="n">1</td><td class="n">256</td><td class="n">512 MiB</td><td class="n">16 MiB</td><td class="n">3.0%</td></tr>
+<tr><td class="n">1</td><td class="n">2048</td><td class="n">512 MiB</td><td class="n">128 MiB</td><td class="n">20.0%</td></tr>
+<tr><td class="n">4</td><td class="n">2048</td><td class="n">512 MiB</td><td class="n">512 MiB</td><td class="n">50.0%</td></tr>
+<tr><td class="n">16</td><td class="n">256</td><td class="n">512 MiB</td><td class="n">256 MiB</td><td class="n">33.3%</td></tr>
+<tr><td class="n">16</td><td class="n">2048</td><td class="n">512 MiB</td><td class="n">2048 MiB</td><td class="n">80.0%</td></tr>
+<tr><td class="n">32</td><td class="n">2048</td><td class="n">512 MiB</td><td class="n">4096 MiB</td><td class="n">88.9%</td></tr>
+</table>
+</div>
+
+<p>把第一行和最后一行放一起看：同一个模型、同一步 decode，KV 这一项从占三个百分点变成占九成。<strong>批量和上下文一起大起来之后，一步 decode 的时间不再由权重决定，由 KV 决定。</strong></p>
+
+<p>这件事把 Day 8 那条结论掰弯了一半。那天说「decode 的成本主要是读一遍权重，所以要靠调度器把用户凑到一起摊薄它」——这句话在短上下文下成立。但每多凑一个用户，你就多加了一份 KV 要读，而它不被任何人分摊。凑人能摊薄的只有权重那一项，摊不薄 KV 那一项。这就是为什么长上下文服务的批量开不大：不是内存装不下，是装下了也读不动。</p>
+
+<h4>14. 你手上能动的旋钮</h4>
+
+<p>把前面所有的量串成一条链：可用内存 ÷ 每块字节数 = 块数；块数 × 块大小 = 能装多少个 token；能装多少个 token ÷ 平均上下文长度 = 同时能跑几条。链条上每一个环都有一个旋钮。</p>
+
+<div class="scroll">
+<table>
+<tr><th>旋钮</th><th>动它等于动链条的哪一环</th><th>代价</th></tr>
+<tr><td><code>gpu_memory_utilization</code></td><td>分子。vLLM 按这个比例把显存划给自己，减掉权重之后剩下的就是 KV 的可用内存。源码里默认 0.92（<code>vllm/config/cache.py</code> 第 111 行）</td><td>调太高，激活值和临时缓冲没地方放，跑着跑着显存爆掉</td></tr>
+<tr><td><code>block_size</code></td><td>分母，以及每条序列的零头</td><td>第 11 节那张表的两头</td></tr>
+<tr><td><code>max_model_len</code></td><td>块表的宽度上限，以及一条请求最多能吃掉多少</td><td>调小会直接拒绝长请求</td></tr>
+<tr><td><code>max_num_seqs</code></td><td>不改容量，只是提前把并发压住，让抢占不要发生</td><td>Day 9 量过：压过头吞吐就下来了</td></tr>
+<tr><td>换模型形状</td><td>每块字节数。键值头个数和层数各是一个乘数</td><td>不是你能动的，但选型时是你该问的</td></tr>
+</table>
+</div>
+
+<p>vLLM 的文档在讲抢占那一节给了四条建议，前两条正好是这张表的前两行的变体（提高 <code>gpu_memory_utilization</code>、降低 <code>max_num_seqs</code> 或 <code>max_num_batched_tokens</code>），后两条是把权重摊到更多卡上，从而给 KV 腾地方。它同时提到抢占次数有 Prometheus 指标可以监控——这是你上线之后第一个该盯的数。</p>
+
+<h2>板块 3 · 动手任务</h2>
+
+<h3>任务 A（必做，约 70 分钟）· 把内存公式变成一个你信得过的工具</h3>
+
+<p>目标是让第 4 节那个公式从「一段话」变成「一个你验过的脚本」。分四步。</p>
+
+<h4>第一步：写出公式，输出一张容量表</h4>
+
+<p>写一个脚本，输入层数、键值头个数、每头维度、数据类型、上下文长度、并发数，输出这套配置要多少字节，以及给定内存预算能同时装几条。不要抄本页的数字，用你手边任何一个开源模型的配置文件里的真实数字。</p>
+
+<pre><code>每 token 字节数 = 2 × 层数 × 键值头个数 × 每头维度 × 每个数的字节数
+能装多少 token   = 可用内存 ÷ 每 token 字节数
+能同时跑几条     = 能装多少 token ÷ 平均上下文长度</code></pre>
+
+<p class="small">验收标准：换掉键值头个数，输出应该成比例变化；把数据类型从 2 字节改成 1 字节，所有字节数减半。</p>
+
+<h4>第二步：用操作系统当裁判验一遍</h4>
+
+<p>按你算出来的字节数真的申请一块内存，然后<em>把每一个字节都写一遍</em>，前后读 <code>/proc/self/status</code> 里的 <code>VmRSS</code>。</p>
+
+<pre><code>def rss_kb():
+    for line in open('/proc/self/status'):
+        if line.startswith('VmRSS'):        # 驻留内存：真正被物理内存撑着的部分
+            return int(line.split()[1])
+
+r0 = rss_kb()
+buf = np.empty(n_bytes // 4, dtype=np.float32)
+r1 = rss_kb()                                # 这里几乎不会涨，Day 7 讲过为什么
+buf[...] = 1.0                               # 真的碰一遍，逼内核把物理页分下来
+r2 = rss_kb()</code></pre>
+
+<p><code>r2 - r0</code> 换成字节之后，应该和你算的数差在千分之几以内。如果差得多，先检查有没有漏掉「键和值各一份」那个 2，或者把查询头个数当成了键值头个数。</p>
+
+<p class="small">验收标准：<code>r1 - r0</code> 接近零，<code>r2 - r0</code> 对上公式。常见坑：用 <code>np.zeros</code> 申请可能拿到已经清零的页而不触发你预期的行为，用 <code>np.empty</code> 再显式写一遍更干净。</p>
+
+<h4>第三步：在你自己的机器上找到那条红线</h4>
+
+<p>把第 10 节那个对照跑一遍：同一个取数函数，同样的总字节数，一次改成「段随机撒开」一次改成「段挨着放」，扫一遍段的长度。找出在你的机器上，两列的差值从哪个段长开始落进噪声。</p>
+
+<pre><code>pv = pool.reshape(-1, run_floats)            # 把池子按"一段"重新看
+ids = rng.choice(pv.shape[0], size=nrun, replace=False)   # 随机撒开
+ids = np.arange(a, a + nrun)                              # 挨着放（对照组）
+np.take(pv, ids, axis=0, out=bv)</code></pre>
+
+<p>跑够次数（至少 41 次）取中位，同时把第 10 到第 90 百分位打出来当噪声底。没有这条底线，这张表读不了。</p>
+
+<p class="small">验收标准：池子必须明显大于你机器的 L3，否则你量到的是缓存不是内存，整张表会平得看不出任何东西。把池子改小到 L3 以内再跑一次，看看差别，这一步别跳过。</p>
+
+<h4>第四步：把三个数合起来回答一个问题</h4>
+
+<p>「一台有 N GiB 显存的机器，跑某个模型，承诺支持 8K 上下文，最多能同时服务多少人？」写下你的推导过程，每一步注明用了哪个数、哪个数是猜的。猜的那些就是你上线之后要去量的东西。</p>
+
+<h3>任务 B（约 40 分钟）· 给你自己那个玩具引擎装上内存</h3>
+
+<p>Day 8 和 Day 9 你写过一个引擎循环，它的 <code>admit()</code> 只看「同时最多几条」。现在给它加一个内存维度。</p>
+
+<ol>
+<li>给引擎一个块池：总共几块、一块几个 token。放行一条请求前，先看它的 prompt 需要几块、够不够。</li>
+<li>每一步每条序列各长一个 token；当 <code>(已有 token 数) % 块大小 == 0</code> 时要新拿一块，拿不到就抢占——按 Day 9 的做法踢掉最新到达的那条，把它的块全部还回去、进度清零、扔回等待队列。</li>
+<li>打三个数：平均利用率（真正装了 token 的位子 ÷ 占住的位子）、抢占次数、被抢占的请求白算掉的 token 总数。</li>
+<li>把块大小从 16 改成 256，其余不动，再跑一遍。</li>
+</ol>
+
+<p class="small">验收标准：块大小改大之后，利用率应该明显下降、抢占次数明显上升，而总步数变多。常见坑有两个。一是抢占之后忘了把被踢那条的块真的还回池子，表现是跑着跑着可用块数只减不增。二是把「白算掉的 token」记成了抢占次数——这两个数差着两个数量级，前者才是用户真正付的钱。</p>
+
+<h3>加分题</h3>
+
+<ol>
+<li>把第 12 节那个式子代进你手上那张卡：算力查它的官方标称值，搬运速率用你实测的主机到显存的拷贝速率（不是标称的 PCIe 速率，实测通常低不少）。算出来的比值大于 1 还是小于 1？和 vLLM 的默认选择一致吗？不一致的话，想想式子里漏了什么——提示：重算那一笔可以和别人的批次拼在一起（Day 9 的分块预填充），搬运那一笔的字节数没人能替它分摊。</li>
+<li>第 11 节说块小一倍、块对象就多一倍。本页用一个自己写的双向链表量了这笔簿记开销。去 vLLM 的 <code>vllm/v1/core/block_pool.py</code> 和 <code>kv_cache_utils.py</code> 里读它真正的实现，数一数分配一块要碰几个数据结构，再估一估在每步几十条序列的规模下这笔开销占一步的多少。</li>
+<li>把第 4 节的换算表加一行：数据类型换成 1 个字节（也就是 8 位量化的 KV）。整条链各变成多少：每 token 字节数、能装多少 token、能同时跑几条？再想一个问题：这条链上有没有哪一环<em>不会</em>因此改善？</li>
+<li>本页所有实验都假设一条序列的 KV 一直在内存里。如果允许把一条序列的前一半块换出去、只留最近的一半在内存里，第 8 节那张表会怎么变？把这个策略加到任务 B 的引擎里跑一遍，看利用率和抢占次数各动多少。</li>
+</ol>
+
+<h2>板块 4 · 工作现场</h2>
+
+<h3>场景一：并发上不去，抢占计数一直在涨</h3>
+
+<p>监控上同时在跑的序列数一直卡在个位数，队列里却排着人，抢占计数每分钟涨几十。有人提议加机器。</p>
+
+<p>先分清是哪一种「不够」。算一次账：可用内存除以每 token 字节数，等于能装多少 token；再除以当前的平均上下文长度，等于理论上能同时跑几条。如果这个数远大于实际并发，那内存是够的，问题在别处——先查 <code>max_num_seqs</code> 是不是设小了，再查 <code>block_size</code> 是不是被调大过。如果这个数本来就等于实际并发，那是真的不够，加机器或者提高 <code>gpu_memory_utilization</code> 才有意义。</p>
+
+<p>另外记住那个 43 倍：抢占真正的代价不是抢占次数，是被抢占的请求白算掉的 token 数。这两个数差着两个数量级，报给上游看的应该是后者。</p>
+
+<h3>场景二：产品问「这台机器能同时服务多少人」</h3>
+
+<p>这个问题没有唯一答案，但有唯一的算法。你要问回去的是两个数：平均上下文多长，以及并发的定义是「同时连着」还是「同时在生成」。</p>
+
+<p>然后把链条走一遍：显存总量 → 减去权重 → 乘以给 KV 的比例 → 除以每 token 字节数 → 除以平均上下文长度。每一步都写下来，因为产品下次会问「那我们把上下文从 8K 提到 32K 呢」，那时你只要改一个数。</p>
+
+<p>顺便准备好一句话解释为什么答案不是一个固定数字：同样一台机器，用户平均聊两轮和平均聊二十轮，答案差一个数量级。</p>
+
+<h3>场景三：评审会上要把上下文上限从 4K 提到 32K</h3>
+
+<p>这是一个几乎每个做推理服务的团队都会开的会。你要在会上说清楚代价，而且代价不止一条。</p>
+
+<p>第一条是容量：每条请求的内存上限乘以八，同一台机器能同时服务的人数除以八。第二条是速度，也就是第 13 节那张表：上下文长了之后，一步 decode 里 KV 那一项会超过权重，批量再怎么凑也摊不薄它。第三条是抢占：上下文一长，装不下的概率上升，而被踢掉的请求要白算的东西也更多。</p>
+
+<p>能减轻的办法也有：把上下文上限和「保证的并发数」绑在一起对外承诺；给长上下文单独一组机器，别和短请求混在一起抢同一个池子。后面这一条属于 Day 26 的题目。</p>
+
+<h3>同事和面试官常问的</h3>
+
+<p><em>「PagedAttention 到底解决了什么问题？」</em>只答「减少内存碎片」是复读文档。要说清楚是哪一种碎片：整块预留造成的是内部碎片，按需连续增长造成的是外部碎片，分页把「连续」这个要求去掉，两种一起解决。而且要能说出代价在哪——多一层间接寻址，以及每条序列最后一块的零头。</p>
+
+<p><em>「block_size 该设多大？」</em>只答「用默认值」不算错但没内容。往大了开省簿记、省块表宽度，但每条序列平均浪费半块；往小了开省内存，但块对象和取块动作成倍增加。两边各有一段平台，默认值落在交界处。补一句：读的那一侧几乎不构成约束，因为一块的字节数早就远大于一个缓存行。</p>
+
+<p><em>「被抢占的请求，为什么不换出去而要重算？」</em>先给式子：搬运时间比重算时间等于「每 token 的 KV 字节数 × 算力」比「参数量 × 搬运速率」，跟序列多长无关。再说这个比值在 GPU 上和在 CPU 上是两个方向，因为分子里的算力和分母里的搬运速率在两种硬件上差得完全不成比例。最后才提 vLLM V1 的默认值是重算。</p>
+
+<p><em>「我们的服务内存够，为什么还老抢占？」</em>这是场景一那道题的面试版。够不够要看的不是剩余字节数，是「有没有一段合适的空间」以及「峰值时刻的并发乘以平均上下文」。还要问一句抢占发生在什么时段——如果集中在某几分钟，那多半是长请求扎堆而不是容量不足。</p>
+
+<h2>板块 5 · 自检问题</h2>
+
+<details><summary>1. 有人把 KV cache 的数据类型从 float16 换成 float32，说「精度高一点更稳」。除了内存翻倍，还有什么后果？</summary>
+<p>一步 decode 要读的字节数里，KV 那一项翻倍。第 13 节那张表说明这一项在大批量长上下文下能占到八九成，所以这个改动接近于把 decode 的时间翻倍。</p>
+<p>还有第二重后果：能装的 token 数减半，于是同样的负载下抢占次数上升，而每次抢占又要白算一整个 prompt。第 8 节那张表里，利用率从 98.4% 掉到 78.8% 时抢占次数涨了二十六倍——不是线性关系，是接近临界点之后的加速。</p>
+<p>错在哪：把「内存翻倍」当成唯一代价。内存这条线上的每一个改动，都会同时出现在容量、速度和抢占三个地方。</p>
+</details>
+
+<details><summary>2. 一个同事说：「块表要跳着取内存，所以 PagedAttention 一定比连续存放慢，只是慢得值。」这句话对吗？</summary>
+<p>结论方向对，量级完全不对，而且原因说反了。</p>
+<p>跳着取确实比顺着取慢，但慢多少取决于每次跳完之后连着读多少字节。第 10 节的对照里，一段 64 字节时多花 3.6 毫秒，一段 64 KiB 时差值是负零点零零九——落在噪声里。而真实的块大小对应的正是几十 KiB 这个量级。</p>
+<p>所以正确的说法是：这一层间接在真实的块大小上量不出来，不是「慢得值」，是「几乎不慢」。原因不是间接寻址本身便宜，是块本来就够大，一次跳的成本被摊到上千个缓存行上。</p>
+<p>顺带一提，如果他拿「随机撒开」和「numpy 整段拷贝」去比，会得出块表贵一倍多的结论——那是两个不同函数的开销差，不是内存的差。</p>
+</details>
+
+<details><summary>3. 服务上线后你发现，同样的负载，白天抢占次数是夜里的十倍。但两个时段的请求数几乎一样。可能是什么原因？你会先看哪个数？</summary>
+<p>请求数一样不代表内存压力一样。内存占用取决于「并发 × 上下文长度」，而不是请求数。</p>
+<p>最可能的原因是白天的对话轮次更多、上下文更长。先看的应该是上下文长度的分布，尤其是高百分位——平均值会把这件事平均掉。一条 8K 的请求顶得上十六条 512 的。</p>
+<p>第二个要看的是并发的时间分布：如果白天请求扎堆在几个尖峰上，瞬时并发会远高于按平均算出来的数，而抢占是由瞬时决定的。这一点 Day 2 那个排队公式已经给过形状——利用率靠近 1 的时候，一点点波动会被放大很多倍。</p>
+<p>错在哪：拿请求数当内存压力的代理。它们之间隔着两个乘数。</p>
+</details>
+
+<details><summary>4. 你把 <code>block_size</code> 从 16 改成 1，理由是「利用率能到 100%」。这个改动在什么情况下真的划算，什么情况下会翻车？</summary>
+<p>利用率确实会到 100%，第 11 节那张表的第一行就是。省下来的是「每条序列平均半块」，块大小 16 时这是 8 个 token。</p>
+<p>代价在另外两列。块的个数变成 16 倍，本页那个分配器的耗时从 10.9 毫秒涨到 27.7 毫秒；块表从每条 128 个条目变成 2048 个。前者是 CPU 上的开销，会直接吃掉调度线程的时间；后者会让每一步要传给计算那一侧的索引表变大十六倍。</p>
+<p>什么时候划算：序列极短、条数极多，浪费的那半块占比很大的场景。什么时候翻车：序列长、并发高，此时省下的那点零头微不足道，而多出来的簿记开销落在每一步上。</p>
+<p>还有一件事明天会变得重要：块同时也是跨请求前缀复用的匹配单位，块越小，能对上的粒度越细，要做的匹配判断也越多。这一笔在本页的分配器里根本不存在，因为今天每条序列各存各的。</p>
+</details>
+
+<h2>板块 6 · 今日新词</h2>
+
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>KV cache / 键值缓存</td><td>KV cache</td><td>把每个 token 在每一层算出来的键和值存下来，后面每一步直接取用，不必重算</td></tr>
+<tr><td>查询头 / 键值头</td><td>query head / KV head</td><td>模型把 hidden 维度切成若干个头分别算注意力；键值头可以比查询头少，几个查询头共用一份</td></tr>
+<tr><td>每头维度</td><td>head_dim / head size</td><td>一个头有多少维；hidden 维度除以查询头个数</td></tr>
+<tr><td>分组查询注意力</td><td>GQA / grouped-query attention</td><td>让多个查询头共用一份键值，KV cache 的内存直接除以这个倍数</td></tr>
+<tr><td>内部碎片</td><td>internal fragmentation</td><td>已经划给某条请求、但它实际没用上的那部分内存</td></tr>
+<tr><td>外部碎片</td><td>external fragmentation</td><td>空闲总量够，但没有一段连续的空间够大</td></tr>
+<tr><td>紧凑</td><td>compaction</td><td>把已分配的内容挪到一起，腾出大片连续空间；代价是复制</td></tr>
+<tr><td>块</td><td>block</td><td>KV cache 的分配单位，固定装几个 token 的键和值</td></tr>
+<tr><td>块表</td><td>block table</td><td>一条序列的第几块在池子里的哪个位置，就是一个下标数组</td></tr>
+<tr><td>分页注意力</td><td>PagedAttention</td><td>把 KV cache 按固定大小的块分配、用块表串起来，不要求连续</td></tr>
+<tr><td>每块字节数</td><td>page_size_bytes</td><td>一块占多少字节 = 键值头个数 × 块大小 × (键维度 + 值维度) × 每个数的字节数</td></tr>
+<tr><td>空闲块队列</td><td>free block queue</td><td>还没被占用的块串成的链表，取块和还块都从这里走</td></tr>
+<tr><td>上下文长度上限</td><td>max_model_len</td><td>一条请求最多能长到多少个 token；它决定块表最宽有几个条目</td></tr>
+<tr><td>显存占用比例</td><td>gpu_memory_utilization</td><td>引擎按这个比例把显存划归自己，减掉权重之后剩下的给 KV cache</td></tr>
+</table>
+</div>
+
+<h2>板块 7 · 已学词表</h2>
+
+<p>Day 1 到今天引入过的全部术语，标注首次引入是哪一天。下一次遇到其中任何一个，都不会再重新定义。</p>
+
+<details><summary>展开全部 168 个词</summary>
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th class="n">引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td class="n">Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td class="n">Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td class="n">Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td class="n">Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td class="n">Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td class="n">Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td class="n">Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td class="n">Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td class="n">Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td class="n">Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td class="n">Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little's Law</td><td class="n">Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td class="n">Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td class="n">Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td class="n">Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td class="n">Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td class="n">Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td class="n">Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td class="n">Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td class="n">Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td class="n">Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td class="n">Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td class="n">Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td class="n">Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td class="n">Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td class="n">Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td class="n">Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td class="n">Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td class="n">Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td class="n">Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td class="n">Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td class="n">Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td class="n">Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td class="n">Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td class="n">Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td class="n">Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td class="n">Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td class="n">Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td class="n">Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td class="n">Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td class="n">Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td class="n">Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td class="n">Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td class="n">Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td class="n">Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td class="n">Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td class="n">Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td class="n">Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td class="n">Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td class="n">Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td class="n">Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td class="n">Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td class="n">Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td class="n">Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td class="n">Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td class="n">Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td class="n">Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td class="n">Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td class="n">Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td class="n">Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td class="n">Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td class="n">Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td class="n">Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td class="n">Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td class="n">Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td class="n">Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td class="n">Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td class="n">Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td class="n">Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td class="n">Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td class="n">Day 9</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td class="n">Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td class="n">Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td class="n">Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td class="n">Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td class="n">Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td class="n">Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td class="n">Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td class="n">Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td class="n">Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td class="n">Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td class="n">Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td class="n">Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td class="n">Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td class="n">Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td class="n">Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td class="n">Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td class="n">Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td class="n">Day 10</td></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td class="n">Day 11</td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td class="n">Day 11</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td class="n">Day 11</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td class="n">Day 11</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td class="n">Day 11</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td class="n">Day 11</td></tr>
+<tr><td>对等组</td><td>peer group</td><td class="n">Day 11</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount / MNT_DETACH</td><td class="n">Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td class="n">Day 11</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td class="n">Day 11</td></tr>
+<tr><td>叠加文件系统</td><td>overlayfs / overlay filesystem</td><td class="n">Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td>lowerdir / upperdir / workdir</td><td class="n">Day 12</td></tr>
+<tr><td>写时复制</td><td>copy-on-write / copy_up</td><td class="n">Day 12</td></tr>
+<tr><td>白障</td><td>whiteout</td><td class="n">Day 12</td></tr>
+<tr><td>只读根</td><td>read-only rootfs</td><td class="n">Day 12</td></tr>
+<tr><td>内存文件系统</td><td>tmpfs</td><td class="n">Day 12</td></tr>
+<tr><td>页缓存</td><td>page cache</td><td class="n">Day 12</td></tr>
+<tr><td>共享内存页</td><td>shmem</td><td class="n">Day 12</td></tr>
+<tr><td>索引节点</td><td>inode</td><td class="n">Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td>size= / nr_inodes=</td><td class="n">Day 12</td></tr>
+<tr><td>缓冲写</td><td>buffered write</td><td class="n">Day 12</td></tr>
+<tr><td>直写</td><td>direct I/O (O_DIRECT)</td><td class="n">Day 12</td></tr>
+<tr><td>回写</td><td>writeback</td><td class="n">Day 12</td></tr>
+<tr><td>块设备限速</td><td>blkio throttle / io.max</td><td class="n">Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td>major:minor</td><td class="n">Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td>veth pair</td><td class="n">Day 12</td></tr>
+<tr><td>源地址伪装</td><td>SNAT / MASQUERADE</td><td class="n">Day 12</td></tr>
+<tr><td>包过滤</td><td>packet filter / netfilter (iptables)</td><td class="n">Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td>DROP / REJECT</td><td class="n">Day 12</td></tr>
+<tr><td>出网白名单</td><td>egress allowlist</td><td class="n">Day 12</td></tr>
+<tr><td>能力边界集</td><td>capability bounding set</td><td class="n">Day 12</td></tr>
+<tr><td>遮罩</td><td>masking</td><td class="n">Day 12</td></tr>
+<tr><td>最小权限</td><td>least privilege</td><td class="n">Day 12</td></tr>
+<tr><td>开放容器倡议</td><td>OCI / Open Container Initiative</td><td class="n">Day 13</td></tr>
+<tr><td>运行时规范</td><td>runtime-spec</td><td class="n">Day 13</td></tr>
+<tr><td>镜像规范</td><td>image-spec</td><td class="n">Day 13</td></tr>
+<tr><td>分发规范</td><td>distribution-spec</td><td class="n">Day 13</td></tr>
+<tr><td>文件系统包</td><td>filesystem bundle</td><td class="n">Day 13</td></tr>
+<tr><td>运行时配置文件</td><td>config.json</td><td class="n">Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td>low-level runtime / runtime engine</td><td class="n">Day 13</td></tr>
+<tr><td>高层运行时</td><td>high-level runtime</td><td class="n">Day 13</td></tr>
+<tr><td>libcontainer</td><td>libcontainer</td><td class="n">Day 13</td></tr>
+<tr><td>初始化进程</td><td>runc init</td><td class="n">Day 13</td></tr>
+<tr><td>二进制自克隆</td><td>binary cloning / exeseal</td><td class="n">Day 13</td></tr>
+<tr><td>构造函数钩子</td><td>__attribute__((constructor))</td><td class="n">Day 13</td></tr>
+<tr><td>三段式创建</td><td>nsexec stage 0 / 1 / 2</td><td class="n">Day 13</td></tr>
+<tr><td>执行栅栏</td><td>exec fifo</td><td class="n">Day 13</td></tr>
+<tr><td>容器状态</td><td>creating / created / running / stopped</td><td class="n">Day 13</td></tr>
+<tr><td>生命周期钩子</td><td>lifecycle hooks</td><td class="n">Day 13</td></tr>
+<tr><td>垫片</td><td>shim</td><td class="n">Day 13</td></tr>
+<tr><td>ttRPC</td><td>ttRPC</td><td class="n">Day 13</td></tr>
+<tr><td>子收割者</td><td>subreaper / PR_SET_CHILD_SUBREAPER</td><td class="n">Day 13</td></tr>
+<tr><td>僵尸进程</td><td>zombie process</td><td class="n">Day 13</td></tr>
+<tr><td>容器运行时接口</td><td>CRI / Container Runtime Interface</td><td class="n">Day 13</td></tr>
+<tr><td>预热池</td><td>warm pool</td><td class="n">Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td>zygote / fork server</td><td class="n">Day 14</td></tr>
+<tr><td>懒加载</td><td>lazy loading / lazy pulling</td><td class="n">Day 14</td></tr>
+<tr><td>并发上限</td><td>concurrency limit</td><td class="n">Day 14</td></tr>
+<tr><td>许可</td><td>semaphore</td><td class="n">Day 14</td></tr>
+<tr><td>准入控制</td><td>admission control</td><td class="n">Day 14</td></tr>
+<tr><td>背压</td><td>backpressure</td><td class="n">Day 14</td></tr>
+<tr><td>泊松到达</td><td>Poisson arrivals</td><td class="n">Day 14</td></tr>
+<tr><td>宽限期</td><td>grace period</td><td class="n">Day 14</td></tr>
+<tr><td>请求路径</td><td>request path</td><td class="n">Day 14</td></tr>
+<tr><td>异步回收</td><td>deferred cleanup</td><td class="n">Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td>KV cache</td><td class="n">Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td>query head / KV head</td><td class="n">Day 15</td></tr>
+<tr><td>每头维度</td><td>head_dim / head size</td><td class="n">Day 15</td></tr>
+<tr><td>分组查询注意力</td><td>GQA / grouped-query attention</td><td class="n">Day 15</td></tr>
+<tr><td>内部碎片</td><td>internal fragmentation</td><td class="n">Day 15</td></tr>
+<tr><td>外部碎片</td><td>external fragmentation</td><td class="n">Day 15</td></tr>
+<tr><td>紧凑</td><td>compaction</td><td class="n">Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td>block</td><td class="n">Day 15</td></tr>
+<tr><td>块表</td><td>block table</td><td class="n">Day 15</td></tr>
+<tr><td>分页注意力</td><td>PagedAttention</td><td class="n">Day 15</td></tr>
+<tr><td>每块字节数</td><td>page_size_bytes</td><td class="n">Day 15</td></tr>
+<tr><td>空闲块队列</td><td>free block queue</td><td class="n">Day 15</td></tr>
+<tr><td>上下文长度上限</td><td>max_model_len</td><td class="n">Day 15</td></tr>
+<tr><td>显存占用比例</td><td>gpu_memory_utilization</td><td class="n">Day 15</td></tr>
+</table>
+</div>
+</details>
+
+<h2>板块 8 · 专项深挖</h2>
+
+<p>下面几段可以直接粘给 Claude，每一段都是今天碰到了但没有展开的一块。</p>
+
+<div class="card">
+<p>我已经理解了 KV cache 的内存公式（层数 × 键值头 × 每头维度 × 数据类型宽度 × 2）、PagedAttention 的块和块表、内部碎片和外部碎片的区别，也知道 vLLM 默认块大小是 16、抢占时默认重算。现在我想深挖 KV cache 的压缩：8 位和 4 位量化的 KV 各自怎么存、量化和反量化发生在计算的哪一步、对 attention 的数值精度影响体现在哪里，以及为什么有些实现要为每个头单独存缩放因子。请给我一份对照说明，重点讲工程上的取舍（内存省多少、计算多花多少、精度掉在哪种任务上最明显），不要推导数学。最后给我两个可以在纯 CPU 上跑的小实验，验证「量化省的内存」和「反量化多花的时间」这两个量。</p>
+</div>
+
+<div class="card">
+<p>我理解了单机上 KV cache 怎么分配和回收。现在我想搞清楚「把 KV cache 放到别的地方」这条线：GPU 显存放不下时往 CPU 内存放、CPU 内存也放不下时往 SSD 放，这套多级缓存在工业实现里是什么样的。请以 LMCache 和 Mooncake 为例，讲清楚每一级的容量和带宽量级、搬运的触发条件、以及「什么时候搬比重算划算」这个判断在多级结构里怎么做。我要的是架构层面的说明加上关键的数量级，不需要 API 用法。</p>
+</div>
+
+<div class="card">
+<p>我用一个自己写的双向链表模拟了 KV cache 的空闲块管理，量出块大小从 1 涨到 16 时分配器自身耗时从 27.7 毫秒降到 10.9 毫秒。现在我想读 vLLM 真正的实现：<code>vllm/v1/core/block_pool.py</code> 和 <code>vllm/v1/core/kv_cache_utils.py</code>。请带我逐段读 <code>BlockPool</code> 和 <code>FreeKVCacheBlockQueue</code>，说清楚分配一块和释放一块各自碰了哪些数据结构、引用计数在什么时候增减、以及为什么这个队列要自己串链表而不用 deque。每个论断请附文件路径和行号。</p>
+</div>
+
+<h2>板块 9 · 延伸材料</h2>
+
+<ul>
+<li><a href="https://arxiv.org/abs/2309.06180">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>（vLLM 的原始论文）。今天这一页的第二部分基本就是它第 3 到 4 节的实验版。<span class="small">难度中等，前四节读得懂就够了，后面的评测部分可以跳。</span></li>
+<li>vLLM 仓库里的 <code>docs/design/paged_attention.md</code>。开头就标注了它描述的是论文时期的实现、和今天的代码已经不一样，但块的内存排布那一段仍然是最清楚的一手说明。<span class="small">难度偏高，涉及 CUDA 的线程组织，只看「Inputs」和「Concepts」两节即可。</span></li>
+<li>vLLM 仓库里的 <code>docs/configuration/optimization.md</code> 的 Preemption 一节。它给了抢占的四条缓解办法，以及 V1 默认用重算的说法。<span class="small">难度低，十分钟读完，但值得对着第 14 节那张旋钮表读第二遍。</span></li>
+<li>《Operating Systems: Three Easy Pieces》（Remzi H. Arpaci-Dusseau、Andrea C. Arpaci-Dusseau）里讲分页的那几章。第 7 节那个「分页是为了消灭外部碎片」的来龙去脉在那里有完整版，包括「按段分配」这个更早的办法为什么没能成。<span class="small">难度低，写得非常好读，一个晚上能读完分页那一部分。</span></li>
+<li>vLLM 仓库的 <code>vllm/v1/kv_cache_interface.py</code>。今天引用的每块字节数就在这个文件里，而它周围那些属性（<code>tokens_per_state</code>、<code>page_size_padded</code>）说明了不同的注意力变体怎么共用同一套块管理。<span class="small">难度偏高，但只读 <code>AttentionSpec</code> 和 <code>FullAttentionSpec</code> 两个类就有收获。</span></li>
+</ul>
+
+<h2>板块 10 · 今日五句话</h2>
+
+<div class="card five">
+<span class="tag">合上这一页，用自己的话回答</span>
+<p>1. 一条 2048 个 token 的请求，它的 KV cache 占多少字节？把式子里每一项是什么说清楚。</p>
+<div class="write"></div>
+<p>2. 「整块预留」和「按需连续增长」各自浪费在哪里？这两种浪费为什么不能同时消灭？</p>
+<div class="write"></div>
+<p>3. 块表带来的间接寻址，在真实的块大小上要多花多少时间？为什么是这个量级？</p>
+<div class="write"></div>
+<p>4. 决定「被踢掉的请求该搬走还是重算」的是哪四个量？为什么序列多长不在其中？</p>
+<div class="write"></div>
+<p>5. 一步 decode 要读的字节里，哪一项是所有请求分摊的、哪一项不是？这对批量该开多大意味着什么？</p>
+<div class="write"></div>
+</div>
+
+<h4>逐句自查标准</h4>
+
+<ul>
+<li>第 1 句如果只写出一个数字，等于没答。要点在那个式子有五项，而且能说出为什么开头有个 2（键和值各一份），以及为什么是键值头个数而不是查询头个数。</li>
+<li>第 2 句如果写成「一个浪费多一个浪费少」，太笼统。正确的说法是它们是同一个约束的两面：只要坚持「一条序列的内存必须连续」，你就只能在划太多和找不到连续空间之间选一个。分页把这个约束本身去掉了。</li>
+<li>第 3 句如果写成「跳着取当然更慢」，只答对了方向。今天的测量是：一段 64 KiB 时差值落在噪声里。原因必须说到「一次跳完之后连着读多少字节」，只说「块表有开销」不算。</li>
+<li>第 4 句如果漏掉「算力」或「搬运速率」中的任何一个，这个式子就不成立了——它恰恰是靠这两个机器属性的比值翻方向的。至于为什么没有序列长度：两边都正比于它，相除时约掉了。</li>
+<li>第 5 句如果只写「权重是常数」，只说了一半。关键在后半句：每多凑一个用户就多一份 KV 要读，凑人能摊薄权重、摊不薄 KV，所以长上下文下批量的收益会自己封顶。</li>
+</ul>
+
+<h2>板块 11 · 明日预告</h2>
+
+<p>今天从头到尾有一个假设没被质疑过：每条序列的 KV 是它自己的，跟别人无关。所以三种分配方式比的都是「怎么给一个人分地方」。</p>
+
+<p>但真实流量里，很多请求的开头是一模一样的——同一个系统提示词、同一份文档、同一段工具说明，agent 的多轮对话更是每一轮都带着前面所有轮。这些一模一样的前缀，算出来的键和值也一模一样。今天的做法是各存各的，存了很多份。</p>
+
+<p>明天 Day 16 把这一份共用起来：怎么判断两条请求的前缀相同，判断的粒度为什么正好是今天的块，命中率由什么决定，以及为什么这件事在 agent 场景下的收益比在聊天场景大得多。自检第 4 题末尾压着一句没展开的话：块越小，能匹配上的前缀粒度越细，命中判断的次数也越多。明天把它摊开。</p>
+
+<footer>
+<p>AI Infra · Day 15 / 28 · 2026-09-01 · 阶段二 · 推理服务与 KV Cache</p>
+<p>实验条件：2 核 Intel Xeon @ 2.80 GHz，L1d 64 KiB、L2 2 MiB、L3 33 MiB，7.84 GiB 内存，页大小 4096 字节；Linux 6.18.44；Python 3.11.15 + numpy 2.4.4（scipy-openblas 0.3.31），全程 <code>OPENBLAS_NUM_THREADS=1</code>。本页的模型设定为 8 层、hidden 4096、32 个查询头、8 个键值头、每头维度 128、KV 用 float32；权重骨架是 8 层 4096×4096 的 float32 矩阵，合计 512 MiB，与 Day 8、Day 9 相同。</p>
+<p>源码引用取自 vLLM 仓库 commit 91752b7。文中出现的所有行号以该提交为准。</p>
+</footer>
+
+</div>
+</body>
+</html>
