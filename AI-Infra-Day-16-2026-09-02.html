@@ -1,0 +1,1319 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 16</title>
+<style>
+:root{
+  --bg:#faf6ef; --fg:#2b2622; --muted:#6d635a; --line:#e2d8c9; --card:#fffdf9;
+  --code-bg:#2c2925; --code-fg:#eae2d6; --accent:#a8623a; --accent2:#4a6b57;
+  --warn:#8a6a2f; --tint:#f3ece0; --tint2:#eef2ec; --tint3:#f6eee6; --tint4:#eceef4;
+  --accent4:#4c5a83;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#191714; --fg:#e6ded2; --muted:#a89c8c; --line:#3a352e; --card:#211e1a;
+    --code-bg:#12100e; --code-fg:#dcd4c7; --accent:#d99268; --accent2:#8fbfa0;
+    --warn:#d4ab5e; --tint:#262119; --tint2:#1e241f; --tint3:#2a211a; --tint4:#1d2029;
+    --accent4:#93a3d4;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#191714; --fg:#e6ded2; --muted:#a89c8c; --line:#3a352e; --card:#211e1a;
+  --code-bg:#12100e; --code-fg:#dcd4c7; --accent:#d99268; --accent2:#8fbfa0;
+  --warn:#d4ab5e; --tint:#262119; --tint2:#1e241f; --tint3:#2a211a; --tint4:#1d2029;
+  --accent4:#93a3d4;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px;line-height:1.78;overflow-x:hidden}
+.bar{position:sticky;top:0;z-index:50;background:var(--card);border-bottom:1px solid var(--line);
+  padding:9px 16px;display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;font-size:13px;color:var(--muted)}
+.bar b{color:var(--accent);font-size:14px;letter-spacing:.02em}
+.wrap{max-width:820px;margin:0 auto;padding:0 18px 90px}
+h1{font-size:1.62rem;line-height:1.42;margin:1.6rem 0 .3rem;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:.95rem;margin:0 0 2rem;line-height:1.7}
+h2{font-size:1.24rem;margin:3.2rem 0 .2rem;padding-bottom:.42rem;border-bottom:2px solid var(--line)}
+h3{font-size:1.09rem;margin:2.5rem 0 .5rem;color:var(--accent)}
+h4{font-size:1rem;margin:1.9rem 0 .4rem}
+p{margin:.85rem 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--line)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.87em;background:var(--tint);padding:.08em .34em;border-radius:4px;overflow-wrap:anywhere}
+pre{background:var(--code-bg);color:var(--code-fg);padding:15px 16px;border-radius:9px;
+  overflow-x:auto;line-height:1.62;font-size:13.2px;margin:1rem 0}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;overflow-wrap:normal;white-space:pre}
+.term{background:var(--tint3);border-bottom:1.5px solid var(--accent);padding:.02em .2em;border-radius:3px;font-weight:600}
+.scroll{overflow-x:auto;margin:1.15rem 0;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14.2px;min-width:min-content}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--tint);font-weight:650;white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.card{border-left:4px solid var(--accent);background:var(--tint3);padding:.9rem 1.1rem;
+  border-radius:0 9px 9px 0;margin:1.5rem 0}
+.card.recall{border-left-color:var(--accent2);background:var(--tint2)}
+.card.pred{border-left-color:var(--accent4);background:var(--tint4)}
+.card.five{border-left-color:var(--warn);background:var(--tint)}
+.card.key{border-left-color:var(--accent);background:var(--tint3)}
+.card>h4:first-child,.card>p:first-child{margin-top:0}
+.card .tag{font-size:12px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.lead{font-size:1.06rem;color:var(--accent);font-weight:600;margin:1.3rem 0 .5rem}
+.map{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:.7rem 1.1rem;margin:1.3rem 0}
+.map ol{margin:.4rem 0;padding-left:1.3rem}
+.map li{margin:.3rem 0}
+details{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:.55rem .95rem;margin:.9rem 0}
+details[open]{padding-bottom:.9rem}
+summary{cursor:pointer;font-weight:600;color:var(--accent2);font-size:.95rem}
+figure{margin:1.4rem 0}
+figcaption{font-size:13px;color:var(--muted);margin-top:.45rem;line-height:1.6}
+svg{display:block;max-width:100%;height:auto;color:var(--fg)}
+.write{border:1px dashed var(--line);border-radius:8px;min-height:70px;margin:.7rem 0;
+  background:repeating-linear-gradient(var(--card),var(--card) 33px,var(--line) 33px,var(--line) 34px)}
+ul,ol{padding-left:1.35rem}
+li{margin:.34rem 0}
+hr{border:none;border-top:1px solid var(--line);margin:2.6rem 0}
+footer{border-top:1px solid var(--line);margin-top:3.5rem;padding-top:1.1rem;font-size:13.5px;color:var(--muted)}
+.small{font-size:13.5px;color:var(--muted)}
+.lbl{font-weight:650}
+.qn{font-weight:650;color:var(--accent4)}
+</style>
+</head>
+<body>
+<div class="bar"><b>AI Infra&nbsp;&nbsp;Day 16 / 28</b><span>阶段二 · 推理服务与 KV Cache</span><span>2026-09-02</span></div>
+<div class="wrap">
+
+<h1>四十个任务同时推进，缓存要开十六倍大才追得上一个一个做</h1>
+<p class="sub">同一段前缀，算过一次就不必再算 · 而"算过"这件事能不能兑现，取决于两次用到它之间隔了多少别人的 token</p>
+<h2>板块 0 · 温故 · 闭卷</h2>
+<p>三道题，来自昨天、三天前、七天前。合上前面的页面，先在心里答完再展开。</p>
+
+<div class="card recall">
+<span class="tag">第 1 题 · 来自 Day 15</span>
+<p>Day 15 算出来的结论是：在那台机器上，把一条被踢掉的序列搬到别处存着，比让它回来重算快约 196 倍。可 vLLM V1 的默认抢占模式偏偏是重算。这两件事矛盾吗？如果不矛盾，是式子里的哪一项翻了方向？</p>
+<details><summary>看答案</summary>
+<p>不矛盾。那个比值是「每 token 的 KV 字节数 × 算力」比上「参数量 × 搬运速率」，四项里有两项是机器的属性。</p>
+<p>算力和搬运速率在 CPU 和 GPU 上不是按同一个比例变的。GPU 的算力比那台两核机器高三四个数量级，而它对外搬东西走的不是内存条，是一条带宽低得多的外部总线。分子涨了几千倍，分母只涨了几倍，比值就从「搬远比重算便宜」翻到了另一边。</p>
+<p>还有一项不在式子里但真实存在：重算可以和别人的批次拼进同一次前向，搬运的那些字节没人能替它分摊。</p>
+<p>接今天：今天要把这个式子从「两条路」扩成「一整级阶梯」——显存装不下往内存放，内存装不下往盘上放，每一级都要拿同一个式子问一遍"从这儿取回来，还是干脆重算"。</p>
+</details>
+</div>
+
+<div class="card recall">
+<span class="tag">第 2 题 · 来自 Day 13</span>
+<p>containerd 不直接拉起 runc，中间隔着一个常驻的 shim 进程。看起来是多了一层。如果把它去掉，让 containerd 自己 fork-exec runc，具体会坏在哪两件事上？</p>
+<details><summary>看答案</summary>
+<p>坏在 containerd 自己重启这件事上。runc 创建完容器就退出了，容器的 1 号进程会被过继给上面某个进程。如果那个进程是 containerd 本人，那 containerd 一升级、一重启，所有正在跑的容器的标准输入输出就断了，退出码也没人接。</p>
+<p>有了常驻的 shim，容器的父进程是 shim 不是 containerd。containerd 可以随时重启，容器照常跑，重启完再通过套接字连回每个 shim。</p>
+<p>第二件事是收尸。shim 启动时把自己设成 subreaper，于是容器里所有没人认领的孤儿进程都归它管，它负责等待并回收，否则僵尸进程会一直堆着。</p>
+<p>接今天：今天讲的东西也是一层"看起来多余"的间接——两条请求之间凭什么知道对方算过同样的东西，靠的就是中间这一层簿记。</p>
+</details>
+</div>
+
+<div class="card recall">
+<span class="tag">第 3 题 · 来自 Day 9</span>
+<p>你把 <code>max_num_batched_tokens</code> 从 8192 调到 512。现在来了一条 prompt 长 8000 个 token 的请求，而且这台机器上此刻没有别的请求。这条请求的首 token 延迟会变好还是变坏？为什么？</p>
+<details><summary>看答案</summary>
+<p>明显变坏。这个参数是调度器每一步手上的 token 预算，一条 8000 token 的 prompt 在预算 512 之下会被自动切成 16 步才算完——分块预填充不是一个额外开关，它就是预算的自然结果。</p>
+<p>切成 16 步之后，那 512 MiB 权重要被完整读 16 遍，而按 Day 8 的结论，一次前向的成本主要就是读这一遍权重。所以总的算完时间会涨好几倍，而首 token 要等到最后一块算完才出得来。</p>
+<p>Day 9 的原话是：分块预填充单独用会让总账变差，它必须和「把 prompt 和 decode 挤进同一步」配套才是净收益。此刻机器上没有别人，配套的那一半不存在，剩下的就只有代价。</p>
+<p>接今天：今天要动的是同一个位置的另一个旋钮——不是把这 8000 个 token 切开分几步算，而是让其中一大截根本不用算。</p>
+</details>
+</div>
+
+<h2>板块 1 · 今日概览</h2>
+<div class="scroll">
+<table>
+<tr><th>项目</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 16 / 28 · 阶段二第四天（推理服务与 KV Cache）</td></tr>
+<tr><td>今日主题</td><td>两条请求的开头一样，中间结果就能共用：机器怎么认出「这一段我算过」、认出来能省多少、认不出来是因为什么，以及显存放不下时这份共用的东西往哪一级放</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+<p style="margin:.2rem 0 .6rem"><span class="lbl">请求该发给哪台机器。</span>今天量出来的东西会强烈暗示"同一个会话最好一直落在同一台机器上"，但这属于多机之间怎么分派流量，要和负载均衡、机器故障、扩缩容一起谈才谈得清楚，Day 25 整天做这件事。今天只把它的动机量出来。</p>
+<p style="margin:.2rem 0 .6rem">预填充和解码拆到两组机器上跑（Mooncake 论文的另一半主张）。它和今天的多级缓存共用一套基础设施，但那是一个部署形态问题，不是缓存机制问题，页尾的专项深挖给了一段题目。</p>
+<p style="margin:.2rem 0 0">注意力核本身怎么写。今天全程不碰算子，块里的字节被谁读、怎么读，是明确排除在这 28 天之外的题目。</p>
+</td></tr>
+</table>
+</div>
+
+<p>「今天不讲」那三条里，第一条是被今天的数据直接指向、却要等九天才展开的一条。看完第 10 节就明白它为什么非要单独占一天。</p>
+
+<h4>今天结束后你应该能做到这三件事</h4>
+<ol>
+<li>拿到一条真实的 agent 请求轨迹，估出它的前缀命中率大概是多少，并说清楚这个数的分子分母各是什么。</li>
+<li>面对"缓存命中率只有三成，是不是缓存开小了"这个问题，能分辨出它到底是容量问题、顺序问题，还是块大小问题，并说出各自该动哪一个旋钮。</li>
+<li>面对"命中率提到 90% 了，为什么用户没觉得快"，能当场写出省下来的那部分占端到端时间的比例，并指出它被什么稀释掉了。</li>
+</ol>
+
+<div class="map">
+<p style="margin:.5rem 0"><span class="lbl">今天这一页怎么走</span></p>
+<ol>
+<li>第一部分回答「凭什么能共用」：把"开头一样，中间结果就一样"这句话验到逐个字节。</li>
+<li>第二部分回答「机器怎么认出来」：两种主流实现，一种靠 hash 链，一种靠树。</li>
+<li>第三部分回答「能省多少、被什么挡住」：三个数据摆到一起，其中一个和直觉相反。</li>
+<li>第四部分回答「放不下往哪儿放」：把 Day 15 那个二选一的式子，扩成一级一级的阶梯。</li>
+</ol>
+</div>
+<h2>板块 2 · 核心讲解</h2>
+
+<h3>第一部分 · 同一段话，不必算两遍</h3>
+
+<h4>1. 两条请求的开头一模一样，中间的东西也会一模一样吗</h4>
+
+<p>先看一天里最常见的两种流量。</p>
+
+<p>一种是同一个系统提示词。你的服务给每条请求都在最前面拼上同一段话——角色设定、输出格式要求、几十个工具的说明书。一千个用户问一千个不同的问题，但这一千条请求的开头几百个 token 完全一致。</p>
+
+<p>另一种是 agent 的多轮。第一轮你把任务描述发过去，模型回一段话并要求调用某个工具；你把工具的返回拼在后面，连同前面所有内容一起再发过去，这是第二轮；第三轮又在第二轮的全部内容后面接一截。<b>每一轮的输入，都是上一轮输入的一个扩展。</b></p>
+
+<p>Day 15 整天都在算"一条序列的 KV 要占多少字节"，而算法从头到尾假设这份 KV 是它自己的。上面这两种流量把这个假设摊在了桌面上：如果一千条请求的前五百个 token 一样，服务器现在存的是一千份内容相同的东西，而且每一条进来时都把这五百个 token 重新过了一遍网络。</p>
+
+<p>加一层缓存是最顺手的一步，你在别的系统里这么干过很多次：把整条 prompt 当 key，把算好的东西当 value，进来先查一下。方向是对的，可按整条 prompt 做 key 几乎永远查不中——一千个用户的问题各不相同，整条 prompt 一千个样。要有用，缓存的粒度必须比"整条请求"细。</p>
+
+<p>细到什么程度、凭什么可以细、细了之后怎么查——这三个问题是今天的全部内容。但在拆它们之前，得先确认一件更基本的事：<b>开头一样，算出来的中间结果真的一样吗。</b>这件事听起来显然，可"显然"在性能工程里不值钱，它必须被验到字节。</p>
+
+<h4>2. 今天的实验台</h4>
+
+<p>今天没有服务，也没有压测器。六个互不通信的小程序，每个量一件事。先把它们摆出来，后面每张表都能对回到其中一个。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 780 400" role="img" aria-label="六个程序的结构图">
+<style>
+.bx{fill:none;stroke:currentColor;stroke-width:1.3}
+.bx2{fill:none;stroke:currentColor;stroke-width:1.3;stroke-dasharray:5 3}
+.tt{font:600 12.5px sans-serif;fill:currentColor}
+.td{font:11.5px sans-serif;fill:currentColor;opacity:.78}
+.tl{font:italic 11px sans-serif;fill:currentColor;opacity:.6}
+.ar{stroke:currentColor;stroke-width:1.1;fill:none;opacity:.55}
+</style>
+<rect class="bx2" x="6" y="46" width="176" height="300" rx="8"/>
+<text class="tt" x="18" y="70">共用的设定（锁死）</text>
+<text class="td" x="18" y="94">模型形状：8 层</text>
+<text class="td" x="18" y="112">hidden 4096 · 32 查询头</text>
+<text class="td" x="18" y="130">8 个键值头 · 每头 128 维</text>
+<text class="td" x="18" y="148">KV 用 float32</text>
+<text class="td" x="18" y="176">负载：三种</text>
+<text class="td" x="18" y="194">① 独立请求 200 条</text>
+<text class="td" x="18" y="212">② 共享系统提示词 200 条</text>
+<text class="td" x="18" y="230">③ agent 多轮 40 任务 × 6 轮</text>
+<text class="td" x="18" y="258">块大小默认 16 个 token</text>
+<text class="td" x="18" y="276">词表 32000，token 是随机数</text>
+<text class="tl" x="18" y="312">这一列不随小节变化，</text>
+<text class="tl" x="18" y="328">变的只有右边各自的旋钮</text>
+
+<text class="tt" x="212" y="30">六个程序，互不通信，各自打印自己的数</text>
+
+<rect class="bx" x="212" y="46" width="176" height="92" rx="7"/>
+<text class="tt" x="224" y="68">P1 · 前缀是否等价</text>
+<text class="td" x="224" y="88">两层因果注意力</text>
+<text class="td" x="224" y="106">比两条序列的 K 和 V</text>
+<text class="td" x="224" y="124">打印：最大绝对差</text>
+
+<rect class="bx" x="400" y="46" width="176" height="92" rx="7"/>
+<text class="tt" x="412" y="68">P2 · 块 hash 链</text>
+<text class="td" x="412" y="88">照 vLLM 的算法串 hash</text>
+<text class="td" x="412" y="106">数从头连续相同几块</text>
+<text class="td" x="412" y="124">打印：块数、每块微秒</text>
+
+<rect class="bx" x="588" y="46" width="176" height="92" rx="7"/>
+<text class="tt" x="600" y="68">P3 · 命中率模拟器</text>
+<text class="td" x="600" y="88">hash 表 + LRU 淘汰</text>
+<text class="td" x="600" y="106">重放三种负载</text>
+<text class="td" x="600" y="124">打印：命中 token 数</text>
+
+<rect class="bx" x="212" y="158" width="176" height="92" rx="7"/>
+<text class="tt" x="224" y="180">P4 · 单会话轨迹</text>
+<text class="td" x="224" y="200">用 P3 的缓存，只跑</text>
+<text class="td" x="224" y="218">一个 agent 会话六轮</text>
+<text class="td" x="224" y="236">打印：逐轮的块账</text>
+
+<rect class="bx" x="400" y="158" width="176" height="92" rx="7"/>
+<text class="tt" x="412" y="180">P5 · 前向耗时</text>
+<text class="td" x="412" y="200">8 层 4096×4096 权重</text>
+<text class="td" x="412" y="218">扫一次喂几列</text>
+<text class="td" x="412" y="236">打印：中位与 P10~P90</text>
+
+<rect class="bx" x="588" y="158" width="176" height="92" rx="7"/>
+<text class="tt" x="600" y="180">P7 · 各级搬运速率</text>
+<text class="td" x="600" y="200">内存拷贝 / 磁盘直读</text>
+<text class="td" x="600" y="218">和 P5 同进程量前向</text>
+<text class="td" x="600" y="236">打印：GB/s、微秒/token</text>
+
+<line class="ar" x1="182" y1="196" x2="212" y2="196"/>
+<line class="ar" x1="182" y1="92" x2="212" y2="92"/>
+<line class="ar" x1="182" y1="150" x2="600" y2="150" stroke-dasharray="3 4"/>
+
+<rect class="bx2" x="212" y="276" width="552" height="70" rx="7"/>
+<text class="tt" x="226" y="300">没有的东西</text>
+<text class="td" x="226" y="322">没有 GPU、没有分词器、没有真文本、没有并发、没有网络、没有注意力核。</text>
+<text class="td" x="226" y="338">P3 和 P4 只做簿记：它们数块，不搬字节，也不算一次矩阵乘法。</text>
+</svg>
+</div>
+<figcaption>左边一列是三部分共用的设定，右边六个盒子各自独立跑、各自打印。虚线连到 P7 表示它和 P5 用同一套权重骨架，好让两边的耗时可以互相代入。</figcaption>
+</figure>
+
+<h4>2.1 一条"请求"里到底有什么</h4>
+
+<p>P3 和 P4 里的一条请求是三样东西：会话号、prompt 的 token 列表、这一轮生成出来的 token 列表。没有文字，token 就是 0 到 31999 之间的整数。</p>
+
+<pre><code>("t0", [8134, 291, 30028, ... 共 822 个], [4471, 19022, ... 共 108 个])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        这一轮送进去要算的                   这一轮模型吐出来的</code></pre>
+
+<p>为什么生成的那一截也要记下来：下一轮的 prompt 会把它原样包在里面。要是模拟器在存缓存的时候用别的东西顶替这一截，下一轮就会在这里断掉，命中率会被系统性地少算。</p>
+
+<p>跑一次就是一条命令，输出是一张表：</p>
+
+<pre><code>$ python3 p4_trace.py
+会话 t0，块大小 16，缓存容量不设限（524288 个 token 位）
+  轮   prompt 长度     满块数     命中块   命中token   要算token     命中率 ...
+   1         822      51       0         0       822    0.0% ...</code></pre>
+
+<h4>2.2 哪些是真的，哪些是假的</h4>
+
+<p>下面这张表划定今天的数字能撑住哪些结论。写着"没有"的那几行，今天一律不下结论。</p>
+
+<div class="scroll">
+<table>
+<tr><th>这一块</th><th>真的还是假的</th></tr>
+<tr><td>"前缀相同则 K、V 相同"这条性质</td><td>真的。P1 用一个两层的因果注意力骨架实际算了一遍，比的是每一层每一个位置的原始数值。</td></tr>
+<tr><td>块 hash 链的算法</td><td>真的，照 vLLM 的做法：父 hash + 本块 token 一起喂进 sha256，且只对装满的块算。hash 的耗时也是真跑出来的。</td></tr>
+<tr><td>token 本身</td><td>假的。没有分词器、没有真文本，长度是随机数。所以今天不下任何关于具体语料、中英文、某个模型的结论。</td></tr>
+<tr><td>三种负载的形状</td><td>形状是照真实用法搭的（同一个系统提示词、每轮往后接一截），但每一轮多长是随机数，不是从真实日志里回放的。所以命中率的<em>量级</em>可信，某一位小数不可信。</td></tr>
+<tr><td>并发与抢占</td><td>没有。P3 一次只重放一条请求，跑完才轮到下一条。真实服务里正在跑的序列的块是被占住不能淘汰的，这一层今天完全没模拟。所以今天不下任何关于并发数、排队、抢占的结论。</td></tr>
+<tr><td>注意力的计算</td><td>没有。P5 量的是 8 层 4096×4096 矩阵乘法这套骨架，和 Day 8、Day 9、Day 15 是同一副。它不含注意力，所以它给出的是"算这么多 token 至少要多久"的下限。</td></tr>
+<tr><td>GPU、显存、外部总线</td><td>完全没有。这台机器只有两个 CPU 核和内存条。第四部分那张阶梯表在这台机器上的绝对值不能搬到 GPU 上，那一节给的是式子和读法。</td></tr>
+<tr><td>多机</td><td>没有。所有测量都在一台机器一个进程里。所以今天不下任何关于路由、负载均衡、跨机共享的结论。</td></tr>
+</table>
+</div>
+<p>倒数第四行是今天最大的一处简化，要单独记一笔：真实引擎里正在跑的请求，它的块被引用计数占着，淘汰不掉。缺了这一层，今天算出来的命中率相当于没有别人跟你抢缓存时的理想值。</p>
+<h4>2.3 跟着一个会话走一遍</h4>
+
+<p>下面是 P4 打出来的一个 agent 会话的六轮。它怎么认出"这一段算过"，是第二部分的题目；这里先只核对账目对不对。</p>
+
+<p>每一行你都能自己验：满块数等于 prompt 长度整除 16；命中 token 等于命中块乘 16；要算的 token 等于 prompt 长度减去命中 token。还有一条跨行的验算——某一行最后那个"跑完缓存里几块"，正好等于下一行的"命中块"。</p>
+
+<div class="scroll">
+<table>
+<tr><th>轮</th><th class="n">prompt 长度</th><th class="n">满块数</th><th class="n">命中块</th><th class="n">命中 token</th><th class="n">要算的 token</th><th class="n">命中率</th><th class="n">本轮生成</th><th class="n">跑完缓存里几块</th></tr>
+<tr><td>1</td><td class="n">822</td><td class="n">51</td><td class="n">0</td><td class="n">0</td><td class="n">822</td><td class="n">0.0%</td><td class="n">108</td><td class="n">58</td></tr>
+<tr><td>2</td><td class="n">1250</td><td class="n">78</td><td class="n">58</td><td class="n">928</td><td class="n">322</td><td class="n">74.2%</td><td class="n">120</td><td class="n">85</td></tr>
+<tr><td>3</td><td class="n">1882</td><td class="n">117</td><td class="n">85</td><td class="n">1360</td><td class="n">522</td><td class="n">72.3%</td><td class="n">122</td><td class="n">125</td></tr>
+<tr><td>4</td><td class="n">2336</td><td class="n">146</td><td class="n">125</td><td class="n">2000</td><td class="n">336</td><td class="n">85.6%</td><td class="n">159</td><td class="n">155</td></tr>
+<tr><td>5</td><td class="n">2781</td><td class="n">173</td><td class="n">155</td><td class="n">2480</td><td class="n">301</td><td class="n">89.2%</td><td class="n">133</td><td class="n">182</td></tr>
+<tr><td>6</td><td class="n">3078</td><td class="n">192</td><td class="n">182</td><td class="n">2912</td><td class="n">166</td><td class="n">94.6%</td><td class="n">183</td><td class="n">203</td></tr>
+</table>
+</div>
+
+<p>拿第二行做一遍完整的加法。第一轮送进去 822 个 token、吐出来 108 个，跑完时这个会话手上有 930 个 token，930 除以 16 等于 58 余 2，所以缓存里躺着 58 个装满的块。第二轮的 prompt 是 1250 个 token——就是那 930 个，加上工具返回的 320 个。它的前 58 块和缓存里那 58 块完全一样，于是 58 × 16 = 928 个 token 不用算，剩下 1250 − 928 = 322 个要算。</p>
+
+<p>再看"要算的 token"那一列：822、322、522、336、301、166。第一轮之后，每一轮真正要算的就是"这一轮比上一轮多出来的那一截"，跟上下文已经长到多少个 token 没关系。而"命中率"那一列一路往上爬到 94.6%，也不是因为缓存变聪明了，是因为分母（整条上下文）在涨、分子的补集（新增那一截）不涨。</p>
+
+<h4>2.4 旋钮和它们的来历</h4>
+
+<div class="scroll">
+<table>
+<tr><th>旋钮</th><th>取值</th><th>这个值是怎么定出来的</th><th>哪一节动它</th></tr>
+<tr><td>块大小</td><td>16 个 token</td><td>vLLM 的默认值，Day 15 扫过它的两端并解释了默认值为什么落在这儿</td><td>第 11 节扫 1 到 256</td></tr>
+<tr><td>缓存容量</td><td>2048 ~ 524288 个 token 位</td><td>下界取 2048：agent 那一批最长的一条上下文是 3695 个 token，2048 意味着连一条都装不满，是"几乎没有缓存"这一端。上界取 524288：三种负载各自会产生的全部不同 token 都远少于它，装得下一切，是"缓存无限大"那一端</td><td>第 10 节</td></tr>
+<tr><td>系统提示词长度</td><td>613 个 token</td><td>一段带角色设定和几十个工具说明的提示词的量级。取 613 而不是 600 或 640 是故意的：它不是任何一个候选块大小的整数倍，第 11 节要用到这一点</td><td>锁死</td></tr>
+<tr><td>agent 的轮数</td><td>每个任务 6 轮</td><td>够长到能看出命中率随轮次爬升的走势，又不至于让单个会话的上下文超过 4096</td><td>锁死</td></tr>
+<tr><td>每轮模型生成多少</td><td>96 ~ 192 个 token</td><td>一次工具调用的量级：函数名加几个参数，不是一段长回答。第 12 节会说明这个长度为什么恰恰是 agent 场景收益大的原因</td><td>锁死</td></tr>
+<tr><td>每轮工具返回多少</td><td>128 ~ 512 个 token</td><td>一次文件读取、一次搜索结果的量级，比模型自己吐的长</td><td>锁死</td></tr>
+<tr><td>任务数 / 请求条数</td><td>40 个任务 · 每种负载 200 条</td><td>让"全部任务的上下文之和"（12.7 万）落在缓存容量扫描区间的中段，好看清曲线在哪儿转弯</td><td>锁死</td></tr>
+<tr><td>hash 算法</td><td>sha256</td><td>vLLM 的默认值（<code>vllm/config/cache.py</code> 第 141 行 <code>prefix_caching_hash_algo: PrefixCachingHashAlgo = "sha256"</code>）</td><td>第 5 节量它的耗时</td></tr>
+<tr><td>淘汰策略</td><td>LRU</td><td>vLLM 和 SGLang 用的都是它的某种形式，第 7 节说明两边是怎么实现的</td><td>锁死</td></tr>
+<tr><td>P5 的权重骨架</td><td>8 层 4096×4096 float32</td><td>沿用 Day 8、Day 9、Day 15，方便横着比</td><td>锁死</td></tr>
+<tr><td>P7 的池子</td><td>256 MiB</td><td>必须明显大于这台机器 33 MiB 的 L3，否则量到的是缓存不是内存。这是 Day 15 用过的同一个理由和同一个值</td><td>锁死</td></tr>
+<tr><td>预热</td><td>先跑一遍不计时</td><td>不让第一次调用的内存分配和缺页落进测量，Day 6 和 Day 7 各踩过一次</td><td>锁死</td></tr>
+<tr><td>重复次数</td><td>3 ~ 31 次</td><td>取中位，同时打出第 10 到第 90 百分位当噪声底。越贵的测量跑得越少：一次 4096 列的前向要将近十秒</td><td>锁死</td></tr>
+</table>
+</div>
+
+<p>后面每一节说"只改了一个变量"的时候，都可以回到这张表看改的是哪一行。反过来，想知道某个数是谁打印的，查下面这张：</p>
+
+<div class="scroll">
+<table>
+<tr><th>表</th><th>出自</th><th>它读的是什么</th></tr>
+<tr><td>逐轮的块账（2.3）</td><td><code>p4_trace.py</code></td><td>纯整数运算，没有计时</td></tr>
+<tr><td>前缀是否逐位相同</td><td><code>p1_prefix_same.py</code></td><td><code>numpy</code> 的 <code>array_equal</code> 与最大绝对差</td></tr>
+<tr><td>块 hash 链、每块 hash 多少微秒</td><td><code>p2_blockhash.py</code></td><td>数从头连续相同的块数；<code>time.perf_counter()</code> 除以两万次</td></tr>
+<tr><td>三种负载的命中率、容量扫描、顺序对照、块大小扫描</td><td><code>p3_hitrate.py</code> 加三个跑法</td><td>模拟器自己的计数器：命中 token 数、prompt token 总数</td></tr>
+<tr><td>一次前向喂几列要多久、命中率与端到端耗时</td><td><code>p5_time.py</code></td><td><code>time.perf_counter()</code> 首尾相减，取中位与百分位；第二张表由第一张表的行相加得出</td></tr>
+<tr><td>各级搬运速率、取回与重算的比值</td><td><code>p7_fetch_vs_recompute.py</code></td><td>拷贝耗时、<code>O_DIRECT</code> 读耗时、同进程量到的前向耗时</td></tr>
+</table>
+</div>
+<p>这两张表合起来是一句承诺：后面任何一个数字，你都能顺着它找到是哪个程序的哪一行打印的，以及那个程序当时的旋钮拧在哪儿。</p>
+<h4>3. 把"开头一样"验到字节</h4>
+
+<p>要验它，先得说清楚一个 token 的 K 和 V 是从哪儿来的。Day 15 说过它们是"把 token 过一遍网络算出来的"，今天要把这句话里的一个限定条件挖出来。</p>
+
+<p>模型算第 i 个位置的时候，允许它看的只有第 0 到第 i 个位置，后面的一律看不见。这不是实现上的偷懒，是任务定义决定的：模型的活儿是根据前文预测下一个词，训练的时候要是让它偷看到后面，它就学不到东西。这个"只许往前看"的限制，就叫 <span class="term">因果注意力（causal attention）</span>，实现上是给注意力打分的矩阵盖一层上三角的掩码。</p>
+
+<p>顺着这个限制推一层。第 i 个位置在第一层的 K 和 V，只由第 i 个 token 本身决定。它在第二层的 K 和 V，由第一层第 0 到第 i 个位置的输出决定。往上每加一层，依赖范围最多扩到"第 0 到第 i 个位置"，永远扩不到第 i 个之后。所以：</p>
+
+<p>第 i 个位置在任何一层里的 K 和 V，只取决于第 0 到第 i 这一段 token，跟它后面有什么、总共有多长，一点关系都没有。</p>
+
+<p>推理到此结束，接下来是验证。P1 搭了一个两层的因果注意力骨架，构造两条序列：它们共享开头 64 个 token，之后一条自己接 40 个、另一条自己接 90 个。然后逐层逐位置比这两条序列的 K 和 V。</p>
+
+<div class="scroll">
+<table>
+<tr><th>比什么</th><th>结果</th></tr>
+<tr><td>两条序列前 64 个位置的 K，各层的最大绝对差</td><td class="n">0.000e+00</td></tr>
+<tr><td>两条序列前 64 个位置的 V，各层的最大绝对差</td><td class="n">0.000e+00</td></tr>
+<tr><td>逐位完全相同（<code>numpy.array_equal</code>）</td><td>是</td></tr>
+</table>
+</div>
+
+<p>不是"误差很小"，是一个比特都不差。所以缓存这件事在这里是<em>无损</em>的：复用一段前缀的 KV，和把它重算一遍，给出的是同一批数值，模型的输出不会因此改变一个字。这一点很重要——它意味着这个优化不需要任何精度上的取舍来交换，性能工程里这种东西很少。</p>
+
+<p>接着问反面：能共用的一定得是"开头"吗？两条序列中间有一段一样，或者结尾有一段一样，能不能也共用？P1 把这个也试了：构造两条序列，它们的后 40 个 token 完全相同，但前面 20 个各不相同。</p>
+
+<div class="scroll">
+<table>
+<tr><th>比什么</th><th>结果</th></tr>
+<tr><td>两条序列相同的那 40 个尾部位置的 K，最大绝对差</td><td class="n">4.373e+00</td></tr>
+<tr><td>把一条 104 个 token 的序列的第 30 个 token 改掉一个，第一个发生变化的位置</td><td class="n">第 30 位</td></tr>
+<tr><td>同上，第 29 位的差</td><td class="n">0.000e+00</td></tr>
+</table>
+</div>
+
+<p>后缀相同、前缀不同，尾巴上的 K 差了 4.373——那不是数值误差，那是完全无关的两个数。原因就在上面那条推理里：第 i 个位置的 K 依赖它<em>前面</em>的全部 token，前面换了，它就跟着换。</p>
+
+<p>第二行和第三行给的是同一件事的更精确形状：动一个 token，它之前的位置一个不受影响，它自己和它之后的全部改变。所以两条序列能共用的，恰好就是"从第 0 个 token 开始、一路相同、直到第一个不同为止"的那一段。</p>
+
+<p>把算过的这一段存下来、后面来的请求直接拿去用，这个做法就叫 <span class="term">前缀缓存（prefix caching）</span>。vLLM 里它的开关名字更长一点，叫自动前缀缓存（<code>enable_prefix_caching</code>，在当前版本里默认是开的，<code>vllm/config/cache.py</code> 第 139 行），"自动"是说你不用告诉它哪一段是公共前缀，它自己发现。</p>
+
+<div class="card key">
+<p style="margin:.3rem 0"><span class="tag">关键结论</span></p>
+<p>因果注意力这个限制，在训练那一侧是为了不让模型偷看未来；在服务这一侧，它顺手把 KV 变成了一件可以跨请求复用的东西。能复用的范围也被它精确地框死了：只能是前缀，一个 token 都不能错位。</p>
+</div>
+
+<h3>第二部分 · 机器怎么认出「这一段我算过」</h3>
+
+<h4>4. 逐个 token 比一遍行不行</h4>
+
+<p>知道了要匹配的是最长公共前缀，最直接的实现是：新请求进来，拿它的 token 列表和缓存里每一条已有的序列从头比，看谁的公共前缀最长。</p>
+
+<p>这个做法能出正确答案，代价是它和缓存里的序列条数成正比。缓存里躺着一万条序列，来一条新请求就要比一万次，每次还要逐个 token 走。而这件事发生在请求路径上——Day 14 讲过，请求路径上的每一微秒都会原样加到用户等待的时间里。</p>
+
+<p>两个主流引擎给了两种不同的答案。它们的差别不是实现细节，是两种结构在"匹配粒度"和"淘汰谁"上的取舍，两边都该看一遍。</p>
+
+<h4>5. vLLM 的做法：把前缀压进一个 hash</h4>
+
+<p>先说一个铺垫。hash 函数（这里是 sha256）做的事是把任意长的一段字节压成一个固定长度的指纹，内容一样指纹一定一样，内容不一样指纹几乎一定不一样。</p>
+
+<p>vLLM 的想法是：既然 KV 本来就是按块存的（Day 15 的块，默认 16 个 token 一块），那就给每一块算一个指纹，指纹里不光装本块的 token，还要装它前面所有块的信息。做法是把上一块的指纹和本块的 token 一起喂进 hash 函数：</p>
+
+<pre><code># vllm/v1/core/kv_cache_utils.py:642-648
+if not parent_block_hash:
+    parent_block_hash = NONE_HASH          # 第一块没有父块，用一个固定的种子
+curr_block_token_ids_tuple = tuple(curr_block_token_ids)
+return BlockHash(
+    hash_function((parent_block_hash, curr_block_token_ids_tuple, extra_keys))
+)</code></pre>
+
+<p>这样串起来的一列指纹，叫 <span class="term">块 hash 链（chained block hash）</span>。它有一个直接的好处：第 k 块的指纹已经把第 0 到第 k 块的全部内容装进去了，所以"这一块的指纹在缓存里"这一个条件，等价于"从头到这一块为止的整段前缀都对得上"。于是匹配退化成一次哈希表查找，跟缓存里有多少条序列没关系。</p>
+
+<p>vLLM 里循环算这条链的地方，明确写着只对装满的块算：</p>
+
+<pre><code># vllm/v1/core/kv_cache_utils.py:826-846
+while True:
+    end_token_idx = start_token_idx + hash_block_size
+    if end_token_idx > num_tokens:
+        # We only hash full blocks
+        break
+    ...
+    block_hash = hash_block_tokens(
+        caching_hash_fn, prev_block_hash_value, block_tokens, extra_keys
+    )
+    new_block_hashes.append(block_hash)
+    start_token_idx += hash_block_size
+    prev_block_hash_value = block_hash          # 这一块的指纹成为下一块的父</code></pre>
+
+<p>查找那一侧是一个从头开始、遇到第一个不中就停的循环。源码里的注释把理由写得很直白：</p>
+
+<pre><code># vllm/v1/core/single_type_kv_cache_manager.py:750-755
+# Phase 1: longest run of cached full blocks from the start. A missing
+# block implies every later block misses too (chained hashes).
+for block_hash in itertools.islice(full_block_hashes, max_length // block_size):
+    cached_block = block_pool.get_cached_block(block_hash, kv_cache_group_ids)
+    if not cached_block:
+        break</code></pre>
+
+<p>P2 把这套算法照抄了一遍来验它的行为。取一段 100 个 token 的公共前缀，接两条不同长度的尾巴，块大小 16：</p>
+
+<div class="scroll">
+<table>
+<tr><th>项</th><th class="n">值</th></tr>
+<tr><td>序列 A 长 160，算出满块</td><td class="n">10 块</td></tr>
+<tr><td>序列 B 长 300，算出满块</td><td class="n">18 块</td></tr>
+<tr><td>从头连续相同的块数</td><td class="n">6 块</td></tr>
+<tr><td>把 A 的第 7 个 token 改掉，第一个不同的块</td><td class="n">第 0 块</td></tr>
+</table>
+</div>
+
+<p>公共前缀有 100 个 token，可对上的只有 6 块也就是 96 个。剩下 4 个 token 落在第 6 块里，而那一块的另外 12 个 token 两边不一样，指纹就不一样了。这 4 个 token 白白重算——记住这个零头，第 11 节整节都是它。</p>
+
+<p>最后一行说明这条链是"一荣俱荣一损俱损"的：动第 7 个 token，它落在第 0 块里，于是第 0 块的指纹变了，第 1 块的父变了所以也变了，之后全部变。这正是"一块没中，后面不用再看"这个优化成立的前提。</p>
+
+<p>那算这条链本身要多少钱？P2 拿一块 16 个 token 反复算两万次：</p>
+
+<div class="scroll">
+<table>
+<tr><th>算法</th><th class="n">每块耗时</th><th class="n">一条 2048 token 的 prompt（128 块）</th></tr>
+<tr><td>sha256（vLLM 默认）</td><td class="n">1.74 微秒</td><td class="n">0.223 毫秒</td></tr>
+<tr><td>Python 内置 <code>hash</code></td><td class="n">0.31 微秒</td><td class="n">0.039 毫秒</td></tr>
+</table>
+</div>
+
+<p>把第一行和第 12 节那张前向耗时表对一下：同样这条 2048 token 的 prompt，算一遍要 4847 毫秒，算它的指纹要 0.223 毫秒，占万分之零点五。这一层簿记在请求路径上基本是免费的。</p>
+
+<p>这个数字里藏着一个容易踩的坑。sha256 那 1.74 微秒里，有 46% 花在 pickle 序列化上，真正做摘要只占一半多一点。所以序列化喂进去的是什么类型，比选哪个 hash 算法更影响这个数——把 token 存成 numpy 的整数标量而不是 Python 的 <code>int</code>，同一段代码会慢十几倍，慢的不是 hash，是序列化 numpy 对象。vLLM 里的 <code>all_token_ids</code> 是普通的 Python 整数，没有这个问题。</p>
+<h4>6. SGLang 的做法：把公共前缀显式画成一棵树</h4>
+
+<p>hash 链把"共享"这件事藏了起来——哈希表是平的，一万个块躺在一个字典里，谁和谁共享前缀，从数据结构上看不出来。SGLang 走的是另一条路：把共享的形状直接建成一棵树。</p>
+
+<p>树的根是空串。从根出发的每一条边带着一小段 token，从根走到某个节点，把沿途各段接起来，就是一段被缓存的前缀。两条请求只要开头一样，走的就是同一段路径，到分岔的地方才各走各的。这种"边上带着一串字符、公共部分只存一份"的树，叫 <span class="term">基数树（radix tree，也译前缀树）</span>；SGLang 把它和注意力接在一起的这套东西叫 RadixAttention。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 760 320" role="img" aria-label="基数树的形状与节点分裂">
+<style>
+.nd{fill:none;stroke:currentColor;stroke-width:1.3}
+.ed{stroke:currentColor;stroke-width:1.2;fill:none;opacity:.6}
+.t1{font:600 12px sans-serif;fill:currentColor}
+.t2{font:11px sans-serif;fill:currentColor;opacity:.82}
+.t3{font:italic 11px sans-serif;fill:currentColor;opacity:.62}
+</style>
+<text class="t1" x="8" y="20">分裂之前 · 两个任务共享同一段系统提示词</text>
+<circle class="nd" cx="30" cy="70" r="14"/><text class="t2" x="22" y="74">根</text>
+<line class="ed" x1="44" y1="70" x2="200" y2="70"/>
+<text class="t2" x="52" y="61">系统提示词 613</text>
+<rect class="nd" x="200" y="55" width="28" height="30" rx="5"/>
+<line class="ed" x1="228" y1="70" x2="430" y2="42"/>
+<text class="t2" x="238" y="34">任务 A 之后的 2287</text>
+<rect class="nd" x="430" y="27" width="28" height="30" rx="5"/>
+<line class="ed" x1="228" y1="70" x2="430" y2="100"/>
+<text class="t2" x="238" y="118">任务 B 之后的 2487</text>
+<rect class="nd" x="430" y="85" width="28" height="30" rx="5"/>
+<text class="t3" x="490" y="60">两条边各自很长，</text>
+<text class="t3" x="490" y="78">公共的 613 个 token 只存了一份</text>
+
+<line class="ed" x1="10" y1="150" x2="750" y2="150" stroke-dasharray="4 4" opacity=".35"/>
+
+<text class="t1" x="8" y="178">分裂之后 · 任务 A 的新一轮只和已有的那条边共享前 1800 个</text>
+<circle class="nd" cx="30" cy="230" r="14"/><text class="t2" x="22" y="234">根</text>
+<line class="ed" x1="44" y1="230" x2="200" y2="230"/>
+<text class="t2" x="52" y="221">系统提示词 613</text>
+<rect class="nd" x="200" y="215" width="28" height="30" rx="5"/>
+<line class="ed" x1="228" y1="230" x2="330" y2="230"/>
+<text class="t2" x="238" y="221">共享的 1187</text>
+<rect class="nd" x="330" y="215" width="28" height="30" rx="5" stroke-dasharray="4 3"/>
+<text class="t3" x="312" y="266">新节点</text>
+<line class="ed" x1="358" y1="230" x2="500" y2="202"/>
+<text class="t2" x="366" y="194">原来剩下的 1100</text>
+<rect class="nd" x="500" y="187" width="28" height="30" rx="5"/>
+<line class="ed" x1="358" y1="230" x2="500" y2="258"/>
+<text class="t2" x="366" y="276">新一轮多出来的</text>
+<rect class="nd" x="500" y="243" width="28" height="30" rx="5"/>
+<text class="t3" x="560" y="214">一条长边被切成两截，</text>
+<text class="t3" x="560" y="232">切点就是公共前缀的尽头。</text>
+<text class="t3" x="560" y="250">数据没有复制一份，</text>
+<text class="t3" x="560" y="268">只是多了一个节点</text>
+</svg>
+</div>
+<figcaption>上半张是两个任务共享系统提示词的样子。下半张是匹配停在一条边中间时发生的事：那条边被切开，切点上长出一个新节点。</figcaption>
+</figure>
+
+<p>匹配就是从根往下走，每一步拿剩下的 token 和某条边比。走到某条边中间就比不下去了怎么办？SGLang 的做法是把那条边切成两截，在切点上插一个新节点。这个动作叫 <span class="term">节点分裂（node split）</span>，源码里是 <code>_split_node</code>（<code>python/sglang/srt/mem_cache/radix_cache.py</code> 第 705 行），被 <code>_match_prefix_helper</code> 在匹配停在边中间时调用：</p>
+
+<pre><code># python/sglang/srt/mem_cache/radix_cache.py:689-698
+prefix_len = child.key.match(key, page_size=self.page_size)
+if prefix_len &lt; len(child.key):
+    new_node = self._split_node(child.key, child, prefix_len)   # 从中间切开
+    value.append(new_node.value)
+    node = new_node
+    break
+else:
+    value.append(child.value)      # 整条边都对上了，继续往下走
+    node = child
+    key = key[prefix_len:]</code></pre>
+
+<p>分裂不复制 KV，它只是把一条边的记账拆成两段，让"公共到这里为止"这件事在结构上有个位置可以站。代价是匹配这个动作会顺手改动树，所以它不是一个纯粹的读操作。</p>
+
+<h4>7. 两条路差在哪：能对到多细，以及先淘汰谁</h4>
+
+<p>两种结构的第一个差别是匹配粒度。hash 链只能对上整块，块里剩的零头一律作废；树可以停在边的任意位置，粒度细到单个 token（当引擎按页管理显存时，会被向下取整到页边界）。</p>
+
+<p>第二个差别更有意思，在淘汰这一侧。缓存总会满，满了要扔掉一些块，扔哪些？两边用的都是 <span class="term">最近最少使用（LRU, least recently used）</span>——最久没被碰过的先扔——但落地方式完全不同。</p>
+
+<p>vLLM 没有单独的缓存池。它的前缀缓存就住在空闲块队列里：一条请求跑完，它的块引用计数归零，被放回队列；带指纹的块放到<em>队尾</em>，不带指纹的放到<em>队首</em>。而分配新块永远从队首取。</p>
+
+<pre><code># vllm/v1/core/block_pool.py:737-747
+if block.block_hash is None or not self.enable_caching:
+    # LIFO reuse of non-cached blocks for better GPU locality.
+    blocks_to_evict_first.append(block)
+else:
+    # FIFO reuse of cached blocks for LRU eviction behavior.
+    blocks_to_evict_last.append(block)
+self.free_block_queue.prepend_n(blocks_to_evict_first)
+self.free_block_queue.append_n(blocks_to_evict_last)</code></pre>
+
+<p>代码注释里那两个词说的就是这件事：带指纹的块进队尾、从队首出，是先进先出（FIFO），最久没被碰过的自然最先被取走，等于 LRU；不带指纹的块进队首、也从队首出，是后进先出（LIFO），刚放回来的马上被再用，对硬件缓存更友好。取到一个还带着指纹的块时，引擎顺手把这个指纹从缓存表里摘掉（<code>_maybe_evict_cached_block</code>，同文件第 679 行）。所以在 vLLM 里，缓存不占任何额外内存——它用的全是"还没被别人拿走的空闲块"。这一条直接回答了一个常见问题：开前缀缓存要不要给它单独留一块显存？不要，它花的是本来就闲着的容量。</p>
+
+<p>SGLang 那一侧，淘汰是从树的叶子往上收：把所有可淘汰的叶子按优先级（默认是最后访问时间）放进一个堆，弹一个删一个，删完之后如果父节点变成了叶子且没人锁着，就把父节点也放进堆里。</p>
+
+<pre><code># python/sglang/srt/mem_cache/radix_cache.py:606-616
+while num_evicted &lt; num_tokens and len(eviction_heap):
+    _priority, x = heapq.heappop(eviction_heap)
+    self.token_to_kv_pool_allocator.free_segment(x.value, start_pos=0)
+    num_evicted += len(x.value)
+    self._delete_leaf(x)
+    if len(x.parent.children) == 0 and x.parent.lock_ref == 0:
+        new_priority = self.eviction_strategy.get_priority(x.parent)
+        heapq.heappush(eviction_heap, (new_priority, x.parent))</code></pre>
+
+<p>"只从叶子开始扔"这条规则有个免费的副作用：被越多请求共享的前缀，在树上离根越近，越不可能是叶子，于是越晚被扔掉。那段所有人都用的系统提示词会自然沉到最后才被淘汰，不需要谁去给它标一个"重要"的标记。vLLM 那边达到类似效果靠的是另一条路——所有人都在用的块，它的最后访问时间一直被刷新，在 LRU 队列里永远排不到前面去。</p>
+
+<h4>8. 动笔之前，先押三个数</h4>
+
+<p>下面三个问题的答案都在第三部分的表里。先写下来，再往下翻。</p>
+
+<div class="card pred">
+<p style="margin:.2rem 0"><span class="tag">预测 · 先写下来</span></p>
+<p><span class="qn">问题一</span>　40 个 agent 任务，每个任务 6 轮，一共 240 条请求。缓存开到 8192 个 token 位（相当于两条半上下文）。先按"一个任务从头做到尾，做完再开下一个任务"的顺序重放，token 级前缀命中率是 84.5%。现在<em>一条请求都不改、一个 token 都不动</em>，只把顺序换成"40 个任务轮流各推进一轮"，命中率变成多少？</p>
+<p><span class="qn">问题二</span>　接着上一问。要让交错顺序的命中率追平 84.5%，缓存得开到多大？</p>
+<p><span class="qn">问题三</span>　块大小从 16 加到 256，其余全不动。Day 15 量过这个改动让内存利用率从 98.4% 掉到 78.8%。今天问的是另一件事：agent 那一批的命中率会掉多少？</p>
+<div class="write"></div>
+<p class="small" style="margin-bottom:.3rem">提示：问题一和问题二是同一件事的两个问法。问题三可以自己估——一段公共前缀的尽头落在块中间的概率是均匀的，平均会浪费掉半块。</p>
+</div>
+<h3>第三部分 · 能省多少，以及被什么挡住</h3>
+
+<h4>9. 三种流量各自的天花板</h4>
+
+<p>先把缓存开到大得装得下一切（524288 个 token 位，比三种负载里最贪的那个还多三倍），块大小取默认的 16。这时候命中率只由流量本身的形状决定，是这种流量的上限。</p>
+
+<p>命中率这个词要先说清分子分母，否则后面所有的数都没法读。今天用的是 <span class="term">token 级前缀命中率（prefix cache hit rate）</span>：分母是所有请求的 prompt token 总数，也就是"不开缓存的话总共要 prefill 多少个 token"；分子是其中被判定为命中、因而不必算的 token 数。生成出来的 token 不进分母——那部分是 decode，缓存管不着。</p>
+
+<div class="scroll">
+<table>
+<tr><th>流量</th><th class="n">请求数</th><th class="n">prompt 总量</th><th class="n">命中 token</th><th class="n">命中率</th><th class="n">仍要算的 token</th></tr>
+<tr><td>独立请求（谁跟谁都不共享）</td><td class="n">200</td><td class="n">254972</td><td class="n">0</td><td class="n">0.0%</td><td class="n">254972</td></tr>
+<tr><td>共享系统提示词的单轮问答</td><td class="n">200</td><td class="n">179100</td><td class="n">120992</td><td class="n">67.6%</td><td class="n">58108</td></tr>
+<tr><td>agent 多轮（40 任务 × 6 轮）</td><td class="n">240</td><td class="n">456054</td><td class="n">385344</td><td class="n">84.5%</td><td class="n">70710</td></tr>
+</table>
+</div>
+
+<p>第一行是对照组，它保证这套模拟器不会凭空造出命中——完全不共享的流量，命中率必须是 0，是 0。</p>
+
+<p>第二行的数可以手算验一遍：系统提示词 613 个 token，块大小 16，613 除以 16 等于 38 余 5，所以能对上的是 38 块 608 个 token。第一条请求是冷的，命中 0；后面 199 条各命中 608 个。199 乘 608 等于 120992，和表里一模一样。</p>
+
+<p>第三行高出十七个百分点，原因不在"agent 比聊天高级"，在两个可以分开说的地方。一是共享的那一段更长：聊天共享的是开头 613 个，agent 第六轮共享的是前面五轮攒下来的近三千个。二是每一轮真正新增的那一截很短——回看 2.3 节那张轨迹的"要算的 token"列，六轮分别是 822、322、522、336、301、166，从第二轮起就再没超过 522。</p>
+
+<p>把这两点合起来说：agent 的上下文是只往后长、不改前面的，所以它天然就是一条不断加长的公共前缀。</p>
+
+<h4>10. 揭晓：同一批请求，只把到达顺序打乱</h4>
+
+<p>上一节那三个数是天花板，前提是缓存无限大。现实里缓存是有限的，所以下一个问题自然是：要多大才够？</p>
+
+<p>把容量从 2048 个 token 位（连一条 agent 上下文都装不下）扫到 524288（装得下一切），块大小锁死 16：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">缓存容量（token 位）</th><th class="n">独立请求</th><th class="n">共享系统提示词</th><th class="n">agent 多轮</th></tr>
+<tr><td class="n">2048</td><td class="n">0.0%</td><td class="n">67.6%</td><td class="n">37.2%</td></tr>
+<tr><td class="n">8192</td><td class="n">0.0%</td><td class="n">67.6%</td><td class="n">84.5%</td></tr>
+<tr><td class="n">32768</td><td class="n">0.0%</td><td class="n">67.6%</td><td class="n">84.5%</td></tr>
+<tr><td class="n">131072</td><td class="n">0.0%</td><td class="n">67.6%</td><td class="n">84.5%</td></tr>
+<tr><td class="n">524288</td><td class="n">0.0%</td><td class="n">67.6%</td><td class="n">84.5%</td></tr>
+</table>
+</div>
+
+<p>看上去问题不成立：8192 个 token 位就已经顶到天花板了，往上加再多也没用。8192 个 token 位在这台设定下是多少内存？按 Day 15 的每 token 64 KiB 算，是 512 MiB——很小的一笔钱。</p>
+
+<p>可这张表是在"一个任务从头做到尾，做完才开下一个"的顺序下跑的。真实的服务不是这样：四十个用户同时在用，他们的请求按到达时间交替进来。同一批请求，同样的 token，只把顺序改成四十个任务轮流各推进一轮：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">缓存容量（token 位）</th><th class="n">按会话成组</th><th class="n">轮次交错</th><th class="n">相差（百分点）</th></tr>
+<tr><td class="n">2048</td><td class="n">37.2%</td><td class="n">16.5%</td><td class="n">20.7</td></tr>
+<tr><td class="n">8192</td><td class="n">84.5%</td><td class="n">31.9%</td><td class="n">52.6</td></tr>
+<tr><td class="n">32768</td><td class="n">84.5%</td><td class="n">35.7%</td><td class="n">48.8</td></tr>
+<tr><td class="n">65536</td><td class="n">84.5%</td><td class="n">51.0%</td><td class="n">33.5</td></tr>
+<tr><td class="n">131072</td><td class="n">84.5%</td><td class="n">84.5%</td><td class="n">0.0</td></tr>
+<tr><td class="n">262144</td><td class="n">84.5%</td><td class="n">84.5%</td><td class="n">0.0</td></tr>
+</table>
+</div>
+
+<p>8192 那一行，命中率从 84.5% 掉到 31.9%。掉了五十二个百分点，而输入的数据一个比特都没变。</p>
+
+<p>要追平得开到 131072——十六倍。这个数不是随便撞上的：四十个任务各自跑完最后一轮时的上下文加起来是 126856 个 token，131072 是扫描点里第一个大于它的。也就是说，交错顺序下，缓存必须同时装得下<em>所有</em>在途会话的全部上下文，少一点都不行。</p>
+
+<p>机制并不复杂，但只有把它说到具体的量上才有用。成组顺序下，任务 t0 的第二轮紧跟在第一轮后面，中间没有别人，第一轮留下的块一个都没被挤掉。交错顺序下，t0 的第一轮和第二轮之间隔着另外 39 个任务的请求，这些请求要往缓存里塞进将近十万个 token 的块。LRU 是按"最久没碰"扔的，t0 的块在这十万个 token 涌进来的过程中一路往队首挪，等 t0 回来时早被扔光了。</p>
+
+<p>这里有个词专门指这件事：一份数据被用过之后，到它下一次被用之前，中间来过多少别的数据，叫它的 <span class="term">复用距离（reuse distance）</span>。缓存要能兜住一次复用，容量就得大于这次复用的距离。<b>决定缓存够不够的，从来不是数据总量，是复用距离。</b></p>
+
+<div class="card key">
+<p style="margin:.3rem 0"><span class="tag">关键结论</span></p>
+<p>"我们的缓存命中率只有三成"这句话，单独看什么信息都没有。它可能是流量本来就不共享（第 9 节第一行），可能是缓存开小了，也可能是缓存不小、但请求的到达顺序把每一次复用的距离拉得比缓存还长。三种情况该动的旋钮完全不同，其中第三种根本不在这台机器上。</p>
+</div>
+
+<p>第三种情况怎么办，是 Day 25 的整天题目——它牵扯到多机之间怎么分派请求，以及这么做会和负载均衡打架。今天只把它的价钱量出来：在这批负载上，它值五十二个百分点的命中率，或者十六倍的缓存容量。</p>
+
+<h4>11. 块大小的第二笔账</h4>
+
+<p>Day 15 已经给块大小算过一笔账：块越大，每条序列最后那个没装满的块浪费越多，利用率从 98.4% 掉到 78.8%。今天它还有第二笔账，位置完全不同——在前缀能对到哪儿。</p>
+
+<p>第 5 节那个例子已经露过一次：公共前缀 100 个 token，块大小 16，只能对上 6 块 96 个，最后 4 个白算。零头的大小平均是半块，块越大零头越大。</p>
+
+<p>把块大小从 1 扫到 256，容量开到不设限：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">块大小</th><th class="n">共享系统提示词</th><th class="n">agent 多轮</th><th class="n">agent 每条平均丢掉的 token</th></tr>
+<tr><td class="n">1</td><td class="n">68.1%</td><td class="n">84.9%</td><td class="n">0.0</td></tr>
+<tr><td class="n">4</td><td class="n">68.0%</td><td class="n">84.8%</td><td class="n">1.4</td></tr>
+<tr><td class="n">16</td><td class="n">67.6%</td><td class="n">84.5%</td><td class="n">7.1</td></tr>
+<tr><td class="n">32</td><td class="n">67.6%</td><td class="n">84.1%</td><td class="n">14.1</td></tr>
+<tr><td class="n">64</td><td class="n">64.0%</td><td class="n">83.1%</td><td class="n">33.0</td></tr>
+<tr><td class="n">128</td><td class="n">56.9%</td><td class="n">81.3%</td><td class="n">68.7</td></tr>
+<tr><td class="n">256</td><td class="n">56.9%</td><td class="n">78.3%</td><td class="n">125.8</td></tr>
+</table>
+</div>
+
+<p>最后一列印证了"平均半块"这个估计：块 256 时每条平均丢掉 125.8 个 token，半块是 128。这一列和块大小几乎是严格的一比二。</p>
+
+<p>问题三的答案是 78.3%，只掉了六个百分点。跟 Day 15 那笔账比，这一笔小得多——同样是 16 到 256，内存利用率掉了将近二十个百分点，命中率只掉了六个。原因在分母上：丢掉的是固定的半块，而 agent 的 prompt 平均有一千九百个 token，半块占不到百分之七。</p>
+
+<p>但左边那一列告诉你这个结论有条件。共享系统提示词那一栏在 32 到 128 之间掉得很陡，从 67.6% 一路掉到 56.9%。手算一下就知道为什么：系统提示词 613 个 token，块 32 时能对上 19 块 608 个，块 64 时 9 块 576 个，块 128 时只有 4 块 512 个。共享的那一段总共才 613，丢掉 101 个就是丢掉六分之一。</p>
+
+<p>所以这一笔账的大小，取决于"公共前缀有多长"和"块有多大"的比值，不取决于块本身。公共前缀是几千个 token 的 agent 场景，块开大了无所谓；公共前缀只有几百个 token 的场景，块开到 128 就开始伤筋动骨。</p>
+
+<h4>12. 命中率上去了，用户为什么没觉得快</h4>
+
+<p class="lead">88% 的命中率，能让用户少等多久？</p>
+
+<p>到这里为止的所有数字都是 token 数，不是时间。要换成时间，得先知道算一批 token 要多久。P5 用 Day 8 以来那副同样的骨架量了一遍——8 层 4096×4096 的权重，一次前向就是八次矩阵乘法：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">一次喂几个 token</th><th class="n">耗时中位（毫秒）</th><th class="n">P10 ~ P90</th><th class="n">每 token（毫秒）</th></tr>
+<tr><td class="n">1</td><td class="n">45.8</td><td class="n">44.7 ~ 47.3</td><td class="n">45.775</td></tr>
+<tr><td class="n">16</td><td class="n">187.4</td><td class="n">182.9 ~ 197.9</td><td class="n">11.711</td></tr>
+<tr><td class="n">64</td><td class="n">310.3</td><td class="n">300.4 ~ 329.9</td><td class="n">4.848</td></tr>
+<tr><td class="n">128</td><td class="n">489.3</td><td class="n">469.9 ~ 526.7</td><td class="n">3.822</td></tr>
+<tr><td class="n">256</td><td class="n">742.6</td><td class="n">736.4 ~ 776.5</td><td class="n">2.901</td></tr>
+<tr><td class="n">512</td><td class="n">1290.6</td><td class="n">1272.3 ~ 1334.1</td><td class="n">2.521</td></tr>
+<tr><td class="n">1024</td><td class="n">2446.3</td><td class="n">2401.8 ~ 2555.7</td><td class="n">2.389</td></tr>
+<tr><td class="n">2048</td><td class="n">4846.9</td><td class="n">4730.1 ~ 5049.2</td><td class="n">2.367</td></tr>
+<tr><td class="n">4096</td><td class="n">9600.3</td><td class="n">9527.8 ~ 10115.8</td><td class="n">2.344</td></tr>
+</table>
+</div>
+
+<p>最后一列是 Day 7 那条屋顶线的老面孔：喂 1 列和喂 4096 列，权重都只读一遍，所以单位成本从 45.8 毫秒一路掉到 2.344 毫秒。这条曲线在 512 之后基本压平了。</p>
+
+<p>现在把命中率代进去。一条 2048 个 token 的 prompt，命中掉的那部分不用算，剩下的按上表查；生成阶段每一步喂 1 列，按上表第一行的每步 45.8 毫秒算（未取整前是 45.775），生成多少个就乘多少倍。</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">命中率</th><th class="n">还要算的 token</th><th class="n">prefill（毫秒）</th><th class="n">再生成 16 个</th><th class="n">再生成 128 个</th><th class="n">再生成 512 个</th></tr>
+<tr><td class="n">0.0%</td><td class="n">2048</td><td class="n">4847</td><td class="n">5579</td><td class="n">10706</td><td class="n">28284</td></tr>
+<tr><td class="n">50.0%</td><td class="n">1024</td><td class="n">2446</td><td class="n">3179</td><td class="n">8306</td><td class="n">25883</td></tr>
+<tr><td class="n">75.0%</td><td class="n">512</td><td class="n">1291</td><td class="n">2023</td><td class="n">7150</td><td class="n">24728</td></tr>
+<tr><td class="n">87.5%</td><td class="n">256</td><td class="n">743</td><td class="n">1475</td><td class="n">6602</td><td class="n">24180</td></tr>
+<tr><td class="n">93.8%</td><td class="n">128</td><td class="n">489</td><td class="n">1222</td><td class="n">6349</td><td class="n">23926</td></tr>
+<tr><td class="n">99.2%</td><td class="n">16</td><td class="n">187</td><td class="n">920</td><td class="n">6047</td><td class="n">23624</td></tr>
+</table>
+</div>
+
+<p>横着读一行，竖着读一列，得到的是两个不同的故事。同一个命中率，省下的比例随生成长度迅速缩水：</p>
+
+<div class="scroll">
+<table>
+<tr><th class="n">命中率</th><th class="n">prefill 省了</th><th class="n">生成 16 个时总时省</th><th class="n">生成 128 个时总时省</th><th class="n">生成 512 个时总时省</th></tr>
+<tr><td class="n">50.0%</td><td class="n">50%</td><td class="n">43%</td><td class="n">22%</td><td class="n">8%</td></tr>
+<tr><td class="n">75.0%</td><td class="n">73%</td><td class="n">64%</td><td class="n">33%</td><td class="n">13%</td></tr>
+<tr><td class="n">87.5%</td><td class="n">85%</td><td class="n">74%</td><td class="n">38%</td><td class="n">15%</td></tr>
+<tr><td class="n">93.8%</td><td class="n">90%</td><td class="n">78%</td><td class="n">41%</td><td class="n">15%</td></tr>
+<tr><td class="n">99.2%</td><td class="n">96%</td><td class="n">84%</td><td class="n">44%</td><td class="n">16%</td></tr>
+</table>
+</div>
+
+<p>93.8% 的命中率，省掉了九成的 prefill。但如果这条请求接下来要生成 512 个 token，用户感受到的总时间只少了 15%。<b>前缀缓存动的只有 prefill 这一段，decode 那一段一个 token 都省不掉。</b>vLLM 的文档把这件事写在"限制"那一节里，说的是同一件事：当服务的大部分时间花在生成长回答上时，前缀缓存带不来性能收益。</p>
+
+<p>这也是 2.4 节那个参数表里"每轮模型生成 96 到 192 个 token"背后的道理。agent 的一轮通常吐出的是一个工具调用——函数名加几个参数，几十上百个 token，然后就停下来等工具返回。它的输入几千个 token、输出一百来个，正好落在这张表最左边那一列附近。反过来，一个让模型写两千字文章的场景，输入短输出长，前缀缓存对它几乎是白装的。</p>
+
+<p>还有一个细节值得记：最后一行的命中率是 99.2%，不是 100%。这不是数据凑不出整数，是引擎故意留的。哪怕一条请求和之前某一条一字不差，也必须把最后至少一个 token 重算一遍——采样下一个 token 需要最后那个位置的输出，而缓存里只有 K 和 V，没有那个输出。vLLM 的注释把这件事和它的连带后果一起写了：</p>
+
+<pre><code># vllm/v1/core/kv_cache_manager.py:252-258
+# NOTE: When all tokens hit the cache, we must recompute the last token
+# to obtain logits. Thus, set max_cache_hit_length to prompt_length - 1.
+# This can trigger recomputation of an entire block, rather than just
+# the single last token, because allocate_slots() requires
+# num_computed_tokens to be block-size aligned.
+max_cache_hit_length = request.num_tokens - 1</code></pre>
+
+<p>连带后果是：因为分配要按块对齐，少算一个 token 会导致最后一整块都得重来。所以表里的最后一行按重算 16 个 token 计，正好是一块。</p>
+<h3>第四部分 · 装不下的时候，往下一级放</h3>
+
+<h4>13. 把 Day 15 那个二选一，扩成一级一级的阶梯</h4>
+
+<p>前面三部分默认缓存里的东西都在同一个地方。真实的服务不是：显存是最贵最小的一级，它装不下的东西，可以往 CPU 内存放，再装不下往 SSD 放。把 KV 从显存挪到下一级存着，这个动作叫 <span class="term">卸载（offloading）</span>；这一整套按速度和容量排开的结构，叫 <span class="term">分级缓存（tiering）</span>，直接连着 GPU 的那一级叫 <span class="term">主层（primary tier）</span>，再往下的叫 <span class="term">次层（secondary tier）</span>；把一段 KV 从下层搬回上层，叫 <span class="term">提升（promotion）</span>。</p>
+
+<p>每往下加一级，都要回答同一个问题，而 Day 15 已经把这个问题的形状给出来了：从这一级取回来，和干脆重算一遍，哪个便宜？当时是在"搬出去存着"和"扔掉重算"之间二选一，现在只是把"这一级"换成阶梯上的任意一层，式子一模一样。</p>
+
+<p>P7 在同一个进程里量了两边。重算那一侧，用 P5 那副骨架喂 2048 列，除以 2048 得到每 token 2367 微秒。取回那一侧，量三种搬运：</p>
+
+<div class="scroll">
+<table>
+<tr><th>这一级</th><th class="n">搬运速率</th><th class="n">取回一个 token 的 KV</th><th class="n">比重算快多少</th></tr>
+<tr><td>CPU 内存到 CPU 内存</td><td class="n">5.17 GB/s</td><td class="n">12.7 微秒</td><td class="n">186 倍</td></tr>
+<tr><td>本机磁盘读回内存（<code>O_DIRECT</code>，绕开页缓存）</td><td class="n">0.724 GB/s</td><td class="n">90.5 微秒</td><td class="n">26 倍</td></tr>
+<tr><td>重算（喂 2048 列的前向，除以 2048）</td><td class="n">—</td><td class="n">2367 微秒</td><td class="n">1 倍</td></tr>
+</table>
+</div>
+
+<p>第二列的单位是每秒多少个十亿字节，分子是搬动的字节数，分母是墙上时钟走过的秒数。第三列是把它换算到一个 token 上：Day 15 算过这套设定下一个 token 的 KV 是 65536 字节，除以速率就得到微秒数。</p>
+
+<p>这台机器上两级都远比重算便宜，连读一次云硬盘都快 26 倍。反过来问更有用：搬运速率要慢到什么程度，取回才不如重算？把 65536 字节除以 2367 微秒，得到 27.7 MB/s。低于这个速率的存储，才轮得到"不如重算"。这台两核机器上的这个门槛低得离谱，任何一块盘、甚至一根网线都跨得过去。</p>
+
+<p>但这个门槛完全是被"重算太慢"抬上去的。GPU 上重算一个 token 的成本要低三四个数量级，那个 27.7 MB/s 会跟着涨到几十 GB/s——于是同一道除法在那边给出的答案完全不同，这也正是温故第 1 题的落点。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 700 300" role="img" aria-label="分级缓存的阶梯与搬运通路">
+<style>
+.tier{fill:none;stroke:currentColor;stroke-width:1.3}
+.h1{font:600 12.5px sans-serif;fill:currentColor}
+.h2{font:11.5px sans-serif;fill:currentColor;opacity:.78}
+.h3{font:italic 11px sans-serif;fill:currentColor;opacity:.62}
+.pipe{stroke:currentColor;stroke-width:1.6;fill:none;opacity:.75}
+.nope{stroke:currentColor;stroke-width:1.2;fill:none;opacity:.35;stroke-dasharray:5 4}
+</style>
+<rect class="tier" x="30" y="20" width="300" height="52" rx="7"/>
+<text class="h1" x="44" y="42">显存 · KV cache 本体</text>
+<text class="h2" x="44" y="60">最快、最贵、最小。请求正在用的块必须在这一层</text>
+
+<rect class="tier" x="30" y="112" width="300" height="52" rx="7"/>
+<text class="h1" x="44" y="134">主层 · CPU 内存</text>
+<text class="h2" x="44" y="152">唯一能和显存直接对搬的一级</text>
+
+<rect class="tier" x="30" y="204" width="300" height="52" rx="7"/>
+<text class="h1" x="44" y="226">次层 · 本机 SSD / 远端存储</text>
+<text class="h2" x="44" y="244">容量最大，可以有好几级，按顺序问</text>
+
+<path class="pipe" d="M180 72 L180 112"/>
+<path class="pipe" d="M180 164 L180 204"/>
+<text class="h3" x="190" y="96">卸载 ↓ / 提升 ↑</text>
+<text class="h3" x="190" y="188">卸载 ↓ / 提升 ↑</text>
+
+<path class="nope" d="M330 46 C 430 46, 430 230, 330 230"/>
+<text class="h3" x="440" y="120">次层不能直接读写显存。</text>
+<text class="h3" x="440" y="138">所有显存与次层之间的搬运，</text>
+<text class="h3" x="440" y="156">都要在主层中转一道。</text>
+<text class="h3" x="440" y="182">于是主层的容量和带宽，</text>
+<text class="h3" x="440" y="200">同时是所有下层的入口宽度。</text>
+<text class="h3" x="404" y="142" style="font-size:15px;opacity:.55">✕</text>
+</svg>
+</div>
+<figcaption>阶梯的形状不是"越往下越慢"这么简单：次层不与显存直连，这条约束决定了主层永远是整条链路的瓶颈。</figcaption>
+</figure>
+
+<h4>14. 工业实现里，这条阶梯长什么样</h4>
+
+<p>vLLM 自带的卸载连接器把上面那条约束写在文档第一段：</p>
+
+<pre><code># docs/features/kv_offloading_usage.md
+Only the CPU primary tier has direct GPU access. Secondary tiers cannot
+read from or write to GPU memory; all GPU&lt;-&gt;secondary transfers are
+staged through the CPU primary tier.</code></pre>
+
+<p>显存和 CPU 内存之间那条通道，在多数机器上是 <span class="term">PCIe（外设互连总线）</span>——显卡插在主板上的那条槽，也是所有数据进出显卡的必经之路。它的带宽比显存自己的内存带宽低一到两个数量级，所以"往 CPU 内存卸载"这件事，贵的不是 CPU 内存慢，是这条路窄。</p>
+
+<p>同一份文档的配置表里有两个默认值，比任何解释都能说明这条路有多窄。一个是 <code>offload_prompt_only</code>，默认为真，意思是只把 prompt 阶段产生的块往下卸载，生成阶段产生的一概不管。另一个是 <code>store_threshold</code>，意思是一个块要被查询到多少次，才值得花力气往下写。</p>
+
+<p>两个默认值指向同一个判断：往下写是要花带宽的，而写下去的东西不一定有人来取。prompt 那部分块是公共前缀最可能出现的地方，值得写；一个用户这一轮生成出来的一百多个 token，多半再没有第二个人会用到，写下去就是白占那条窄路。</p>
+
+<p>把这套东西做到极致的是 Mooncake，Moonshot AI 给 Kimi 用的服务平台。它的论文摘要里有一句话正好是这一节的总结：它"利用 GPU 集群里没被用起来的 CPU、内存和 SSD 资源，实现一个分离式的 KVCache 缓存"。论文报告在长上下文场景下吞吐相对基线最高提升 525%，真实负载上多接住了 75% 的请求。</p>
+
+<p>这里要留意一件事：那 525% 不是"开了前缀缓存"带来的，Mooncake 同时还把 prefill 和 decode 拆到了两组机器上跑。两件事互相咬合，从这个数字里拆不出前缀缓存单独贡献了多少。页尾的专项深挖给了一段可以直接用的题目。</p>
+
+<h4>15. 你手上能动的旋钮</h4>
+
+<p>把今天所有的量串成一条链：流量的形状定了命中率的天花板（第 9 节），到达顺序和缓存容量决定能兑现多少（第 10 节），块大小决定每次兑现要扣掉多少零头（第 11 节），生成长度决定兑现的这部分能变成多少用户感知的时间（第 12 节）。链条上每一环都有一个旋钮。</p>
+
+<div class="scroll">
+<table>
+<tr><th>旋钮</th><th>它动的是链条的哪一环</th><th>代价</th></tr>
+<tr><td><code>enable_prefix_caching</code></td><td>总开关。vLLM 当前版本默认是开的</td><td>关掉它的唯一理由是流量完全不共享前缀，此时它只剩簿记开销</td></tr>
+<tr><td><code>block_size</code></td><td>每次匹配扣掉的零头，平均半块</td><td>Day 15 那笔账（利用率、簿记开销）和今天这笔账（命中的零头）方向一致，都是越小越省、越小越忙</td></tr>
+<tr><td><code>gpu_memory_utilization</code></td><td>缓存容量。前缀缓存不额外占内存，它用的是空闲块，所以给 KV 的显存越多，缓存自然越大</td><td>调太高，激活值和临时缓冲没地方放</td></tr>
+<tr><td>卸载到 CPU 内存 / SSD</td><td>缓存容量，代价是取回要走 PCIe</td><td>主层是所有下层的入口，容量和带宽都卡在这儿</td></tr>
+<tr><td><code>cache_salt</code></td><td>不改性能，改的是谁能和谁共享</td><td>见下一节的第三个场景</td></tr>
+<tr><td>请求发给哪台机器</td><td>复用距离，也就是第 10 节那五十二个百分点</td><td>不在这台机器上，Day 25 的题目</td></tr>
+<tr><td>换引擎（hash 链 / 基数树）</td><td>匹配粒度：整块 对 单 token</td><td>第 11 节那张表说明了这个差别值多少——在公共前缀长的场景里不到一个百分点</td></tr>
+</table>
+</div>
+
+<p>最后一行得多说一句，因为选型的时候容易被它带偏。基数树能对到单个 token，hash 链只能对到整块，听起来前者明显更强。但第 11 节那张表里，块大小 1（相当于逐 token 匹配）和块大小 16 之间，agent 场景只差 0.4 个百分点。真正拉开差距的是别的——匹配是不是要改动数据结构、淘汰的时候能不能天然保住热前缀、以及跨机共享怎么做。</p>
+<h2>板块 3 · 动手任务</h2>
+
+<h3>任务 A（必做，约 70 分钟）· 写一个能回答"我们该开多大缓存"的模拟器</h3>
+
+<p>目标是把第 10 节那个结论变成一个你自己跑过、改过的工具。分四步。</p>
+
+<h4>第一步：块 hash 链</h4>
+
+<p>先写出链本身。它是后面一切的基础，也是最容易写错的地方——错了不会报错，只会让命中率悄悄偏低。</p>
+
+<pre><code>import hashlib, pickle
+NONE_HASH = hashlib.sha256(b"none").digest()
+
+def chain(tokens, B):
+    out, parent = [], NONE_HASH
+    for i in range(0, len(tokens) - B + 1, B):     # 只对装满的块算，不足一块的尾巴不算
+        parent = hashlib.sha256(
+            pickle.dumps((parent, tuple(tokens[i:i+B])))   # 父 hash 和本块 token 一起喂
+        ).digest()
+        out.append(parent)
+    return out</code></pre>
+
+<p>写完先验两件事：同一段前缀接两条不同尾巴，两条链从头连续相同的块数应该等于"前缀长度整除块大小"；改动前缀里任意一个 token，从它所在的那一块起，后面的 hash 应该全部变。跑出来不是这样，说明父 hash 没接上，往下的所有实验都不用做了。</p>
+
+<h4>第二步：加上缓存和 LRU</h4>
+
+<p>用 <code>OrderedDict</code> 就够了：查中一块就 <code>move_to_end</code>，插满了就 <code>popitem(last=False)</code>。查找必须是"从第 0 块起连续命中，遇到第一个不中立刻停"，不能跳过去接着找——链式 hash 保证了后面必然也不中，跳过去找是在浪费时间，而且如果你写成了"统计总共中了几块"，得到的数会比真实命中率高，还高得不明显，很难发现。</p>
+
+<h4>第三步：造三种负载</h4>
+
+<p>照 2.4 节那张参数表造，或者用你自己觉得更像的数。三种必须都有，因为第一种（完全不共享）是你的对照组：如果它跑出来的命中率不是 0，说明你的实现有 bug。</p>
+
+<p>agent 那种要特别注意一点：一条请求要同时记住 prompt 和这一轮生成出来的 token，插缓存时插的是两者拼起来的序列，而下一轮的 prompt 必须包含上一轮生成的那一截原文。这一点写错了，命中会在每一轮的边界上断掉，你会得到一个偏低但看起来很合理的命中率。</p>
+
+<h4>第四步：扫两个变量</h4>
+
+<p>扫缓存容量，画出命中率曲线；然后把请求顺序从"按会话成组"改成"轮次交错"，再扫一遍。两条曲线之间的水平距离，就是你这批负载的复用距离。</p>
+
+<p style="margin-bottom:.3rem"><span class="lbl">验收标准</span></p>
+<ul>
+<li>独立请求那一组，任何容量下命中率都是 0.0%。</li>
+<li>共享系统提示词那一组，命中 token 总数应该等于 <code>(请求数 − 1) × (系统提示词长度 // 块大小) × 块大小</code>，能对上整数。对不上就是链或者查找写错了。</li>
+<li>交错顺序追平成组顺序的那个容量点，应该接近"所有会话最终上下文长度之和"。</li>
+</ul>
+
+<p style="margin-bottom:.3rem"><span class="lbl">常见坑</span></p>
+<ul>
+<li>把 token 存成 numpy 的整数标量。功能没错，但 <code>pickle</code> 会慢十几倍，扫一遍参数要等很久。存成 Python 的 <code>int</code>。</li>
+<li>缓存容量用"多少个 token"记，而块表用"多少块"记，两者换算时忘了除以块大小。表现是扫块大小的时候曲线形状很怪。</li>
+<li>命中率的分母写成了"prompt 加生成"。生成那部分不该进分母，进了之后所有命中率会被系统性压低。</li>
+</ul>
+
+<h3>任务 B（约 40 分钟）· 给你自己那个玩具引擎装上前缀缓存</h3>
+
+<p>Day 15 的任务 B 里你给引擎加了块池和抢占。现在给它加一层前缀缓存：</p>
+
+<ul>
+<li>请求放行之前先查一次最长命中前缀，命中的那些块直接挂到这条请求的块表上，引用计数加一，不重新分配。</li>
+<li>这条请求实际要算的 token 数从 prompt 长度减去命中长度。注意留最后一块要重算（第 12 节那段源码注释）。</li>
+<li>请求跑完之后，它的块引用计数减一，但<em>不要立刻还回空闲池</em>——带 hash 的块放到空闲队列尾部，不带的放队首，分配时从队首取。这就是 vLLM 那套 LRU。</li>
+<li>打三个数：前缀命中率、平均每步在跑几条、以及被前缀缓存救下来的 token 总数。</li>
+</ul>
+
+<p style="margin-bottom:.3rem"><span class="lbl">验收标准</span></p>
+<ul>
+<li>把同一批请求跑两遍（第二遍缓存是热的），第二遍的总步数应该明显少于第一遍。</li>
+<li>开缓存之后可用块数会比不开时"看起来"更少，因为跑完的块不再立刻回到队首——但抢占次数不应该因此上升。如果上升了，说明带 hash 的块在被真正需要时没被正确回收。</li>
+</ul>
+
+<p style="margin-bottom:.3rem"><span class="lbl">加分题</span></p>
+<ul>
+<li>把第 12 节那张耗时表在你自己的机器上重跑一遍，然后回答：在你的机器上，命中率要到多少，一条"输入 4000 输出 100"的请求的端到端时间才能减半？再回答同一条请求"输入 4000 输出 2000"时，这个命中率是否存在。</li>
+<li>第 13 节那个 27.7 MB/s 的门槛，换成你手上那张卡再算一遍：重算一个 token 的成本用它的标称算力和模型参数量估（一次前向大约 2 × 参数量 次浮点运算），搬运速率用实测的主机到显存拷贝速率。算出来的门槛是多少？你机器上的 SSD 跨得过去吗？</li>
+<li>把任务 A 的模拟器改成基数树，匹配粒度改到单个 token，淘汰改成"只从叶子扔"。用同一批负载跑，看命中率差多少。差得比你预期的小的话，想一想第 11 节那张表的最后一列在说什么。</li>
+<li>给任务 A 的负载加一种新流量：一批请求共享同一段很长的文档（比如 8000 个 token），每条问一个不同的问题。它的命中率天花板是多少？把它和"共享系统提示词"那一组比，两者的曲线在容量扫描上的形状有什么不同？</li>
+</ul>
+
+<h2>板块 4 · 工作现场</h2>
+
+<h3>场景一：命中率从 80% 掉到 30%，代码一行没改</h3>
+
+<p>周一早上监控告警，前缀缓存命中率跌了一半多，首 token 延迟的 P99 跟着涨。查发布记录，服务端一周没上线了。</p>
+
+<p>先分三种可能，这三种是互斥的，一个一个排除。</p>
+
+<p>第一种，流量的共享结构变了。比如某个调用方给每条请求的开头拼了一个时间戳或者请求 ID——那一个 token 就能让整条 hash 链从第 0 块起全部作废。查法是抽样几条请求的 prompt，把它们的前 200 个 token 逐字对一遍。这类事故最常见，也最容易修。</p>
+
+<p>第二种，缓存容量变小了。有人调低了给 KV 的显存比例，或者换了更大的模型使权重占得更多。查法是看引擎报的总块数有没有变。</p>
+
+<p>第三种，容量和流量都没变，是并发涨了。这就是第 10 节那件事：同时在途的会话变多，每一次复用的距离被拉长，超过了缓存能兜住的范围。它的特征很好认——命中率和并发数的曲线反着走，而且是连续的、不是台阶状的。</p>
+
+<h3>场景二：产品问"我们把上下文从 8K 提到 32K，缓存还够用吗"</h3>
+
+<p>这个问题不能直接答够或不够，要先把它翻译成一个可以算的式子。</p>
+
+<p>缓存要装的东西约等于"同时在途的会话数 × 每个会话的平均上下文长度"。上下文上限翻四倍，通常意味着平均上下文也跟着涨（虽然不会是四倍），于是分子涨。而 KV 那部分显存不变，能装的 token 数不变。两边一除，命中率会掉，掉多少取决于涨了多少。</p>
+
+<p>要回答得靠谱，你需要向他们要一个数：会话的上下文长度分布，尤其是高百分位。平均值在这里会骗人——一条 32K 的会话，占的位置抵得上十六条 2K 的。</p>
+
+<p>能给的缓解办法有三条：把长上下文的请求单独路由到一组机器（Day 25 的题目）；把 KV 往 CPU 内存卸载一层，用带宽换容量（第 13 节）；以及最直接的，把给 KV 的显存比例调上去，前提是激活值那边还有余量。</p>
+
+<h3>场景三：安全同事问"两个客户的数据会不会通过缓存串"</h3>
+
+<p>这个问题问得对，而且答案不是"不会"。前缀缓存是按内容匹配的，两个租户只要 prompt 的开头一样，就会命中同一批块。数据本身不会泄露——命中只是省了计算，返回的内容还是各算各的。但时间会泄露：攻击者可以构造一段 prompt，通过首 token 延迟明显变短，推断出"这段内容之前有人发过"。</p>
+
+<p>vLLM 给的解法是每条请求可以带一个 <span class="term">缓存盐（cache salt）</span>，它被混进第一块的 hash 里，于是只有带同一个盐的请求才可能互相命中。文档里的原话是：</p>
+
+<pre><code># docs/design/prefix_caching.md
+By including a `cache_salt` in the request, this value is injected into
+the hash of the first block, ensuring that only requests with the same
+salt can reuse cached KV blocks. This prevents timing-based attacks where
+an adversary could infer cached content by observing latency differences.</code></pre>
+
+<p>代价你现在能自己算：按租户下盐，等于把一个大缓存切成 N 个互不相通的小缓存。共享的系统提示词从"全体共用一份"变成"每个租户一份"，第 9 节那 67.6% 会按租户数被稀释。安全和命中率在这里是直接对冲的，怎么切要看你的租户模型——同一个公司内部的用户之间通常可以共享，跨公司通常不行。</p>
+
+<h3>同事和面试官常问的</h3>
+
+<p><span class="lbl">「前缀缓存为什么只能匹配前缀，不能匹配中间任意一段相同的内容？」</span><br>
+从因果注意力答起：一个位置的 K 和 V 依赖它前面的全部 token，前面换了它就换了。所以两段内容相同但前文不同的 token，算出来的 KV 是两组完全无关的数——第 3 节那个 4.373 就是这个。补一句：正因为这个依赖是严格的，复用才是无损的，输出一个字都不会变。</p>
+
+<p><span class="lbl">「vLLM 和 SGLang 的前缀缓存有什么区别？」</span><br>
+别只答"一个用 hash 一个用树"。说清两个真实差别：匹配粒度上，hash 链只能对到整块，树能停在边中间；淘汰上，树只从叶子往上扔，于是被共享得越多的前缀越靠近根、越晚被扔，这是结构自带的，不需要额外策略。再补一句量级：在公共前缀足够长的场景，粒度这个差别不到一个百分点。</p>
+
+<p><span class="lbl">「开了前缀缓存要给它单独留多少显存？」</span><br>
+不用留。vLLM 的缓存就住在空闲块队列里——跑完的块不立刻擦掉，等到真的需要分配时才顺手作废。所以它是拿空闲容量白捡的，唯一的额外开销是每块一次 hash，一条 2048 token 的 prompt 是零点二毫秒量级。</p>
+
+<p><span class="lbl">「命中率 90% 了，为什么延迟没怎么降？」</span><br>
+先反问一句输出多长。前缀缓存只动 prefill，decode 一步都省不掉。输入几千输出一百的 agent 请求，省下来的能占端到端时间的大半；输入几百输出两千的写作请求，省下来的会被生成阶段完全淹没。这不是调优问题，是这个优化的作用域。</p>
+
+<p><span class="lbl">「怎么把命中率提上去？」</span><br>
+按顺序问三件事。第一，公共的东西是不是真的在最前面——把随请求变化的内容（时间戳、用户 ID、检索到的片段）挪到 prompt 后半段，能让前面那一大段变成稳定前缀。第二，缓存容量够不够装下所有在途会话的上下文。第三，同一个会话的请求是不是每次都落在同一台机器上。这三件事的杠杆一件比一件大，代价也一件比一件高。</p>
+<h2>板块 5 · 自检问题</h2>
+
+<details>
+<summary>1. 有人为了省内存，把系统提示词从 613 个 token 精简到 600 个，其他都没动，块大小是 128。命中率会怎么变？</summary>
+<p>会变好，而且好得不成比例——但方向和"精简"这个动作本身没关系。</p>
+<p>613 除以 128 等于 4 余 101，能对上 4 块 512 个 token，剩下 101 个每条请求都要重算。600 除以 128 等于 4 余 88，还是 4 块 512 个，剩 88 个。所以这一改其实几乎没改善命中的绝对量，只是分母小了一点点。</p>
+<p>真正有效的改法是把它精简到 512，或者反过来补到 640。640 除以 128 正好是 5 块，一个 token 都不浪费——加长反而比缩短更划算。这件事的一般形状是：公共前缀的<em>长度对块大小的余数</em>才是那笔损失，前缀本身多长不重要。</p>
+<p>错在哪：把"内存省了"和"命中率高了"当成同一件事。这两件事在块边界这个问题上是脱钩的。</p>
+</details>
+
+<details>
+<summary>2. 你的服务命中率长期稳定在 62%。有人提议把给 KV 的显存比例从 0.85 调到 0.92，说缓存大了命中率就上去了。这个提议在什么情况下有效，什么情况下一点用都没有？</summary>
+<p>要先看命中率是被什么卡住的。第 10 节那两张表给出了两种完全不同的形状。</p>
+<p>如果曲线已经压平了——也就是当前容量已经在天花板上——那再加容量一点用都没有。这时候 62% 是流量本身的上限，唯一能动的是流量的形状：把公共的内容挪到前面去，或者让同一个会话总落在同一台机器上。</p>
+<p>如果曲线还在爬坡段，加容量就直接换来命中率。判断的办法很简单，不用改代码：把并发压到平时的一半再看命中率。如果明显上去了，说明你在爬坡段，是容量或者复用距离的问题；如果没动，说明你在天花板上。</p>
+<p>错在哪：把容量当成命中率的唯一自变量。它只是三个自变量里的一个，而且往往不是最紧的那个。</p>
+</details>
+
+<details>
+<summary>3. 一条请求和十分钟前的某条一字不差地重复。它的首 token 延迟能降到接近零吗？</summary>
+<p>不能，有三个各自独立的原因，任何一个单独成立都足以让它降不到零。</p>
+<p>第一，引擎故意留了最后一个 token 不给命中，因为采样下一个 token 需要最后那个位置的输出，而缓存里只存了 K 和 V。又因为分配要按块对齐，实际会重算最后一整块——块大小 16 时就是 16 个 token。</p>
+<p>第二，十分钟是很长的时间。这条请求的块还在不在缓存里，取决于这十分钟里有多少别的请求挤进来过，也就是它的复用距离。多半已经被 LRU 扔掉了。</p>
+<p>第三，就算全命中，请求还要排队、要等调度器把它放进某一个引擎步、要走网络。这些 Day 2 和 Day 9 都量过，它们不因为命中而消失。</p>
+<p>错在哪：把"命中率 100%"读成"prefill 时间为零"。它只是"prefill 的 token 数降到一块"。</p>
+</details>
+
+<details>
+<summary>4. 两个团队共用一个推理服务。A 团队的请求平均输入 3000、输出 80；B 团队平均输入 300、输出 1500。缓存容量紧张，只能优先保住一边。保谁？</summary>
+<p>保 A，而且差距不小。</p>
+<p>先看能省的绝对量：A 每条能省下来的是几千个 token 的 prefill，B 只有几百个，A 的分子本来就大一个数量级。</p>
+<p>再看省下来的能不能变成用户感受到的时间。按第 12 节那张表的形状：A 是输入长输出短，省掉的 prefill 占端到端时间的大头；B 是输入短输出长，它的时间几乎全花在 decode 上，而 decode 一个 token 都省不掉——就算把 B 的命中率做到 100%，它的总时间也几乎不动。</p>
+<p>还有第三层，容量这一侧也站在 A 这边吗？不一定。B 的输出长，意味着它每条请求占住的块更多、占的时间更久。所以"保住 A 的缓存"和"给 B 让出足够的运行内存"未必冲突，但需要分开看：缓存这件事优先 A，运行时的块预算是另一笔账。</p>
+<p>错在哪：只比输入长度就下结论。要比的是"能省的量"乘以"省了之后占端到端时间的比例"，这是两个因子。</p>
+</details>
+
+<details>
+<summary>5. 你把服务从 vLLM 换到 SGLang，别的都没改，命中率从 84% 涨到 84.4%，但 P99 首 token 延迟变差了。可能是什么？</summary>
+<p>命中率那 0.4 个百分点符合预期：第 11 节那张表里，块大小 1（相当于逐 token 匹配）和块大小 16 之间，agent 场景就差这么多。粒度更细带来的收益，在公共前缀有几千个 token 的时候本来就微不足道。</p>
+<p>延迟变差要另找原因，而且不该先怀疑缓存本身。一个值得先看的地方是：基数树的匹配不是只读的——匹配停在一条边中间时会触发节点分裂，改动树的结构。这意味着匹配这个动作要拿锁，而它发生在请求路径上。前缀分布很碎的流量会让分裂频繁发生。</p>
+<p>但这只是一个假设，不是结论。换引擎同时换掉了调度器、批处理策略、采样实现和一堆默认参数，任何一个都可能是原因。正确的做法是先把两边的批处理参数对齐，再用 Day 3 那套采样剖析器看时间实际花在哪，而不是从"我换了缓存实现"倒推。</p>
+<p>错在哪：拿一个只值 0.4 个百分点的改动，去解释一个明显的延迟回退。量级对不上的因果，通常是错的因果。</p>
+</details>
+
+<h2>板块 6 · 今日新词</h2>
+
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>因果注意力</td><td><code>causal attention</code></td><td>第 i 个位置只能看第 0 到第 i 个位置，实现上是给注意力打分矩阵盖一层上三角掩码</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td><code>prefix caching / APC</code></td><td>把算过的前缀的 KV 留着，后来的请求只要开头相同就直接取用，不必重算</td></tr>
+<tr><td>token 级前缀命中率</td><td><code>prefix cache hit rate</code></td><td>分子是被判定命中因而不必算的 token 数，分母是所有请求的 prompt token 总数</td></tr>
+<tr><td>块 hash 链</td><td><code>chained block hash</code></td><td>一块的指纹由上一块的指纹和本块 token 一起算出，于是"这一块在缓存里"等价于"从头到这儿都对得上"</td></tr>
+<tr><td>基数树 / 前缀树</td><td><code>radix tree</code>（SGLang 的 RadixAttention）</td><td>边上带一串 token 的树，公共前缀只存一份，从根到某节点的路径就是一段被缓存的前缀</td></tr>
+<tr><td>节点分裂</td><td><code>node split</code></td><td>匹配停在一条边中间时，把这条边从切点切成两截、插入一个新节点；不复制数据</td></tr>
+<tr><td>最近最少使用</td><td><code>LRU / least recently used</code></td><td>缓存满了先扔最久没被碰过的那一份</td></tr>
+<tr><td>复用距离</td><td><code>reuse distance</code></td><td>一份数据被用过之后到下一次被用之前，中间来过多少别的数据；缓存要兜住一次复用，容量得大于它</td></tr>
+<tr><td>缓存盐</td><td><code>cache salt</code></td><td>混进第一块 hash 里的一个值，只有带同一个盐的请求才可能互相命中，用来隔离租户</td></tr>
+<tr><td>卸载</td><td><code>offloading</code></td><td>把显存里的 KV 块搬到下一级存储存着</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td><code>tiering / primary tier / secondary tier</code></td><td>按速度容量排开的多级缓存；只有主层能和显存直接对搬，次层的一切进出都要经主层中转</td></tr>
+<tr><td>提升</td><td><code>promotion</code></td><td>把一段 KV 从下层搬回上层</td></tr>
+<tr><td>写入门槛</td><td><code>store threshold</code></td><td>一个块要被查到多少次才值得往下层写；防止把没人会再取的块塞进窄通道</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td><code>PCIe</code></td><td>显卡插在主板上的那条通道，显存和 CPU 内存之间搬东西的必经之路，带宽比显存自身低一到两个数量级</td></tr>
+</table>
+</div>
+<p>这十四个词里，前六个是同一件事的不同侧面——什么能复用、怎么认出来；后八个属于缓存装不下之后往哪儿去。它们本来就长在一个主题上，分开几天学反而更费劲。</p>
+<h2>板块 7 · 已学词表</h2>
+<p>Day 1 到今天引入过的全部术语，标注首次引入是哪一天。下一次遇到其中任何一个，都不会再重新定义。</p>
+<details>
+<summary>展开全部 182 个词</summary>
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th>引入于</th></tr>
+<tr><td>延迟</td><td><code>latency</code></td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td><code>throughput / queries per second</code></td><td>Day 1</td></tr>
+<tr><td>百分位</td><td><code>percentile (P50 / P95 / P99)</code></td><td>Day 1</td></tr>
+<tr><td>压测器</td><td><code>load generator</code></td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td><code>closed loop</code></td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td><code>open loop</code></td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td><code>hyper-threading / logical core</code></td><td>Day 1</td></tr>
+<tr><td>基线</td><td><code>baseline</code></td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td><code>service time</code></td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td><code>queueing time / queueing delay</code></td><td>Day 2</td></tr>
+<tr><td>利用率</td><td><code>utilization</code></td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td><code>Little&#x27;s Law</code></td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td><code>tail latency</code></td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td><code>coordinated omission</code></td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td><code>profiler</code></td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td><code>sampling / sampling frequency</code></td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td><code>sampling profiler</code></td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td><code>instrumenting profiler</code></td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td><code>flame graph</code></td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td><code>self time</code></td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td><code>on-CPU analysis</code></td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td><code>off-CPU analysis</code></td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td><code>event loop</code></td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td><code>CPU-bound / IO-bound</code></td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td><code>blocking the event loop</code></td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td><code>GIL (global interpreter lock)</code></td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td><code>releasing the GIL</code></td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td><code>run_in_executor</code></td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td><code>event loop lag</code></td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td><code>sampling bias</code></td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td><code>suspended coroutine</code></td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td><code>phase timing</code></td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td><code>effective capacity</code></td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td><code>bottleneck hypothesis table</code></td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td><code>bimodal distribution</code></td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td><code>client-side queuing</code></td><td>Day 6</td></tr>
+<tr><td>锁相</td><td><code>phase locking</code></td><td>Day 6</td></tr>
+<tr><td>抖动</td><td><code>jitter</code></td><td>Day 6</td></tr>
+<tr><td>预热</td><td><code>warm-up</code></td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td><code>send backlog</code></td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td><code>cache / cache hierarchy</code></td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td><code>cache line</code></td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td><code>hardware prefetcher</code></td><td>Day 7</td></tr>
+<tr><td>内存页</td><td><code>page</code></td><td>Day 7</td></tr>
+<tr><td>缺页</td><td><code>page fault</code></td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td><code>translation lookaside buffer</code></td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td><code>huge page / THP</code></td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td><code>memory bandwidth</code></td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td><code>FLOP / GFLOP⁄s</code></td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td><code>arithmetic intensity</code></td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td><code>machine balance</code></td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td><code>roofline model</code></td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td><code>basic linear algebra subprograms</code></td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td><code>token</code></td><td>Day 8</td></tr>
+<tr><td>自回归</td><td><code>autoregressive</code></td><td>Day 8</td></tr>
+<tr><td>预填充</td><td><code>prefill</code></td><td>Day 8</td></tr>
+<tr><td>解码</td><td><code>decode</code></td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td><code>TTFT / time to first token</code></td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td><code>TPOT / time per output token</code></td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td><code>ITL / inter-token latency</code></td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td><code>goodput</code></td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td><code>engine step / iteration</code></td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td><code>static batching</code></td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td><code>continuous batching / in-flight batching</code></td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td><code>chunked prefill</code></td><td>Day 9</td></tr>
+<tr><td>混合批</td><td><code>mixed batch</code></td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td><code>token budget</code></td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td><code>max_num_seqs</code></td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td><code>max_num_batched_tokens</code></td><td>Day 9</td></tr>
+<tr><td>抢占</td><td><code>preemption</code></td><td>Day 9</td></tr>
+<tr><td>重算</td><td><code>recompute</code></td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td><code>sandbox</code></td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td><code>namespace</code></td><td>Day 10</td></tr>
+<tr><td>能力</td><td><code>capabilities</code></td><td>Day 10</td></tr>
+<tr><td>换根</td><td><code>chroot / pivot_root</code></td><td>Day 10</td></tr>
+<tr><td>控制组</td><td><code>cgroup / control group</code></td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td><code>quota / period</code></td><td>Day 10</td></tr>
+<tr><td>节流</td><td><code>throttling</code></td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td><code>OOM killer</code></td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td><code>pids.max</code></td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td><code>syscall number</code></td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td><code>secure computing mode</code></td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td><code>seccomp-bpf filter</code></td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td><code>NO_NEW_PRIVS</code></td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td><code>attack surface</code></td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td><code>container escape</code></td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td><code>application kernel</code></td><td>Day 10</td></tr>
+<tr><td>microVM</td><td><code>microVM</code></td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td><code>hypervisor / VMM</code></td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td><code>rootfs / root filesystem</code></td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td><code>bind mount</code></td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td><code>mount propagation</code></td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td><code>MS_SHARED / shared</code></td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td><code>MS_PRIVATE / private</code></td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td><code>MS_SLAVE / slave</code></td><td>Day 11</td></tr>
+<tr><td>对等组</td><td><code>peer group</code></td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td><code>lazy unmount / MNT_DETACH</code></td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td><code>PID 1 / init process</code></td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td><code>cold start</code></td><td>Day 11</td></tr>
+<tr><td>叠加文件系统</td><td><code>overlayfs / overlay filesystem</code></td><td>Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td><code>lowerdir / upperdir / workdir</code></td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td><code>copy-on-write / copy_up</code></td><td>Day 12</td></tr>
+<tr><td>白障</td><td><code>whiteout</code></td><td>Day 12</td></tr>
+<tr><td>只读根</td><td><code>read-only rootfs</code></td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td><code>tmpfs</code></td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td><code>page cache</code></td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td><code>shmem</code></td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td><code>inode</code></td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td><code>size= / nr_inodes=</code></td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td><code>buffered write</code></td><td>Day 12</td></tr>
+<tr><td>直写</td><td><code>direct I/O (O_DIRECT)</code></td><td>Day 12</td></tr>
+<tr><td>回写</td><td><code>writeback</code></td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td><code>blkio throttle / io.max</code></td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td><code>major:minor</code></td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td><code>veth pair</code></td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td><code>SNAT / MASQUERADE</code></td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td><code>packet filter / netfilter (iptables)</code></td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td><code>DROP / REJECT</code></td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td><code>egress allowlist</code></td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td><code>capability bounding set</code></td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td><code>masking</code></td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td><code>least privilege</code></td><td>Day 12</td></tr>
+<tr><td>开放容器倡议</td><td><code>OCI / Open Container Initiative</code></td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td><code>runtime-spec</code></td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td><code>image-spec</code></td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td><code>distribution-spec</code></td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td><code>filesystem bundle</code></td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td><code>config.json</code></td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td><code>low-level runtime / runtime engine</code></td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td><code>high-level runtime</code></td><td>Day 13</td></tr>
+<tr><td>libcontainer</td><td><code>libcontainer</code></td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td><code>runc init</code></td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td><code>binary cloning / exeseal</code></td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td><code>__attribute__((constructor))</code></td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td><code>nsexec stage 0 / 1 / 2</code></td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td><code>exec fifo</code></td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td><code>creating / created / running / stopped</code></td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td><code>lifecycle hooks</code></td><td>Day 13</td></tr>
+<tr><td>垫片</td><td><code>shim</code></td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td><code>ttRPC</code></td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td><code>subreaper / PR_SET_CHILD_SUBREAPER</code></td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td><code>zombie process</code></td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td><code>CRI / Container Runtime Interface</code></td><td>Day 13</td></tr>
+<tr><td>预热池</td><td><code>warm pool</code></td><td>Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td><code>zygote / fork server</code></td><td>Day 14</td></tr>
+<tr><td>懒加载</td><td><code>lazy loading / lazy pulling</code></td><td>Day 14</td></tr>
+<tr><td>并发上限</td><td><code>concurrency limit</code></td><td>Day 14</td></tr>
+<tr><td>许可</td><td><code>semaphore</code></td><td>Day 14</td></tr>
+<tr><td>准入控制</td><td><code>admission control</code></td><td>Day 14</td></tr>
+<tr><td>背压</td><td><code>backpressure</code></td><td>Day 14</td></tr>
+<tr><td>泊松到达</td><td><code>Poisson arrivals</code></td><td>Day 14</td></tr>
+<tr><td>宽限期</td><td><code>grace period</code></td><td>Day 14</td></tr>
+<tr><td>请求路径</td><td><code>request path</code></td><td>Day 14</td></tr>
+<tr><td>异步回收</td><td><code>deferred cleanup</code></td><td>Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td><code>KV cache</code></td><td>Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td><code>query head / KV head</code></td><td>Day 15</td></tr>
+<tr><td>每头维度</td><td><code>head_dim / head size</code></td><td>Day 15</td></tr>
+<tr><td>分组查询注意力</td><td><code>GQA / grouped-query attention</code></td><td>Day 15</td></tr>
+<tr><td>内部碎片</td><td><code>internal fragmentation</code></td><td>Day 15</td></tr>
+<tr><td>外部碎片</td><td><code>external fragmentation</code></td><td>Day 15</td></tr>
+<tr><td>紧凑</td><td><code>compaction</code></td><td>Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td><code>block</code></td><td>Day 15</td></tr>
+<tr><td>块表</td><td><code>block table</code></td><td>Day 15</td></tr>
+<tr><td>分页注意力</td><td><code>PagedAttention</code></td><td>Day 15</td></tr>
+<tr><td>每块字节数</td><td><code>page_size_bytes</code></td><td>Day 15</td></tr>
+<tr><td>空闲块队列</td><td><code>free block queue</code></td><td>Day 15</td></tr>
+<tr><td>上下文长度上限</td><td><code>max_model_len</code></td><td>Day 15</td></tr>
+<tr><td>显存占用比例</td><td><code>gpu_memory_utilization</code></td><td>Day 15</td></tr>
+<tr><td>因果注意力</td><td><code>causal attention</code></td><td>Day 16</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td><code>prefix caching / APC</code></td><td>Day 16</td></tr>
+<tr><td>token 级前缀命中率</td><td><code>prefix cache hit rate</code></td><td>Day 16</td></tr>
+<tr><td>块 hash 链</td><td><code>chained block hash</code></td><td>Day 16</td></tr>
+<tr><td>基数树 / 前缀树</td><td><code>radix tree / RadixAttention</code></td><td>Day 16</td></tr>
+<tr><td>节点分裂</td><td><code>node split</code></td><td>Day 16</td></tr>
+<tr><td>最近最少使用</td><td><code>LRU / least recently used</code></td><td>Day 16</td></tr>
+<tr><td>复用距离</td><td><code>reuse distance</code></td><td>Day 16</td></tr>
+<tr><td>缓存盐</td><td><code>cache salt</code></td><td>Day 16</td></tr>
+<tr><td>卸载</td><td><code>offloading</code></td><td>Day 16</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td><code>tiering / primary tier / secondary tier</code></td><td>Day 16</td></tr>
+<tr><td>提升</td><td><code>promotion</code></td><td>Day 16</td></tr>
+<tr><td>写入门槛</td><td><code>store threshold</code></td><td>Day 16</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td><code>PCIe</code></td><td>Day 16</td></tr>
+</table>
+</div>
+</details>
+<h2>板块 8 · 专项深挖</h2>
+
+<p>今天放不下、但值得单独花一晚上的三件事。每一段可以直接粘给 Claude。</p>
+
+<div class="card">
+<p style="margin:.3rem 0"><span class="tag">一 · 预填充与解码拆到两组机器</span></p>
+<p>我在学 LLM 推理服务。已经搞清楚了：KV cache 的内存账和 PagedAttention 的块管理；前缀缓存的两种实现（vLLM 的块 hash 链、SGLang 的基数树）以及它们在匹配粒度和淘汰策略上的差别；把 KV 往 CPU 内存和 SSD 分级卸载的基本结构，包括"次层不能直连显存、必须经主层中转"这条约束。我没学的是把 prefill 和 decode 拆到两组机器上跑这件事。请以 Mooncake（arXiv 2407.00079）和 DistServe 为例讲清楚：为什么这两个阶段值得拆开（各自的瓶颈是什么、放在一起互相怎么干扰）；拆开之后 KV 要怎么从 prefill 那组传到 decode 那组，这条传输在什么条件下比不拆更划算；以及这个架构对前缀缓存的命中率是帮忙还是添乱。我要的是架构层面的论证加上关键的数量级，不要入门教程。</p>
+</div>
+
+<div class="card">
+<p style="margin:.3rem 0"><span class="tag">二 · 把 KV 压小，而不是搬走</span></p>
+<p>我已经会算 KV cache 的内存账，也知道分页、前缀复用、分级卸载这三条路各自省的是什么。现在我想搞清楚第四条路：把 KV 本身变小。请系统地讲一遍这条路上有哪些做法——KV 的低比特量化、多查询与分组查询注意力、多头潜在注意力（MLA）、以及各种"只留一部分 token"的稀疏方案。对每一种我要知道：它把内存公式里的哪一项变小了、代价是什么（精度、算力、实现复杂度）、以及它和前缀缓存能不能共存（比如量化过的块还能不能按 hash 匹配）。我不做算法研究，我要的是作为基础设施工程师需要理解到的深度：什么时候该向模型团队提这个要求，以及提了之后我的服务要跟着改什么。</p>
+</div>
+
+<div class="card">
+<p style="margin:.3rem 0"><span class="tag">三 · 跨机共享一份 KV 缓存</span></p>
+<p>我知道单机上的前缀缓存怎么做，也量过"同一个会话的请求落在不同机器上会让命中率掉多少"。现在的问题是多机：一个几十台机器的推理集群，能不能共享同一份 KV 缓存池？请讲清楚 LMCache 和 Mooncake Store 这类方案的结构——KV 存在哪儿、用什么协议传（RDMA / NVLink / 以太网各自的量级）、一致性和失效怎么处理、以及"从远端机器取回一段 KV"和"在本地重算"这个判断在集群规模下怎么做。同时我想知道这条路的失败模式：什么样的流量和什么样的网络，会让共享缓存变成负收益。</p>
+</div>
+
+<h2>板块 9 · 延伸材料</h2>
+
+<ul>
+<li><a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html">vLLM 的 Automatic Prefix Caching 设计文档</a>（也在仓库里：<code>docs/design/prefix_caching.md</code>）。今天第 5 节引的那套 hash 链就出自它，文档开头那张画着三块 token 和前缀范围的图，比任何文字都直观。<br><span class="small">难度低，半小时能读完，是今天内容最直接的一手来源。</span></li>
+<li><a href="https://arxiv.org/abs/2312.07104">SGLang: Efficient Execution of Structured Language Model Programs</a>（Zheng 等，arXiv 2312.07104）。RadixAttention 的出处。摘要里报告在包括 agent 控制、多轮对话在内的任务上相对当时最好的系统吞吐提升最高 6.4 倍。<br><span class="small">难度中等。只读 RadixAttention 那一节就能读，前端语言那半部分和今天无关，可以跳过。</span></li>
+<li><a href="https://arxiv.org/abs/2407.00079">Mooncake: A KVCache-centric Disaggregated Architecture for LLM Serving</a>（Qin 等，arXiv 2407.00079，FAST'25）。第 14 节引的那句"利用 GPU 集群里闲置的 CPU、内存和 SSD 资源"就是它的主张。<br><span class="small">难度偏高，但它是把"KV 当成一等公民来设计整个系统"这个思路说得最完整的一篇。建议读完上面两条再读。</span></li>
+<li>SGLang 仓库里的 <code>python/sglang/srt/mem_cache/radix_cache.py</code>。今天引的 <code>_match_prefix_helper</code>、<code>_split_node</code>、<code>evict</code> 三段都在这一个文件里，六百行左右，是少见的能一次读完的核心数据结构实现。<br><span class="small">难度中等，读之前先把基数树的形状在纸上画一遍会轻松很多。</span></li>
+<li>vLLM 仓库里的 <code>docs/features/kv_offloading_usage.md</code>。第 14 节那两个默认值（<code>offload_prompt_only</code>、<code>store_threshold</code>）就在它的配置表里，而配置表往往比设计文档更能暴露真实的取舍。<br><span class="small">难度低，当参考手册翻，重点看那张参数表每一行的默认值和它的理由。</span></li>
+</ul>
+
+<h2>板块 10 · 今日五句话</h2>
+
+<div class="card five">
+<p style="margin:.3rem 0"><span class="tag">合上这一页，用自己的话回答</span></p>
+<p>1. 为什么两条请求能共用的一定是前缀，而不能是中间任意相同的一段？</p>
+<p>2. 块 hash 链里，每一块的指纹为什么要把上一块的指纹装进去？如果不装，查找会变成什么样？</p>
+<p>3. 同一批请求、同样的缓存容量，命中率能差五十多个百分点。差在哪个量上？</p>
+<p>4. 一条请求的命中率做到 90% 之后，用户感受到的时间省了多少？这个问题还缺哪个输入才能回答？</p>
+<p>5. 判断"从下一级取回来"还是"干脆重算"，要拿哪几个量做除法？为什么这个判断在 CPU 上和 GPU 上会翻方向？</p>
+<div class="write"></div>
+</div>
+
+<h4>逐句自查标准</h4>
+
+<p><span class="lbl">第 1 句</span>　如果写成"因为缓存是按前缀存的"，那是拿结论当理由。要答到因果注意力：一个位置的 K 和 V 依赖它前面的全部 token。可以补一个具体证据——前缀改一个 token，从那一位起后面全变，之前的一位不变。</p>
+
+<p><span class="lbl">第 2 句</span>　如果只写"为了区分不同的块"，漏了最关键的一半。装进父指纹之后，"这一块在缓存里"这一个条件就等价于"从头到这一块的整段前缀都对得上"，于是查找从"逐个 token 比对每一条已有序列"变成一次哈希表查找，跟缓存里有多少条序列无关。不装的话，你得另外存一份"这一块的前文是什么"，才能确认匹配的是同一条路径。</p>
+
+<p><span class="lbl">第 3 句</span>　答"到达顺序"只答了表象。要落到复用距离上：同一个会话的两次请求之间隔了多少别人的 token。成组顺序下这个距离接近零，交错顺序下它是另外 39 个会话的全部增量。缓存容量必须大于这个距离，命中才兑现得了。</p>
+
+<p><span class="lbl">第 4 句</span>　缺的输入是输出长度。同样 90% 的命中率，生成 16 个 token 时端到端省七成多，生成 512 个时只省一成半。原因是前缀缓存只作用在 prefill 上。如果你答的是"缺机器配置"，方向不对——机器换了，两边同时变，比例大致不动。</p>
+
+<p><span class="lbl">第 5 句</span>　四个量：每 token 的 KV 字节数、搬运速率、模型参数量、算力。前两个决定取回要多久，后两个决定重算要多久。翻方向的原因是算力和搬运速率在两种硬件上不成比例地变——GPU 的算力高三四个数量级，而它对外的通道是一条带宽有限的总线。只答"GPU 更快"不够，要说清楚是分子分母各自变了多少。</p>
+
+<h2>板块 11 · 明日预告</h2>
+
+<p>今天用了一整天源码，但用的方式是"想验证某一点，就去那个文件里找那一行"。第 5 节的 hash 怎么算、第 7 节的块怎么回收、第 12 节为什么最后一块要重来，三段代码分别来自三个文件，中间隔着什么，今天一句没说。</p>
+
+<p>明天 Day 17 把这条路从头走一遍：一条请求从进入引擎，到吐出第一个 token，代码依次经过哪些文件、每一步交给谁。今天引用过的那几个函数会在那条路上各自出现一次，你会看到它们分别站在哪个位置——比如"查最长命中前缀"这个动作，具体是在调度器决定这一步给谁分配之前，还是之后。那一天的裁判是源码本身，每个论断都带文件路径和行号。</p>
+
+<footer>
+<p>AI Infra · Day 16 / 28 · 2026-09-02 · 阶段二 · 推理服务与 KV Cache</p>
+<p>实验条件：2 核 Intel Xeon @ 2.80 GHz，L1d 64 KiB、L2 2 MiB、L3 33 MiB，7.84 GiB 内存，页大小 4096 字节；Linux 6.18.44；Python 3.11.15 + numpy 2.4.4，全程 <code>OPENBLAS_NUM_THREADS=1</code>。P7 的磁盘测量在云主机的网络盘上完成，绝对值不代表本地 NVMe。</p>
+<p>源码引用取自 vLLM 仓库 commit <code>80389cf</code> 与 SGLang 仓库 commit <code>ed82bea</code>，文中行号以这两个提交为准。模型设定沿用 Day 15：8 层、hidden 4096、32 个查询头、8 个键值头、每头维度 128、KV 用 float32，每 token 64 KiB。</p>
+</footer>
+
+</div>
+</body>
+</html>
