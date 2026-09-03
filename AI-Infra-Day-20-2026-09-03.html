@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 20</title>
+<style>
+:root{
+  --bg:#faf6ef; --card:#fffdf8; --ink:#2e2a24; --ink2:#5c5449; --ink3:#8a8073;
+  --rule:#e6ddcd; --rule2:#d8ccb6;
+  --accent:#9a5b2c; --accent2:#3f6b5c; --accent3:#6a4f8a; --accent4:#8a6d1f;
+  --codebg:#2b2721; --codeink:#e9e2d5; --mark:#f0e4cd;
+  --tblhead:#f3ecdd; --tblzebra:#fbf7ef;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#191714; --card:#211e1a; --ink:#e7e0d4; --ink2:#bdb4a5; --ink3:#8f867a;
+    --rule:#3a352d; --rule2:#4a4238;
+    --accent:#d99a63; --accent2:#79b39c; --accent3:#ab8fd0; --accent4:#cfae55;
+    --codebg:#14120f; --codeink:#e2dacb; --mark:#3d3423;
+    --tblhead:#2a261f; --tblzebra:#1f1c18;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#191714; --card:#211e1a; --ink:#e7e0d4; --ink2:#bdb4a5; --ink3:#8f867a;
+  --rule:#3a352d; --rule2:#4a4238;
+  --accent:#d99a63; --accent2:#79b39c; --accent3:#ab8fd0; --accent4:#cfae55;
+  --codebg:#14120f; --codeink:#e2dacb; --mark:#3d3423;
+  --tblhead:#2a261f; --tblzebra:#1f1c18;
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",
+    "Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px; line-height:1.78; -webkit-text-size-adjust:100%;
+}
+.bar{
+  position:sticky; top:0; z-index:20; background:var(--card);
+  border-bottom:1px solid var(--rule2); padding:8px 16px;
+  display:flex; gap:14px; align-items:baseline; flex-wrap:wrap;
+  font-size:13.5px; color:var(--ink2);
+}
+.bar b{color:var(--accent); font-size:14.5px; letter-spacing:.02em}
+.bar .sp{margin-left:auto; color:var(--ink3)}
+main{max-width:820px; margin:0 auto; padding:0 18px 90px}
+h1{font-size:26px; line-height:1.45; margin:30px 0 6px; letter-spacing:-.01em}
+.sub{color:var(--ink2); margin:0 0 26px; font-size:15px}
+h2{
+  font-size:20px; margin:52px 0 14px; padding-top:16px;
+  border-top:2px solid var(--rule2); letter-spacing:-.01em;
+}
+h2 .kk{display:block; font-size:12.5px; color:var(--ink3); font-weight:600; letter-spacing:.09em; margin-bottom:3px}
+h3{font-size:17px; margin:32px 0 10px; color:var(--ink)}
+h4{font-size:15.5px; margin:22px 0 8px; color:var(--ink2)}
+p{margin:12px 0}
+strong{color:var(--accent); font-weight:650}
+.lead{font-size:17.5px; color:var(--accent2); font-weight:600; margin:20px 0 12px}
+.term{
+  background:var(--mark); border-bottom:1px solid var(--rule2);
+  padding:.5px 4px; border-radius:3px; font-weight:600;
+}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--mark); padding:1px 5px; border-radius:4px;
+  overflow-wrap:anywhere; word-break:break-word;
+}
+pre{
+  background:var(--codebg); color:var(--codeink); padding:15px 17px; border-radius:9px;
+  overflow-x:auto; line-height:1.62; font-size:13.2px; margin:14px 0;
+}
+pre code{background:none; padding:0; font-size:inherit; color:inherit; overflow-wrap:normal; word-break:normal}
+.scroll{overflow-x:auto; margin:16px 0; border-radius:9px; border:1px solid var(--rule)}
+table{border-collapse:collapse; width:100%; font-size:14.2px; min-width:460px; background:var(--card)}
+th,td{border-bottom:1px solid var(--rule); padding:8px 11px; text-align:left; vertical-align:top}
+th{background:var(--tblhead); font-weight:650; white-space:nowrap; color:var(--ink)}
+tbody tr:nth-child(even){background:var(--tblzebra)}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+.cap{font-size:13px; color:var(--ink3); margin:6px 0 0}
+.card{border-radius:10px; padding:16px 18px; margin:22px 0; background:var(--card); border:1px solid var(--rule)}
+.card>*:first-child{margin-top:0} .card>*:last-child{margin-bottom:0}
+.c-recall{border-left:5px solid var(--accent2)}
+.c-pred{border-left:5px solid var(--accent3)}
+.c-five{border-left:5px solid var(--accent4)}
+.q{font-weight:700; color:var(--accent3)}
+.c-key{border-left:5px solid var(--accent)}
+.c-key .kt{font-size:12.5px; letter-spacing:.1em; color:var(--accent); font-weight:700; margin-bottom:4px}
+.breathe{color:var(--ink2); border-left:3px solid var(--rule2); padding-left:14px; margin:20px 0}
+details{margin:12px 0; border:1px solid var(--rule); border-radius:9px; padding:10px 14px; background:var(--card)}
+details[open]{padding-bottom:14px}
+summary{cursor:pointer; font-weight:640; color:var(--accent2); font-size:14.5px}
+.wr{border:1px dashed var(--rule2); border-radius:8px; min-height:74px; margin:10px 0; background:var(--tblzebra)}
+.wr::before{content:"写在这里"; display:block; font-size:12px; color:var(--ink3); padding:6px 10px}
+figure{margin:22px 0}
+figure svg{display:block; max-width:100%; height:auto; color:var(--ink)}
+figcaption{font-size:13px; color:var(--ink3); margin-top:7px}
+ol,ul{padding-left:22px} li{margin:7px 0}
+footer{margin-top:60px; padding-top:20px; border-top:2px solid var(--rule2); font-size:13.2px; color:var(--ink3)}
+footer .ln{color:var(--ink2); font-weight:600; margin-bottom:8px}
+hr{border:0; border-top:1px solid var(--rule); margin:28px 0}
+</style>
+</head>
+<body>
+<div class="bar"><b>Day 20 / 28</b><span>阶段四 · Agent Runtime（八天项目 · 第 3 天 · 建造）</span><span class="sp">2026-09-03</span></div>
+<main>
+
+<h1>同一条会话，把上下文裁短之后，模型要算的 token 多了五倍</h1>
+<p class="sub">上下文顶到上限的那一刻，你要连着做三个选择：丢掉哪一段、隔多久丢一次、丢完剩下的存在哪儿。今天把这三个选择各自的价钱量出来，并且把它们和前缀缓存的账放在同一张表上。</p>
+
+<h2><span class="kk">板块 0</span>温故 · 闭卷</h2>
+<p>三道题，间隔分别是 1 天、3 天、7 天。别往前翻，先在心里答一遍。</p>
+
+<div class="card c-recall">
+<h3>第 1 题（Day 19 · 一段文字的价钱由它进去的时刻决定）</h3>
+<p>昨天量到：一段一千零八十八字节的堆栈在第 2 轮末尾追加进上下文，一条六轮会话为它多发四千四百八十字节。</p>
+<p>现在把同一段堆栈挪一挪：它改成在第 5 轮末尾才进去，别的一个字不动。这条六轮会话为它多发多少字节？把算法写出来，再用一句话说清楚这条规律的形状。</p>
+<details><summary>展开答案</summary>
+<p>多发一千一百二十字节。</p>
+<p>算法和昨天完全一样，只有乘数变了。每一次重发要付的不是一千零八十八，是一千一百二十——多出来的四十字节是那些换行和引号进 JSON 时被转义多占的。乘数等于「这段东西之后还剩几轮」：第 2 轮末尾进去，第 3 到第 6 轮各重发一次，乘数是四；第 5 轮末尾进去，只剩第 6 轮一轮，乘数是一。</p>
+<p>形状是这样的：上下文只往后长、从来不改前面，所以任何进去的东西都会被它后面的每一轮原样搬一遍。一段文字的价钱等于它自己的长度乘以它之后还剩几轮——同一段东西，进去得越早越贵。</p>
+<p>接今天：既然进去得早的最贵，那把进去得早的那些清出来，是不是就该最省？今天整页在算这笔账，而它有一个非常不直观的答案。</p>
+</details>
+</div>
+
+<div class="card c-recall">
+<h3>第 2 题（Day 17 · 停止串为什么判在前端）</h3>
+<p>vLLM 的引擎进程里没有分词器，它手上只有整数。一条请求设了停止串，这件事的判定发生在前端进程，而且判出来之后还要再往引擎发一条消息。</p>
+<p>为什么这件事引擎自己判不了？为什么判出来之后还要多一个来回？</p>
+<details><summary>展开答案</summary>
+<p>引擎判不了，是因为停止串是一串<em>字</em>，而引擎手上是一串<em>整数</em>。这两者之间不是一一对应的：一个停止串可能横跨两个 token，也可能只占某个 token 的后半截。要认出它，必须先把整数拼回文字，而拼回文字这件事需要分词器，分词器住在前端。</p>
+<p>多的那个来回是这么来的：引擎按自己知道的条件（到达 EOS、到达长度上限）判断这条请求还没结束，于是继续往下算；前端拿到新吐出来的字，拼进已有的文字里，这才发现停止串出现了。此刻引擎那一侧还在跑，所以前端要再发一条中止消息回去。</p>
+<p>这不是设计缺陷，是「引擎不碰文字」这个决定的必然代价。要让引擎自己判，就得把分词器搬进引擎进程，那套进程隔离也就没了。</p>
+<p>接今天：今天要做的事也全部发生在运行时这一侧。上下文怎么拼、裁掉哪一段，引擎一个字都不知道——它收到的只是一串 token，然后拿这串 token 去和自己缓存里的块对。所以你在这一侧动的每一刀，对面都只能靠「对不对得上」来感知。</p>
+</details>
+</div>
+
+<div class="card c-recall">
+<h3>第 3 题（Day 13 · 为什么起一个容器要两条命令）</h3>
+<p>runtime-spec 给容器定了四个状态，其中 <code>created</code> 是「创建操作已完成，但用户指定的那个程序既没退出、也还没被执行」。</p>
+<p>如果规范只留 <code>run</code> 一条命令、不单独定义 <code>create</code> 和 <code>start</code>，会失去什么？举一类具体的东西说明。</p>
+<details><summary>展开答案</summary>
+<p>失去的是「环境全搭好了，但用户的程序一行都还没跑」这个可以被外人插手的时刻。</p>
+<p>规范把生命周期拆成十三步，其中有四类生命周期钩子的插入点落在造完环境之后、真正 <code>execve</code> 用户程序之前。网络插件要在这个时刻把网卡塞进去，设备注入要在这个时刻把设备节点建好——这些动作必须发生在命名空间已经建好之后，又必须发生在用户程序看到这个环境之前。只有一条 <code>run</code> 的话，这个窗口不存在，插不进去。</p>
+<p>接今天：今天第四部分要给会话造一个形状完全一样的时刻。一条被打断的会话重新跑起来，不能一上来就往下走——得先有一个「状态从库里装回来了，但下一轮还没发出去」的时刻，因为装回来的东西对不对，决定了下一轮的代价。</p>
+</details>
+</div>
+
+<h2><span class="kk">板块 1</span>今日概览</h2>
+
+<div class="scroll"><table>
+<thead><tr><th>项</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>进度</td><td>Day 20 / 28 · 阶段四 · Agent Runtime（八天项目的第 3 天，建造）</td></tr>
+<tr><td>今日主题</td><td>上下文窗口里装的是什么、装不下时四种裁法各自的代价、裁剪和前缀缓存为什么是同一笔账、会话状态存到进程之外再读回来要付什么</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+<p>请求该发给哪一台机器。今天会量出「同一条会话落在同一台副本上」值多少命中率，但真到了要定路由策略的时候，它得和负载均衡、扩缩容、机器故障一起谈——那是 Day 25 一整天。今天只把它的价钱摆出来。</p>
+<p>任务队列、断点续跑、背压与并发配额。今天只做到「一条会话的状态存得下、读得回」，多条长任务怎么排队、怎么限流是 Day 21。</p>
+<p>摘要那段文字本身怎么写。要保留哪些信息、用什么句式，是提示词那一侧的题目。今天只管两件事：这个块有多长，以及隔多久做一次。</p>
+</td></tr>
+</tbody></table></div>
+
+<h3>今天收工的时候，你应该能做到这三件</h3>
+<ol>
+<li>拿到一条长会话，说清楚它的上下文由哪几块组成、哪一块是常数、哪一块按轮数长，并且算得出它第几轮会顶到窗口。</li>
+<li>面对「上下文太长了，加个截断吧」这句话，能说出四种裁法在「发出去多少、真正要算多少、留住多少历史」这三笔账上的差别，并且说得出为什么裁得越勤反而越贵。</li>
+<li>面对「进程重启之后 agent 明显变慢了」，能分辨这是读盘慢，还是读回来的上下文和缓存里那一份对不上——两者该查的地方完全不同。</li>
+</ol>
+
+<h3>今天这一页怎么走</h3>
+<div class="scroll"><table>
+<thead><tr><th>部分</th><th>它回答的问题</th></tr></thead>
+<tbody>
+<tr><td>第一部分 · 窗口顶到上限的那一刻</td><td>上下文里到底装了什么？满了之后，现成的库是怎么裁的？</td></tr>
+<tr><td>第二部分 · 今天的台子</td><td>九个账台各自量什么、哪些是真跑的、一条会话在模拟器里长什么样？</td></tr>
+<tr><td>第三部分 · 裁剪的两笔账</td><td>裁掉一段，省下的是什么、赔进去的是什么？两者能不能同时最优？</td></tr>
+<tr><td>第四部分 · 状态在进程之外</td><td>会话存到哪儿、读回来要多久，以及读回来的那一份为什么可能不是原来那一份？</td></tr>
+</tbody></table></div>
+
+<h2><span class="kk">板块 2 · 第一部分</span>窗口顶到上限的那一刻</h2>
+<p>先把「上下文太长了」这句抱怨拆成可以数的东西：里面装了什么、哪一块在长、第几轮会满。然后看现成的库满了之后是怎么做的。</p>
+
+<h3>1. 手边那一行截断代码</h3>
+<p class="lead">上下文顶到上限的那一刻，你会先删哪一段？</p>
+<p>你手边多半已经有这么一行，或者迟早会写出来：</p>
+<pre><code>if len(ctx) &gt; LIMIT:
+    ctx = ctx[-LIMIT:]      # 只留最后这么多，前面的不要了</code></pre>
+<p>这一行是对的，能跑，而且它抓住了正确的直觉：新的比旧的重要。它有两个问题，一个今天下一节就能看见，另一个要到第三部分才露面。</p>
+<p>先说名字。模型能接受的输入长度有个上限，Day 15 那个 <code>max_model_len</code> 就是它——那天是从显存那一侧看它，因为每一个 token 位都要真的占住一块 KV cache。今天从运行时这一侧看同一个数：它是你能花的总额。</p>
+<p>你要花的东西不止一样：系统提示词要占、工具注册表要占、历史轮次要占、这一轮模型要吐出来的东西也得留出位置。给这几样分别定下能占多少，这件事叫做<span class="term">上下文预算（context budget）</span>。</p>
+<p>这个词要和 Day 9 那个「token 预算」分开。那一个是调度器在<em>一个引擎步</em>里手上有多少 token 可以派，管的是这台机器这一瞬间的吞吐；今天这一个是<em>一条会话</em>在窗口上限之内怎么分配，管的是这条会话能记住多少。两个数没有任何换算关系，只是碰巧都叫预算。</p>
+
+<h3>2. 上下文由三块组成，只有一块在长</h3>
+<p>造一条三十轮的会话，不裁剪地跑到底，把每一轮的上下文按来源拆成三块打出来。头部是系统提示词加工具注册表，一千零二十四个 token 位，从头到尾一个数都不变。</p>
+
+<div class="scroll"><table>
+<thead><tr><th class="n">轮</th><th class="n">头部</th><th class="n">已完成的轮次</th><th class="n">这一轮新送进去的</th><th class="n">合计</th><th class="n">头部占比</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td class="n">1024</td><td class="n">0</td><td class="n">331</td><td class="n">1355</td><td class="n">75.6%</td></tr>
+<tr><td class="n">2</td><td class="n">1024</td><td class="n">437</td><td class="n">353</td><td class="n">1814</td><td class="n">56.4%</td></tr>
+<tr><td class="n">3</td><td class="n">1024</td><td class="n">970</td><td class="n">226</td><td class="n">2220</td><td class="n">46.1%</td></tr>
+<tr><td class="n">6</td><td class="n">1024</td><td class="n">2276</td><td class="n">287</td><td class="n">3587</td><td class="n">28.5%</td></tr>
+<tr><td class="n">10</td><td class="n">1024</td><td class="n">4246</td><td class="n">305</td><td class="n">5575</td><td class="n">18.4%</td></tr>
+<tr><td class="n">15</td><td class="n">1024</td><td class="n">6775</td><td class="n">231</td><td class="n">8030</td><td class="n">12.8%</td></tr>
+<tr><td class="n">20</td><td class="n">1024</td><td class="n">9185</td><td class="n">342</td><td class="n">10551</td><td class="n">9.7%</td></tr>
+<tr><td class="n">25</td><td class="n">1024</td><td class="n">11328</td><td class="n">313</td><td class="n">12665</td><td class="n">8.1%</td></tr>
+<tr><td class="n">30</td><td class="n">1024</td><td class="n">13453</td><td class="n">248</td><td class="n">14725</td><td class="n">7.0%</td></tr>
+</tbody></table></div>
+<p class="cap">出自 P0 预算账台，单位是 token 位。中间那几轮省略了，走势在这几行里已经看得全。</p>
+
+<p>三列各有各的脾气。头部是死的；第三列在两百到五百之间上下抖，因为每一轮问的问题、工具返回的东西长短不一；只有第二列在单调地涨，而且涨得比另外两列快得多。</p>
+<p>头部占比那一列读起来最快。第一轮的时候，你发给模型的东西里四分之三是那份从来没变过的头部；到第三十轮，它掉到不足一成。Day 19 量到「挂三十二个工具的时候注册表占发出总量的九成半」，那是六轮的会话；把会话拉长到三十轮，同一份注册表的占比就被历史稀释掉了。两句话不矛盾，它们说的是同一条曲线的两端。</p>
+
+<p>把窗口上限摆进来，就知道什么时候会出事：</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">窗口</th><th class="n">第几轮开始装不下</th><th class="n">那一轮的上下文</th></tr></thead>
+<tbody>
+<tr><td class="n">2048</td><td class="n">3</td><td class="n">2220</td></tr>
+<tr><td class="n">4096</td><td class="n">8</td><td class="n">4581</td></tr>
+<tr><td class="n">8192</td><td class="n">16</td><td class="n">8656</td></tr>
+<tr><td class="n">16384</td><td>30 轮都装得下</td><td class="n">14725</td></tr>
+</tbody></table></div>
+<p class="cap">同样出自 P0。第三列是「如果不裁，那一轮的上下文会有多长」。</p>
+
+<p>把窗口翻一倍，能多撑的轮数大约也翻一倍——因为历史那一列基本是线性涨的。这条关系后面第 8 节要用到，那里会发现它并不意味着「窗口开大就一定更划算」。</p>
+
+<div class="breathe">搬家的时候箱子装不下，你有四个选择：扔掉最先打包的那几箱、一口气扔掉一半、把几箱东西压缩成一箱、或者换一辆更大的车。下面这一节说的就是这四件事，只不过每一件都有一个业界的名字，而且都写在你能打开的代码里。</div>
+
+<h3>3. 满了之后的四种做法，现成的库是怎么写的</h3>
+<p>先把四种做法用大白话摆出来，再一个一个给名字。</p>
+<ul>
+<li>每次刚好超一点，就丢掉最早的那一轮，让长度始终贴着上限——这叫<span class="term">滑动窗口（sliding window）</span>。</li>
+<li>超了就一口气丢到半满，丢完能撑好几轮再说——它和上一种同属<span class="term">截断（truncation）</span>：丢掉的内容不再出现，是真的没了。</li>
+<li>丢之前先把那几轮总结成一小段，用这一小段顶替原来那一大段——这叫<span class="term">上下文压缩（context compaction）</span>。这个英文词 Day 15 出现过一次，那天说的是把 KV cache 里的碎片挪到一起，和今天不是一件事，只是同名。</li>
+<li>什么都不丢，换一个窗口更大的模型。这一条不需要新词，但它有代价，第 8 节会把这个代价量出来。</li>
+</ul>
+
+<p>这几件事不用你从头写。<code>langchain-core</code> 这个包里有一个专门做裁剪的函数，签名里那几个参数就是上面这些选择：</p>
+<pre><code># langchain_core/messages/utils.py:1133 起
+def trim_messages(
+    messages, *, max_tokens,
+    token_counter,                     # 怎么数长度，见下
+    strategy = "last",                 # :1141 保留末端还是首端
+    include_system = False,            # :1145 第 0 条系统消息要不要单独留下
+    start_on = None,                   # 裁完之后第一条必须是哪种消息
+    ...
+)</code></pre>
+<p><code>strategy</code> 这一项就是<span class="term">末端保留 / 首端保留（trim strategy "last" / "first"）</span>；<code>include_system</code> 是<span class="term">保住系统消息（include_system）</span>，它把第 0 条系统消息拎出来不参与裁剪，剩下的预算再给后面的消息（<code>:2086</code> 起那个函数里，先减掉系统消息的长度再往下算）。</p>
+
+<p>还有一个参数值得单独看：<code>token_counter</code>。这个函数需要知道每条消息有多长，而真去跑一遍分词器是要花钱的。库里给了一个不跑分词器的默认实现（<code>:2244</code>）：</p>
+<pre><code># langchain_core/messages/utils.py:2244-2248
+def count_tokens_approximately(
+    messages, *,
+    chars_per_token = 4.0,             # 按每 4 个字符算一个 token
+    extra_tokens_per_message = 3.0,    # 每条消息再加 3 个，算那些特殊标记
+    ...
+)</code></pre>
+<p>字符数除以四，每条再加三个——这种做法叫<span class="term">近似计数（approximate token counting）</span>，函数自己的文档里写着这个四是「常见英文文本」的经验值。裁剪的预算是拿它算的，所以你的预算天然带着一个误差；换一种语言、换一个模型的词表，这个四就不再准。</p>
+
+<p>把这个函数真的跑一遍，看它裁出来什么。造一段十六条的对话：一条系统消息，然后五轮，每轮三条——用户问一句、模型发一次工具调用、工具回一个结果。预算给一百二十个 token。</p>
+
+<div class="scroll"><table>
+<thead><tr><th>怎么裁</th><th class="n">留下</th><th class="n">token</th><th>留下的是哪几条</th></tr></thead>
+<tbody>
+<tr><td>末端保留 + 保住系统消息</td><td class="n">5</td><td class="n">104</td><td>系统 → 工具结果 → 用户 → 模型(工具调用) → 工具结果</td></tr>
+<tr><td>末端保留，不特别保系统消息</td><td class="n">6</td><td class="n">118</td><td>用户 → 模型(工具调用) → 工具结果 → 用户 → 模型(工具调用) → 工具结果</td></tr>
+<tr><td>末端保留 + 保系统 + 必须从用户消息起头</td><td class="n">4</td><td class="n">88</td><td>系统 → 用户 → 模型(工具调用) → 工具结果</td></tr>
+<tr><td>首端保留</td><td class="n">5</td><td class="n">105</td><td>系统 → 用户 → 模型(工具调用) → 工具结果 → 用户</td></tr>
+</tbody></table></div>
+<p class="cap">出自 P8 真库账台，跑的是 <code>langchain-core</code> 1.6.1 里的 <code>trim_messages</code>，原始十六条一共三百二十四个 token。</p>
+
+<p>第一行是最常见的写法，也是最该盯一眼的那一行。裁完之后紧跟在系统消息后面的是一条<em>工具结果</em>——而产生这个结果的那次工具调用，已经被裁掉了。模型会看到一段自己没发出过的工具返回。这种东西叫<span class="term">悬空的工具结果（dangling tool result）</span>，很多模型的接口会直接判成格式非法。</p>
+<p>第三行就是修法：加上「裁完之后第一条必须是用户消息」这个约束，那条悬空的结果被一起丢掉。代价写在第三列——同样的预算，留下的东西少了十六个 token。库把这个约束做成参数而不是默认行为，是因为消息该怎么配对由你用的模型接口定，库不替你决定。</p>
+<p>第四行是首端保留，它留下了最早的几条，最后停在一条没人回答的用户消息上。对一段还要往下走的对话来说这几乎从来不是你想要的；这个选项存在，是为了另一类场景——比如你要的是这段对话的开头而不是结尾。</p>
+
+<p>压缩那一条也有现成的写法。<code>openai-agents</code> 这个包里有一个会自动做压缩的会话装饰器，它的默认触发条件写得很直白：</p>
+<pre><code># agents/memory/openai_responses_compaction_session.py:28
+DEFAULT_COMPACTION_THRESHOLD = 10
+
+# :58-60
+def default_should_trigger_compaction(context):
+    """攒够十条候选就压一次"""
+    return len(context["compaction_candidate_items"]) >= DEFAULT_COMPACTION_THRESHOLD</code></pre>
+<p>攒够十条才动一次，这个数叫<span class="term">压缩阈值（compaction threshold）</span>。同一个文件里（<code>:34-54</code>）还规定了哪些条目算「候选」：用户发的消息不算，已经是压缩产物的条目也不算——也就是说，被压掉的是模型的输出和工具的结果，用户原话留着。</p>
+<p>「攒够十条才动一次」这个设计，和上面滑动窗口那种「每次超一点就削一点」是两种完全相反的节奏。哪一种更贵，第三部分整章在回答。</p>
+
+<h2><span class="kk">板块 2 · 第二部分</span>今天的台子</h2>
+<p>九个账台，一个共用底座。台子先摆清楚，后面每个数字都追得回来。</p>
+
+<h3>4. 实验装置</h3>
+<p>今天没有模型、没有加速器、没有网络，连进程间通信都没有。九个账台是九个各自独立跑的 Python 程序，各自打印一张表。它们里面有六个共用同一个底座。</p>
+
+<h4>4.1 九个账台，一个底座</h4>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 780 372" width="780" role="img" aria-label="九个账台与共用底座的结构图">
+  <g fill="none" stroke="currentColor" stroke-width="1.3">
+    <rect x="12" y="26" width="218" height="196" rx="8"/>
+    <rect x="26" y="66" width="190" height="34" rx="5"/>
+    <rect x="26" y="112" width="190" height="34" rx="5"/>
+    <rect x="26" y="158" width="190" height="48" rx="5"/>
+    <rect x="286" y="20" width="222" height="30" rx="5"/>
+    <rect x="286" y="60" width="222" height="30" rx="5"/>
+    <rect x="286" y="100" width="222" height="30" rx="5"/>
+    <rect x="286" y="140" width="222" height="30" rx="5"/>
+    <rect x="286" y="180" width="222" height="30" rx="5"/>
+    <rect x="556" y="26" width="212" height="196" rx="8"/>
+    <rect x="12" y="256" width="218" height="96" rx="8" stroke-dasharray="5 4"/>
+    <rect x="286" y="256" width="222" height="96" rx="8" stroke-dasharray="5 4"/>
+    <rect x="556" y="256" width="212" height="96" rx="8" stroke-dasharray="5 4"/>
+  </g>
+  <g stroke="currentColor" stroke-width="1.1" fill="none">
+    <path d="M230 35 H286"/><path d="M230 75 H286"/><path d="M230 115 H286"/>
+    <path d="M230 155 H286"/><path d="M230 195 H286"/>
+    <path d="M508 35 H556"/><path d="M508 75 H556"/><path d="M508 115 H556"/>
+    <path d="M508 155 H556"/><path d="M508 195 H556"/>
+    <path d="M230 304 H286"/><path d="M508 304 H556"/>
+  </g>
+  <g fill="currentColor" font-size="13" font-family="sans-serif">
+    <text x="24" y="48" font-weight="700">共用底座 ctxlib.py</text>
+    <text x="38" y="87">会话生成器（头部 + 30 轮）</text>
+    <text x="38" y="133">四种裁剪策略</text>
+    <text x="38" y="177">前缀缓存簿记</text>
+    <text x="38" y="196" font-size="11.5">块 hash 链 + LRU，容量按 token 位</text>
+    <text x="298" y="40">P0 · 上下文由哪几块组成</text>
+    <text x="298" y="80">P1 · 一条会话的逐轮账</text>
+    <text x="298" y="120">P2 · 四种策略 × 四档窗口</text>
+    <text x="298" y="160">P3 · 八条会话分派到 R 台副本</text>
+    <text x="298" y="200">P5 · 崩在第 20 轮，两种恢复</text>
+    <text x="568" y="48" font-weight="700">标准输出</text>
+    <text x="568" y="76" font-size="11.5">每个账台跑一次，打印一张表。</text>
+    <text x="568" y="96" font-size="11.5">没有进程间通信，没有共享内存，</text>
+    <text x="568" y="116" font-size="11.5">账台之间唯一的耦合是这个底座</text>
+    <text x="568" y="136" font-size="11.5">和它里面那颗定死种子的骰子。</text>
+    <text x="568" y="168" font-size="11.5">所以任何一张表都可以单独重跑，</text>
+    <text x="568" y="188" font-size="11.5">重跑出来的数字应当一模一样。</text>
+    <text x="24" y="280" font-weight="700">P4 · 落库与读回</text>
+    <text x="24" y="303" font-size="11.5">真的往本机磁盘写和读：</text>
+    <text x="24" y="322" font-size="11.5">jsonl 日志 / 整份快照 / sqlite</text>
+    <text x="24" y="341" font-size="11.5">不走底座</text>
+    <text x="298" y="280" font-weight="700">P6 · 一次前向要多久</text>
+    <text x="298" y="303" font-size="11.5">真的做矩阵乘：8 层 4096×4096，</text>
+    <text x="298" y="322" font-size="11.5">合计 512 MiB 权重。P7 读它写下</text>
+    <text x="298" y="341" font-size="11.5">的斜率，把 token 折成毫秒</text>
+    <text x="568" y="280" font-weight="700">P8 · 真库裁一遍</text>
+    <text x="568" y="303" font-size="11.5">调 langchain-core 自带的</text>
+    <text x="568" y="322" font-size="11.5">trim_messages，看它留下哪几条</text>
+    <text x="568" y="341" font-size="11.5">不走底座</text>
+  </g>
+</svg>
+</div>
+<figcaption>实线框走共用底座，虚线框不走。左下、中下、右下这三个是今天唯一真的碰硬件和真的调外部库的地方。</figcaption>
+</figure>
+
+<h4>4.2 一条会话在底座里是什么</h4>
+<p>没有文字，没有分词器。一条会话就是一串整数加一个结构：</p>
+<pre><code>会话 t0 = {
+  "head":  [8134, 291, 30028, ...],          # 1024 个整数：系统提示词 + 工具注册表
+  "turns": [([...331 个...], [...106 个...]), # 第 1 轮：送进去的那一截 / 模型吐出来的那一截
+            ([...353 个...], [...180 个...]), # 第 2 轮
+            ...  共 30 轮 ]
+}</code></pre>
+<p>为什么吐出来的那一截也要留着：下一轮的上下文会把它原样包在里面。要是模拟器在存缓存的时候用别的东西顶替这一截，下一轮就会在这里断掉，命中率会被系统性地少算——这条和 Day 16 那个模拟器是同一个理由。</p>
+<p>跑一次就是一条命令，输出是一行一轮：</p>
+<pre><code>$ python3 p1_trace.py sliding 1 30
+策略 sliding，窗口 4096 token 位，块大小 16，头部 1024，缓存不设限
+  轮   prompt长度     满块数     命中块    命中token    要算token      命中率      本轮生成      这轮裁了吗
+    1       1355      84       0          0       1355     0.0%       106          —</code></pre>
+
+<h4>4.3 台子上哪些是真的、哪些是假的</h4>
+<p>左边写这个台子在哪儿偷了懒，右边写这个懒换来的一句今天不能说的话。</p>
+<div class="scroll"><table>
+<thead><tr><th>简化掉的地方</th><th>后果</th></tr></thead>
+<tbody>
+<tr><td>没有模型、没有加速器、没有网络。九个账台都是本机单进程</td><td>今天所有关于「发出多少、要算多少」的数都是簿记，不是端到端延迟。第 9 节那张折算表也只是折算，不是实测的端到端</td></tr>
+<tr><td>没有分词器。这台机器取不到任何词表文件，token 是随机整数，每一段的长度是随机数</td><td>今天不下任何关于中英文 token 密度、某个模型的词表、某段真实文本有多长的结论。所有长度单位都是「token 位」，不是字节，也不是字</td></tr>
+<tr><td>前缀缓存只做簿记：数块、串 hash、按 LRU 淘汰，不搬一个字节的 KV</td><td>不下关于缓存本身开销的结论。这套认块的算法 Day 16 已经照 vLLM 的做法验过一遍，今天直接用</td></tr>
+<tr><td>没有并发、没有抢占、没有引用计数。真实引擎里正在跑的请求，它的块是被占住淘汰不掉的</td><td>今天算出来的命中率相当于「没有别人跟你抢缓存」的理想值。这一处和 Day 16 是同一个简化</td></tr>
+<tr><td>摘要那一步用一个定长的随机块顶替，没有真的调模型去总结</td><td>不下任何关于摘要要花多久、摘要写得好不好、丢了多少信息的结论。今天只管它多长、隔多久做一次</td></tr>
+<tr><td>P6 那副骨架是八层矩阵乘，不含注意力</td><td>它给的是「算这么多 token 至少要多久」的下限。和 Day 8、9、15、16 同一副骨架、同一句话</td></tr>
+<tr><td>P4 真的读写本机磁盘，但库里只有一条会话，没有第二个进程在读写</td><td>不下任何关于多会话并发、锁竞争、跨机存储的结论</td></tr>
+<tr><td>P8 调的是真的库，但预算固定给一百二十个 token</td><td>那张表里「留下的是哪几条」这个结构是真的，具体留几条会随预算变。要下结论的是结构，不是条数</td></tr>
+</tbody></table></div>
+
+<h4>4.4 跟着走一遍</h4>
+<p>下面是 P1 打出来的前十四轮，策略是滑动窗口，窗口四千零九十六。每一行你都能自己验：满块数等于 prompt 长度整除十六；命中 token 等于命中块乘十六；要算的等于 prompt 长度减去命中 token。</p>
+
+<div class="scroll"><table>
+<thead><tr><th class="n">轮</th><th class="n">prompt 长度</th><th class="n">满块数</th><th class="n">命中块</th><th class="n">命中 token</th><th class="n">要算 token</th><th class="n">命中率</th><th class="n">本轮生成</th><th>这轮裁了吗</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td class="n">1355</td><td class="n">84</td><td class="n">0</td><td class="n">0</td><td class="n">1355</td><td class="n">0.0%</td><td class="n">106</td><td>—</td></tr>
+<tr><td class="n">2</td><td class="n">1814</td><td class="n">113</td><td class="n">91</td><td class="n">1456</td><td class="n">358</td><td class="n">80.3%</td><td class="n">180</td><td>—</td></tr>
+<tr><td class="n">3</td><td class="n">2220</td><td class="n">138</td><td class="n">124</td><td class="n">1984</td><td class="n">236</td><td class="n">89.4%</td><td class="n">181</td><td>—</td></tr>
+<tr><td class="n">4</td><td class="n">2615</td><td class="n">163</td><td class="n">150</td><td class="n">2400</td><td class="n">215</td><td class="n">91.8%</td><td class="n">99</td><td>—</td></tr>
+<tr><td class="n">5</td><td class="n">3134</td><td class="n">195</td><td class="n">169</td><td class="n">2704</td><td class="n">430</td><td class="n">86.3%</td><td class="n">166</td><td>—</td></tr>
+<tr><td class="n">6</td><td class="n">3587</td><td class="n">224</td><td class="n">206</td><td class="n">3296</td><td class="n">291</td><td class="n">91.9%</td><td class="n">122</td><td>—</td></tr>
+<tr><td class="n">7</td><td class="n">3952</td><td class="n">247</td><td class="n">231</td><td class="n">3696</td><td class="n">256</td><td class="n">93.5%</td><td class="n">197</td><td>—</td></tr>
+<tr><td class="n">8</td><td class="n">3611</td><td class="n">225</td><td class="n">64</td><td class="n">1024</td><td class="n">2587</td><td class="n">28.4%</td><td class="n">193</td><td>是</td></tr>
+<tr><td class="n">9</td><td class="n">3805</td><td class="n">237</td><td class="n">64</td><td class="n">1024</td><td class="n">2781</td><td class="n">26.9%</td><td class="n">88</td><td>是</td></tr>
+<tr><td class="n">10</td><td class="n">3885</td><td class="n">242</td><td class="n">64</td><td class="n">1024</td><td class="n">2861</td><td class="n">26.4%</td><td class="n">198</td><td>是</td></tr>
+<tr><td class="n">11</td><td class="n">3981</td><td class="n">248</td><td class="n">64</td><td class="n">1024</td><td class="n">2957</td><td class="n">25.7%</td><td class="n">181</td><td>是</td></tr>
+<tr><td class="n">12</td><td class="n">4078</td><td class="n">254</td><td class="n">64</td><td class="n">1024</td><td class="n">3054</td><td class="n">25.1%</td><td class="n">142</td><td>是</td></tr>
+<tr><td class="n">13</td><td class="n">3514</td><td class="n">219</td><td class="n">64</td><td class="n">1024</td><td class="n">2490</td><td class="n">29.1%</td><td class="n">132</td><td>是</td></tr>
+<tr><td class="n">14</td><td class="n">3930</td><td class="n">245</td><td class="n">227</td><td class="n">3632</td><td class="n">298</td><td class="n">92.4%</td><td class="n">119</td><td>—</td></tr>
+</tbody></table></div>
+<p class="cap">出自 P1 逐轮账台。后面十六轮的走势和第 8 到第 14 行完全一样，在第 7、8 节的汇总里。</p>
+
+<p>有一条跨行的验算，自己算一遍最划算，因为后面每一节都在动这条链子上的某一环。看没被裁的那些行：<strong>某一行的命中块，等于上一行的 prompt 长度加上一行的本轮生成，再整除十六</strong>。</p>
+<p>拿第 2 行验：第 1 轮送进去 1355，吐出来 106，加起来 1461；1461 整除 16 等于 91，正好是第 2 行的命中块。再拿第 14 行验：第 13 轮 3514 加 132 等于 3646，整除 16 等于 227，正好是第 14 行的命中块。</p>
+<p>然后看第 8 行，这条链子在这里断了。</p>
+<p>先算这一轮本来会有多长。第 7 轮跑完，这条会话手上的 token 是 3952 加 197 等于 4149；第 8 轮新送进去 432 个，不裁的话上下文就是 4581——第 2 节那张窗口表里 4096 那一行写的正是这个数。</p>
+<p>于是滑动窗口开始丢。丢掉第 1 轮（送进去 331，吐出来 106，共 437），剩 4144，还是超；再丢掉第 2 轮（353 加 180，共 533），剩 3611，这才装得下。表里第 8 行的 prompt 长度正是 3611。</p>
+<p>而这一行的命中块是 64。64 乘 16 等于 1024，正好是头部的长度。为什么偏偏是这个数，第 6 节整节在讲。</p>
+
+<h4>4.5 每个旋钮是怎么定出来的</h4>
+<div class="scroll"><table>
+<thead><tr><th>旋钮</th><th>取值</th><th>这个值怎么定出来的</th><th>哪一节动它</th></tr></thead>
+<tbody>
+<tr><td>块大小</td><td>16 个 token</td><td>vLLM 的默认值，和 Day 15、Day 16 同一个取值，好让三天的命中率横着能比</td><td>不动</td></tr>
+<tr><td>头部长度</td><td>1024 个 token 位</td><td>取 64 个整块，是为了让「头部整块对得上」这件事不受零头干扰——Day 16 第 11 节量过零头平均是半块，会污染读数。量级对着 Day 16 那段 613 个 token 的系统提示词，再挂上一份工具清单</td><td>不动</td></tr>
+<tr><td>每轮送进去 / 吐出来的长度</td><td>200~500 / 80~200</td><td>取自 Day 16 第 2.3 节那条轨迹「要算的 token」那一列的量级（166 到 822），去掉第一轮那个特别长的</td><td>不动</td></tr>
+<tr><td>会话轮数</td><td>30</td><td>六轮（Day 16、18、19 都用这个长度）在 4096 的窗口下一次都顶不破，看不到任何裁剪。三十轮能让每种策略都触发好几次，又不至于让对照那一档跑到十几万 token</td><td>第 2、7 节</td></tr>
+<tr><td>窗口上限</td><td>2048 / 4096 / 8192 / 16384</td><td>主档取 4096。上界 16384 是「三十轮都装得下」的那一端，用来确认四种策略在不触发的时候确实完全相同；下界 2048 连头部加两轮都放不下，是「几乎没有预算」那一端</td><td>第 8 节</td></tr>
+<tr><td>丢到什么水位</td><td>窗口的一半</td><td>「一口气丢一大块」要定一个目标水位。取一半，是因为它在「丢一次能撑多久」和「一次丢掉多少历史」之间正好居中。扫这个旋钮是加分题</td><td>第 7 节</td></tr>
+<tr><td>摘要块长度</td><td>128 个 token 位</td><td>八个整块。要明显小于它替换掉的那一段（那一段通常上千），又不能小到连一句话都写不下</td><td>第 7 节</td></tr>
+<tr><td>缓存容量</td><td>不设限</td><td>Day 16 第 10 节已经把容量这个变量整条扫过了。今天要单看断点这一个原因，所以把容量锁死在「装得下一切」那一端，让它不可能成为命中率下降的解释</td><td>第 12 节改成每台副本各一份</td></tr>
+<tr><td>副本数</td><td>1 / 2 / 4 / 8</td><td>从一台（根本没有分派问题，作对照）扫到八台（和会话数相等，是分散得最狠的那一端）</td><td>第 12 节</td></tr>
+<tr><td>会话条数 / 每条轮数</td><td>8 条 / 12 轮</td><td>八条够看出趋势又画得下。十二轮是为了让「满了就丢掉一半」在每条会话上至少触发一次，否则路由那张表量的就只是冷启动</td><td>第 12 节</td></tr>
+<tr><td>崩在第几轮 / 恢复读回几条</td><td>第 20 轮 / 最近 8 条</td><td>二十是三十轮的中段，前后都还有戏。八条是照着那个会话库里 <code>limit</code> 参数的典型用法取的</td><td>第 11 节</td></tr>
+<tr><td>落库每格跑几次</td><td>41 次取中位</td><td>和 Day 18 检查点那张表同一个口径，好让两天的毫秒数横着能比</td><td>第 10 节</td></tr>
+<tr><td>矩阵乘每档跑几次</td><td>9 次取中位</td><td>单次抖动不小——最贵那一档的最大值比中位高出约一成。九次能让中位稳下来，而且这个抖动本身要报出来</td><td>第 9 节</td></tr>
+</tbody></table></div>
+
+<p>页面上任何一个数，都能顺着下面这张表找回打印它的那个程序：</p>
+<div class="scroll"><table>
+<thead><tr><th>表</th><th>出自</th><th>怎么读到</th></tr></thead>
+<tbody>
+<tr><td>第 2 节 上下文的三块 / 第几轮装不下</td><td>P0 预算账台</td><td><code>python3 p0_budget.py</code>，标准输出</td></tr>
+<tr><td>第 3 节 真库裁出来的四种结果</td><td>P8 真库账台</td><td><code>python3 p8_trim.py</code>，调的是 <code>trim_messages</code></td></tr>
+<tr><td>4.4 节那条轨迹</td><td>P1 逐轮账台</td><td><code>python3 p1_trace.py sliding 1 30</code></td></tr>
+<tr><td>第 7、8 节 四种策略 × 四档窗口</td><td>P2 策略矩阵账台</td><td><code>python3 p2_policies.py</code></td></tr>
+<tr><td>第 9 节 一次前向多久 / 折成秒</td><td>P6 前向账台 + P7 折算账台</td><td>先跑 P6，它把斜率写进 <code>slope.txt</code>；P7 读这个文件，所以两张表必定出自同一次运行</td></tr>
+<tr><td>第 10 节 读回来要多久</td><td>P4 落库账台</td><td><code>python3 p4_persist.py</code></td></tr>
+<tr><td>第 11 节 两种恢复方式</td><td>P5 恢复账台</td><td><code>python3 p5_restore.py</code></td></tr>
+<tr><td>第 12 节 副本与分派</td><td>P3 路由账台</td><td><code>python3 p3_affinity.py</code></td></tr>
+</tbody></table></div>
+
+<h3>5. 翻页之前，先替自己表个态</h3>
+<p>下面三个问题的答案分别在第 7、8、12 节。三道都不需要算，需要的是先落一个态度在纸上，写完再往下翻。</p>
+
+<div class="card c-pred">
+<p><span class="q">问题一</span>　一条三十轮的会话，窗口四千零九十六。甲的做法是假装窗口无限大，从不裁剪，一路长到一万四千多。乙的做法是每一轮都把最早的一轮丢掉，让上下文始终贴着窗口。</p>
+<p>整条会话跑下来，乙发给模型的 token 只有甲的四成三——这一点没有悬念。问的是另一件事：<em>乙真正需要计算的 token，是甲的几倍？</em></p>
+<div class="wr"></div>
+<p><span class="q">问题二</span>　还是乙那个做法。把窗口从四千零九十六开到八千一百九十二，别的一个字不改。</p>
+<p>乙真正需要计算的 token，会变多还是变少？</p>
+<div class="wr"></div>
+<p><span class="q">问题三</span>　八条会话轮流各推进一轮，分派到四台副本上。每台副本各有一份自己的前缀缓存，而且都开得足够大，装得下一切。</p>
+<p>一种分派方式是把同一条会话永远送到同一台副本；另一种是每条请求按当时的负载随机挑一台。两种方式的 token 级前缀命中率各是多少？</p>
+<div class="wr"></div>
+</div>
+
+<h2><span class="kk">板块 2 · 第三部分</span>裁剪的两笔账</h2>
+<p>裁掉一段，省下来的东西很直观：上下文短了，每一轮往外发的少了。这一部分讲的是同时发生的另一件事，而它的量级比省下来的那部分大得多。</p>
+
+<h3>6. 裁掉最早那一轮的那一刻，能对上的只剩头部</h3>
+<p class="lead">你把上下文前面动了一刀，缓存里那些块还认得出这条会话吗？</p>
+<p>先回忆缓存那一侧是怎么认块的。Day 16 讲过：把上下文切成十六个 token 一块，从第 0 块开始逐块串 hash——每一块的 hash 用「父 hash 加上本块的 token」一起算出来。查的时候从第 0 块往后走，走到第一个对不上的就停。</p>
+<p>这个算法有一个直接的后果：能被复用的只可能是<em>前缀</em>，而且是从头开始一个 token 都不错位的前缀。往末尾追加东西不破坏它——第 5 轮的上下文完整地包含第 4 轮的上下文作为开头，前面那些块照样对得上。这就是 Day 16 说的「agent 的上下文天然是一条不断加长的公共前缀」。</p>
+<p>裁剪做的事情正好相反。它动的是<em>前面</em>。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 780 226" width="780" role="img" aria-label="第 7 轮与第 8 轮的上下文对照，标出前缀对得上的位置">
+  <g fill="none" stroke="currentColor" stroke-width="1.2">
+    <rect x="40" y="52" width="173" height="30"/>
+    <rect x="213" y="52" width="74" height="30"/>
+    <rect x="287" y="52" width="90" height="30"/>
+    <rect x="377" y="52" width="364" height="30"/>
+    <rect x="40" y="140" width="173" height="30"/>
+    <rect x="213" y="140" width="364" height="30"/>
+    <rect x="577" y="140" width="73" height="30"/>
+  </g>
+  <path d="M213 34 V190" stroke="currentColor" stroke-width="1.3" stroke-dasharray="6 4" fill="none"/>
+  <g fill="currentColor" font-size="12.5" font-family="sans-serif">
+    <text x="40" y="26" font-size="13">第 7 轮跑完，缓存里存着这些块（4149 个 token）</text>
+    <text x="126" y="72" text-anchor="middle">头部 1024</text>
+    <text x="250" y="72" text-anchor="middle">第 1 轮</text>
+    <text x="332" y="72" text-anchor="middle">第 2 轮</text>
+    <text x="559" y="72" text-anchor="middle">第 3 ~ 7 轮</text>
+    <text x="40" y="114" font-size="13">第 8 轮的上下文：滑动窗口把第 1、2 轮丢掉了（3611 个 token）</text>
+    <text x="126" y="160" text-anchor="middle">头部 1024</text>
+    <text x="395" y="160" text-anchor="middle">第 3 ~ 7 轮</text>
+    <text x="613" y="160" text-anchor="middle">第 8 轮</text>
+    <text x="126" y="206" text-anchor="middle">对得上：1024</text>
+    <text x="400" y="206" text-anchor="middle">这一整段的位置全变了，要重新算：2587</text>
+  </g>
+</svg>
+</div>
+<figcaption>虚线是两行还对得上的最后位置。第 3 到第 7 轮的内容一个 token 都没改，但它们在上下文里的位置往前挪了，块的边界跟着挪，串出来的 hash 全不一样。</figcaption>
+</figure>
+
+<p>第 3 到第 7 轮那一段的内容一个字都没变，可它对不上了。原因不在内容，在位置：它前面少了两轮的九百七十个 token，于是它的第一块从原来的第 91 块变成了第 64 块，块的切分边界跟着整体平移，每一块装的 token 组合都变了，串出来的 hash 自然全不一样。</p>
+<p>所以第 8 行的命中块是 64——<strong>缓存里能对上的到头部为止，头部之后的一切都要重新算一遍</strong>。这件事有个名字，叫<span class="term">前缀失效（prefix invalidation）</span>，发生失效的那个位置叫断点。</p>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p>断点越靠前，重算得越多；而所有裁剪策略天然都从最前面动手，因为最前面的东西最旧、最该丢。「该丢的那一段」和「最贵的那个位置」是同一段，这就是上下文压缩这件事的根本代价。</p>
+</div>
+<p>顺带解释了 Day 19 那道温故题的另一半。那天的结论是「一段东西进去得越早越贵」，因为它之后每一轮都要重发一次。今天补上的是：把它清出去也不免费，而且清得越早的东西，清的时候赔得越多。</p>
+
+<h3>7. 揭晓（一）：发出去的少了一半多，要算的翻到五倍</h3>
+<p>四种做法在同一条三十轮的会话上各跑一遍，窗口都是四千零九十六，别的一个字不改。</p>
+
+<div class="scroll"><table>
+<thead><tr><th>策略</th><th class="n">发出 token</th><th class="n">命中 token</th><th class="n">要算 token</th><th class="n">命中率</th><th class="n">裁了几次</th><th class="n">平均在场轮数</th></tr></thead>
+<tbody>
+<tr><td>不裁剪（对照）</td><td class="n">246669</td><td class="n">235904</td><td class="n">10765</td><td class="n">95.6%</td><td class="n">0</td><td class="n">15.5</td></tr>
+<tr><td>每轮丢最早的一轮</td><td class="n">106630</td><td class="n">49824</td><td class="n">56806</td><td class="n">46.7%</td><td class="n">19</td><td class="n">5.8</td></tr>
+<tr><td>满了就丢掉一半</td><td class="n">85815</td><td class="n">73248</td><td class="n">12567</td><td class="n">85.4%</td><td class="n">4</td><td class="n">4.3</td></tr>
+<tr><td>满了就把旧的换成摘要</td><td class="n">81362</td><td class="n">68352</td><td class="n">13010</td><td class="n">84.0%</td><td class="n">5</td><td class="n">3.8</td></tr>
+</tbody></table></div>
+<p class="cap">出自 P2 策略矩阵账台，窗口四千零九十六那一档。对照行不受窗口约束，它是「窗口无限大」那一端；它的上下文峰值是一万四千七百二十五，在这一档里根本装不下。</p>
+
+<p>问题一的答案在第四列：五点三倍。发出去的确实少了一半多，可要算的从一万涨到五万六。</p>
+<p>更该看的是第二行和第三行的对比，因为这两行都是能装进窗口的合法做法。每轮丢一轮的那一行，发出去的比丢一半那一行还多了两成四，要算的是它的四点五倍。</p>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p><strong>裁得勤，两笔账一起输</strong>。这和直觉相反：直觉会觉得「每轮都削一点、始终贴着上限」是最省的，因为上下文时时刻刻都是合法长度里最短的那些之一。实际上它每一轮都制造一个断点，而一个断点的代价是把头部之后的整段上下文重算一遍。</p>
+</div>
+<p>为什么丢一半那一行连发出去的也更少？因为它丢完之后上下文掉到半满，要好几轮才涨回上限，这几轮里发出去的都比贴着上限少。每轮丢一轮的那一行则永远贴着上限，一轮都没便宜过。</p>
+
+<p>那么它买到了什么？最后一列。平均在场轮数说的是「模型每一轮能看见多少轮历史」，每轮丢一轮那一行是五点八轮，丢一半那一行是四点三轮。多出来的一点五轮历史，就是它多花的钱买到的东西。</p>
+<p>这才是这四行之间真正的取舍：不是「省字节」对「省计算」——那两件事在这张表上是同向的；是<em>模型每一轮能看见多少历史</em>对<em>要重算多少</em>。想让模型多记住一轮半，你得为此多算三倍半的 token。</p>
+<p>摘要那一行给的是第三条路。它的平均在场轮数最低，只有三点八轮，但被丢掉的那些轮并没有彻底消失——它们变成了那个一百二十八个 token 的块，一直挂在头部后面。用这个块换回来的信息，代价是比丢一半那一行多算四百四十三个 token，以及多一次断点。</p>
+
+<h3>8. 揭晓（二）：窗口开大一倍，同一个策略要算的多了将近六成</h3>
+<p>问题二问的是窗口。把四档窗口横着摆开，只看「要算 token」这一列：</p>
+
+<div class="scroll"><table>
+<thead><tr><th>策略</th><th class="n">窗口 2048</th><th class="n">窗口 4096</th><th class="n">窗口 8192</th><th class="n">窗口 16384</th></tr></thead>
+<tbody>
+<tr><td>不裁剪（对照）</td><td class="n">10765</td><td class="n">10765</td><td class="n">10765</td><td class="n">10765</td></tr>
+<tr><td>每轮丢最早的一轮</td><td class="n">22455</td><td class="n">56806</td><td class="n">89187</td><td class="n">10765</td></tr>
+<tr><td>满了就丢掉一半</td><td class="n">10667</td><td class="n">12567</td><td class="n">15750</td><td class="n">10765</td></tr>
+<tr><td>满了就把旧的换成摘要</td><td class="n">12572</td><td class="n">13010</td><td class="n">16006</td><td class="n">10765</td></tr>
+</tbody></table></div>
+<p class="cap">同样出自 P2，把四档窗口的「要算 token」抽出来并排。最后一列四行相同，因为一万六千三百八十四装得下整条会话，四种策略一次都没触发——这一列是这张表的自检项。</p>
+
+<p>答案是变多，从五万六涨到八万九，多了将近六成。</p>
+<p>机制在 4.4 节那条轨迹里已经全露出来了，只是当时没往这个方向想。被裁过的那些轮里，命中的永远是头部那一千零二十四个 token，一个不多一个不少——它和窗口没有关系。而分母，也就是这一轮 prompt 的长度，等于窗口。</p>
+<p>所以每一轮要重算的量是「窗口减去头部」。<strong>窗口开得越大，滑动窗口每制造一个断点，要赔进去的就越多</strong>。</p>
+<p>第三、四行的走势完全不同：它们的要算量也随窗口涨，但涨得温和，从一万涨到一万六。原因是它们的断点次数随窗口下降——窗口开大，触发得更晚更少，两个方向抵消了大部分。</p>
+<div class="breathe">这条结论有个很实用的推论：换一个窗口更大的模型，并不自动让你的 agent 变便宜。它只是把「什么时候开始裁」往后推。裁法不改，窗口开大反而让每一次裁的代价更高。</div>
+
+<h3>9. 把 token 折成时间</h3>
+<p>上面全是 token 数。要知道这些数值不值得管，得先知道多算一个 token 要花多久。</p>
+<p>用和 Day 8、9、15、16 同一副骨架：八层四千零九十六见方的权重，合计五百一十二兆字节。一次喂进去 n 列，量这一次要多久。</p>
+
+<div class="scroll"><table>
+<thead><tr><th class="n">一次喂几列</th><th class="n">中位耗时 ms</th><th class="n">最小</th><th class="n">最大</th><th class="n">每列毫秒</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td class="n">22.6</td><td class="n">22.2</td><td class="n">32.4</td><td class="n">22.578</td></tr>
+<tr><td class="n">16</td><td class="n">63.7</td><td class="n">62.2</td><td class="n">73.0</td><td class="n">3.983</td></tr>
+<tr><td class="n">64</td><td class="n">115.8</td><td class="n">112.0</td><td class="n">128.3</td><td class="n">1.810</td></tr>
+<tr><td class="n">256</td><td class="n">355.4</td><td class="n">338.3</td><td class="n">363.7</td><td class="n">1.388</td></tr>
+<tr><td class="n">1024</td><td class="n">1263.5</td><td class="n">1234.1</td><td class="n">1347.9</td><td class="n">1.234</td></tr>
+</tbody></table></div>
+<p class="cap">出自 P6 前向账台，每档热身一次后跑九次取中位。最大值那一列摆在这里是为了让你知道噪声有多大：最贵那一档的最大值比中位高出约一成。</p>
+
+<p>每列毫秒那一列一路往下掉，这是 Day 7、Day 8 那条屋顶线的老结论：一次前向要把那五百一十二兆字节的权重完整读一遍，这笔钱和喂进去几列无关，摊到越多列上每列越便宜。</p>
+<p>要的不是最后一列，是这条曲线的斜率——多喂一列额外要花多少，这个数叫<span class="term">边际成本（marginal cost）</span>。用六十四列和一千零二十四列这两档去算：耗时差一千一百四十七点七毫秒，列数差九百六十，斜率是每列约一点一九五毫秒（未取整前是 1.1954，下面那张折算表用的就是这个未取整的值）。把这条直线延回零列，截距三十九点三毫秒，那一截就是读权重的钱。</p>
+<p>现在把第 7 节那些 token 数乘上去：</p>
+
+<div class="scroll"><table>
+<thead><tr><th>策略</th><th class="n">发出 token</th><th class="n">要算 token</th><th class="n">折成秒</th><th class="n">比对照多算</th><th class="n">多花的秒</th></tr></thead>
+<tbody>
+<tr><td>不裁剪（对照）</td><td class="n">246669</td><td class="n">10765</td><td class="n">12.9</td><td class="n">0</td><td class="n">0.0</td></tr>
+<tr><td>每轮丢最早的一轮</td><td class="n">106630</td><td class="n">56806</td><td class="n">67.9</td><td class="n">46041</td><td class="n">55.0</td></tr>
+<tr><td>满了就丢掉一半</td><td class="n">85815</td><td class="n">12567</td><td class="n">15.0</td><td class="n">1802</td><td class="n">2.2</td></tr>
+<tr><td>满了就把旧的换成摘要</td><td class="n">81362</td><td class="n">13010</td><td class="n">15.6</td><td class="n">2245</td><td class="n">2.7</td></tr>
+</tbody></table></div>
+<p class="cap">出自 P7 折算账台，窗口四千零九十六。P7 直接读 P6 这次运行写下的斜率，所以这两张表不可能对不上。</p>
+
+<p>两行合法做法之间差五十三秒——同一条三十轮的会话，同一个窗口，只换了裁剪的节奏。平摊到每一轮是一点八秒左右，而这一秒八不是排队，不是网络，是实打实要占住算力去做的矩阵乘。</p>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p><strong>裁剪省下来的是传输，赔进去的是计算</strong>。这两样东西的单价差着好几个数量级，所以「上下文短了一半」这句话不能单独当成好消息。要判断一次裁剪值不值，得同时报出这次裁剪让多少 token 从命中变成了重算。</p>
+</div>
+<p>接上 Day 18 那条结论：那天量到「前缀缓存省的是算，省不掉传」；今天是同一句话反过来读——裁剪省的是传，省不掉算，而且还会把原本不用算的变成要算的。这两句话合起来才是完整的：传和算是两笔独立的账，任何一个改动都要在两边同时记。</p>
+
+<h2><span class="kk">板块 2 · 第四部分</span>状态在进程之外</h2>
+<p>前面三部分假设这条会话一直活在同一个进程里。这一部分把这个假设拿掉：进程会重启，请求会落到别的机器上。</p>
+
+<h3>10. 读回来要多久</h3>
+<p>一条会话要活过进程重启，它的状态就得放在进程之外的某个地方——一个日志文件、一份快照、或者一张数据库表。这个东西叫<span class="term">会话存储（session store）</span>。</p>
+<p>Day 18 已经把写这一侧量透了：一条上下文整份重写，再调一次 <code>fsync</code>（这个系统调用的作用是让内核把字节真正推到盘上，而不是留在页缓存里等回写——Day 12 那对「缓冲写」和「回写」的分界就在这里），最贵那一格是零点七五六毫秒，而一轮模型调用是七百三十八毫秒。写不是问题。今天量的是另一侧——读回来。</p>
+<p>把同一条会话按每轮七百七十七字节造出来（这个数是 Day 18 第 10 节实测的每轮增量），用四种方式存好，再各读一遍。存的形状照着一个真的会话库来：一行一条，带会话号和自增主键，会话号加主键上有索引。</p>
+<pre><code># 照 agents/memory/sqlite_session.py:245-259 那张表的形状
+CREATE TABLE m (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL, message_data TEXT NOT NULL);
+CREATE INDEX idx ON m (session_id, id);</code></pre>
+
+<div class="scroll"><table>
+<thead><tr><th class="n">轮数</th><th class="n">日志字节</th><th class="n">回放整份日志</th><th class="n">读整份快照</th><th class="n">sqlite 全量</th><th class="n">sqlite 取最近 8 条</th></tr></thead>
+<tbody>
+<tr><td class="n">6</td><td class="n">4575</td><td class="n">0.034</td><td class="n">0.026</td><td class="n">0.302</td><td class="n">0.300</td></tr>
+<tr><td class="n">12</td><td class="n">9152</td><td class="n">0.057</td><td class="n">0.038</td><td class="n">0.316</td><td class="n">0.297</td></tr>
+<tr><td class="n">24</td><td class="n">18314</td><td class="n">0.103</td><td class="n">0.063</td><td class="n">0.381</td><td class="n">0.309</td></tr>
+<tr><td class="n">48</td><td class="n">36638</td><td class="n">0.207</td><td class="n">0.114</td><td class="n">0.513</td><td class="n">0.294</td></tr>
+<tr><td class="n">96</td><td class="n">73286</td><td class="n">0.407</td><td class="n">0.284</td><td class="n">0.783</td><td class="n">0.312</td></tr>
+<tr><td class="n">192</td><td class="n">146674</td><td class="n">0.802</td><td class="n">0.544</td><td class="n">1.245</td><td class="n">0.301</td></tr>
+<tr><td class="n">384</td><td class="n">293458</td><td class="n">1.663</td><td class="n">1.042</td><td class="n">2.215</td><td class="n">0.308</td></tr>
+</tbody></table></div>
+<p class="cap">出自 P4 落库账台，单位毫秒，每格四十一次取中位。</p>
+
+<p>前三条读法都随会话变长而变长，走势是直的——读一份三十七万字节的东西，就是要花读三十七万字节的时间。sqlite 那一列起步比另外两列高零点三毫秒左右，那是开一个连接的固定开销；会话短的时候这一截就是全部，会话长了它才被真正的读取盖过去。</p>
+<p>取最近八条那一列从头到尾不动。它读的是最近八条，用的是主键倒着取前八行，索引直接把它带到末尾——读几行就花几行的钱，和前面积了多久毫无关系。</p>
+<p>这一列的平坦很好看，而它正是下一节要拆的东西。</p>
+
+<h3>11. 读回来的那一份，可能不是原来那一份</h3>
+<p class="lead">进程重启之后接着往下跑，代价在磁盘上吗？</p>
+<p>先把上一节的数放进比例里。最长那一档、最慢那种读法，两点二毫秒；一轮模型调用七百三十八毫秒。<strong>恢复的钱不在磁盘上</strong>，差着三百多倍，怎么存都付得起。</p>
+<p>真正要紧的是读回来的东西是什么。上一节那个「取最近八条」不是我编出来的写法，它是那个会话库的默认接口：</p>
+<pre><code># agents/memory/sqlite_session.py:288
+async def get_items(self, limit: int | None = None):
+    """limit: 最多取几条。给了就返回最近的 N 条，按时间顺序排好"""
+    ...
+    # :334-335 倒着取，取完再翻回来
+    #   ORDER BY id DESC
+    #   LIMIT ?
+
+# agents/memory/session_settings.py:18, 38
+#   limit 可以在会话级别配一次，之后每次调用都默认带上它</code></pre>
+<p>这个参数看起来只是一个分页选项。放进今天的账里，它是一次裁剪——而且是一次没人写代码去做、也没人在日志里看得见的裁剪。这种东西叫<span class="term">隐式截断（implicit truncation）</span>。</p>
+
+<p>量一下它值多少。一条三十轮的会话跑到第 20 轮，进程被打断；此时推理服务那一侧没有重启，缓存里那一份还好好的。两种恢复方式各往下跑十轮：</p>
+
+<div class="scroll"><table>
+<thead><tr><th>恢复方式</th><th class="n">第 21 轮 prompt</th><th class="n">命中块</th><th class="n">命中 token</th><th class="n">要算 token</th><th class="n">命中率</th><th class="n">后十轮共要算</th></tr></thead>
+<tbody>
+<tr><td>全量恢复</td><td class="n">11086</td><td class="n">667</td><td class="n">10672</td><td class="n">414</td><td class="n">96.3%</td><td class="n">2908</td></tr>
+<tr><td>只取最近 8 条</td><td class="n">5205</td><td class="n">64</td><td class="n">1024</td><td class="n">4181</td><td class="n">19.7%</td><td class="n">6674</td></tr>
+</tbody></table></div>
+<p class="cap">出自 P5 恢复账台。两行的差别只有一个：恢复的时候读回来几条。</p>
+
+<p>第二行的命中块又是 64。和第 6 节那张图完全一样的机制：读回来的上下文在头部之后就和缓存里那一份对不上了，因为中间少了十二轮。</p>
+<p>第一行是全量恢复，命中块六百六十七——第 20 轮跑完时这条会话手上的 token 除以十六，缓存里那一份原封不动地接上了。恢复这个动作在缓存那一侧什么都没发生。</p>
+<p>后十轮那一列说明这不是一次性的：断点造成的损失会一直跟着往后走，后面十轮总共要多算三千七百多个 token，因为每一轮都还在头部之后重新起算。</p>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p>恢复要判对不对，判据不是「有没有报错」，是「读回来的那串 token 和崩之前那串是不是逐字节相同」。相同就免费，差一个字节，头部之后的整段都要重算。上一节那张表里最快的那一列，快正是因为它读得少——而读得少的代价不在那张表上，在这一张。</p>
+</div>
+<p>这就是温故第 3 题那个 <code>created</code> 状态在会话上的对应物：状态装回来了、下一轮还没发出去的那个时刻，是你唯一能检查「装回来的和原来的一不一样」的地方。过了这个时刻，代价已经付出去了。</p>
+
+<h3>12. 揭晓（三）：亲和保住的是会话私有那一段</h3>
+<p>把一台机器换成好几台，缓存就不再是一份了——每台副本各有各的一份，互相看不见。同一条会话这一轮落在甲、下一轮落在乙，乙那一侧对这条会话的历史一无所知。</p>
+<p>躲开这件事的办法很直白：把同一条会话的每一轮都送回同一台副本。这个做法叫<span class="term">会话亲和（session affinity）</span>，也叫粘性会话（sticky session）。</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 780 200" width="780" role="img" aria-label="会话亲和与随机分派的对照示意">
+  <g fill="none" stroke="currentColor" stroke-width="1.2">
+    <rect x="16" y="42" width="76" height="24" rx="4"/>
+    <rect x="16" y="76" width="76" height="24" rx="4"/>
+    <rect x="16" y="110" width="76" height="24" rx="4"/>
+    <rect x="16" y="144" width="76" height="24" rx="4"/>
+    <rect x="228" y="48" width="140" height="46" rx="6"/>
+    <rect x="228" y="118" width="140" height="46" rx="6"/>
+    <rect x="416" y="42" width="76" height="24" rx="4"/>
+    <rect x="416" y="76" width="76" height="24" rx="4"/>
+    <rect x="416" y="110" width="76" height="24" rx="4"/>
+    <rect x="416" y="144" width="76" height="24" rx="4"/>
+    <rect x="628" y="48" width="140" height="46" rx="6"/>
+    <rect x="628" y="118" width="140" height="46" rx="6"/>
+  </g>
+  <g fill="none" stroke="currentColor" stroke-width="1.1">
+    <path d="M92 54 H228"/><path d="M92 88 L228 66"/>
+    <path d="M92 122 L228 130"/><path d="M92 156 H228"/>
+    <path d="M492 54 L628 130"/><path d="M492 88 L628 66"/>
+    <path d="M492 122 L628 152"/><path d="M492 156 L628 84"/>
+  </g>
+  <g fill="currentColor" font-size="12.5" font-family="sans-serif">
+    <text x="16" y="26" font-size="13" font-weight="700">会话亲和</text>
+    <text x="26" y="59">会话 A</text><text x="26" y="93">会话 B</text>
+    <text x="26" y="127">会话 C</text><text x="26" y="161">会话 D</text>
+    <text x="238" y="70">副本 1 · 缓存里有</text><text x="238" y="88" font-size="11.5">头部 + A、B 的历史</text>
+    <text x="238" y="140">副本 2 · 缓存里有</text><text x="238" y="158" font-size="11.5">头部 + C、D 的历史</text>
+    <text x="416" y="26" font-size="13" font-weight="700">按负载随机</text>
+    <text x="426" y="59">会话 A</text><text x="426" y="93">会话 B</text>
+    <text x="426" y="127">会话 C</text><text x="426" y="161">会话 D</text>
+    <text x="638" y="70">副本 1 · 缓存里有</text><text x="638" y="88" font-size="11.5">头部 + 每条会话的碎片</text>
+    <text x="638" y="140">副本 2 · 缓存里有</text><text x="638" y="158" font-size="11.5">头部 + 每条会话的碎片</text>
+  </g>
+</svg>
+</div>
+<figcaption>画的是四条会话两台副本，实测那张表是八条四台，形状一样。右边那些交叉的线，每一条都是一次「这台副本没见过你」。</figcaption>
+</figure>
+
+<p>八条会话轮流各推进一轮，每台副本的缓存都开得足够大，装得下一切——容量在这张表里不可能成为解释。</p>
+
+<div class="scroll"><table>
+<thead><tr><th class="n">副本数</th><th>分派方式</th><th class="n">发出 token</th><th class="n">命中 token</th><th class="n">其中头部</th><th class="n">其中会话私有</th><th class="n">命中率</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td>会话亲和</td><td class="n">256268</td><td class="n">210096</td><td class="n">90112</td><td class="n">119984</td><td class="n">82.0%</td></tr>
+<tr><td class="n">1</td><td>按负载随机</td><td class="n">256268</td><td class="n">210096</td><td class="n">90112</td><td class="n">119984</td><td class="n">82.0%</td></tr>
+<tr><td class="n">2</td><td>会话亲和</td><td class="n">256268</td><td class="n">210096</td><td class="n">90112</td><td class="n">119984</td><td class="n">82.0%</td></tr>
+<tr><td class="n">2</td><td>按负载随机</td><td class="n">256268</td><td class="n">177360</td><td class="n">81920</td><td class="n">95440</td><td class="n">69.2%</td></tr>
+<tr><td class="n">4</td><td>会话亲和</td><td class="n">256268</td><td class="n">210096</td><td class="n">90112</td><td class="n">119984</td><td class="n">82.0%</td></tr>
+<tr><td class="n">4</td><td>按负载随机</td><td class="n">256268</td><td class="n">137232</td><td class="n">70656</td><td class="n">66576</td><td class="n">53.6%</td></tr>
+<tr><td class="n">8</td><td>会话亲和</td><td class="n">256268</td><td class="n">210096</td><td class="n">90112</td><td class="n">119984</td><td class="n">82.0%</td></tr>
+<tr><td class="n">8</td><td>按负载随机</td><td class="n">256268</td><td class="n">97232</td><td class="n">51200</td><td class="n">46032</td><td class="n">37.9%</td></tr>
+</tbody></table></div>
+<p class="cap">出自 P3 路由账台。第一行和第二行必须完全相同，那是这张表的自检项：只有一台副本的时候，两种分派方式本来就是同一件事。</p>
+
+<p>问题三的答案在四台副本那两行：八成二对五成四。</p>
+<p>亲和那四行完全一样，一个数都没变。这不奇怪但值得说破：只要每条会话永远回到同一台副本，加多少台副本对命中率都没有影响——副本数在这个口径下根本不是一个变量。</p>
+<p>第五、六两列是这张表最值得看的地方，它把损失拆成了两半。</p>
+<p>先看头部那一列。亲和那一行是九万零一百一十二，除以头部长度一千零二十四正好是八十八。总共有九十六条请求（八条会话各十二轮），九十六减八十八等于八——八次没对上，正好等于会话数。那八次就是每条会话的第一轮，那时候还没有人把头部放进任何一台副本的缓存。</p>
+<p>再看八台副本随机那一行，头部只对上五万一千二百，除以一千零二十四是五十。九十六次里有四十六次连头部都要重算。头部是所有会话共享的，理论上每台副本各冷一次就够了，可随机分派让每一台都要各自冷启动一遍，而且会话数只有八条，摊不开。</p>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p>命中率掉下来的时候要先问是哪一半掉了。头部那一半掉，说明副本太多、流量太散，每台都在重复付冷启动的钱；会话私有那一半掉，说明同一条会话被打散到了不同副本上。前者加机器只会更糟，后者要动的是分派规则。</p>
+</div>
+<p>把这张表和 Day 16 那张摆在一起，一件事就清楚了。那天量到：同一批请求，只把到达顺序从「一个任务做到底」换成「四十个任务轮流推进」，命中率从八成四掉到三成二，要追平得把缓存开到十六倍。今天量的是同一个东西的另一个面：顺序不动，只把请求分到不同机器上，命中率从八成二掉到不足四成。两次的机制是同一个——中间隔了多少别人的东西，就是那个复用距离；换成多台机器之后，它还多了一维「隔了几台机器」。</p>
+<p>这两条加起来正好指向 Day 25 那一整天。真到了要定分派规则的时候，会话亲和会和负载均衡直接打架：亲和要求这条会话必须去那一台，负载均衡要求哪台闲去哪台，某一台副本正好慢下来的时候，两者的要求相反。今天不解这个矛盾，今天只把它的价钱摆出来。</p>
+
+<h3>13. 设计文档上那几处空白，今天能填了</h3>
+<p>Day 18 那份文档里有几条写的是「留到 Day 20」。今天填上，每一条后面跟着一个自己量出来的数。</p>
+
+<div class="scroll"><table>
+<thead><tr><th>要定的事</th><th>今天的依据</th><th>写成什么</th></tr></thead>
+<tbody>
+<tr><td>窗口预算怎么分</td><td>头部在这条会话上占比从七成半掉到不足一成（第 2 节）</td><td>头部单列一项预算并且设上限，历史轮次另立一项。两项分开报，因为它们的修法不同：头部超了要筛工具，历史超了才轮到裁剪</td></tr>
+<tr><td>什么时候裁</td><td>每轮丢一轮要算五万六，满了丢一半要算一万二（第 7 节）</td><td>不做「每轮削一点」。设一个触发水位和一个目标水位，超了才动，一次动到目标水位以下</td></tr>
+<tr><td>裁掉多少</td><td>丢到半满时四种窗口下断点次数都在个位数（第 7、8 节）</td><td>目标水位定在窗口的一半左右。这个值要作为配置项，因为它换来的历史轮数是产品要拍板的事，不是基础设施能单独定的</td></tr>
+<tr><td>换更大的窗口值不值</td><td>窗口翻倍，滑动窗口要算的从五万六涨到八万九（第 8 节）</td><td>换大窗口之前先把裁法改对。裁法不改，窗口开大只会让每次裁的代价更高</td></tr>
+<tr><td>裁剪要报什么指标</td><td>发出去的少一半、要算的翻五倍可以同时发生（第 7、9 节）</td><td>每次裁剪记一条日志：断点位置、这次让多少 token 从命中变成重算。只报「上下文变短了多少」是误导</td></tr>
+<tr><td>裁完的消息怎么配对</td><td>末端保留会留下一条工具调用已经被裁掉的工具结果（第 3 节）</td><td>裁剪之后必须做一次配对检查：工具结果的那次调用还在不在，第一条是不是合法的起头。用现成库的话把这个约束显式打开</td></tr>
+<tr><td>会话存成什么</td><td>最长那一档最慢那种读法两点二毫秒，一轮模型调用七百三十八毫秒（第 10 节）</td><td>怎么存都付得起，按运维方便选。一行一条加索引这种形状的好处是取最近 N 条很快</td></tr>
+<tr><td>恢复的时候读回多少</td><td>只取最近八条，第一轮命中率从九成六掉到不足两成（第 11 节）</td><td>默认全量恢复。要限量必须显式配置，并且这个配置项要和「裁剪」记在同一处——它就是一次裁剪</td></tr>
+<tr><td>多副本怎么分派</td><td>四台副本上，亲和八成二、随机五成四（第 12 节）</td><td>接口上先把会话号带下去，让分派那一层拿得到它。具体规则留到 Day 25，但拿不到会话号的话那天什么都做不了</td></tr>
+</tbody></table></div>
+
+<h2><span class="kk">板块 3</span>动手任务</h2>
+<p>两个任务，约两小时。任务 A 在昨天那个骨架上长出上下文管理这一层；任务 B 把今天这套读法用到你手上已有的东西上。</p>
+
+<h3>任务 A（必做，约 80 分钟）· 把裁剪的两笔账同时记下来</h3>
+
+<h4>第 1 步：先有一个会数块的缓存</h4>
+<p>今天所有结论都建立在「能对上几块」这一个数上，所以第一件事是把这个数算对。照 Day 16 那套做法：切成十六个 token 一块，只对装满的块算 hash，每一块的 hash 用父 hash 加本块 token 一起串出来。</p>
+<pre><code>def _chain(self, tokens):
+    """把一串 token 切成整块，逐块串 hash：父 hash + 本块 token。"""
+    hs, parent = [], b"\x00" * 32
+    for i in range(0, len(tokens) - len(tokens) % BLOCK, BLOCK):
+        h = hashlib.sha256(parent + bytes(str(tokens[i:i+BLOCK]), "utf-8")).digest()
+        hs.append(h); parent = h
+    return hs
+
+def lookup(self, tokens):
+    """从头数连续命中了几块，遇到第一个缺失就停——因果注意力只认前缀。"""
+    n = 0
+    for h in self._chain(tokens):
+        if h not in self.order: break
+        self.order.pop(h); self.order[h] = None   # 命中即刷新 LRU 位置
+        n += 1
+    return n</code></pre>
+<p>验收标准：造一串 token，查一次（应当零命中），插进去，再查一次（应当全部命中）；然后在这串 token 的<em>开头</em>插一个数再查，命中必须掉到零。最后一项是今天整页的地基，掉不到零说明 hash 没串起来。</p>
+<p>常见坑：对没装满的那个尾块也算 hash。这样下一轮那个块被填满之后 hash 会变，你会看到一个莫名其妙的、每轮都差一块的命中率。</p>
+
+<h4>第 2 步：把上下文拆成三块打出来</h4>
+<p>造一条三十轮的会话，每一轮打一行：头部多少、已完成的轮次多少、这一轮新送进去多少。然后给几档窗口各算一个「第几轮开始装不下」。</p>
+<p>验收标准：你能指着某一轮说出「这一行的合计等于上一行的合计加上一行的新送进去再加上一行的生成」，并且算得对。这个加法关系是后面所有表的地基。</p>
+<p>常见坑：把模型这一轮吐出来的那一截忘在账外。它下一轮会原样进上下文，漏了它，第二列会一路少算。</p>
+
+<h4>第 3 步：写出四种裁剪策略</h4>
+<p>四种做法的区别只在两行循环条件上——丢到刚好装得下，还是丢到目标水位以下。</p>
+<pre><code>def apply_policy(policy, head, kept, summary, window, keep_ratio, rng):
+    """裁剪只在这里发生。返回 (新的 kept, 新的 summary, 这一轮动没动过前面)。"""
+    def total(k, s): return len(head) + (len(s) if s else 0) + sum(len(u) + len(a) for u, a in k)
+    if policy == "none" or total(kept, summary) <= window:
+        return kept, summary, False
+    if policy == "sliding":                       # 每次只丢最早的一轮，丢到刚好装得下
+        while len(kept) > 1 and total(kept, summary) > window: kept = kept[1:]
+        return kept, summary, True
+    if policy == "chunk":                         # 一次丢到目标水位以下，丢完能撑好几轮
+        while len(kept) > 1 and total(kept, summary) > window * keep_ratio: kept = kept[1:]
+        return kept, summary, True
+    if policy == "summary":                       # 丢掉的那些换成一个定长的摘要块
+        dropped = 0
+        while len(kept) > 1 and total(kept, summary) > window * keep_ratio:
+            dropped += 1; kept = kept[1:]
+        if dropped:
+            summary = [rng.randrange(VOCAB) for _ in range(SUMMARY_TOKENS)]
+        return kept, summary, True</code></pre>
+<p>那个 <code>len(kept) &gt; 1</code> 不是装饰。窗口小到一定程度时，头部加上当前这一轮就已经超了，没有这个保护，循环会把当前轮也丢掉，然后你会得到一条空的上下文。</p>
+<p>验收标准：把窗口开到大得装得下整条会话，四种策略跑出来的每一个数都必须完全相同。不相同说明某个策略在不该触发的时候动了手。</p>
+<p>常见坑：裁完之后忘了重新拼上下文，还拿着裁之前那一份去查缓存。症状是命中率完全不掉，好得不像话。</p>
+
+<h4>第 4 步：跑策略矩阵，三笔账一起报</h4>
+<p>每一轮做四件事：先入列这一轮送进去的那一截，再裁，再拼出 prompt 去查缓存，最后把这一轮生成的补回去。</p>
+<pre><code>for u, a in s["turns"]:
+    kept = kept + [(u, [])]
+    kept, summary, cut = apply_policy(policy, s["head"], kept, summary, window, keep_ratio, rng)
+    cuts += cut
+    prompt = flatten(s["head"], kept, summary)
+    h = cache.lookup(prompt) * BLOCK
+    cache.insert(prompt + a)                      # 生成的那一截也进缓存
+    kept[-1] = (u, a)                             # 这一轮完事，模型输出补进上下文
+    sent += len(prompt); hit += h; peak = max(peak, len(prompt))
+    kept_hist.append(len(kept))</code></pre>
+<p>报三列：发出 token、要算 token（发出减命中）、平均在场轮数。少了第三列，这张表会得出「丢一半严格更优」的错误结论——它省下来的东西是拿历史换的。</p>
+<p>验收标准：「每轮丢最早的一轮」这一行的要算 token，必须明显大于「满了就丢掉一半」那一行。如果两者接近，去看你的断点次数——多半是滑动那一版没有每轮都触发。</p>
+<p>常见坑：把生成的那一截也算进「发出」。发出的是 prompt，生成是模型吐出来的，两者不在同一笔账上。</p>
+
+<h4>第 5 步：崩一次，用两种方式恢复</h4>
+<p>跑到中途把上下文按两种方式截一刀再往下跑，缓存不动。</p>
+<pre><code>if k == crash_at + 1:                       # 进程在这里死过一次，上下文要从库里读回来
+    if mode == "tail": kept = kept[-tail:]  # 只取最近 tail 条：库里那个 limit 参数</code></pre>
+<p>验收标准：全量恢复那一次，恢复后第一轮的命中块必须等于「崩之前那一轮的 prompt 加生成，整除十六」。对不上说明你的恢复不是逐 token 相同的——那正是今天要抓的东西，去找是哪一段被重新序列化的时候变了形。</p>
+<p>常见坑：恢复的时候顺手做了一次 JSON 的重新格式化（比如键的顺序变了、空格多了一个）。逐字节不同，前缀就断，而这种改动在日志里完全看不出来。</p>
+
+<h3>任务 B（约 40 分钟）· 用到你自己手上的东西</h3>
+<p>挑一个你写过的、会累积历史的接口——多轮对话、会话日志、审计流水都行，不一定要有模型。做三件事：</p>
+<ol>
+<li>把它的历史按来源拆成「从不变的那一块」和「按次数长的那一块」，各打一个数出来。然后回答：跑到第几次，第二块会超过第一块？</li>
+<li>找出它现在有没有截断。如果有，找出触发条件是「每次超一点就削」还是「攒够了才动」。如果是前者，按第 7 节的口径估一估它的代价。</li>
+<li>找出它的恢复路径，看有没有 <code>limit</code> 这一类参数悄悄限制了读回来的条数。有的话，把这个参数写进你的截断清单里——它就是一次截断。</li>
+</ol>
+<p>验收标准：你能指着某一行代码说出「这里做了一次隐式截断」，并且说得出它一次丢掉多少、多久发生一次。</p>
+
+<h3>加分题</h3>
+<ol>
+<li>目标水位今天锁死在窗口的一半。把它从三成扫到九成，画出「要算 token」和「平均在场轮数」两条曲线。这两条曲线的交点在哪儿，说明什么？</li>
+<li>摘要块今天是一个定长的随机块，没有真的调模型去总结。真实系统里那一步要多花一次模型调用。设计一个实验，把「摘要那一次调用的耗时」和「它省下来的重算」放在同一个单位上比，然后回答：一条会话要多长，摘要才开始划算？</li>
+<li>今天四种策略都从最前面动手，所以断点全落在头部之后。设计第五种：保住头部和最近几轮，只挖掉中间那一段。断点位置会往后挪多少？命中率会好到什么程度？再回答：这么做会不会让消息配对出问题？</li>
+<li>4.3 节那张表里写着今天没有引用计数——真实引擎里正在跑的请求，它的块是占住不能淘汰的。给模拟器加上这一层，然后回答：加上之后，第 12 节那张路由表里哪几行会变？</li>
+<li>第 3 节那个近似计数按每四个字符算一个 token。找一个你能拿到的真分词器，对同一段中英混排的文本各数一遍，看这个四偏多少。然后回答：如果它系统性地少算，你的窗口预算会以什么方式出事？</li>
+<li>第 12 节量的是命中率。把它换成「端到端的首 token 延迟」再看一遍：亲和那八成二和随机那五成四，折成时间之后差多少？这个差值和第 9 节那条斜率是什么关系？</li>
+</ol>
+
+<h2><span class="kk">板块 4</span>工作现场</h2>
+
+<h3>场景一 · 「加了截断之后，账单没降，首 token 反而变慢了」</h3>
+<p>抱怨里的那两件事其实是同一件事的两面，而且第 7 节那张表已经把它完整地演过一遍。</p>
+<p>先问一个问题：这个截断是每轮都在动，还是攒够了才动一次。看代码最快的办法是找那个 <code>while</code> 的退出条件——是退到窗口以下就停，还是退到某个更低的水位。前者每一轮都会制造一个断点。</p>
+<p>然后去要两个数：每轮发出的 token，和每轮实际 prefill 的 token。多数团队只有第一个。第二个通常要从推理服务那一侧取，vLLM 这类引擎会报前缀缓存的命中情况。两个数一起看，「发出去的少了、要算的多了」这句话就是一张图，不需要争论。</p>
+<p>止血的做法是把节奏改掉：设一个触发水位和一个目标水位，超了才动，一次动到目标水位以下。长期的做法是把「这次裁剪让多少 token 从命中变成重算」记成一个指标——没有这个数，下一次有人提「要不要换个更大窗口的模型」的时候，还是只能靠感觉。</p>
+
+<h3>场景二 · 「重启之后前几轮特别慢，跑一会儿就好了」</h3>
+<p>「跑一会儿就好了」这半句是最强的线索：它说明慢的不是恢复本身，是恢复之后的头几轮。恢复本身是一次性的，而且按第 10 节那张表，就算是最长的会话、最慢的读法，也只有毫秒级。</p>
+<p>要看的第一样东西是恢复出来的上下文和崩之前那一份逐字节比一遍。两个常见的差别来源：一是读回来的条数被某个 <code>limit</code> 限制住了；二是重新序列化的时候形状变了——键的顺序、空格、浮点数的打印格式，任何一处不同都够把前缀打断。</p>
+<p>「跑一会儿就好了」也解释得通：断点之后重新算过一遍的那些块又进了缓存，从下一轮起就重新对得上了。所以这个现象每次重启复现一次，然后自己消失，很容易被当成偶发抖动放过去。</p>
+
+<h3>场景三 · 「上线截断之后，模型偶尔报工具调用格式错误」</h3>
+<p>先别怀疑模型。第 3 节那张表里，最常见的那种裁法——保留末端、单独保住系统消息——裁出来的第二条就是一个工具结果，而产生它的那次工具调用已经被裁掉了。模型收到一段自己没发出过的返回，很多接口会直接判非法。</p>
+<p>要看的是裁剪之后那份消息列表的头几条，不是模型的输出。判据很简单：第一条（系统消息之后）是不是一条合法的起头，以及每一个工具结果的那次调用还在不在。</p>
+<p>「偶尔」也说得通：只有当窗口边界恰好落在一轮的中间时才会出事，而每轮长短不一，所以它看起来是随机的。修法在库里就有一个参数，也可以自己在裁完之后做一次配对检查——后者更稳，因为消息该怎么配对由你用的模型接口定，不由裁剪的库定。</p>
+
+<h3>同事和面试官常问的</h3>
+<p>「上下文太长了怎么办？」——先把它拆成两笔：一笔是每轮都要重发的固定部分（系统提示词加工具注册表），一笔是按轮数长的历史。前者的修法是筛工具，后者才轮到裁剪。然后补一句关键的：裁剪不是免费的，它每次都会制造一个前缀断点，实测每轮削一点的那种写法比攒够了才削一次多算四倍半的 token。能说到这一句，说明你不是在背名词。</p>
+<p>「滑动窗口和摘要压缩，你选哪个？」——先反问这条会话平均多长、窗口多大。真正的取舍不是这两个名字之间，是「模型每一轮能看见多少历史」和「要重算多少」之间。实测里每轮丢一轮多留一轮半的历史，代价是四倍半的重算。摘要是第三条路：在场的原始轮数最少，但被丢掉的东西以压缩形式还在。</p>
+<p>「怎么知道我们的前缀命中率为什么掉了？」——把命中拆成共享头部和会话私有两半分别看。头部那一半掉，是副本太多、流量太散，每台都在重复付冷启动；私有那一半掉，是同一条会话被打散到不同副本，或者你自己在上下文前面动过刀。三种原因该动的东西完全不同，其中一种根本不在这台机器上。</p>
+<p>「会话状态存哪儿？」——先说这不是性能问题：最长的会话最慢的读法也只有毫秒级，一轮模型调用是七百多毫秒。要紧的是读回来的那一份和存进去的那一份逐字节相同。然后点出那个坑：很多会话库的读接口带一个限制条数的参数，用了它，恢复就是一次没人察觉的截断，实测第一轮命中率从九成六掉到不足两成。</p>
+<p>「同一个用户的请求要不要固定发到同一台机器？」——要，而且能给出价钱：四台副本上，亲和八成二，按负载随机五成四。但这个要求和负载均衡是冲突的——某台副本慢下来的时候，亲和说必须去那台，均衡说该躲开。所以真正的答案是「亲和是软的」，具体怎么软化是另一个题目。先保证的是分派那一层拿得到会话号，拿不到就什么都谈不了。</p>
+
+<h2><span class="kk">板块 5</span>自检问题</h2>
+
+<details><summary>1. 有人说：「我们把裁剪的目标水位从五成改成九成，这样留住的历史更多，模型效果更好。」用今天的数评估这个提议。</summary>
+<p>提议的前半句是对的，后半句省掉了代价，而这个代价正好落在被改的那个旋钮上。</p>
+<p>目标水位定得越高，一次裁完之后离窗口上限越近，撑不了几轮又满了。水位调到九成，行为就在向「每轮削一点」那一端靠——第 7 节量到的正是这一端：断点从四次涨到十九次，要算的 token 从一万二涨到五万六，折成时间多五十三秒。</p>
+<p>而且它连「省字节」这个安慰都没有：每轮削一点那一行发出去的 token 比丢一半那一行还多两成四，因为它永远贴着上限，一轮都没便宜过。</p>
+<p>正确的说法是：水位这个旋钮的两端分别是「多留历史」和「少重算」，它是一个真取舍，该由产品那一侧定，而不是随手往上调。调之前先把两条曲线画出来（加分题一）。</p>
+<p>错在哪：只报了这个旋钮买到的东西，没报它花掉的钱。</p>
+</details>
+
+<details><summary>2. 「我们换成了窗口大四倍的模型，以后不用裁了，命中率会上去。」这句话哪一半对、哪一半有条件？</summary>
+<p>对的那一半有实测支撑。第 8 节最后一列四种策略的数字完全相同，因为窗口开到一万六千三百八十四之后这条会话一次都没触发裁剪，四种策略退化成同一件事，命中率回到不裁剪那一档的九成半。不裁就没有断点，这一点没有疑问。</p>
+<p>有条件的那一半在「以后不用裁了」这个前提上。会话长度是一个分布，不是一个常数：窗口开大四倍，只是把顶破窗口的那条线往后推，长尾那些会话照样会顶破。而对顶破了的那部分，情况反而更糟——同一节量到，窗口从四千零九十六开到八千一百九十二，滑动窗口每一轮要重算的从五万六涨到八万九，因为每次断点之后要重算的量等于「窗口减头部」。</p>
+<p>还有一笔账不在今天的页面上但躲不开：Day 15 算过，KV cache 的占用和上下文长度是成正比的。窗口开大四倍，同样一台机器能同时容纳的会话数就要往下掉。</p>
+<p>正确的说法是：换大窗口之前先把裁法改对。裁法不改，窗口开大只是让每一次裁更贵。</p>
+</details>
+
+<details><summary>3. 「重启之后第一轮慢得离谱，我们要把会话库换成更快的存储。」用今天的数评估。</summary>
+<p>这个提议要改的东西，在总账里几乎不存在。</p>
+<p>第 10 节量的是最慢的一种读法、最长的一档会话：两点二毫秒。而一轮模型调用是七百三十八毫秒（Day 18 实测）。换成再快的存储，最多也就省掉这两点二毫秒里的一部分。</p>
+<p>真正的嫌疑在第 11 节那张表：只取最近八条恢复，第一轮的命中率从九成六掉到不到两成，要算的 token 从四百多涨到四千多。这一段是实打实的计算，按第 9 节那条斜率折算是好几秒。</p>
+<p>所以该做的第一件事是把恢复出来的那串 token 和崩之前那串逐字节比一遍。两个常见的差别来源：读回来的条数被 <code>limit</code> 限制住了；重新序列化的时候形状变了（键的顺序、空格、数字的打印格式）。</p>
+<p>错在哪：看见「慢」就去找 IO，没有先问「慢的是哪一段」。恢复本身和恢复之后的第一轮是两件事，前者按毫秒计，后者按秒计。</p>
+</details>
+
+<details><summary>4. 「我们从一台副本扩到两台，命中率反而从八成二掉到六成九。」怎么定位？下一步该做什么？</summary>
+<p>先把命中拆成两半分别看，这是第 12 节那张表教的读法。从一台到两台、按负载随机分派：头部那一半从九万零一百一十二掉到八万一千九百二十，会话私有那一半从十一万九千九百八十四掉到九万五千四百四十。两半都掉了，但掉的原因不同。</p>
+<p>头部掉，是因为那份所有会话共享的前缀现在要在两台机器上各冷启动一次。这一笔是一次性的，会话越多越摊得开。</p>
+<p>私有那一半掉，是因为同一条会话的相邻两轮落到了不同副本上，第二台对这条会话的历史一无所知。这一笔不是一次性的，每一轮都在付。</p>
+<p>下一步不是加机器——同一张表里，四台掉到五成四，八台掉到不足四成，加得越多越糟。要动的是分派规则：让分派那一层拿得到会话号，把同一条会话固定送回同一台。表里亲和那四行不管几台副本都是八成二，说明这一步的收益不随规模衰减。</p>
+<p>错在哪：把「扩容之后变慢」当成容量不够。缓存在这张表里是开到装得下一切的，容量在这里不可能是解释。</p>
+</details>
+
+<h2><span class="kk">板块 6</span>今日新词</h2>
+<p>前七个是「上下文装不下的时候怎么办」这条线上的，接着两个专说压缩这一支；前缀失效是今天所有代价的来源，边际成本是读第 9 节那张表要用的；最后三个是状态出了进程之后才有的事。</p>
+<div class="scroll"><table><thead><tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr></thead><tbody>
+<tr><td>上下文预算</td><td><code>context budget</code></td><td>一条会话在窗口上限之内怎么分配：头部占多少、留几轮历史、给这一轮的输出留多少</td></tr>
+<tr><td>截断</td><td><code>truncation</code></td><td>上下文装不下的时候，直接扔掉其中一段，扔掉的内容不再出现</td></tr>
+<tr><td>滑动窗口</td><td><code>sliding window</code></td><td>一种截断做法：每一轮都把最早的一轮丢掉，让上下文长度始终卡在窗口以内</td></tr>
+<tr><td>末端保留 / 首端保留</td><td><code>trim strategy "last" / "first"</code></td><td>截断时保留最后那几条，还是保留最前面那几条</td></tr>
+<tr><td>保住系统消息</td><td><code>include_system</code></td><td>按末端保留裁剪时，把第 0 条系统消息单独留下不参与裁剪</td></tr>
+<tr><td>悬空的工具结果</td><td><code>dangling tool result</code></td><td>裁剪把工具调用切走了、工具结果却留了下来，得到一段自己指向不了来源的消息</td></tr>
+<tr><td>近似计数</td><td><code>approximate token counting</code></td><td>不跑分词器，按字符数除以一个常数估 token 数</td></tr>
+<tr><td>上下文压缩</td><td><code>context compaction</code></td><td>把旧的若干轮换成一段短得多的摘要，占位小但信息还在（与 Day 15 那个整理碎片的 compaction 同名不同事）</td></tr>
+<tr><td>压缩阈值</td><td><code>compaction threshold</code></td><td>攒到多少条才触发一次压缩</td></tr>
+<tr><td>前缀失效 / 断点</td><td><code>prefix invalidation</code></td><td>改动上下文里靠前的任何一处，从该处往后的缓存块全部对不上，要重新算</td></tr>
+<tr><td>边际成本</td><td><code>marginal cost</code></td><td>多做一单位的事额外要花多少：一条耗时曲线上，斜率是边际成本，截距是那笔固定开销</td></tr>
+<tr><td>会话存储</td><td><code>session store</code></td><td>把会话状态存在进程之外的那个东西：一个日志文件、一张表、或者一个库</td></tr>
+<tr><td>隐式截断</td><td><code>implicit truncation</code></td><td>恢复时只读回最近若干条，等于在没人察觉的情况下裁了一刀</td></tr>
+<tr><td>会话亲和 / 粘性会话</td><td><code>session affinity / sticky session</code></td><td>把同一条会话的所有请求都送到同一台副本上</td></tr>
+</tbody></table></div>
+
+<h2><span class="kk">板块 7</span>已学词表</h2>
+<details><summary>Day 1 到今天的全部术语，标注首次引入于第几天（点开，共 249 条）</summary>
+<div class="scroll"><table><thead><tr><th>中文</th><th>英文原词</th><th class="n">引入于</th></tr></thead><tbody>
+<tr><td>延迟</td><td><code>latency</code></td><td class="n">Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td><code>throughput / queries per second</code></td><td class="n">Day 1</td></tr>
+<tr><td>百分位</td><td><code>percentile (P50 / P95 / P99)</code></td><td class="n">Day 1</td></tr>
+<tr><td>压测器</td><td><code>load generator</code></td><td class="n">Day 1</td></tr>
+<tr><td>闭环压测</td><td><code>closed loop</code></td><td class="n">Day 1</td></tr>
+<tr><td>开环压测</td><td><code>open loop</code></td><td class="n">Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td><code>hyper-threading / logical core</code></td><td class="n">Day 1</td></tr>
+<tr><td>基线</td><td><code>baseline</code></td><td class="n">Day 1</td></tr>
+<tr><td>服务时间</td><td><code>service time</code></td><td class="n">Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td><code>queueing time / queueing delay</code></td><td class="n">Day 2</td></tr>
+<tr><td>利用率</td><td><code>utilization</code></td><td class="n">Day 2</td></tr>
+<tr><td>利特尔法则</td><td><code>Little's Law</code></td><td class="n">Day 2</td></tr>
+<tr><td>尾延迟</td><td><code>tail latency</code></td><td class="n">Day 2</td></tr>
+<tr><td>协调遗漏</td><td><code>coordinated omission</code></td><td class="n">Day 2</td></tr>
+<tr><td>剖析器</td><td><code>profiler</code></td><td class="n">Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td><code>sampling / sampling frequency</code></td><td class="n">Day 3</td></tr>
+<tr><td>采样式剖析器</td><td><code>sampling profiler</code></td><td class="n">Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td><code>instrumenting profiler</code></td><td class="n">Day 3</td></tr>
+<tr><td>火焰图</td><td><code>flame graph</code></td><td class="n">Day 3</td></tr>
+<tr><td>自身耗时</td><td><code>self time</code></td><td class="n">Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td><code>on-CPU analysis</code></td><td class="n">Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td><code>off-CPU analysis</code></td><td class="n">Day 3</td></tr>
+<tr><td>事件循环</td><td><code>event loop</code></td><td class="n">Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td><code>CPU-bound / IO-bound</code></td><td class="n">Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td><code>blocking the event loop</code></td><td class="n">Day 4</td></tr>
+<tr><td>全局解释器锁</td><td><code>GIL (global interpreter lock)</code></td><td class="n">Day 4</td></tr>
+<tr><td>放开 GIL</td><td><code>releasing the GIL</code></td><td class="n">Day 4</td></tr>
+<tr><td>线程池外派</td><td><code>run_in_executor</code></td><td class="n">Day 4</td></tr>
+<tr><td>事件循环延迟</td><td><code>event loop lag</code></td><td class="n">Day 4</td></tr>
+<tr><td>采样偏差</td><td><code>sampling bias</code></td><td class="n">Day 4</td></tr>
+<tr><td>挂起的协程</td><td><code>suspended coroutine</code></td><td class="n">Day 5</td></tr>
+<tr><td>阶段计时</td><td><code>phase timing</code></td><td class="n">Day 5</td></tr>
+<tr><td>有效容量</td><td><code>effective capacity</code></td><td class="n">Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td><code>bottleneck hypothesis table</code></td><td class="n">Day 5</td></tr>
+<tr><td>双峰分布</td><td><code>bimodal distribution</code></td><td class="n">Day 6</td></tr>
+<tr><td>客户端排队</td><td><code>client-side queuing</code></td><td class="n">Day 6</td></tr>
+<tr><td>锁相</td><td><code>phase locking</code></td><td class="n">Day 6</td></tr>
+<tr><td>抖动</td><td><code>jitter</code></td><td class="n">Day 6</td></tr>
+<tr><td>预热</td><td><code>warm-up</code></td><td class="n">Day 6</td></tr>
+<tr><td>发送迟滞</td><td><code>send backlog</code></td><td class="n">Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td><code>cache / cache hierarchy</code></td><td class="n">Day 7</td></tr>
+<tr><td>缓存行</td><td><code>cache line</code></td><td class="n">Day 7</td></tr>
+<tr><td>硬件预取器</td><td><code>hardware prefetcher</code></td><td class="n">Day 7</td></tr>
+<tr><td>内存页</td><td><code>page</code></td><td class="n">Day 7</td></tr>
+<tr><td>缺页</td><td><code>page fault</code></td><td class="n">Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td><code>translation lookaside buffer</code></td><td class="n">Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td><code>huge page / THP</code></td><td class="n">Day 7</td></tr>
+<tr><td>内存带宽</td><td><code>memory bandwidth</code></td><td class="n">Day 7</td></tr>
+<tr><td>浮点运算</td><td><code>FLOP / GFLOP⁄s</code></td><td class="n">Day 7</td></tr>
+<tr><td>运算强度</td><td><code>arithmetic intensity</code></td><td class="n">Day 7</td></tr>
+<tr><td>机器平衡点</td><td><code>machine balance</code></td><td class="n">Day 7</td></tr>
+<tr><td>屋顶线模型</td><td><code>roofline model</code></td><td class="n">Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td><code>basic linear algebra subprograms</code></td><td class="n">Day 7</td></tr>
+<tr><td>token / 词元</td><td><code>token</code></td><td class="n">Day 8</td></tr>
+<tr><td>自回归</td><td><code>autoregressive</code></td><td class="n">Day 8</td></tr>
+<tr><td>预填充</td><td><code>prefill</code></td><td class="n">Day 8</td></tr>
+<tr><td>解码</td><td><code>decode</code></td><td class="n">Day 8</td></tr>
+<tr><td>首 token 延迟</td><td><code>TTFT / time to first token</code></td><td class="n">Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td><code>TPOT / time per output token</code></td><td class="n">Day 8</td></tr>
+<tr><td>token 间延迟</td><td><code>ITL / inter-token latency</code></td><td class="n">Day 8</td></tr>
+<tr><td>有效吞吐</td><td><code>goodput</code></td><td class="n">Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td><code>engine step / iteration</code></td><td class="n">Day 9</td></tr>
+<tr><td>静态批处理</td><td><code>static batching</code></td><td class="n">Day 9</td></tr>
+<tr><td>连续批处理</td><td><code>continuous batching / in-flight batching</code></td><td class="n">Day 9</td></tr>
+<tr><td>分块预填充</td><td><code>chunked prefill</code></td><td class="n">Day 9</td></tr>
+<tr><td>混合批</td><td><code>mixed batch</code></td><td class="n">Day 9</td></tr>
+<tr><td>token 预算</td><td><code>token budget</code></td><td class="n">Day 9</td></tr>
+<tr><td>max_num_seqs</td><td><code>max_num_seqs</code></td><td class="n">Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td><code>max_num_batched_tokens</code></td><td class="n">Day 9</td></tr>
+<tr><td>抢占</td><td><code>preemption</code></td><td class="n">Day 9</td></tr>
+<tr><td>重算</td><td><code>recompute</code></td><td class="n">Day 9</td></tr>
+<tr><td>沙箱</td><td><code>sandbox</code></td><td class="n">Day 10</td></tr>
+<tr><td>命名空间</td><td><code>namespace</code></td><td class="n">Day 10</td></tr>
+<tr><td>能力</td><td><code>capabilities</code></td><td class="n">Day 10</td></tr>
+<tr><td>换根</td><td><code>chroot / pivot_root</code></td><td class="n">Day 10</td></tr>
+<tr><td>控制组</td><td><code>cgroup / control group</code></td><td class="n">Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td><code>quota / period</code></td><td class="n">Day 10</td></tr>
+<tr><td>节流</td><td><code>throttling</code></td><td class="n">Day 10</td></tr>
+<tr><td>OOM 杀手</td><td><code>OOM killer</code></td><td class="n">Day 10</td></tr>
+<tr><td>进程数上限</td><td><code>pids.max</code></td><td class="n">Day 10</td></tr>
+<tr><td>系统调用号</td><td><code>syscall number</code></td><td class="n">Day 10</td></tr>
+<tr><td>seccomp</td><td><code>secure computing mode</code></td><td class="n">Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td><code>seccomp-bpf filter</code></td><td class="n">Day 10</td></tr>
+<tr><td>不再获得新权限</td><td><code>NO_NEW_PRIVS</code></td><td class="n">Day 10</td></tr>
+<tr><td>攻击面</td><td><code>attack surface</code></td><td class="n">Day 10</td></tr>
+<tr><td>逃逸</td><td><code>container escape</code></td><td class="n">Day 10</td></tr>
+<tr><td>应用内核</td><td><code>application kernel</code></td><td class="n">Day 10</td></tr>
+<tr><td>microVM</td><td><code>microVM</code></td><td class="n">Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td><code>hypervisor / VMM</code></td><td class="n">Day 10</td></tr>
+<tr><td>根文件系统</td><td><code>rootfs / root filesystem</code></td><td class="n">Day 11</td></tr>
+<tr><td>绑定挂载</td><td><code>bind mount</code></td><td class="n">Day 11</td></tr>
+<tr><td>挂载传播</td><td><code>mount propagation</code></td><td class="n">Day 11</td></tr>
+<tr><td>共享挂载</td><td><code>MS_SHARED / shared</code></td><td class="n">Day 11</td></tr>
+<tr><td>私有挂载</td><td><code>MS_PRIVATE / private</code></td><td class="n">Day 11</td></tr>
+<tr><td>从属挂载</td><td><code>MS_SLAVE / slave</code></td><td class="n">Day 11</td></tr>
+<tr><td>对等组</td><td><code>peer group</code></td><td class="n">Day 11</td></tr>
+<tr><td>惰性卸载</td><td><code>lazy unmount / MNT_DETACH</code></td><td class="n">Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td><code>PID 1 / init process</code></td><td class="n">Day 11</td></tr>
+<tr><td>冷启动</td><td><code>cold start</code></td><td class="n">Day 11</td></tr>
+<tr><td>叠加文件系统</td><td><code>overlayfs / overlay filesystem</code></td><td class="n">Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td><code>lowerdir / upperdir / workdir</code></td><td class="n">Day 12</td></tr>
+<tr><td>写时复制</td><td><code>copy-on-write / copy_up</code></td><td class="n">Day 12</td></tr>
+<tr><td>白障</td><td><code>whiteout</code></td><td class="n">Day 12</td></tr>
+<tr><td>只读根</td><td><code>read-only rootfs</code></td><td class="n">Day 12</td></tr>
+<tr><td>内存文件系统</td><td><code>tmpfs</code></td><td class="n">Day 12</td></tr>
+<tr><td>页缓存</td><td><code>page cache</code></td><td class="n">Day 12</td></tr>
+<tr><td>共享内存页</td><td><code>shmem</code></td><td class="n">Day 12</td></tr>
+<tr><td>索引节点</td><td><code>inode</code></td><td class="n">Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td><code>size= / nr_inodes=</code></td><td class="n">Day 12</td></tr>
+<tr><td>缓冲写</td><td><code>buffered write</code></td><td class="n">Day 12</td></tr>
+<tr><td>直写</td><td><code>direct I/O (O_DIRECT)</code></td><td class="n">Day 12</td></tr>
+<tr><td>回写</td><td><code>writeback</code></td><td class="n">Day 12</td></tr>
+<tr><td>块设备限速</td><td><code>blkio throttle / io.max</code></td><td class="n">Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td><code>major:minor</code></td><td class="n">Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td><code>veth pair</code></td><td class="n">Day 12</td></tr>
+<tr><td>源地址伪装</td><td><code>SNAT / MASQUERADE</code></td><td class="n">Day 12</td></tr>
+<tr><td>包过滤</td><td><code>packet filter / netfilter (iptables)</code></td><td class="n">Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td><code>DROP / REJECT</code></td><td class="n">Day 12</td></tr>
+<tr><td>出网白名单</td><td><code>egress allowlist</code></td><td class="n">Day 12</td></tr>
+<tr><td>能力边界集</td><td><code>capability bounding set</code></td><td class="n">Day 12</td></tr>
+<tr><td>遮罩</td><td><code>masking</code></td><td class="n">Day 12</td></tr>
+<tr><td>最小权限</td><td><code>least privilege</code></td><td class="n">Day 12</td></tr>
+<tr><td>开放容器倡议</td><td><code>OCI / Open Container Initiative</code></td><td class="n">Day 13</td></tr>
+<tr><td>运行时规范</td><td><code>runtime-spec</code></td><td class="n">Day 13</td></tr>
+<tr><td>镜像规范</td><td><code>image-spec</code></td><td class="n">Day 13</td></tr>
+<tr><td>分发规范</td><td><code>distribution-spec</code></td><td class="n">Day 13</td></tr>
+<tr><td>文件系统包</td><td><code>filesystem bundle</code></td><td class="n">Day 13</td></tr>
+<tr><td>运行时配置文件</td><td><code>config.json</code></td><td class="n">Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td><code>low-level runtime / runtime engine</code></td><td class="n">Day 13</td></tr>
+<tr><td>高层运行时</td><td><code>high-level runtime</code></td><td class="n">Day 13</td></tr>
+<tr><td>libcontainer</td><td><code>libcontainer</code></td><td class="n">Day 13</td></tr>
+<tr><td>初始化进程</td><td><code>runc init</code></td><td class="n">Day 13</td></tr>
+<tr><td>二进制自克隆</td><td><code>binary cloning / exeseal</code></td><td class="n">Day 13</td></tr>
+<tr><td>构造函数钩子</td><td><code>__attribute__((constructor))</code></td><td class="n">Day 13</td></tr>
+<tr><td>三段式创建</td><td><code>nsexec stage 0 / 1 / 2</code></td><td class="n">Day 13</td></tr>
+<tr><td>执行栅栏</td><td><code>exec fifo</code></td><td class="n">Day 13</td></tr>
+<tr><td>容器状态</td><td><code>creating / created / running / stopped</code></td><td class="n">Day 13</td></tr>
+<tr><td>生命周期钩子</td><td><code>lifecycle hooks</code></td><td class="n">Day 13</td></tr>
+<tr><td>垫片</td><td><code>shim</code></td><td class="n">Day 13</td></tr>
+<tr><td>ttRPC</td><td><code>ttRPC</code></td><td class="n">Day 13</td></tr>
+<tr><td>子收割者</td><td><code>subreaper / PR_SET_CHILD_SUBREAPER</code></td><td class="n">Day 13</td></tr>
+<tr><td>僵尸进程</td><td><code>zombie process</code></td><td class="n">Day 13</td></tr>
+<tr><td>容器运行时接口</td><td><code>CRI / Container Runtime Interface</code></td><td class="n">Day 13</td></tr>
+<tr><td>预热池</td><td><code>warm pool</code></td><td class="n">Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td><code>zygote / fork server</code></td><td class="n">Day 14</td></tr>
+<tr><td>懒加载</td><td><code>lazy loading / lazy pulling</code></td><td class="n">Day 14</td></tr>
+<tr><td>并发上限</td><td><code>concurrency limit</code></td><td class="n">Day 14</td></tr>
+<tr><td>许可</td><td><code>semaphore</code></td><td class="n">Day 14</td></tr>
+<tr><td>准入控制</td><td><code>admission control</code></td><td class="n">Day 14</td></tr>
+<tr><td>背压</td><td><code>backpressure</code></td><td class="n">Day 14</td></tr>
+<tr><td>泊松到达</td><td><code>Poisson arrivals</code></td><td class="n">Day 14</td></tr>
+<tr><td>宽限期</td><td><code>grace period</code></td><td class="n">Day 14</td></tr>
+<tr><td>请求路径</td><td><code>request path</code></td><td class="n">Day 14</td></tr>
+<tr><td>异步回收</td><td><code>deferred cleanup</code></td><td class="n">Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td><code>KV cache</code></td><td class="n">Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td><code>query head / KV head</code></td><td class="n">Day 15</td></tr>
+<tr><td>每头维度</td><td><code>head_dim / head size</code></td><td class="n">Day 15</td></tr>
+<tr><td>分组查询注意力</td><td><code>GQA / grouped-query attention</code></td><td class="n">Day 15</td></tr>
+<tr><td>内部碎片</td><td><code>internal fragmentation</code></td><td class="n">Day 15</td></tr>
+<tr><td>外部碎片</td><td><code>external fragmentation</code></td><td class="n">Day 15</td></tr>
+<tr><td>紧凑</td><td><code>compaction</code></td><td class="n">Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td><code>block</code></td><td class="n">Day 15</td></tr>
+<tr><td>块表</td><td><code>block table</code></td><td class="n">Day 15</td></tr>
+<tr><td>分页注意力</td><td><code>PagedAttention</code></td><td class="n">Day 15</td></tr>
+<tr><td>每块字节数</td><td><code>page_size_bytes</code></td><td class="n">Day 15</td></tr>
+<tr><td>空闲块队列</td><td><code>free block queue</code></td><td class="n">Day 15</td></tr>
+<tr><td>上下文长度上限</td><td><code>max_model_len</code></td><td class="n">Day 15</td></tr>
+<tr><td>显存占用比例</td><td><code>gpu_memory_utilization</code></td><td class="n">Day 15</td></tr>
+<tr><td>因果注意力</td><td><code>causal attention</code></td><td class="n">Day 16</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td><code>prefix caching / APC</code></td><td class="n">Day 16</td></tr>
+<tr><td>token 级前缀命中率</td><td><code>prefix cache hit rate</code></td><td class="n">Day 16</td></tr>
+<tr><td>块 hash 链</td><td><code>chained block hash</code></td><td class="n">Day 16</td></tr>
+<tr><td>基数树 / 前缀树</td><td><code>radix tree / RadixAttention</code></td><td class="n">Day 16</td></tr>
+<tr><td>节点分裂</td><td><code>node split</code></td><td class="n">Day 16</td></tr>
+<tr><td>最近最少使用</td><td><code>LRU / least recently used</code></td><td class="n">Day 16</td></tr>
+<tr><td>复用距离</td><td><code>reuse distance</code></td><td class="n">Day 16</td></tr>
+<tr><td>缓存盐</td><td><code>cache salt</code></td><td class="n">Day 16</td></tr>
+<tr><td>卸载</td><td><code>offloading</code></td><td class="n">Day 16</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td><code>tiering / primary tier / secondary tier</code></td><td class="n">Day 16</td></tr>
+<tr><td>提升</td><td><code>promotion</code></td><td class="n">Day 16</td></tr>
+<tr><td>写入门槛</td><td><code>store threshold</code></td><td class="n">Day 16</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td><code>PCIe</code></td><td class="n">Day 16</td></tr>
+<tr><td>前端进程</td><td><code>frontend process</code></td><td class="n">Day 17</td></tr>
+<tr><td>引擎核心 / 引擎核心进程</td><td><code>EngineCore / EngineCoreProc</code></td><td class="n">Day 17</td></tr>
+<tr><td>输入处理器</td><td><code>input processor</code></td><td class="n">Day 17</td></tr>
+<tr><td>输出处理器</td><td><code>output processor</code></td><td class="n">Day 17</td></tr>
+<tr><td>忙循环</td><td><code>busy loop</code></td><td class="n">Day 17</td></tr>
+<tr><td>输入队列 / 输出队列</td><td><code>input_queue / output_queue</code></td><td class="n">Day 17</td></tr>
+<tr><td>打包 / 解包 · 序列化 / 反序列化</td><td><code>serialize / deserialize</code></td><td class="n">Day 17</td></tr>
+<tr><td>请求状态</td><td><code>RequestStatus</code></td><td class="n">Day 17</td></tr>
+<tr><td>调度单</td><td><code>SchedulerOutput</code></td><td class="n">Day 17</td></tr>
+<tr><td>全量与差量</td><td><code>NewRequestData / CachedRequestData</code></td><td class="n">Day 17</td></tr>
+<tr><td>执行结果</td><td><code>ModelRunnerOutput</code></td><td class="n">Day 17</td></tr>
+<tr><td>执行器</td><td><code>Executor</code></td><td class="n">Day 17</td></tr>
+<tr><td>增量解码</td><td><code>incremental detokenization</code></td><td class="n">Day 17</td></tr>
+<tr><td>解码窗口</td><td><code>prefix_offset / read_offset</code></td><td class="n">Day 17</td></tr>
+<tr><td>停止串</td><td><code>stop string</code></td><td class="n">Day 17</td></tr>
+<tr><td>替换符</td><td><code>replacement character (U+FFFD)</code></td><td class="n">Day 17</td></tr>
+<tr><td>agent 循环</td><td><code>agent loop</code></td><td class="n">Day 18</td></tr>
+<tr><td>一轮</td><td><code>turn</code></td><td class="n">Day 18</td></tr>
+<tr><td>会话</td><td><code>session</code></td><td class="n">Day 18</td></tr>
+<tr><td>工具调用</td><td><code>tool call</code></td><td class="n">Day 18</td></tr>
+<tr><td>副作用</td><td><code>side effect</code></td><td class="n">Day 18</td></tr>
+<tr><td>服务端推送事件</td><td><code>SSE / server-sent events</code></td><td class="n">Day 18</td></tr>
+<tr><td>交接</td><td><code>handoff</code></td><td class="n">Day 18</td></tr>
+<tr><td>在途会话</td><td><code>in-flight session</code></td><td class="n">Day 18</td></tr>
+<tr><td>进程 CPU 时钟</td><td><code>process CPU clock (time.process_time)</code></td><td class="n">Day 18</td></tr>
+<tr><td>幂等</td><td><code>idempotent / idempotence</code></td><td class="n">Day 18</td></tr>
+<tr><td>幂等键</td><td><code>idempotency key</code></td><td class="n">Day 18</td></tr>
+<tr><td>至少一次 / 恰好一次</td><td><code>at-least-once / exactly-once</code></td><td class="n">Day 18</td></tr>
+<tr><td>检查点</td><td><code>checkpoint</code></td><td class="n">Day 18</td></tr>
+<tr><td>追加式日志</td><td><code>append-only log</code></td><td class="n">Day 18</td></tr>
+<tr><td>写前记录</td><td><code>write-ahead logging (WAL)</code></td><td class="n">Day 18</td></tr>
+<tr><td>工具注册</td><td><code>tool registration</code></td><td class="n">Day 19</td></tr>
+<tr><td>参数模式</td><td><code>input schema</code></td><td class="n">Day 19</td></tr>
+<tr><td>JSON Schema</td><td><code>JSON Schema</code></td><td class="n">Day 19</td></tr>
+<tr><td>附加属性</td><td><code>additionalProperties</code></td><td class="n">Day 19</td></tr>
+<tr><td>结构化输出</td><td><code>structuredContent / outputSchema</code></td><td class="n">Day 19</td></tr>
+<tr><td>工具注解</td><td><code>tool annotations</code></td><td class="n">Day 19</td></tr>
+<tr><td>模型上下文协议</td><td><code>MCP / Model Context Protocol</code></td><td class="n">Day 19</td></tr>
+<tr><td>JSON-RPC 2.0</td><td><code>JSON-RPC 2.0</code></td><td class="n">Day 19</td></tr>
+<tr><td>请求编号</td><td><code>request id</code></td><td class="n">Day 19</td></tr>
+<tr><td>工具清单</td><td><code>tools/list</code></td><td class="n">Day 19</td></tr>
+<tr><td>工具调用请求</td><td><code>tools/call</code></td><td class="n">Day 19</td></tr>
+<tr><td>内容块</td><td><code>content block</code></td><td class="n">Day 19</td></tr>
+<tr><td>协议错误 / 工具错误</td><td><code>protocol error / tool error</code></td><td class="n">Day 19</td></tr>
+<tr><td>错误标志</td><td><code>isError</code></td><td class="n">Day 19</td></tr>
+<tr><td>部分结果</td><td><code>partial results</code></td><td class="n">Day 19</td></tr>
+<tr><td>任务组</td><td><code>asyncio.TaskGroup</code></td><td class="n">Day 19</td></tr>
+<tr><td>兄弟任务取消</td><td><code>sibling cancellation</code></td><td class="n">Day 19</td></tr>
+<tr><td>异常组</td><td><code>ExceptionGroup / except*</code></td><td class="n">Day 19</td></tr>
+<tr><td>协作式取消</td><td><code>cooperative cancellation</code></td><td class="n">Day 19</td></tr>
+<tr><td>取消通知</td><td><code>notifications/cancelled</code></td><td class="n">Day 19</td></tr>
+<tr><td>截止时间传递</td><td><code>deadline propagation</code></td><td class="n">Day 19</td></tr>
+<tr><td>上下文污染</td><td><code>context pollution</code></td><td class="n">Day 19</td></tr>
+<tr><td>上下文预算</td><td><code>context budget</code></td><td class="n">Day 20</td></tr>
+<tr><td>截断</td><td><code>truncation</code></td><td class="n">Day 20</td></tr>
+<tr><td>滑动窗口</td><td><code>sliding window</code></td><td class="n">Day 20</td></tr>
+<tr><td>末端保留 / 首端保留</td><td><code>trim strategy "last" / "first"</code></td><td class="n">Day 20</td></tr>
+<tr><td>保住系统消息</td><td><code>include_system</code></td><td class="n">Day 20</td></tr>
+<tr><td>悬空的工具结果</td><td><code>dangling tool result</code></td><td class="n">Day 20</td></tr>
+<tr><td>上下文压缩</td><td><code>context compaction</code></td><td class="n">Day 20</td></tr>
+<tr><td>压缩阈值</td><td><code>compaction threshold</code></td><td class="n">Day 20</td></tr>
+<tr><td>前缀失效 / 断点</td><td><code>prefix invalidation</code></td><td class="n">Day 20</td></tr>
+<tr><td>近似计数</td><td><code>approximate token counting</code></td><td class="n">Day 20</td></tr>
+<tr><td>边际成本</td><td><code>marginal cost</code></td><td class="n">Day 20</td></tr>
+<tr><td>会话存储</td><td><code>session store</code></td><td class="n">Day 20</td></tr>
+<tr><td>隐式截断</td><td><code>implicit truncation</code></td><td class="n">Day 20</td></tr>
+<tr><td>会话亲和 / 粘性会话</td><td><code>session affinity / sticky session</code></td><td class="n">Day 20</td></tr>
+</tbody></table></div>
+</details>
+
+<h2><span class="kk">板块 8</span>专项深挖</h2>
+<p>今天放不下、但各自够花一晚上的三件事。三段互不相干，挑一段整段发给 Claude 就行。</p>
+
+<div class="card">
+<p>我已经量过一件事：一条三十轮的 agent 会话，窗口四千零九十六，「每一轮都丢掉最早的一轮」这种裁法发给模型的 token 只有不裁剪那一档的四成三，但真正需要 prefill 计算的 token 是它的五点三倍——因为每一次裁剪都改动了上下文靠前的部分，前缀缓存从头部之后整段失效。我也验证过「攒满了才一次丢到半满」这种裁法在发出量和计算量两笔账上都更省，代价是模型每一轮能看见的历史少一轮半。</p>
+<p>现在我想弄清楚，除了「丢」和「摘要」之外，工业界还有哪些做法能在不破坏前缀的前提下缩短上下文。请对比这几条路线：一，把历史外置成可检索的记忆，每轮只把检索到的几条拼进来；二，分层上下文（近期原文 + 中期摘要 + 远期索引）；三，把不变的那部分和会变的那部分在上下文里换个顺序摆；四，让推理服务支持从中间某处开始复用（而不只是前缀）。对每一条说明：它对前缀缓存命中率是帮忙还是添乱、它要求推理服务提供什么能力、以及它把复杂度挪到了哪里。产出用一张对比表加四段说明，每段不超过两百字，不要贴大段代码。</p>
+</div>
+
+<div class="card">
+<p>我已经量过会话恢复的账：一条三十轮的会话在第 20 轮被打断，全量恢复之后第一轮的前缀命中率是九成六，而只读回最近八条则掉到不足两成，后面十轮累计要多算三千七百多个 token。我也确认过一个真实的会话库（openai-agents 的 SQLiteSession）的读接口默认带一个限制条数的参数，用它就等于做了一次没人察觉的截断。我还量过读回来这一步本身很便宜：最长一档最慢一种读法两点二毫秒。</p>
+<p>现在我想把「恢复出来的上下文和存进去的那一份逐字节相同」这件事做扎实。请讲清楚在 Python 里让 JSON 序列化结果稳定复现要注意哪些地方（键的顺序、浮点数的打印、Unicode 转义、字典插入顺序、集合的迭代顺序、跨版本的差异），每一条给一个会出错的小例子和对应的正确写法。再讲一层：如果上下文里包含模型返回的原始 JSON 字符串，是该原样存下来还是解析后重新序列化，两种做法各有什么风险。产出以代码加说明为主，不超过一千五百字。</p>
+</div>
+
+<div class="card">
+<p>我已经量过多副本上的前缀命中率：八条会话轮次交错、每台副本缓存都开到装得下一切，会话亲和是八成二，按负载随机分派在两台时是六成九、四台五成四、八台不足四成。我也把命中拆成了共享头部和会话私有两部分，看到两部分是分别衰减的。</p>
+<p>现在我想搞清楚「会话亲和」在真实系统里怎么落地才不会和负载均衡打架。请讲清楚这几种做法的机制与失效模式：一，按会话号做一致性哈希；二，带权重的亲和（优先回原副本，但原副本负载超过阈值就放弃）；三，由一个知道各副本缓存内容的调度器来选；四，把缓存做成多副本共享的一层。对每一条说明：一台副本挂掉或者扩缩容的时候会发生什么、亲和被打破一次的代价怎么估、以及它需要哪些指标才能运维。产出用一张表加一段结论，不超过一千二百字。</p>
+</div>
+
+<h2><span class="kk">板块 9</span>延伸材料</h2>
+<ol>
+<li>本机 <code>langchain-core</code> 的裁剪实现——装了这个包之后就在 <code>site-packages/langchain_core/messages/utils.py</code>。只读三段：<code>trim_messages</code> 的签名和参数文档（1133 行起）、<code>_last_max_tokens</code> 怎么把系统消息拎出来（2086 行起）、<code>count_tokens_approximately</code> 那个每四字符一个 token 的近似（2244 行起）。今天第 3 节每一句关于裁剪的话都出自这里。难度低，四十分钟，是今天性价比最高的一份。</li>
+<li>本机 <code>openai-agents</code> 的会话与压缩——在 <code>site-packages/agents/memory/</code> 下。看两个文件：<code>sqlite_session.py</code> 里那张表的形状（245 行起）和 <code>get_items</code> 那个 <code>limit</code>（288 行起）；<code>openai_responses_compaction_session.py</code> 开头那三十行，压缩阈值和「哪些条目算候选」都写在那里。今天第 10、11 节的每一个设计判断都能在这里找到对应。难度中等，四十分钟。</li>
+<li>Automatic Prefix Caching（vLLM 设计文档）——<code>https://docs.vllm.ai/en/latest/design/prefix_caching.html</code>。今天整页假设「改动前缀就整段失效」，这份文档讲的是这条性质在真实引擎里怎么实现：块怎么分配、怎么按 LRU 淘汰、hash 怎么串。读它是为了确认今天那个模拟器没有偷工减料。难度中等，一小时。</li>
+<li>Lost in the Middle: How Language Models Use Long Contexts，Nelson F. Liu 等——<code>https://arxiv.org/abs/2307.03172</code>。今天整页只算上下文的成本，一个字都没谈质量。这篇量的正是另一侧：同一份信息放在上下文的开头、中间、末尾，模型用得上的程度差别很大。读完你会明白为什么「保头保尾、挖中间」这种裁法在实践里流行。难度中等，一小时。</li>
+<li>SQLite 的 Write-Ahead Logging 文档——<code>https://sqlite.org/wal.html</code>。Day 18 引入过写前记录这个词，今天那个会话库开的正是这个模式。重点看它对并发读写的承诺和检查点那一节。会话存储要不要用它、什么时候会撞上 <code>SQLITE_BUSY</code>（库在告诉你「现在有人占着，稍后再来」），答案都在这一页。难度中等，一小时。</li>
+</ol>
+
+<h2><span class="kk">板块 10</span>今日五句话</h2>
+<div class="card c-five">
+<p>把这一页扣过去，用自己的话答下面五个问题，每题一两句。</p>
+<p>1 · 一条 agent 会话的上下文由哪几块组成？哪一块是常数，哪一块按轮数长？把窗口翻一倍，能多撑的轮数大约怎么变？</p>
+<p>2 · 「裁掉最早的一轮」这个动作，在缓存那一侧发生了什么？为什么内容一个字没改的那几轮也对不上了？</p>
+<p>3 · 每轮削一点和攒满了削一次，在「发出多少、要算多少、留住多少历史」这三笔账上分别是什么答案？哪两笔是同向的，哪一笔才是真取舍？</p>
+<p>4 · 把窗口开大一倍，滑动窗口这种裁法要算的 token 会怎么变？为什么？</p>
+<p>5 · 进程崩了重启，恢复要判对不对，判据是什么？为什么「没报错」不够？</p>
+<div class="wr"></div>
+</div>
+
+<h3>逐句自查</h3>
+<p>第 1 句如果只写「系统提示词加历史」就缺了一块。三块是头部（系统提示词加工具注册表，从头到尾不变）、已完成的轮次（单调涨，涨得最快）、这一轮新送进去的那一截（在一个区间里抖）。头部占比在实测那条会话上从七成半掉到不足一成。窗口翻倍能多撑的轮数也大约翻倍，因为第二块基本是线性涨的。</p>
+<p>第 2 句如果答成「那几轮被删掉了所以对不上」就答反了——对不上的恰恰是<em>没被删掉</em>的那几轮。原因是位置：前面少了两轮，它们整体往前挪，块的切分边界跟着挪，每一块装的 token 组合变了，串出来的 hash 全不一样。实测那一行的命中块正好等于头部的块数。</p>
+<p>第 3 句如果只答了「每轮削一点更省字节」就答错了方向。实测里每轮削一点发出去的反而多两成四，要算的多三点五倍——发出和要算这两笔是同向的，同时输。真取舍在第三笔：每轮削一点让模型平均多看见一轮半的历史，这一轮半就是那四倍半重算买到的全部东西。</p>
+<p>第 4 句如果写成「窗口大了裁得少，所以要算的变少」就漏了一步推理。裁的次数确实少了，但每一次裁之后要重算的量等于「窗口减去头部」——窗口开大，单次代价跟着涨。实测这两个方向里后者赢：要算的从五万六涨到八万九。而攒满了才削一次那两种做法的走势相反，因为它们的断点次数掉得更快。</p>
+<p>第 5 句如果答成「能读出来就行」就漏掉了今天最要紧的那件事。判据是读回来的那串 token 和崩之前那串逐字节相同。不同的话程序照样能跑、日志上什么都不会报，只是头部之后的整段要重算一遍——实测第一轮命中率从九成六掉到不足两成，而且后面每一轮都还在还这笔债。</p>
+
+<h2><span class="kk">板块 11</span>明日预告</h2>
+<p>今天恢复的是一条会话：它有一个明确的当前轮，状态就是一段上下文，读回来接着往下走就行。明天要恢复的是另一种东西——一个跑了两小时、中间调过几十次工具、有些工具已经把钱扣了的长任务，而且机器上同时有几百个这样的任务在跑。</p>
+<p>明天 Day 21 讲长任务与并发：任务队列怎么排、检查点怎么让任务从中间接着跑、幂等键在恢复路径上怎么用、以及背压和并发配额怎么定。今天还顺手埋了一个钩子——第 12 节那张表里，让同一条会话回到同一台副本能拿八成二的命中率；可明天那种任务会在队列里等上很久才被调度，等它终于轮到的时候，原来那台副本上属于它的块，早被别人的复用距离挤光了。会话亲和和排队等待，明天要放在同一张表上算。</p>
+
+<footer>
+<div class="ln">AI Infra · Day 20 / 28 · 2026-09-03 · 阶段四 · Agent Runtime（八天项目 · 第 3 天 · 建造）</div>
+<p>实验条件：2 核 Intel Xeon @ 2.80 GHz，L1d 64 KiB、L2 2 MiB、L3 33 MiB，7.8 GiB 内存，页大小 4096 字节；Linux 6.18.44。Python 3.11.15、numpy 2.4.4、sqlite3 3.45.1、langchain-core 1.6.1、openai-agents 0.22.0。这台机器与 Day 19 那台的缓存规格不同（L2、L3 都不一样），所以两天的绝对毫秒数不横着比；今天所有对比都在本页内部完成。</p>
+<p>九个账台都是本机单进程的 Python 程序，没有模型、没有加速器、没有网络、没有进程间通信。前缀缓存部分的块大小 16、hash 串法、LRU 淘汰与 Day 16 的模拟器一致。会话生成器的随机种子固定为 20，所以每一张表重跑出来的数字都应当一模一样。落库那一组每格跑 41 次取中位；矩阵乘每档热身一次后跑 9 次取中位，中位、最小、最大都报在表里。P7 的折算斜率直接读 P6 同一次运行写下的文件。</p>
+<p>一手材料：本机 site-packages 下的 <code>langchain-core</code> 1.6.1 与 <code>openai-agents</code> 0.22.0，页面上所有 <code>langchain_core/messages/utils.py</code>、<code>agents/memory/sqlite_session.py</code>、<code>agents/memory/session_settings.py</code>、<code>agents/memory/openai_responses_compaction_session.py</code> 的行号均以这两份为准。</p>
+</footer>
+
+</main>
+</body>
+</html>
