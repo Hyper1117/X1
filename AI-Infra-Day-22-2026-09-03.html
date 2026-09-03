@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 22</title>
+<style>
+:root{
+  --bg:#faf6ef; --card:#fffdf8; --ink:#2e2a25; --ink2:#5c554c; --ink3:#857c70;
+  --line:#e4dbcc; --line2:#efe7db;
+  --accent:#9a5b32; --accent2:#3f6b57; --accent3:#6a5490; --accent4:#8a6d1f;
+  --codebg:#2b2723; --codeink:#eee5d8; --mark:#f2e6cf;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1c1a17; --card:#242119; --ink:#ece5da; --ink2:#c3b9aa; --ink3:#968c7d;
+    --line:#3a352c; --line2:#312c25;
+    --accent:#e0a077; --accent2:#7fc3a4; --accent3:#b3a0dd; --accent4:#ddc06a;
+    --codebg:#15130f; --codeink:#e6ddcf; --mark:#3b3324;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1c1a17; --card:#242119; --ink:#ece5da; --ink2:#c3b9aa; --ink3:#968c7d;
+  --line:#3a352c; --line2:#312c25;
+  --accent:#e0a077; --accent2:#7fc3a4; --accent3:#b3a0dd; --accent4:#ddc06a;
+  --codebg:#15130f; --codeink:#e6ddcf; --mark:#3b3324;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16.5px; line-height:1.78; overflow-x:hidden;
+}
+.wrap{max-width:820px; margin:0 auto; padding:0 20px 90px}
+.bar{
+  position:sticky; top:0; z-index:20; background:var(--card);
+  border-bottom:1px solid var(--line); padding:9px 20px;
+  display:flex; gap:14px; align-items:baseline; flex-wrap:wrap;
+  font-size:13.5px; color:var(--ink2);
+}
+.bar .d{color:var(--accent); font-size:15px; letter-spacing:.02em}
+.bar .sp{margin-left:auto; color:var(--ink3)}
+h1{font-size:27px; line-height:1.4; margin:34px 0 6px; letter-spacing:.01em}
+.sub{color:var(--ink3); font-size:14.5px; margin-bottom:6px}
+h2{
+  font-size:20px; margin:52px 0 4px; padding-top:20px;
+  border-top:1px solid var(--line); line-height:1.45;
+}
+h2 .k{display:block; font-size:12.5px; color:var(--ink3); font-weight:400; letter-spacing:.06em; margin-bottom:2px}
+h3{font-size:17px; margin:32px 0 8px; line-height:1.5}
+h4{font-size:15.5px; margin:24px 0 6px; color:var(--ink2)}
+p{margin:12px 0}
+a{color:var(--accent); text-underline-offset:3px}
+strong{font-weight:600}
+code{
+  font-family:"SF Mono",Menlo,Consolas,"DejaVu Sans Mono",monospace;
+  font-size:.88em; background:var(--mark); padding:1px 5px; border-radius:4px;
+  overflow-wrap:anywhere; word-break:break-word;
+}
+pre{
+  background:var(--codebg); color:var(--codeink); padding:15px 17px; border-radius:9px;
+  overflow-x:auto; line-height:1.62; font-size:13.2px; margin:14px 0;
+}
+pre code{background:none; padding:0; color:inherit; font-size:inherit; overflow-wrap:normal; word-break:normal}
+.term{
+  background:var(--mark); border-bottom:1.5px solid var(--accent);
+  padding:0 3px; border-radius:3px 3px 0 0;
+}
+.scroll{overflow-x:auto; margin:16px 0; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; font-size:14.2px; min-width:min(100%,540px)}
+th,td{border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top}
+th{background:var(--line2); font-weight:600; white-space:nowrap}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+caption{caption-side:bottom; text-align:left; color:var(--ink3); font-size:12.8px; padding-top:7px; line-height:1.6}
+.card{
+  background:var(--card); border:1px solid var(--line); border-left:5px solid var(--ink3);
+  border-radius:8px; padding:15px 18px; margin:20px 0;
+}
+.card > :first-child{margin-top:0} .card > :last-child{margin-bottom:0}
+.card h4{margin-top:0; color:var(--ink)}
+.recall{border-left-color:var(--accent3)}
+.predict{border-left-color:var(--accent4)}
+.five{border-left-color:var(--accent2)}
+.key{border-left-color:var(--accent); background:linear-gradient(0deg,var(--card),var(--card))}
+.key .lbl{font-size:12px; letter-spacing:.1em; color:var(--accent); display:block; margin-bottom:3px}
+.breathe{color:var(--ink2); border-left:3px solid var(--line); padding-left:14px; margin:20px 0}
+.lead{font-size:17.5px; color:var(--ink); margin:16px 0 10px}
+details{
+  background:var(--card); border:1px solid var(--line); border-radius:8px;
+  padding:11px 15px; margin:12px 0;
+}
+details[open]{padding-bottom:15px}
+summary{cursor:pointer; font-weight:600; font-size:15px; color:var(--accent2)}
+details > :not(summary){font-size:15.4px}
+.write{
+  border:1px dashed var(--line); border-radius:7px; min-height:74px;
+  margin:11px 0; padding:9px 12px; color:var(--ink3); font-size:13px; background:var(--bg);
+}
+figure{margin:20px 0}
+figure figcaption{color:var(--ink3); font-size:12.8px; margin-top:7px}
+svg{display:block; max-width:100%; height:auto; color:var(--ink)}
+ul,ol{padding-left:22px; margin:12px 0}
+li{margin:6px 0}
+hr{border:0; border-top:1px solid var(--line); margin:34px 0}
+footer{
+  margin-top:60px; padding-top:18px; border-top:1px solid var(--line);
+  color:var(--ink3); font-size:13px; line-height:1.7;
+}
+footer .id{color:var(--ink2); font-weight:600}
+.il{font-style:normal; font-weight:600; color:var(--ink2)}
+.tag{
+  display:inline-block; font-size:11.5px; padding:1px 8px; border-radius:20px;
+  border:1px solid var(--line); color:var(--ink3); margin-right:6px; white-space:nowrap;
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <span class="d">Day 22 / 28</span><span>块四 · Agent Runtime（建造）</span><span class="sp">2026-09-03</span>
+</div>
+<div class="wrap">
+
+<h1>沙箱接合：模型写的代码，跑在你的机器上</h1>
+<p class="sub">权限最小化与副作用回收 —— 把块二那套隔离接到 agent 的工具调用上</p>
+<h2><span class="k">板块 0</span>温故 · 闭卷</h2>
+
+<p>先不翻页，把三道题写在纸上，再展开对答案。</p>
+
+<div class="card recall">
+<h4>第 1 题 · Day 21 · 租约那个数</h4>
+<p>一批任务的服务时间集中在 800 毫秒左右。你把租约设成 0.4 秒，一段时间之后发现有些任务被执行了两遍；改成 3.2 秒，重复消失了，但一次进程崩溃之后队列像卡住一样很久没动静。这两种故障各自的机制是什么？续租凭什么能同时躲开它们？</p>
+<details><summary>展开对答案</summary>
+<p>租约是领取任务那一刻写下的一个到期时刻，在那之前别人不许碰它。它同时是两件事的上界，两件事往相反方向拉。</p>
+<p>租约 0.4 秒短于任务本身的 0.8 秒：任务还在好好地跑，租约先过期了，队列里另一个空闲进程把它当成孤儿任务领走，于是同一条任务被两个进程同时执行。租约 3.2 秒的问题在另一头：进程崩溃的时候不会通知任何人，别人只能等这个到期时刻自然到来。租约多长，一次崩溃就要晾多久——那天量到的接手延迟几乎正好等于租约减去任务已经跑掉的那一段。</p>
+<p>续租松开的是「租约在领取那一刻定死」这个前提。干活期间周期性地把到期时刻往后推，租约的长度就不必大于最长的任务了，它只剩一个职责：故障之后能忍多久没人接手。那天的对照里，续租把重复执行降到 0，接手延迟只多了一百多毫秒。</p>
+<p>今天要用的正是这个形状。区别在于今天租约保护的不是一条任务，而是一台机器上的一堆资源：一个挂载点、一个 cgroup、一棵进程树。</p>
+</details>
+</div>
+
+<div class="card recall">
+<h4>第 2 题 · Day 19 · 取消停得住什么</h4>
+<p>一轮里并发发出三个工具调用，第二个抛了 HTTP 500，运行时立刻结束这一轮把错误交回上层。另外两个工具的副作用会不会发生？换个场合：一个工具你给了 300 毫秒预算，到点用 <code>asyncio.timeout</code> 取消，对面那个 800 毫秒的动作会停下来吗？</p>
+<details><summary>展开对答案</summary>
+<p>两问的答案都是「会照样发生」，而且是同一个机制。</p>
+<p>并发那一问：<code>asyncio.gather</code> 在某一条抛异常时做的是「不再等」，不是「叫停」。就算它真把另外两条协程杀了也没用——请求已经发出去了，工具服务那一侧收到的是一个完整的请求，它开工、写账本，这一串动作在另一个进程里。那天量到的轨迹是：运行时收工六百毫秒之后，另外两条 <code>done</code> 才写进账本。</p>
+<p>超时那一问同理。取消发生在你的进程里，它让协程停止等待、抛出 <code>CancelledError</code>、把栈解开，对面一个字都不知道。修法是多发一条消息明确说「刚才那一次不要了」，而且前提是被调那一侧自己愿意查——这叫协作式取消。</p>
+<p>共同的那句话是：你没有办法从外面强行终止另一个进程里的一段逻辑。今天这一页整页都在追这句话的下半截——如果那个「另一个进程」就跑在你自己这台机器上，你能做的事多不多。</p>
+</details>
+</div>
+
+<div class="card recall">
+<h4>第 3 题 · Day 15 · 块和空位</h4>
+<p>块大小取 16 个 token 一块。一条请求 prompt 有 100 个 token，要生成 40 个。生成完的那一刻，它占了几块、其中空着几个 token 位？如果把块大小换成 64，同一条请求最后空着几个位？</p>
+<details><summary>展开对答案</summary>
+<p>块大小 16 的情况：最终序列长度是 100 加 40 等于 140 个 token。140 除以 16 等于 8.75，向上取整是 9 块。9 块乘 16 是 144 个 token 位，真正装了 140 个，所以空着 4 个。</p>
+<p>块大小 64 的情况：140 除以 64 等于 2.19，向上取整 3 块。3 块乘 64 是 192 个位，装了 140 个，空着 52 个。</p>
+<p>这就是那天那条结论的算术形态：块越大，一条序列平均浪费的位越多，浪费量的上界是「块大小减一」。这种「拿了一整块但没装满」的浪费叫内部碎片。块变小能压掉它，代价是块表变长、查表的次数变多。</p>
+<p>今天会遇到同一个形状，但换了一种资源：一个沙箱哪怕只跑了 3 毫秒的代码，它占住的那份东西也是按「一整个沙箱」计的。</p>
+</details>
+</div>
+<h2><span class="k">板块 1</span>今日概览</h2>
+
+<div class="scroll">
+<table>
+<caption>今天的位置。这是 Agent Runtime 这一块的第五天，也是把块二那套 Linux 隔离真正接进来的一天。</caption>
+<tr><th>进度</th><td>Day 22 / 28 · 块四 Agent Runtime（建造）· 第 5 天</td></tr>
+<tr><th>今日主题</th><td>agent 执行模型生成的代码时，怎么接上块二那套隔离；权限最小化与副作用回收</td></tr>
+<tr><th>时间预算</th><td>3 ~ 4 小时（讲解约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><th>今天不讲</th><td>
+  <p style="margin:0 0 8px">三块内容今天让位，理由都是同一个：它们各自需要一整天，塞进来只会把主线切碎。</p>
+  <ul style="margin:0">
+    <li><em class="il">gVisor 与 microVM 这两条更贵的路。</em>Day 10 把隔离谱系摆过一遍了。今天整页只处理「普通容器这一档」，因为这一档是通用服务器 CPU 上的默认选择，而它和 agent 接合的那些缝，换成更贵的方案也一条不少。</li>
+    <li><em class="il">出网白名单怎么配。</em>Day 12 用一整个部分讲过四种配置和 DROP 与 REJECT 的差别。今天只把「断网」当成一个开关来用，不重讲配法。</li>
+    <li><em class="il">工具输出进上下文之后怎么压。</em>那是 Day 20 上下文预算那一侧的事。今天只量入口这一侧：一次跑飞的执行能往那个入口塞多少东西。</li>
+  </ul>
+</td></tr>
+</table>
+</div>
+
+<h4>今天结束后你应该能做到这三件事</h4>
+<ol>
+<li>说出一次工具调用的沙箱到底拥有哪几样东西，并在机器上把它们一样一样数出来。</li>
+<li>给一段模型生成的代码写出一份最小权限策略，并说清每一条是被哪个真实需求逼出来的、又会误伤哪种正常用法。</li>
+<li>在执行服务被 <code>SIGKILL</code> 之后，靠一份账本而不是靠清理代码，把留在机器上的东西收回来。</li>
+</ol>
+
+<h4>今天这一页怎么走</h4>
+<p>第一部分回答「一次工具调用在机器上究竟是几样东西」，把台子搭出来。第二部分回答「超时到了，你能不能把它杀干净」——四种杀法量出来的结果不一样，而且不一样的地方不只在进程数上。第三部分回答「这段代码能摸到你手上的什么」，从默认状态一级一级往下收。第四部分回答「服务自己被杀掉之后，谁来还东西」，顺带把「状态该放在哪一侧」这个设计决定量出价钱。</p>
+<h2><span class="k">板块 2 · 第一部分</span>一次工具调用，在机器上是五样东西</h2>
+
+<h3>1. 那几行代码，和它顺手递出去的三样东西</h3>
+
+<p class="lead">模型回了一个工具调用，参数里是一段 Python 代码，要你执行完把结果告诉它。你会写出什么？</p>
+
+<p>作为后端工程师，第一版八成长这样，而且这一版是对的起点：</p>
+
+<pre><code>import subprocess
+
+def code_exec(code: str, timeout_s: float = 30.0) -&gt; dict:
+    p = subprocess.run(["python3", "-c", code],
+                       capture_output=True, text=True, timeout=timeout_s)
+    return {"stdout": p.stdout, "stderr": p.stderr, "exit_code": p.returncode}</code></pre>
+
+<p>它能跑。模型写「算一下这批数据的中位数」，它算出来了；写「把这个 CSV 转成 JSON」，也转了。Day 19 那份工具说明书照着填就行：一个 <code>code</code> 字段，一句描述，一份参数模式。</p>
+
+<p>问题不在功能上。这段代码把三件事默认给出去了，而这三件事都不是模型该拿到的。</p>
+
+<p>第一，<code>subprocess.run</code> 不传 <code>env</code> 时，子进程继承父进程的全部环境变量——包括你用来调模型的那把 API key。第二，子进程的工作目录是你服务的工作目录，而绝对路径根本不受工作目录约束，它想读哪个文件读哪个文件。第三，<code>timeout</code> 到了之后 Python 会给<em>那一个</em>进程发信号，而模型写的代码经常不止一个进程。</p>
+
+<h3>2. 这个工具和昨天那些工具差在哪</h3>
+
+<p>Day 19 处理的工具，副作用都发生在别人的机器上：调一次外部 API、往对面的账本里写一行。那天的结论是「并发发出去的那一刻，副作用会不会发生就不由你决定了」，因为它在另一个进程里，而那个进程你够不着。</p>
+
+<p>今天这个工具把「另一个进程」搬到了你自己这台机器上。够得着了——你有它的进程号、有它的 cgroup、有它的文件。但够得着不等于收得回，这一页大半篇幅都在这句话上。</p>
+
+<p>还有一处不同，方向相反。这个工具的输出会原样回到模型的上下文里，而它的输出量是模型自己决定的。量一下这个入口有多宽：一段 <code>for i in range(10**9): print(...)</code> 的代码，在这台两核机器上跑 2 秒，产出 3735552 字节。按每 4 字节 1 个 token 粗算是 93 万个 token，是一个 128k 上下文窗口的 7 倍多。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>工具输出的上限必须写死在执行这一侧，不能指望模型少打点。这个数不是「防御性编程」，是入口本身的宽度：不设上限，一次跑飞的循环两秒钟就能把窗口撑爆七遍。</p>
+</div>
+
+<p class="breathe">换一个场景想。前面几天你一直在给别人打电话下单，能不能取消要看对方脸色。今天你是把人请进了自己家的厨房：刀具、燃气、冰箱里的东西，全在你的地盘上。好处是你随时能进去，坏处是他走了以后，火有没有关、冰箱门有没有带上，得你自己一样一样去看。</p>
+
+<h3>3. 一次执行到底拥有哪几样东西</h3>
+
+<p>把上面那几行 <code>subprocess.run</code> 换成一个真正的沙箱，它在机器上会留下五样东西。这五样后面每一节都要用到，先数清楚。</p>
+
+<div class="scroll">
+<table>
+<caption>一次执行的五样所有物。中间一列是「怎么在机器上把它数出来」——后面所有的泄漏统计都是这五条命令的输出。</caption>
+<thead><tr><th>它是什么</th><th>怎么数</th><th>不还会怎样</th></tr></thead>
+<tbody>
+<tr><td>工作目录</td><td><code>ls /tmp/d22/work/</code></td><td>磁盘慢慢满</td></tr>
+<tr><td>overlay 挂载点</td><td><code>grep /tmp/d22/work/ /proc/mounts</code></td><td>挂载表越来越长，卸载越来越慢</td></tr>
+<tr><td>cgroup 目录</td><td><code>ls /sys/fs/cgroup/pids/d22/</code></td><td>内核对象攒着不放</td></tr>
+<tr><td>进程树</td><td><code>pgrep -f &lt;标记&gt;</code></td><td>CPU 和内存被一直占着</td></tr>
+<tr><td>账本上的一行</td><td><code>ls /tmp/d22/leases/</code></td><td>没人知道前面四样是谁的</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>第五样是今天新加的，也是最容易被跳过的一样。前四样是资源，第五样是「谁拥有这些资源、拥有到什么时候」的记录。把这一行写下来的做法叫<span class="term">所有权记录（ownership record）</span>，它和 Day 21 的意图记录是同一个东西换了个场合：那天记的是「我打算做这件事」，今天记的是「我占了这些东西」。第四部分会说明为什么它必须存在。</p>
+<h3>4. 实验装置</h3>
+
+<p>今天有三个互不相同的程序，加一个只在最后一部分出场的回收器。先把它们摆出来，后面每一张表都能对回到其中一个。</p>
+
+<h4>4.1 结构图</h4>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 790 440" width="790" role="img" aria-label="agent 运行时、执行服务、一次执行的四样资源、回收器之间的关系图">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.4">
+
+  <rect x="12" y="26" width="196" height="150" rx="9" opacity=".85"/>
+  <text x="24" y="50" font-size="14" font-weight="600" fill="currentColor" stroke="none">进程 A · agent 运行时</text>
+  <text x="24" y="74" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">会话状态、上下文</text>
+  <text x="24" y="95" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">MODEL_API_KEY</text>
+  <text x="24" y="116" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">DB_PASSWORD</text>
+  <text x="24" y="137" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">配置文件在它的目录里</text>
+  <text x="24" y="162" font-size="11.5" fill="currentColor" stroke="none" opacity=".6">这一格里的东西都不该过界</text>
+
+  <rect x="262" y="26" width="200" height="150" rx="9" opacity=".85"/>
+  <text x="274" y="50" font-size="14" font-weight="600" fill="currentColor" stroke="none">进程 B · 执行服务</text>
+  <text x="274" y="74" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">建沙箱 / 计时 / 超时</text>
+  <text x="274" y="95" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">选一种杀法</text>
+  <text x="274" y="116" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">读回 stdout 并截断</text>
+  <text x="274" y="141" font-size="11.5" fill="currentColor" stroke="none" opacity=".6">全部耗时数字在这一侧</text>
+  <text x="274" y="160" font-size="11.5" fill="currentColor" stroke="none" opacity=".6">用 time.perf_counter 打点</text>
+
+  <rect x="516" y="26" width="262" height="230" rx="9" opacity=".85"/>
+  <text x="528" y="50" font-size="14" font-weight="600" fill="currentColor" stroke="none">一次执行的四样资源</text>
+  <rect x="530" y="62" width="234" height="30" rx="5" opacity=".5"/>
+  <text x="541" y="82" font-size="12.5" fill="currentColor" stroke="none">工作目录 + overlay 挂载点</text>
+  <rect x="530" y="100" width="234" height="30" rx="5" opacity=".5"/>
+  <text x="541" y="120" font-size="12.5" fill="currentColor" stroke="none">cgroup（pids.max = 64）</text>
+  <rect x="530" y="138" width="234" height="76" rx="5" opacity=".5"/>
+  <text x="541" y="158" font-size="12.5" fill="currentColor" stroke="none">进程树</text>
+  <text x="551" y="177" font-size="11.5" fill="currentColor" stroke="none" opacity=".75">主进程（模型写的代码）</text>
+  <text x="561" y="195" font-size="11.5" fill="currentColor" stroke="none" opacity=".75">├ 后台进程甲（同组）</text>
+  <text x="561" y="211" font-size="11.5" fill="currentColor" stroke="none" opacity=".75">└ 后台进程乙（另起一组）</text>
+  <text x="528" y="240" font-size="11.5" fill="currentColor" stroke="none" opacity=".6">这一格整个是「不确定还在不在」的</text>
+
+  <rect x="262" y="300" width="200" height="106" rx="9" opacity=".85"/>
+  <text x="274" y="324" font-size="14" font-weight="600" fill="currentColor" stroke="none">账本目录</text>
+  <text x="274" y="347" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">每个活着的沙箱一个文件</text>
+  <text x="274" y="368" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">写着：我占了什么</text>
+  <text x="274" y="389" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">写着：租约到哪一刻</text>
+
+  <rect x="516" y="300" width="262" height="106" rx="9" opacity=".85"/>
+  <text x="528" y="324" font-size="14" font-weight="600" fill="currentColor" stroke="none">进程 C · 回收器</text>
+  <text x="528" y="347" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">周期扫账本</text>
+  <text x="528" y="368" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">过期的 / 主人没了的</text>
+  <text x="528" y="389" font-size="12.5" fill="currentColor" stroke="none" opacity=".8">按「贵的先还」的顺序回收</text>
+
+  <path d="M 208 92 L 256 92" marker-end="url(#ar)"/>
+  <path d="M 462 92 L 510 92" marker-end="url(#ar)"/>
+  <path d="M 362 176 L 362 294" marker-end="url(#ar)"/>
+  <path d="M 462 353 L 510 353" marker-end="url(#ar)"/>
+  <path d="M 647 296 L 647 262" marker-end="url(#ar)"/>
+  </g>
+  <text x="209" y="80" font-size="10.5" fill="currentColor" opacity=".75">tools/call</text>
+  <text x="464" y="80" font-size="10.5" fill="currentColor" opacity=".75">建 / 杀 / 拆</text>
+  <text x="368" y="240" font-size="11.5" fill="currentColor" opacity=".7">先写账</text>
+  <text x="368" y="258" font-size="11.5" fill="currentColor" opacity=".7">最后销账</text>
+  <text x="479" y="345" font-size="10.5" fill="currentColor" opacity=".75">读</text>
+  <text x="654" y="285" font-size="11.5" fill="currentColor" opacity=".7">回收</text>
+</svg>
+</div>
+<figcaption>进程 A 和进程 B 今天合在一个 Python 进程里跑（下面 4.3 会说明这个简化砍掉了什么）。资源那一格里的三样是真的内核对象。回收器是独立的一遍扫描，第四部分才登场。</figcaption>
+</figure>
+
+<h4>4.2 一次调用长什么样</h4>
+
+<p>进程 A 递给进程 B 的东西是一行 JSON，四个字段：</p>
+
+<pre><code>{"session_id": "s-7", "call_id": "tr-1",
+ "code": "import subprocess, time\nsubprocess.Popen([\"sleep\", \"6161\"])\nprint(\"started\", flush=True)\ntime.sleep(600)\n",
+ "timeout_s": 1.0}</code></pre>
+
+<p><code>code</code> 里那段就是今天全篇当作「模型生成的代码」的东西。它做三件事：起一个后台进程、往标准输出打一行、然后自己卡住不动。这三件事挑得很具体——起后台进程对应「帮我把开发服务器跑起来看看能不能访问」这类任务，打一行对应它已经产出的中间结果，卡住不动对应任何一次死循环或者忘了设超时的网络请求。</p>
+
+<p>进程 B 回给进程 A 的也是一行 JSON：</p>
+
+<pre><code>{"exit": -9, "out": "started\n", "killed": true, "duration_ms": 1034.68}</code></pre>
+
+<p>这段代码今天有两个变体，差别只在起几个后台进程：表 A 那次执行用的是上面这一个，起一个；第二部分要起两个，一个留在同一进程组、一个用 <code>start_new_session=True</code> 另起一组——结构图里画的是后者。别的都一样。</p>
+
+<p><code>exit</code> 是负数表示进程是被信号终止的，绝对值是信号编号，9 就是 <code>SIGKILL</code>。<code>duration_ms</code> 的分子是毫秒数，分母是「一次 <code>tools/call</code>」，也就是从进程 B 收到那行 JSON 到它把这行 JSON 发回去，中间的墙上时间。</p>
+
+<h4>4.3 哪些是真的，哪些是假的</h4>
+
+<div class="scroll">
+<table>
+<caption>这张表划定今天这些数字能撑住哪些结论。写着「没有」的那几行，今天一律不下结论。</caption>
+<thead><tr><th>这一块</th><th>真的还是假的</th></tr></thead>
+<tbody>
+<tr><td>进程、cgroup、挂载点</td><td>真的。cgroup 是 <code>/sys/fs/cgroup/pids</code> 下真实的目录，overlay 是真实的 <code>mount -t overlay</code>，进程数是 <code>pgrep</code> 数出来的。</td></tr>
+<tr><td>模型</td><td>假的。没有模型，那段代码是写死的字符串。所以今天不下任何关于「模型多爱写什么样的代码」的结论。</td></tr>
+<tr><td>沙箱的完整度</td><td>部分。有 cgroup、有 overlay、有独立进程组，第二部分那一档还有进程号命名空间。但<b>没有换根</b>，所以绝对路径仍然能看到宿主的根目录——第三部分那张表里「根目录下有 25 项」这个数就是这么来的，它是这个装置的一个已知短板，不是一条结论。</td></tr>
+<tr><td>用户与能力</td><td>假的。全部以 root 运行。所以今天不下关于能力集、<code>NO_NEW_PRIVS</code>、seccomp 的任何新结论——那些 Day 10 和 Day 12 量过。</td></tr>
+<tr><td>凭据</td><td>是真环境变量，但值是编的。<code>MODEL_API_KEY=sk-live-0001</code> 这类字符串是这台机器上人为设的，不是任何真实密钥。</td></tr>
+<tr><td>并发</td><td>没有。全部实验都是一次一条，没有排队、没有负载。所以今天不下任何关于延迟分布、P99、吞吐的结论——那些 Day 14 在同一个沙箱服务上量过了。</td></tr>
+<tr><td>机器</td><td>2 个逻辑核、7 GiB 内存、内核 6.18、cgroup v1 层级挂在 <code>/sys/fs/cgroup</code> 下。核少这件事对第四部分那个「重做一遍要多久」的绝对值有影响，对四种杀法的对比没有影响。</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>4.4 跟着走一遍</h4>
+
+<p>下面是一次真实执行的逐时刻记录，超时预算取 1000 毫秒，杀法用第二部分会讲的那种。每一行的「本段」都是相邻两个时刻的差，最后一行的「累计」就是上面那行 JSON 里的 <code>duration_ms</code>。你可以自己把「本段」那一列加一遍。</p>
+
+<div class="scroll">
+<table>
+<caption>表 A · 一次超时执行的逐时刻记录。单位毫秒。本段之和 1034.68 等于累计的最后一行，也等于对外报出的 duration_ms。</caption>
+<thead><tr><th>时刻</th><th class="n">累计</th><th class="n">本段</th></tr></thead>
+<tbody>
+<tr><td>收到 tools/call</td><td class="n">0.00</td><td class="n">0.00</td></tr>
+<tr><td>建好工作目录</td><td class="n">0.14</td><td class="n">0.14</td></tr>
+<tr><td>overlay 挂好</td><td class="n">4.52</td><td class="n">4.38</td></tr>
+<tr><td>cgroup 建好、pids.max 写好</td><td class="n">4.66</td><td class="n">0.14</td></tr>
+<tr><td>租约写好（所有权记录）</td><td class="n">4.85</td><td class="n">0.19</td></tr>
+<tr><td>fork / exec 返回</td><td class="n">5.21</td><td class="n">0.36</td></tr>
+<tr><td>进程记进 cgroup</td><td class="n">16.50</td><td class="n">11.29</td></tr>
+<tr><td>超时触发（预算 1000）</td><td class="n">1017.92</td><td class="n">1001.42</td></tr>
+<tr><td>cgroup 冻住</td><td class="n">1029.08</td><td class="n">11.16</td></tr>
+<tr><td>给 2 个进程发 SIGKILL</td><td class="n">1029.20</td><td class="n">0.12</td></tr>
+<tr><td>解冻</td><td class="n">1029.34</td><td class="n">0.14</td></tr>
+<tr><td>读回 stdout</td><td class="n">1030.26</td><td class="n">0.92</td></tr>
+<tr><td>umount</td><td class="n">1034.38</td><td class="n">4.12</td></tr>
+<tr><td>cgroup 删掉</td><td class="n">1034.44</td><td class="n">0.06</td></tr>
+<tr><td>工作目录删掉</td><td class="n">1034.66</td><td class="n">0.22</td></tr>
+<tr><td>销账（租约文件删掉）</td><td class="n">1034.68</td><td class="n">0.02</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>两个地方值得先看一眼，因为后面会回来找它们。</p>
+
+<p>建沙箱那一段总共 5.21 毫秒，其中 overlay 挂载占了 4.38 毫秒，别的都是零点几。这个量级和 Day 14 那天量的整条冷启动路径对得上——那天最贵的是拉起容器进程本身，今天这个装置没有走 runc，所以只剩挂载这一项。</p>
+
+<p>「进程记进 cgroup」那一行 11.29 毫秒，比它前后的动作贵两个数量级。这一行做的是往 <code>cgroup.procs</code> 写一个进程号，是一次内核里的迁移操作，不是普通文件写。同样量级的还有「cgroup 冻住」的 11.16 毫秒。记住这两个数：三次 cgroup 操作加起来二十几毫秒，是这条路上除了等超时以外最贵的一段。</p>
+
+<h4>4.5 每个旋钮是怎么定出来的</h4>
+
+<div class="scroll">
+<table>
+<caption>表 B · 参数表。最后一列指出哪一节会动这个旋钮，其余各节里它锁死不动。</caption>
+<thead><tr><th>旋钮</th><th>取值</th><th>为什么是这个值</th><th>哪节动它</th></tr></thead>
+<tbody>
+<tr><td><code>timeout_s</code></td><td>1.0 秒</td><td>下界要明显大于建沙箱那 5.21 毫秒，否则超时会和创建过程重叠，分不清哪一段是哪一段；上界要小到能在几分钟里跑完三次重复。1 秒把这两头都留出了两个数量级。</td><td>不动</td></tr>
+<tr><td><code>pids.max</code></td><td>64</td><td>模型写的代码起两三个后台进程是常事，几十个就属于跑飞了。64 给正常用法留了二十倍余量，同时挡住 fork 炸弹。</td><td>不动</td></tr>
+<tr><td>读回 stdout 的二次超时</td><td>3.0 秒</td><td>正常情况下主进程已经死了，管道立刻就该读到结尾，这个数应该完全用不上。第二部分会看到它在两种杀法下被用满——那本身就是结论。</td><td>第 6 节</td></tr>
+<tr><td>输出截断上限</td><td>4000 字符</td><td>粗算约 1000 个 token，是一次工具结果在上下文里的合理占位。定它的方法是倒推：一轮里允许几个工具结果、总共愿意给多少上下文预算，除一下。</td><td>不动</td></tr>
+<tr><td>租约时长</td><td>6.0 秒</td><td>只在第四部分用。取值要明显大于一次正常执行的全长（约 1 秒），又要小到能在一次实验里等它过期。</td><td>第 14 节</td></tr>
+<tr><td>杀法</td><td>四选一</td><td>这是第二部分唯一变动的旋钮。</td><td>第 6 节</td></tr>
+<tr><td>权限策略</td><td>P0 ~ P4</td><td>这是第三部分唯一变动的旋钮，五档是逐级叠加的，每一档只比上一档多收一样东西。</td><td>第 9、10 节</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>最后一件事：把表和程序对起来。今天的程序都很短，一个程序只量一件事，彼此不通信，也不并发跑。</p>
+
+<div class="scroll">
+<table>
+<caption>表 C · 哪张表出自哪个程序。所有程序都在一台机器上顺序跑，互不重叠。</caption>
+<thead><tr><th>表</th><th>程序</th><th>它打印什么</th></tr></thead>
+<tbody>
+<tr><td>表 A（逐时刻）</td><td><code>exp_trace.py</code></td><td>一次执行的 16 个打点</td></tr>
+<tr><td>表 D、表 E（杀法与管道）</td><td><code>exp_leak.py</code> / <code>exp_pipe.py</code></td><td>存活进程数、耗时、拿回来的 stdout</td></tr>
+<tr><td>表 F、表 G 里的负载</td><td><code>probe.py</code> / <code>w.py</code></td><td>探针和五种正常负载各自的结果</td></tr>
+<tr><td>表 F、表 G（权限）</td><td><code>exp_perm.py</code></td><td>探针看到的环境变量数、能否读到配置、能否出网、能看到几个进程</td></tr>
+<tr><td>表 H（三条退出路径）</td><td><code>exp_crash2.py</code> + <code>svc_run.py</code></td><td>五样资源在退出前后各剩几个</td></tr>
+<tr><td>表 I、表 J（回收）</td><td><code>exp_reap2.py</code> / <code>exp_reap3.py</code> + <code>reaper.py</code></td><td>回收器认领了几条、五样各剩几个</td></tr>
+<tr><td>表 K（状态放哪侧）</td><td><code>exp_state.py</code></td><td>三步任务每步的创建耗时与执行耗时</td></tr>
+<tr><td>第 15 节的拆解</td><td><code>exp_startup.py</code></td><td>解释器启动、import、读数据各自的毫秒数，7 次取中位</td></tr>
+</tbody>
+</table>
+</div>
+<h2><span class="k">板块 2 · 第二部分</span>杀掉它，和杀干净它</h2>
+
+<h3>5. 往下翻之前，先把三个空填上</h3>
+
+<p>装置摆完了。下面三个空里的答案，今天的表格都有，而且都不在前面任何一天讲过的范围内——别去翻记忆，照着机制推。</p>
+
+<div class="card predict">
+<h4>预测框</h4>
+<p>场景固定：那段代码起了两个后台进程（一个留在同一进程组，一个自己另起一组），打印了一行 <code>started</code>，然后卡住。超时预算 1000 毫秒，到点强杀。</p>
+<p><em class="il">问题一</em>　用 <code>os.kill(主进程号, SIGKILL)</code> 这一种杀法，那两个后台进程还剩几个活着？换成 <code>os.killpg</code> 杀整个进程组呢？</p>
+<div class="write">只杀主进程：____ 个　　杀整个进程组：____ 个</div>
+<p><em class="il">问题二</em>　这次调用对外报出来的 <code>duration_ms</code> 大概是多少？超时预算是 1000 毫秒。</p>
+<div class="write">只杀主进程：____ 毫秒　　杀整个进程组：____ 毫秒</div>
+<p><em class="il">问题三</em>　子进程在被杀之前<em>已经</em> <code>flush</code> 出去的那一行 <code>started</code>，最后能不能回到模型手上？</p>
+<div class="write">能 / 不能，因为：</div>
+</div>
+
+<h3>6. 揭晓：两个还活着，那行已经打印出来的日志也丢了</h3>
+
+<p>四种杀法各跑三次，取中位数。前两种就是预测框里那两种，后两种是修法。</p>
+
+<div class="scroll">
+<table>
+<caption>表 D · 四种杀法。出自 <code>exp_leak.py</code>，3 次运行取中位；存活进程数三次完全一致，耗时三次之间相差不到 8 毫秒。</caption>
+<thead><tr><th>杀法</th><th>信号发给谁</th><th class="n">后台进程还活着</th><th>拿回来的 stdout</th><th class="n">duration_ms</th></tr></thead>
+<tbody>
+<tr><td>只杀直接子进程</td><td>主进程一个</td><td class="n">2</td><td>空</td><td class="n">4019</td></tr>
+<tr><td>杀整个进程组</td><td>主进程所在的那一组</td><td class="n">1</td><td>空</td><td class="n">4022</td></tr>
+<tr><td>沙箱自带进程号命名空间，只杀 1 号</td><td>命名空间里的 1 号</td><td class="n">0</td><td><code>started</code></td><td class="n">1018</td></tr>
+<tr><td>冻住 cgroup，杀里面全部</td><td>cgroup 里的每一个</td><td class="n">0</td><td><code>started</code></td><td class="n">1083</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>三列各说一件事，一列一列来。</p>
+
+<p>先看存活那一列的前两行。<code>os.kill</code> 收的参数是一个进程号，它做的事情就是给那一个进程发一个信号——子孙不在它的射程里，两个后台进程一个没死。这不是 bug，是这个接口的定义。</p>
+
+<p>第二行只死了一个，差别在<span class="term">进程组（process group）</span>上。进程组是内核维护的一个进程集合，用来批量发信号；一个进程默认继承父进程的组，所以「同组」那个后台进程跟着挨了刀。但另一个后台进程是用 <code>start_new_session=True</code> 起的——这个参数底下调的是 <code>setsid</code>，作用是让这个进程离开原来的组，自己开一个新的<span class="term">进程会话（process session）</span>兼新进程组。<code>killpg</code> 按组发信号，它已经不在那个组里了，所以活了下来。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>只要被杀的那一侧有能力改变自己的分组，按分组发信号就永远有漏网的可能。模型生成的代码有这个能力，一行 <code>subprocess.Popen(..., start_new_session=True)</code> 就够了，而且它经常这么写——因为「让服务在后台一直跑着」正是它被要求做的事。</p>
+</div>
+
+<p>后两行是两种真正堵得住的做法，它们堵的方式完全不同。</p>
+
+<p>第三行靠的是进程号命名空间。Day 11 讲过这个命名空间里的 1 号进程，Day 14 量过它的一条内核规则：命名空间的 1 号进程一旦终止，内核会把这个命名空间里剩下的所有进程全部用 <code>SIGKILL</code> 收走。<code>setsid</code> 改得了进程组，改不了自己在哪个命名空间里——所以这条路上没有漏网的余地。</p>
+
+<p>第四行不依赖命名空间，靠的是 cgroup 这个名单本身。名单是内核在数的，进程新建的子孙自动继承父进程的 cgroup，谁也退不出去。做法是先把 cgroup 冻住，再把名单上的进程号一个一个杀掉，最后解冻。先冻的原因是防止它一边被杀一边 fork 出新的来。</p>
+
+<p class="breathe">两种做法可以这样区分：命名空间那条路是「把整栋楼的电闸拉了」，cgroup 那条路是「照着门禁记录一间一间敲门」。前者更彻底也更便宜，代价是这个沙箱必须一开始就建成一栋独立的楼；后者对任何进程都成立，哪怕它跟你共用一栋楼。agent 的执行服务两种都会遇到——完整容器走前者，而「只是起一个子进程跑一段代码」这种轻量沙箱只能走后者。</p>
+
+<h3>7. 那行 <code>started</code> 是怎么丢的</h3>
+
+<p>耗时那一列还没解释。预算明明是 1000 毫秒，前两行却报了 4019 和 4022。多出来的三秒整，正好是表 B 里那个「读回 stdout 的二次超时」——它被用满了。</p>
+
+<p>为什么读不到结尾？因为子进程的标准输出是一根<span class="term">管道（pipe）</span>，读的那一端在执行服务手里，写的那一端在子进程手里。管道读到结尾的条件不是「写的那个进程死了」，而是「所有持有写端的进程都关掉了它」。后台进程是从主进程 fork 出来的，而 fork 会把父进程打开的每一个通道（内核给每个打开的文件、管道、socket 都编了一个号，叫<span class="term">文件描述符（file descriptor）</span>）原样复制一份给孩子——所以主进程死了之后，那根管道的写端还握在两个活着的后台进程手上。</p>
+
+<p>验证这个解释的对照只需要改一个地方：让两个后台进程的 stdout 指到 <code>/dev/null</code>，不碰那根管道，其余一个字不动。</p>
+
+<div class="scroll">
+<table>
+<caption>表 E · 管道写端在谁手上。出自 <code>exp_pipe.py</code>，杀法都是「只杀直接子进程」，两行的唯一差别是后台进程的 stdout 指向哪里。</caption>
+<thead><tr><th>后台进程的 stdout</th><th class="n">duration_ms</th><th class="n">杀完之后花在读上的毫秒</th><th>拿回来的 stdout</th></tr></thead>
+<tbody>
+<tr><td>继承（默认）</td><td class="n">4019.7</td><td class="n">3019.7</td><td>空</td></tr>
+<tr><td>指到 <code>/dev/null</code></td><td class="n">1019.3</td><td class="n">19.3</td><td><code>started</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>第二行的 19.3 毫秒说明：写端一放开，读立刻就到了结尾。三秒是白等的，等的是两个跟输出毫无关系的进程放手。</p>
+
+<p>而这三秒的代价不只是慢。第一行「拿回来的 stdout」是空的——不是被截断，是一个字都没有。读那一侧等满三秒之后放弃了，已经躺在管道缓冲区里的 <code>started</code> 跟着一起被丢掉。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>问题三的答案是不能，而且原因跟这行日志本身毫无关系。一个还活着的、与输出无关的后台进程，能让你丢掉主进程在超时之前已经产出的全部结果。回给模型的于是是一个「什么都没发生」的空结果，模型只能重试——而重试会再起一批后台进程。</p>
+</div>
+
+<p>回到表 D 的后两行：它们的 duration_ms 是 1018 和 1083，二次超时一次都没被用上，<code>started</code> 也都拿回来了。原因同一句话——写端的持有者被一起清掉了，管道立刻到结尾。<b>杀干净和读得到，是同一件事的两面。</b></p>
+
+<h3>8. 同一件事，runc 是怎么做的</h3>
+
+<p>上面第四行那套「先冻住、再逐个杀、最后解冻」的顺序不是编出来的，它就是工业级运行时的做法。打开 runc 的源码看这一段。</p>
+
+<p>文件是 <code>libcontainer/init_linux.go</code>，函数 <code>signalAllProcesses</code> 从第 684 行开始，它的调用点在 <code>libcontainer/container_linux.go:453</code>——也就是容器被销毁时那条路。函数体的骨架是这样：</p>
+
+<pre><code>// libcontainer/init_linux.go:684 起
+func signalAllProcesses(m cgroups.Manager, s unix.Signal) error {
+	if !m.Exists() {
+		return ErrCgroupNotExist          // 没有 cgroup 就没有名单，直接放弃
+	}
+	if s == unix.SIGKILL {               // 第 685 行：cgroup v2 上有一条捷径
+		if p := m.Path(""); p != "" {
+			err := cgroups.WriteFile(p, "cgroup.kill", "1")
+			if err == nil || !errors.Is(err, os.ErrNotExist) {
+				return err               // 写一个字节，内核负责杀干净整棵树
+			}
+		}
+	}
+	m.Freeze(cgroups.Frozen)             // 第 699 行：先冻住，杀的过程中不许再 fork
+	pids, _ := m.GetAllPids()            // 冻住之后再取名单，取到的才是完整的
+	for _, pid := range pids {
+		unix.Kill(pid, s)
+	}
+	m.Freeze(cgroups.Thawed)             // 第 715 行：解冻
+	return nil
+}</code></pre>
+
+<p>三件事可以从这十几行里读出来。</p>
+
+<p>第一，判据是 cgroup 不是进程树。函数第一句就是「没有 cgroup 就返回错误」——runc 认为没有名单就无从谈起杀干净，它压根不去遍历进程的父子关系。</p>
+
+<p>第二，冻结和取名单的顺序是死的：先 <code>Freeze</code> 再 <code>GetAllPids</code>。反过来写就有一个窗口，在你读完名单到你发完信号之间，被杀的进程还能再生几个出来。这个先后关系今天那 11.16 毫秒的冻结开销买的就是它。</p>
+
+<p>第三行更有意思：<code>cgroup.kill</code> 这个文件是 cgroup v2 才有的，往里面写一个 <code>1</code>，内核会把这棵子树里所有进程一次性杀掉，不需要冻结、不需要遍历、不需要解冻。今天这台机器的 cgroup v1 层级挂在 <code>/sys/fs/cgroup</code> 下，这个文件不存在，所以走的是下面那条老路——表 D 第四行那 11 毫秒的冻结开销，在 v2 上是可以省掉的。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>「杀干净」这件事的正确判据是 cgroup 里还剩几个任务，不是进程还在不在、也不是容器状态是什么。Day 14 用另一条路得出过同一句话：状态是运行时记在自己那份文件里的东西，cgroup 的任务列表是内核在数。今天这四行表和 runc 那十几行源码，是这句话的两个独立证据。</p>
+</div>
+<h2><span class="k">板块 2 · 第三部分</span>它手上握着你的钥匙</h2>
+
+<h3>9. 一段模型生成的代码，默认能摸到什么</h3>
+
+<p class="lead">第 1 节那几行 <code>subprocess.run</code> 里，究竟有多少东西是无意中递出去的？</p>
+
+<p>把探针写成一段普通的「模型生成的代码」——它做的事看起来很正常：数一数环境里有什么、读一个配置文件、连一次网络、往工作目录写个文件。然后在五档策略下各跑一遍。五档是逐级叠加的，每一档只比上一档多收一样东西。</p>
+
+<p>先把这台机器上 agent 运行时那一份环境定死，一共 8 个变量：4 个是通用的（<code>PATH</code>、<code>HOME</code>、<code>LANG</code>、<code>TZ</code>），4 个是它自己的（<code>MODEL_API_KEY</code>、<code>AGENT_SESSION_TOKEN</code>、<code>DB_PASSWORD</code>、<code>TENANT_ID</code>）。配置文件放在 agent 自己的目录里，里面也有一份密钥。</p>
+
+<div class="scroll">
+<table>
+<caption>表 F · 五档策略下探针看到的东西。出自 <code>exp_perm.py</code>。「像密钥的变量」的判据是名字里含 KEY、TOKEN、SECRET、PASSWORD、CRED 之一。</caption>
+<thead><tr><th>策略</th><th class="n">看到几个环境变量</th><th class="n">其中像密钥的</th><th>读 agent 配置文件</th><th>连外网</th><th class="n">能看到几个进程</th><th class="n">建沙箱毫秒</th></tr></thead>
+<tbody>
+<tr><td>P0 · 直接继承</td><td class="n">9</td><td class="n">3</td><td>读到了</td><td>通</td><td class="n">61</td><td class="n">34.6</td></tr>
+<tr><td>P1 · 环境变量白名单</td><td class="n">5</td><td class="n">0</td><td>读到了</td><td>通</td><td class="n">61</td><td class="n">33.9</td></tr>
+<tr><td>P2 · P1 + 遮罩 agent 目录</td><td class="n">5</td><td class="n">0</td><td>找不到文件</td><td>通</td><td class="n">61</td><td class="n">36.9</td></tr>
+<tr><td>P3 · P2 + 断网</td><td class="n">5</td><td class="n">0</td><td>找不到文件</td><td>不通</td><td class="n">61</td><td class="n">37.4</td></tr>
+<tr><td>P4 · P3 + 独立进程号视图</td><td class="n">5</td><td class="n">0</td><td>找不到文件</td><td>不通</td><td class="n">1</td><td class="n">39.4</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>第一行是第 1 节那几行代码的真实处境：三个像密钥的变量，其中一个就是你调模型用的那把 key。这不是谁写错了，是 <code>subprocess</code> 不传 <code>env</code> 时的默认行为——继承父进程的全部环境。</p>
+
+<p>每一行的第一列都比实际给出去的多 1：P0 给的是 8 个，数出来 9 个；P1 的白名单是 4 个，数出来 5 个。多出来的那个是 <code>PWD</code>，中间那层 shell 自己加的。同一份策略不经过 shell 直接 exec，数出来就正好是给出去的那个数。这类「你以为你给了 N 个」的偏差，是策略必须靠探针实测而不能靠阅读配置来确认的原因。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>凭据是跟着进程走的，不是跟着代码走的。你没有在任何一处把 key「传给」那段代码，它只是站在了一个能看见 key 的位置上。这类「拿着别人的权限替别人办事，办的却是自己的事」的结构有个名字，叫<span class="term">混淆代理（confused deputy）</span>——执行服务就是那个被混淆的代理，它有 agent 的全部权限，却在执行模型写的指令。</p>
+</div>
+
+<p>P1 到 P4 每一档往下收一样。P1 换掉环境；P2 用一个空的 tmpfs 把 agent 自己的目录盖住，让绝对路径也读不到——这个动作 Day 12 讲过，叫遮罩；P3 加一个网络命名空间，那里面只有一块连不到外面去的本地回环网卡；P4 加一个进程号命名空间，能看到的进程从 61 个掉到 1 个。</p>
+
+<p>最后一列几乎没动：34.6 到 39.4 毫秒，从头收到尾一共贵了不到 5 毫秒。这四道锁一共花了这么点钱，跟表 A 里那 11 毫秒的一次 cgroup 迁移比起来都不算贵。</p>
+
+<h3>10. 收紧的同时，收掉了哪些正事</h3>
+
+<p>上面那张表只说了「坏事做不成了」。策略的另一半永远是「好事还做不做得成」。把五种正常的工作负载在同样五档策略下各跑一遍。</p>
+
+<div class="scroll">
+<table>
+<caption>表 G · 五种正常负载 × 五档策略。出自 <code>exp_perm.py</code>，负载脚本是 <code>w.py</code>。失败一格里写的是抛出来的异常类型。</caption>
+<thead><tr><th>负载</th><th>P0</th><th>P1</th><th>P2</th><th>P3</th><th>P4</th></tr></thead>
+<tbody>
+<tr><td>纯计算（求和二十万项）</td><td>通过</td><td>通过</td><td>通过</td><td>通过</td><td>通过</td></tr>
+<tr><td>往工作目录写个 CSV</td><td>通过</td><td>通过</td><td>通过</td><td>通过</td><td>通过</td></tr>
+<tr><td>起一个子进程</td><td>通过</td><td>通过</td><td>通过</td><td>通过</td><td>通过</td></tr>
+<tr><td>联网取一份数据</td><td>通过</td><td>通过</td><td>通过</td><td>URLError</td><td>URLError</td></tr>
+<tr><td>读租户 ID（<code>TENANT_ID</code>）</td><td>通过</td><td>KeyError</td><td>KeyError</td><td>KeyError</td><td>KeyError</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>前三行一路绿到底，这是好消息：绝大多数「让 agent 算个东西、整理个文件」的任务，在最紧的那一档下一点问题都没有。真正的代价集中在后两行，而这两行的性质完全不同。</p>
+
+<p>联网那一行是<em>预期内</em>的取舍。断网确实会让「去查一下这个 API」这类任务失败，修法不是把网开回来，而是 Day 12 那套出网白名单：只放行需要的那几个目的地。这一行告诉你的是「断网这个开关不能一刀切地永远打开」，不是「断网是错的」。</p>
+
+<p>租户 ID 那一行是<em>意外</em>的误伤，而且它才是这张表真正要说的事。<code>TENANT_ID</code> 不是密钥，它是业务逻辑真正需要的一个值，跟 <code>DB_PASSWORD</code> 一起躺在同一份环境里。P1 那一刀是按「整份环境」切的，切下去连它一起没了。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>最小权限不是「尽量少给」，是「按需求逐项列出来给」。这两句话的差别就是表 G 最后那一行：按整份环境一刀切，一定会连需要的那几个一起切掉；正确的形状是先列出这段代码真正需要的东西，再把清单以外的全部去掉。清单要在工具定义那一层写死，不能让模型自己开口要。</p>
+</div>
+
+<p class="breathe">这就是很多地方停车时用的「代客钥匙」：那把钥匙能发动车、能开车门，但打不开后备箱和手套箱。它不是一把削弱版的主钥匙，是照着「泊车这件事需要什么」重新配的一把。</p>
+
+<h3>11. 遮罩这件事，真做起来是什么样</h3>
+
+<p>P2 用的遮罩在这个装置里只有一行 <code>mount -t tmpfs none &lt;目录&gt;</code>。工业级运行时怎么做同一件事，源码里写得很清楚。</p>
+
+<p>先看规范这一层。OCI 运行时规范的 <code>config-linux.md</code> 第 1065 到 1090 行定义了两个字段：<code>maskedPaths</code> 是「遮住这些路径让容器里读不到」，<code>readonlyPaths</code> 是「把这些路径设成只读」。规范只规定了语义，没规定怎么实现。</p>
+
+<p>runc 的实现在 <code>libcontainer/rootfs_linux.go</code>。<code>maskPaths</code> 从第 1351 行开始，它按目标是文件还是目录分成两条路：</p>
+
+<pre><code>// libcontainer/rootfs_linux.go:1401 起 —— 目标是目录
+if st.IsDir() {
+	// 拿一个只读的 tmpfs 绑定挂上去，把整个目录盖住
+	...
+	err = maskDir(path, mountLabel)
+} else {
+	// libcontainer/rootfs_linux.go:1435 起 —— 目标是文件
+	// 把 /dev/null 绑定挂到这个文件上，读它就是读 /dev/null
+	err = mountViaFds("", devNullSrc, path, dstFd, "", unix.MS_BIND, "")
+}</code></pre>
+
+<p>目录那条路里的 <code>maskDir</code> 在第 1333 行，它挂的 tmpfs 带着一个很具体的参数：</p>
+
+<pre><code>// libcontainer/rootfs_linux.go:1333 起
+func maskDir(path, mountLabel string) error {
+	err := mount("tmpfs", path, "tmpfs", unix.MS_RDONLY,
+		label.FormatMountLabel("nr_blocks=1,nr_inodes=1", mountLabel))
+	...
+}</code></pre>
+
+<p><code>nr_blocks=1,nr_inodes=1</code> 的意思是这个文件系统总共只有一个块、一个索引节点。Day 12 讲过这两个旋钮各管什么——这里把它们同时压到 1，得到的是一个物理上装不下任何东西的文件系统。它不是「一个空目录」，是「一个连空目录都放不进第二个条目的地方」。</p>
+
+<p>另一个字段 <code>readonlyPaths</code> 的实现在同一个文件第 1271 行，形状值得单独看一眼：</p>
+
+<pre><code>// libcontainer/rootfs_linux.go:1271 起
+func readonlyPath(path string) error {
+	// 第一步：把这个路径原地绑定挂载到它自己身上
+	mount(path, path, "", unix.MS_BIND|unix.MS_REC, "")
+	// 第二步：重新挂载同一个点，这次带上只读
+	mount(path, path, "", flags|unix.MS_BIND|unix.MS_REMOUNT|unix.MS_RDONLY, "")
+}</code></pre>
+
+<p>为什么要两步？因为绑定挂载在建立的那一刻不接受只读这个标志——它继承的是源头那一侧的属性。要把它变成只读，必须先把挂载点建出来，再对这个已经存在的挂载点做一次重新挂载。这是块二那套东西里一个很容易踩的坑：一条 <code>mount --bind -o ro</code> 写下去不报错，挂出来却是可写的。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>遮罩和只读都不是「设一个属性」，是「往挂载表里再加一层」。这一点决定了它们的两个性质：一是能盖住任意路径，包括你自己都没意识到存在的那些；二是每加一条就多一个挂载点，而挂载点是要在收尾时一条条拆掉的——这正好接上第四部分要数的那五样东西里的第二样。</p>
+</div>
+<h2><span class="k">板块 2 · 第四部分</span>收不回来的那一半</h2>
+
+<h3>12. 三条退出路径，一条都没把五样东西还回来</h3>
+
+<p>到这里为止，收尾的逻辑都写在执行服务自己身上：<code>try/finally</code> 里 umount、删目录、删 cgroup。这个写法有一个前提，就是那段代码有机会被执行到。</p>
+
+<p>下面那张表里会用到一个词：父进程已经退出、于是被更上层进程接管的进程，叫<span class="term">孤儿进程（orphan process）</span>。它和 Day 21 那个孤儿任务是同一个词用在两个层次上——那天是队列里没人管的一条任务，今天是机器上没人管的一个进程。</p>
+
+<p>把这个前提量一下。让服务同时开三个沙箱，每个沙箱里的代码起一个后台进程然后卡住，服务用 <code>atexit</code> 注册了清理函数。然后从外面用三种方式让它退出，退出后数第 3 节那五样东西各剩几个。</p>
+
+<div class="scroll">
+<table>
+<caption>表 H · 三条退出路径。出自 <code>exp_crash.py</code>。三种情况的「退出前」都是 3 / 3 / 3 / 3 / 3。</caption>
+<thead><tr><th>退出方式</th><th class="n">挂载点</th><th class="n">工作目录</th><th class="n">cgroup</th><th class="n">孤儿进程</th><th class="n">账本行</th></tr></thead>
+<tbody>
+<tr><td>SIGTERM · 服务自己装了处理函数</td><td class="n">0</td><td class="n">0</td><td class="n">3</td><td class="n">3</td><td class="n">0</td></tr>
+<tr><td>SIGTERM · 默认行为</td><td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td></tr>
+<tr><td>SIGKILL</td><td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>三行三个不同的教训，从下往上读更顺。</p>
+
+<p>最后一行是意料之中的：<code>SIGKILL</code> 不给进程执行任何一行代码的机会，五样全留在机器上。这一行没有修法，只有绕法。</p>
+
+<p>中间那一行是这张表里最该记住的一行。<code>SIGTERM</code> 是「请你自己退」的信号，Python 对它的默认处理是直接终止进程——不抛异常、不解栈、不跑 <code>finally</code>、也不跑 <code>atexit</code> 注册的函数。结果和 <code>SIGKILL</code> 一模一样。而容器编排系统在缩容、滚动更新、驱逐的时候，发的第一个信号就是它。这条路是日常路径，不是故障路径。</p>
+
+<p>第一行是「按标准做法做对了」的那一档：自己装一个 <code>SIGTERM</code> 处理函数，把它转成正常退出，于是 <code>atexit</code> 跑了。挂载点、工作目录、账本行都归零。</p>
+
+<p>但是 cgroup 那一列还是 3，孤儿进程那一列也还是 3。清理函数做的是 umount、删目录、删 cgroup 目录——它从头到尾没有杀进程。而 cgroup 目录在里面还有进程的时候是删不掉的，那句 <code>os.rmdir</code> 抛了异常被忽略掉了。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>一份只「释放资源」不「终止进程」的清理代码，会把便宜的那几样还回来，把最贵的那两样留下——而且看起来是成功退出的。判断收尾干不干净，要数的是第 3 节那五样，不是清理函数有没有返回。</p>
+</div>
+
+<h3>13. 账本要比它记录的东西活得久</h3>
+
+<p>三行里有一行 <code>SIGKILL</code> 是无论如何都写不出代码来应对的。所以收尾这件事不能全押在「沙箱自己收自己」上，需要一个在它之外的角色，事后按记录把东西拿回来。这个角色叫<span class="term">回收器（reaper）</span>。</p>
+
+<p>它的输入就是第 3 节那第五样东西——账本。每个沙箱建好时往账本目录写一个文件，里面记着它占了哪个挂载点、哪个目录、哪个 cgroup，以及租约到哪一刻。回收器周期性地扫这个目录，把该收的收掉。</p>
+
+<pre><code>def reclaim(rec):
+    """按「贵的先还」的顺序：先杀进程，再拆挂载，再删目录，最后才销账。"""
+    if os.path.isdir(rec["cg"]):
+        for _ in range(3):                      # 杀完再读一遍，防止杀的过程中又生了新的
+            pids = [int(x) for x in open(f'{rec["cg"]}/cgroup.procs').read().split()]
+            if not pids: break
+            for pid in pids:
+                try: os.kill(pid, signal.SIGKILL)
+                except ProcessLookupError: pass
+            time.sleep(0.2)
+        try: os.rmdir(rec["cg"])                # 名单空了才删得掉
+        except OSError: pass
+    if rec["mnt"] in open("/proc/mounts").read():
+        subprocess.run(["umount", "-l", rec["mnt"]])
+    shutil.rmtree(rec["work"], ignore_errors=True)
+    os.unlink(f'{S.LEASES}/{rec["sid"]}.json')  # 账本最后销，销早了东西就变成看不见的了</code></pre>
+
+<p>跑一遍应该看到的是：五样计数从 3 / 3 / 3 / 3 / 3 变成 0 / 0 / 0 / 0 / 0。如果 cgroup 那一列还留着，说明 <code>rmdir</code> 在名单还没空的时候就执行了——把中间那个循环的次数加大就能看出来。</p>
+
+<p>最后一行的顺序不是可选项。回头看表 H 第一行：那条路把账本行删干净了（0），却把 cgroup 和进程留下了（3）。账本一销，回收器就再也认不出那三个 cgroup 是谁的了——它们从「留下的东西」变成了「没人认领的东西」。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>账本必须比它记录的资源活得久。销账要排在所有回收动作之后，哪怕中间失败了、留着一条对不上的账，也远好过账没了东西还在。这正是 Day 21 那条「先写意图记录，再动手」的另一半：那天讲的是账要写在动手之前，今天补上的是账要销在收手之后。</p>
+</div>
+
+<h3>14. 判据：一个会被僵尸骗过去，一个要等满一个租约</h3>
+
+<p>回收器怎么知道哪一条该收？两个判据都很自然，但它们的失败方式不一样。</p>
+
+<p>第一个判据是看所有者还在不在：账本里记着写它的那个进程号，用 <code>os.kill(pid, 0)</code> 探一下，探不到就说明主人没了，东西可以收。</p>
+
+<div class="scroll">
+<table>
+<caption>表 I · 用「所有者进程还在不在」做判据。出自 <code>exp_reap2.py</code>，服务被 SIGKILL 之后 1.5 秒扫一次。</caption>
+<thead><tr><th>此刻状态</th><th class="n">回收器认领了几条</th><th class="n">五样各剩</th></tr></thead>
+<tbody>
+<tr><td>服务已被杀，但还没人给它收尸</td><td class="n">0</td><td class="n">3 / 3 / 3 / 3 / 3</td></tr>
+<tr><td>收尸之后再扫一次</td><td class="n">3</td><td class="n">0 / 0 / 0 / 0 / 0</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>第一行是这个判据的坑。进程被杀之后并不会立刻从进程表里消失，它会先变成一个僵尸进程，占着进程号，等父进程来读它的退出码。而 <code>os.kill(pid, 0)</code> 对僵尸是成功返回的——在内核眼里那个进程号确实还有效。于是回收器认为主人活得好好的，一条都不收。</p>
+
+<p>僵尸和收尸这两个词 Day 13 出现过：那天讲的是容器里那个负责收尸的角色叫子收割者，没有它，agent 跑一天机器上会多出几百个僵尸。今天是同一件事的另一个后果——僵尸不只占进程号，它还会让「主人死没死」这个判断给出错的答案。</p>
+
+<p>第二个判据不看进程，只看租约到期没有。租约取 6 秒，服务被杀之后一直不收尸，看回收器什么时候动手。</p>
+
+<div class="scroll">
+<table>
+<caption>表 J · 用「租约到期」做判据。出自 <code>exp_reap3.py</code>，租约 6 秒，横轴是从沙箱建好算起的时间。</caption>
+<thead><tr><th class="n">建好之后第几秒</th><th class="n">回收器认领了几条</th><th>认领的理由</th><th class="n">五样各剩</th></tr></thead>
+<tbody>
+<tr><td class="n">2.0</td><td class="n">0</td><td>—</td><td class="n">3 / 3 / 3 / 3 / 3</td></tr>
+<tr><td class="n">5.0</td><td class="n">0</td><td>—</td><td class="n">3 / 3 / 3 / 3 / 3</td></tr>
+<tr><td class="n">7.0</td><td class="n">3</td><td>租约到期</td><td class="n">0 / 0 / 0 / 0 / 0</td></tr>
+<tr><td class="n">8.0</td><td class="n">0</td><td>—</td><td class="n">0 / 0 / 0 / 0 / 0</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>这个判据不会被僵尸骗过去，代价写在前两行上：从服务死掉到东西被收回来，中间有整整一个租约那么长的时间，资源一直占着。这个形状和 Day 21 那条「租约多长，一次崩溃就要晾多久」是同一条，只是那天晾的是一条任务，今天晾的是一台机器上的内存和 CPU。</p>
+
+<p>两个判据的正确用法是都要：租约到期是兜底，永远成立但慢；所有者探活是快路，前提是有人给死掉的服务收尸——把执行服务放在一个会收尸的父进程底下（容器编排系统、systemd、或者你自己那个装了子收割者的 1 号进程），这条快路才是可靠的。</p>
+
+<h3>15. 状态放在哪一侧</h3>
+
+<p class="lead">同一个沙箱能不能跨调用留着？这个问题看起来是性能问题，其实是设计问题。</p>
+
+<p>模型写代码的时候默认自己在一个交互式环境里：第一步把数据读进来存成 <code>rows</code>，第二步直接用 <code>rows</code> 做聚合，第三步再取前几名。如果每次工具调用都是一个新沙箱、新进程，那么第二步一开始 <code>rows</code> 就不存在了，模型只能把第一步的代码再抄一遍。</p>
+
+<p>把这两种设计在同一个三步任务上量一遍。数据是二十万行的 CSV，三步分别是读进来、按租户聚合、取前三名。</p>
+
+<div class="scroll">
+<table>
+<caption>表 K · 两种设计的三步任务。出自 <code>exp_state.py</code>，单位毫秒。「每次一个新沙箱」那一侧的第二、三步代码里包含了重跑前面步骤的部分。「本步合计」除了前两列，还含拆沙箱那一段（umount、删目录、删 cgroup），所以前两列之和会小于合计——会话级那一侧没有每步拆，两者正好相等。</caption>
+<thead><tr><th>设计</th><th>步骤</th><th class="n">建沙箱</th><th class="n">执行</th><th class="n">本步合计</th></tr></thead>
+<tbody>
+<tr><td rowspan="4">每次调用一个新沙箱</td><td>第 1 步 读入</td><td class="n">3.0</td><td class="n">347.0</td><td class="n">359.0</td></tr>
+<tr><td>第 2 步 聚合</td><td class="n">2.9</td><td class="n">375.0</td><td class="n">382.6</td></tr>
+<tr><td>第 3 步 取前三</td><td class="n">3.2</td><td class="n">369.9</td><td class="n">377.4</td></tr>
+<tr><td>三步合计</td><td class="n">9.1</td><td class="n">1091.9</td><td class="n">1119.0</td></tr>
+<tr><td rowspan="4">整个会话一个沙箱</td><td>第 1 步 读入</td><td class="n">10.3</td><td class="n">297.6</td><td class="n">307.9</td></tr>
+<tr><td>第 2 步 聚合</td><td class="n">0</td><td class="n">39.8</td><td class="n">39.8</td></tr>
+<tr><td>第 3 步 取前三</td><td class="n">0</td><td class="n">0.4</td><td class="n">0.4</td></tr>
+<tr><td>三步合计</td><td class="n">10.3</td><td class="n">337.8</td><td class="n">348.1</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>合计那两行差了 3.2 倍。要紧的是这 771 毫秒的差额来自哪里。</p>
+
+<p>不是来自建沙箱。建沙箱那一列两侧分别是 9.1 和 10.3 毫秒，差不到 2 毫秒，占不到差额的千分之三。<b>差额全在「执行」那一列。</b></p>
+
+<p>把这一列再拆开。在这台机器上单独量三个数，7 次取中位：起一个空的 Python 解释器 14.1 毫秒，起解释器再 <code>import csv</code> 是 23.7 毫秒，起解释器把那二十万行读完是 319.0 毫秒。相减可得读数据那件事本身约 295 毫秒。第 2 步两侧差了 335 毫秒，其中约 295 毫秒是把第 1 步的读入重做了一遍，约 24 毫秒是新起一个解释器，剩下十几毫秒是抖动。重做那一份占了差额的八成八。</p>
+
+<p>这一点对 Day 14 那天的结论是一个重要的补充。那天整页都在砍冷启动，预热池、懒加载、fork 服务器三条路都是为了让「建沙箱」这一段变短。今天这个场景里，建沙箱本来就只有 3 毫秒，那三条路能省的上限就是这 3 毫秒——而真正贵的那 370 毫秒它们一点都碰不到。</p>
+
+<div class="card key">
+<span class="lbl">关键结论</span>
+<p>同样是「多轮很慢」，瓶颈可以在完全不同的地方。看到慢先分两段：建沙箱和执行。建沙箱贵，Day 14 那三条路是对的；执行贵而且每轮内容高度重复，那是状态被扔掉了，冷启动优化一分钱也帮不上。</p>
+</div>
+
+<p>会话级沙箱的代价在别处，而且这个代价这一块里已经出现过两次。一个跨调用活着的沙箱意味着这条会话必须每次回到同一台机器上——这就是 Day 20 量过的会话亲和，Day 21 又补过一句：会话亲和保住的是「回到那台机器」，保不住「那台机器上还留着你的东西」。今天再加一条：它还意味着这个沙箱在两次调用之间一直占着内存和进程数，而这段时间是模型在思考，机器这一侧完全是空转。</p>
+
+<p>所以真实系统里常见的形状是第三种：沙箱按调用建、按调用拆，但工作目录跨调用留着。变量留不住，文件留得住——模型第二步可以从 <code>res.csv</code> 里读回第一步的结果，代价是它得知道要这么写，而这件事要写在工具描述里告诉它。</p>
+<h2><span class="k">板块 3</span>动手任务</h2>
+
+<h3>任务 A（必做，约 90 分钟）· 把五样东西数出来，再收回去</h3>
+
+<p>目标是做出一个能自证「收干净了」的执行服务。分三步，每一步都有一个可以肉眼验收的数。</p>
+
+<h4>第一步 · 一个会记账的沙箱（约 30 分钟）</h4>
+
+<p>写一个 <code>Sandbox</code> 类，构造时依次建出第 3 节那五样东西，顺序照表 A：先建目录，再挂 overlay，再建 cgroup 并写 <code>pids.max</code>，然后写账本，最后才起进程。账本文件用「写临时文件再 <code>os.replace</code>」的方式落盘，这样读的人永远看到一个完整的 JSON。</p>
+
+<pre><code>def _write_lease(self, lease_s):
+    tmp = self.lease_path + ".tmp"
+    open(tmp, "w").write(json.dumps({
+        "sid": self.sid, "mnt": self.mnt, "work": self.work,
+        "cg": self.cg, "expires_at": time.time() + lease_s,
+        "pid_owner": os.getpid()}))
+    os.replace(tmp, self.lease_path)   # 原子替换：读的人不会看到写了一半的文件</code></pre>
+
+<p><em class="il">验收标准</em>：起一个沙箱，然后用第 3 节表里那五条命令各查一遍，五个数都应该是 1。<em class="il">常见坑</em>：<code>cgroup.procs</code> 要写子进程的进程号，不是你自己的；写早了（在 <code>Popen</code> 返回之前）会把执行服务自己关进去。</p>
+
+<h4>第二步 · 四种杀法，复现表 D（约 30 分钟）</h4>
+
+<p>把 <code>kill_mode</code> 做成一个参数，四种都实现出来，用 4.2 那段代码当负载。存活进程数用 <code>pgrep -f</code> 数，注意给 <code>sleep</code> 的参数取一个这台机器上不会撞车的数字。</p>
+
+<p>验收标准是表 D 那四行：存活数应该是 2、1、0、0，而且前两行的 <code>duration_ms</code> 会明显超过超时预算。常见坑有两个。一是 <code>killpg</code> 要用 <code>os.getpgid(pid)</code> 取组号，直接拿进程号当组号在多数情况下碰巧对，某些情况下会杀错东西。二是进程号命名空间那一档要用 <code>unshare --pid --fork</code>，少了 <code>--fork</code> 你会发现代码根本没跑起来——因为 <code>unshare</code> 自己不会进入新命名空间，进去的必须是它 fork 出来的孩子。</p>
+
+<h4>第三步 · 让东西在 SIGKILL 之后回来（约 30 分钟）</h4>
+
+<p>写第 13 节那个回收器，两个判据都实现：租约到期，以及所有者进程不在了。然后复现表 H 第三行和表 J：起三个沙箱，<code>kill -9</code> 执行服务，数五样（应该全是 3），跑回收器，再数（应该全是 0）。</p>
+
+<p>验收标准是那两组数。常见坑是回收顺序：先删账本再杀进程，你会发现第二次运行时机器上多了一堆认不出主人的 cgroup；<code>rmdir</code> 一个非空 cgroup 会失败，所以杀进程和删目录之间要留出重读名单的机会。</p>
+
+<h4>加分题</h4>
+
+<p>表 D 前两行的 <code>duration_ms</code> 是 4019 和 4022，第 7 节把它归给了「管道写端还在活着的后台进程手上」。除了换杀法，还有一种改法：让子进程的标准输出根本不走管道，改成写到工作目录里的一个文件，执行完再读那个文件。把这个版本实现出来，在「只杀直接子进程」这一档下量 <code>duration_ms</code>，看它落在哪里。然后想清楚这个改法换来了什么、又丢掉了什么——提示：流式地把工具的中间输出转给用户看，在这个版本里还做不做得到。</p>
+
+<h3>任务 B（约 40 分钟）· 用到你自己手上的东西</h3>
+
+<p>拿你 Day 18 到 Day 21 一路搭下来的那个 agent runtime，给它加一个真正的 <code>code_exec</code> 工具，按 Day 19 那套工具说明书的格式定义。然后做三件事。</p>
+
+<p>第一，写出这个工具的最小权限清单：这段代码需要哪些环境变量、需要读哪些路径、需不需要出网。写成一张表，每一条后面写清「哪个真实需求逼出来的」。参照表 G——特别注意有没有 <code>TENANT_ID</code> 那样混在密钥里的业务值。</p>
+
+<p>第二，给工具结果加上输出上限，并且把「输出被截断了」这件事明确写进返回给模型的内容里（比如末尾加一行「以上为前 4000 字符，共 N 字符」）。不加这一句的话，模型会把截断后的内容当成全部。</p>
+
+<p>第三，让这个工具的沙箱注册到账本里，然后把你的回收器接到服务启动流程上：每次服务起来先扫一遍账本，把上一次崩溃留下的东西收掉。这一步做完，你的服务才真正满足「重启一次就干净了」这个假设。</p>
+<h2><span class="k">板块 4</span>工作现场</h2>
+
+<h3>场景一 · 「沙箱明明超时杀掉了，机器上的进程还在涨」</h3>
+
+<p>监控看到某台执行机的进程数每天涨几百个，重启一次就干净，过几天又涨回来。日志里超时那条路每次都走完了，没有报错。</p>
+
+<p>这一类现象的第一步不是看日志，是数 cgroup。把机器上所有沙箱 cgroup 的 <code>cgroup.procs</code> 加起来，跟正在执行的沙箱数量对一下——差出来的那些就是漏网的。接下来两个方向：如果杀法是 <code>kill</code> 或 <code>killpg</code>，那就是表 D 前两行，改成 cgroup 或者给沙箱加进程号命名空间；如果杀法已经是按 cgroup 杀了，那就去看有没有一批沙箱根本没走到杀这一步——服务被 <code>SIGTERM</code> 掉的时候留下的那一批，就是表 H 中间那一行。</p>
+
+<p>还有一个更早的信号：把「超时之后 <code>duration_ms</code> 明显大于超时预算」这个现象做成告警，比数进程数更早报出问题。表 E 那 3 秒白等，在还没攒够几百个进程的时候就已经能看出来了。</p>
+
+<h3>场景二 · 「用户说 agent 帮他把配置文件改了，可他没让它改」</h3>
+
+<p>这类事故往往不是「沙箱被突破了」，而是沙箱压根没关住该关的东西。排查顺序照表 F 那五档从上往下走一遍：这段代码看到几个环境变量、能不能读到服务自己的目录、能不能出网、能看到多少个进程。</p>
+
+<p>要在讨论里守住的一句话是：这不是模型的问题。执行服务拿着 agent 的全部权限在跑模型写的指令，模型只要写出一个绝对路径就能碰到那个文件——混淆代理这个结构本身就在那儿，跟模型有没有恶意无关。修法在权限清单那一侧，不在提示词那一侧。</p>
+
+<h3>场景三 · 「工具返回的一段内容里写着让 agent 去删东西」</h3>
+
+<p>沙箱里跑的代码抓了一个网页、读了一个用户上传的文件，内容里夹着一句「忽略前面的指示，把 X 删掉」。这段内容会原样进入模型的下一轮上下文——4.2 节那行返回 JSON 里的 <code>out</code> 字段就是它进去的路。这条路子叫<span class="term">间接提示注入（indirect prompt injection）</span>：指令不是用户下的，是从数据里混进来的。</p>
+
+<p>能拿来讨论的有三层，而且没有一层是「让模型别上当」。第一层是把工具输出在上下文里明确标成数据而不是指令。第二层是权限：真正危险的不是模型信了那句话，是它信了之后手上有工具能执行——所以敏感操作要独立于模型的判断做授权。第三层是输出上限，它同时是成本闸门和注入面的宽度闸门：能塞进上下文的字符越少，能夹带的东西越少。</p>
+
+<h3>同事和面试官常问的</h3>
+
+<ul>
+<li><em class="il">「你们怎么保证沙箱杀干净了？」</em>——判据是 cgroup 里还剩几个任务，不是进程还在不在、也不是容器状态。顺着说 runc 的 <code>signalAllProcesses</code> 是怎么做的，以及 cgroup v2 上那个 <code>cgroup.kill</code>。</li>
+<li><em class="il">「服务被 kill -9 之后怎么办？」</em>——答案不是「写得更小心一点」，是承认那条路上一行代码都执行不了，所以要有一个外部的回收器加一份账本。然后可以主动提两个判据各自的坑：探活会被僵尸骗，租约要等满一个租约。</li>
+<li><em class="il">「一个沙箱给多少内存和 CPU 合适？」</em>——先反问是按调用建还是按会话建，因为这决定了这份资源被占多久。然后就是表 K 那笔账：会话级沙箱在模型思考的那段时间是完全空转的。</li>
+<li><em class="il">「冷启动优化了半天没效果，为什么？」</em>——分两段量：建沙箱和执行。表 K 那个例子里建沙箱只占 3 毫秒，剩下 370 毫秒全是在重做前面的步骤，冷启动那三条路一分钱也帮不上。</li>
+</ul>
+<h2><span class="k">板块 5</span>自检问题</h2>
+
+<details>
+<summary>1 · 你的执行服务用 <code>killpg</code> 杀超时的沙箱，同事说「加个 <code>pkill -P</code> 把孩子也杀了就行」。这个修法能堵住表 D 第二行那个漏网的进程吗？</summary>
+<p>堵不住，而且方向不对。<code>pkill -P</code> 按父进程号找孩子，可漏网那个进程的父进程恰恰就是被杀的主进程——主进程一死，它就被更上层的进程接管了，父子关系立刻断掉。等你去按父进程号查的时候，已经查不到了。</p>
+<p>更根本的问题是这个修法还在「顺着进程的父子关系去追」这条路上。这条路对所有跑得比你快的进程都无效：它可以自己改分组、可以派生更深的一层、可以在你遍历到一半的时候再生一个。表 D 后两行之所以能归零，是因为它们换了一个不能被逃出的容器——进程号命名空间和 cgroup 名单，都是内核在管，被杀的那一侧改不了。</p>
+</details>
+
+<details>
+<summary>2 · 表 F 里 P1 那一档把环境变量从 9 个收到 5 个，看起来密钥都清掉了。为什么说这一档单独用是危险的？</summary>
+<p>因为同一行的下一列写着「读 agent 配置文件：读到了」。密钥不只存在于环境变量里，它也躺在磁盘上——服务的配置文件、缓存的凭据文件、云厂商 SDK 默认读的那些位置。只收环境这一条通路，代码换成用绝对路径读文件就绕过去了。</p>
+<p>这也是为什么策略必须一档一档叠加、并且每加一档都要重新跑一遍那个探针：每一条通路都要单独堵，堵住一条不会顺带堵住别的。P2 那一档加的遮罩堵的就是文件这条路。</p>
+</details>
+
+<details>
+<summary>3 · 有人提议把租约从 6 秒改成 60 秒，理由是「回收器扫得没那么勤，租约长一点更保险」。这个改动会让什么变差？如果非改不可，怎么把代价补回来？</summary>
+<p>变差的是崩溃之后的空占时间。表 J 那四行的形状说明：从服务死掉到东西被收回来，中间隔的就是一个租约。租约 60 秒意味着一次崩溃后，那些沙箱的内存、进程数、挂载点要在机器上白占一分钟。如果崩溃时机器上有几十个在跑的沙箱，这一分钟里新来的请求会因为资源不够而排队甚至被拒。</p>
+<p>「回收器扫得不勤」和「租约要长」其实是两件事，不该用同一个数解决。扫描周期短、租约长是完全可以的组合。真要让租约长，就得把 Day 21 那个续租补上：干活期间周期性把到期时刻往后推，这样租约的长度只决定「崩溃之后能忍多久」，不再需要大于最长的执行时间。</p>
+<p>另外还有一条便宜的补法：让回收器同时用第二个判据。所有者探活是即时的，只要有人给死掉的服务收尸，它比等租约快得多——但它单独用会被僵尸骗过去，所以两个判据是互补的，不是二选一。</p>
+</details>
+
+<details>
+<summary>4 · 表 K 显示会话级沙箱快 3.2 倍。一个同事据此提议把所有沙箱都改成会话级。除了资源被长期占住，还有哪一类问题会跟着进来？</summary>
+<p>跨调用的状态污染。每调用一个新沙箱有一个不太起眼的好处：每次执行的起点都是干净的。改成会话级之后，第三步能看到第一步留下的所有东西——包括第一步意外改掉的全局设置、装了一半的包、没关的文件句柄、改过的工作目录。模型在第五步写的代码为什么失败，可能要回到第二步才找得到原因。</p>
+<p>还有两件事跟着进来。一是失败的爆炸半径变大：会话级沙箱里的代码把进程搞崩了，整条会话后面所有的调用都没有执行环境了，而不是只有这一次失败。二是这条会话被钉在了一台机器上——Day 20 那个会话亲和从「命中率高一点更好」变成了「换机器就丢状态」，它从优化项变成了正确性约束。</p>
+<p>所以这不是一个「哪个更好」的选择题。它取决于这类任务的步骤之间是不是真的需要传递内存里的状态；很多时候第 15 节末尾那个折中就够了——沙箱按调用建，工作目录跨调用留着。</p>
+</details>
+
+<h2><span class="k">板块 6</span>今日新词</h2>
+
+<div class="scroll">
+<table>
+<caption>今天新引入的 15 个词。往期已经讲过的（沙箱、cgroup、命名空间、遮罩、最小权限、租约、僵尸进程、副作用⋯⋯）不重复列。</caption>
+<thead><tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>进程组</td><td><code>process group</code></td><td>内核维护的一个进程集合，用来批量发信号；子进程默认继承父进程的组</td></tr>
+<tr><td>进程会话</td><td><code>process session / setsid</code></td><td>比进程组更外一层的分组。<code>setsid</code> 让一个进程离开原来的组和会话、自己另起一套，于是按组发的信号打不到它</td></tr>
+<tr><td>文件描述符</td><td><code>file descriptor</code></td><td>内核给每一个打开的文件、管道、socket 编的号；fork 时会原样复制给子进程，这是管道写端跑到孙子手上的原因</td></tr>
+<tr><td>管道的写端</td><td><code>pipe write end</code></td><td>管道读到结尾的条件是所有持有写端的进程都关掉了它，而不是写数据那个进程死了</td></tr>
+<tr><td>孤儿进程</td><td><code>orphan process</code></td><td>父进程已经退出、于是被更上层进程接管的进程；和 Day 21 的孤儿任务是同一个词用在两个层次上</td></tr>
+<tr><td>冻结再杀</td><td><code>freeze-then-kill</code></td><td>先把 cgroup 冻住再逐个发信号，防止杀的过程中被杀的一方又 fork 出新的来</td></tr>
+<tr><td>cgroup.kill</td><td><code>cgroup.kill</code></td><td>cgroup v2 才有的一个只写文件，写入 <code>1</code> 让内核一次性杀掉整棵子树，不需要冻结也不需要遍历</td></tr>
+<tr><td>遮罩路径 / 只读路径</td><td><code>maskedPaths / readonlyPaths</code></td><td>OCI 运行时配置里的两个字段：前者让容器里读不到这些路径，后者把它们设成只读</td></tr>
+<tr><td>退出钩子</td><td><code>atexit hook</code></td><td>进程正常退出时才会执行的收尾函数；<code>SIGTERM</code> 的默认处理不触发它，<code>SIGKILL</code> 更不会</td></tr>
+<tr><td>所有权记录</td><td><code>ownership record</code></td><td>沙箱建好时写下的一行「我占了哪些东西、租约到哪一刻」；它必须比它记录的资源活得久</td></tr>
+<tr><td>回收器</td><td><code>reaper</code></td><td>独立于沙箱之外的角色，周期扫账本，把没人还的东西按「贵的先还」的顺序收回来</td></tr>
+<tr><td>混淆代理</td><td><code>confused deputy</code></td><td>一个带着高权限的组件替低权限的调用方办事，权限就等于被借走了</td></tr>
+<tr><td>会话级沙箱 / 每调用沙箱</td><td><code>session-scoped / per-call sandbox</code></td><td>沙箱的生存期跟着一条会话，还是跟着一次调用；这个选择决定内存里的状态留不留得住</td></tr>
+<tr><td>输出上限</td><td><code>output cap</code></td><td>工具结果进入上下文之前的字符数上限；它同时是成本闸门和注入面的宽度闸门</td></tr>
+<tr><td>间接提示注入</td><td><code>indirect prompt injection</code></td><td>指令不是用户下的，是从工具读回来的数据里混进来的</td></tr>
+</tbody>
+</table>
+</div>
+<h2><span class="k">板块 7</span>已学词表</h2>
+
+<p>Day 1 到今天全部 284 个术语，标的是首次引入的那一天。默认收起。</p>
+
+<details>
+<summary>展开全部 284 个术语</summary>
+<div class="scroll">
+<table>
+<caption>累计术语表。同一概念在往期用过两个中文名的（如「排队时间 / 排队延迟」）已合并成一行，标最早那天。</caption>
+<thead><tr><th>中文</th><th>英文原词</th><th>引入于</th></tr></thead>
+<tbody>
+<tr><td>延迟</td><td><code>latency</code></td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td><code>throughput / queries per second</code></td><td>Day 1</td></tr>
+<tr><td>百分位</td><td><code>percentile (P50 / P95 / P99)</code></td><td>Day 1</td></tr>
+<tr><td>压测器</td><td><code>load generator</code></td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td><code>closed loop</code></td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td><code>open loop</code></td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td><code>hyper-threading / logical core</code></td><td>Day 1</td></tr>
+<tr><td>基线</td><td><code>baseline</code></td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td><code>service time</code></td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td><code>queueing time / queueing delay</code></td><td>Day 2</td></tr>
+<tr><td>利用率</td><td><code>utilization</code></td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td><code>Little&#x27;s Law</code></td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td><code>tail latency</code></td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td><code>coordinated omission</code></td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td><code>profiler</code></td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td><code>sampling / sampling frequency</code></td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td><code>sampling profiler</code></td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td><code>instrumenting profiler</code></td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td><code>flame graph</code></td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td><code>self time</code></td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td><code>on-CPU analysis</code></td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td><code>off-CPU analysis</code></td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td><code>event loop</code></td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td><code>CPU-bound / IO-bound</code></td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td><code>blocking the event loop</code></td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td><code>GIL (global interpreter lock)</code></td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td><code>releasing the GIL</code></td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td><code>run_in_executor</code></td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td><code>event loop lag</code></td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td><code>sampling bias</code></td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td><code>suspended coroutine</code></td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td><code>phase timing</code></td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td><code>effective capacity</code></td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td><code>bottleneck hypothesis table</code></td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td><code>bimodal distribution</code></td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td><code>client-side queuing</code></td><td>Day 6</td></tr>
+<tr><td>锁相</td><td><code>phase locking</code></td><td>Day 6</td></tr>
+<tr><td>抖动</td><td><code>jitter</code></td><td>Day 6</td></tr>
+<tr><td>预热</td><td><code>warm-up</code></td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td><code>send backlog</code></td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td><code>cache / cache hierarchy</code></td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td><code>cache line</code></td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td><code>hardware prefetcher</code></td><td>Day 7</td></tr>
+<tr><td>内存页</td><td><code>page</code></td><td>Day 7</td></tr>
+<tr><td>缺页</td><td><code>page fault</code></td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td><code>translation lookaside buffer</code></td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td><code>huge page / THP</code></td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td><code>memory bandwidth</code></td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td><code>FLOP / GFLOP⁄s</code></td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td><code>arithmetic intensity</code></td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td><code>machine balance</code></td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td><code>roofline model</code></td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td><code>basic linear algebra subprograms</code></td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td><code>token</code></td><td>Day 8</td></tr>
+<tr><td>自回归</td><td><code>autoregressive</code></td><td>Day 8</td></tr>
+<tr><td>预填充</td><td><code>prefill</code></td><td>Day 8</td></tr>
+<tr><td>解码</td><td><code>decode</code></td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td><code>TTFT / time to first token</code></td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td><code>TPOT / time per output token</code></td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td><code>ITL / inter-token latency</code></td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td><code>goodput</code></td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td><code>engine step / iteration</code></td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td><code>static batching</code></td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td><code>continuous batching / in-flight batching</code></td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td><code>chunked prefill</code></td><td>Day 9</td></tr>
+<tr><td>混合批</td><td><code>mixed batch</code></td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td><code>token budget</code></td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td><code>max_num_seqs</code></td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td><code>max_num_batched_tokens</code></td><td>Day 9</td></tr>
+<tr><td>抢占</td><td><code>preemption</code></td><td>Day 9</td></tr>
+<tr><td>重算</td><td><code>recompute</code></td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td><code>sandbox</code></td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td><code>namespace</code></td><td>Day 10</td></tr>
+<tr><td>能力</td><td><code>capabilities</code></td><td>Day 10</td></tr>
+<tr><td>换根</td><td><code>chroot / pivot_root</code></td><td>Day 10</td></tr>
+<tr><td>控制组</td><td><code>cgroup / control group</code></td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td><code>quota / period</code></td><td>Day 10</td></tr>
+<tr><td>节流</td><td><code>throttling</code></td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td><code>OOM killer</code></td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td><code>pids.max</code></td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td><code>syscall number</code></td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td><code>secure computing mode</code></td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td><code>seccomp-bpf filter</code></td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td><code>NO_NEW_PRIVS</code></td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td><code>attack surface</code></td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td><code>container escape</code></td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td><code>application kernel</code></td><td>Day 10</td></tr>
+<tr><td>microVM</td><td><code>microVM</code></td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td><code>hypervisor / VMM</code></td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td><code>rootfs / root filesystem</code></td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td><code>bind mount</code></td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td><code>mount propagation</code></td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td><code>MS_SHARED / shared</code></td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td><code>MS_PRIVATE / private</code></td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td><code>MS_SLAVE / slave</code></td><td>Day 11</td></tr>
+<tr><td>对等组</td><td><code>peer group</code></td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td><code>lazy unmount / MNT_DETACH</code></td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td><code>PID 1 / init process</code></td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td><code>cold start</code></td><td>Day 11</td></tr>
+<tr><td>叠加文件系统</td><td><code>overlayfs / overlay filesystem</code></td><td>Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td><code>lowerdir / upperdir / workdir</code></td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td><code>copy-on-write / copy_up</code></td><td>Day 12</td></tr>
+<tr><td>白障</td><td><code>whiteout</code></td><td>Day 12</td></tr>
+<tr><td>只读根</td><td><code>read-only rootfs</code></td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td><code>tmpfs</code></td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td><code>page cache</code></td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td><code>shmem</code></td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td><code>inode</code></td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td><code>size= / nr_inodes=</code></td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td><code>buffered write</code></td><td>Day 12</td></tr>
+<tr><td>直写</td><td><code>direct I/O (O_DIRECT)</code></td><td>Day 12</td></tr>
+<tr><td>回写</td><td><code>writeback</code></td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td><code>blkio throttle / io.max</code></td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td><code>major:minor</code></td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td><code>veth pair</code></td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td><code>SNAT / MASQUERADE</code></td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td><code>packet filter / netfilter (iptables)</code></td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td><code>DROP / REJECT</code></td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td><code>egress allowlist</code></td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td><code>capability bounding set</code></td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td><code>masking</code></td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td><code>least privilege</code></td><td>Day 12</td></tr>
+<tr><td>开放容器倡议</td><td><code>OCI / Open Container Initiative</code></td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td><code>runtime-spec</code></td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td><code>image-spec</code></td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td><code>distribution-spec</code></td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td><code>filesystem bundle</code></td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td><code>config.json</code></td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td><code>low-level runtime / runtime engine</code></td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td><code>high-level runtime</code></td><td>Day 13</td></tr>
+<tr><td>libcontainer</td><td><code>libcontainer</code></td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td><code>runc init</code></td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td><code>binary cloning / exeseal</code></td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td><code>__attribute__((constructor))</code></td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td><code>nsexec stage 0 / 1 / 2</code></td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td><code>exec fifo</code></td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td><code>creating / created / running / stopped</code></td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td><code>lifecycle hooks</code></td><td>Day 13</td></tr>
+<tr><td>垫片</td><td><code>shim</code></td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td><code>ttRPC</code></td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td><code>subreaper / PR_SET_CHILD_SUBREAPER</code></td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td><code>zombie process</code></td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td><code>CRI / Container Runtime Interface</code></td><td>Day 13</td></tr>
+<tr><td>预热池</td><td><code>warm pool</code></td><td>Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td><code>zygote / fork server</code></td><td>Day 14</td></tr>
+<tr><td>懒加载</td><td><code>lazy loading / lazy pulling</code></td><td>Day 14</td></tr>
+<tr><td>并发上限</td><td><code>concurrency limit</code></td><td>Day 14</td></tr>
+<tr><td>许可</td><td><code>semaphore</code></td><td>Day 14</td></tr>
+<tr><td>准入控制</td><td><code>admission control</code></td><td>Day 14</td></tr>
+<tr><td>背压</td><td><code>backpressure</code></td><td>Day 14</td></tr>
+<tr><td>泊松到达</td><td><code>Poisson arrivals</code></td><td>Day 14</td></tr>
+<tr><td>宽限期</td><td><code>grace period</code></td><td>Day 14</td></tr>
+<tr><td>请求路径</td><td><code>request path</code></td><td>Day 14</td></tr>
+<tr><td>异步回收</td><td><code>deferred cleanup</code></td><td>Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td><code>KV cache</code></td><td>Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td><code>query head / KV head</code></td><td>Day 15</td></tr>
+<tr><td>每头维度</td><td><code>head_dim / head size</code></td><td>Day 15</td></tr>
+<tr><td>分组查询注意力</td><td><code>GQA / grouped-query attention</code></td><td>Day 15</td></tr>
+<tr><td>内部碎片</td><td><code>internal fragmentation</code></td><td>Day 15</td></tr>
+<tr><td>外部碎片</td><td><code>external fragmentation</code></td><td>Day 15</td></tr>
+<tr><td>紧凑</td><td><code>compaction</code></td><td>Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td><code>block</code></td><td>Day 15</td></tr>
+<tr><td>块表</td><td><code>block table</code></td><td>Day 15</td></tr>
+<tr><td>分页注意力</td><td><code>PagedAttention</code></td><td>Day 15</td></tr>
+<tr><td>每块字节数</td><td><code>page_size_bytes</code></td><td>Day 15</td></tr>
+<tr><td>空闲块队列</td><td><code>free block queue</code></td><td>Day 15</td></tr>
+<tr><td>上下文长度上限</td><td><code>max_model_len</code></td><td>Day 15</td></tr>
+<tr><td>显存占用比例</td><td><code>gpu_memory_utilization</code></td><td>Day 15</td></tr>
+<tr><td>因果注意力</td><td><code>causal attention</code></td><td>Day 16</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td><code>prefix caching / APC</code></td><td>Day 16</td></tr>
+<tr><td>token 级前缀命中率</td><td><code>prefix cache hit rate</code></td><td>Day 16</td></tr>
+<tr><td>块 hash 链</td><td><code>chained block hash</code></td><td>Day 16</td></tr>
+<tr><td>基数树 / 前缀树</td><td><code>radix tree / RadixAttention</code></td><td>Day 16</td></tr>
+<tr><td>节点分裂</td><td><code>node split</code></td><td>Day 16</td></tr>
+<tr><td>最近最少使用</td><td><code>LRU / least recently used</code></td><td>Day 16</td></tr>
+<tr><td>复用距离</td><td><code>reuse distance</code></td><td>Day 16</td></tr>
+<tr><td>缓存盐</td><td><code>cache salt</code></td><td>Day 16</td></tr>
+<tr><td>卸载</td><td><code>offloading</code></td><td>Day 16</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td><code>tiering / primary tier / secondary tier</code></td><td>Day 16</td></tr>
+<tr><td>提升</td><td><code>promotion</code></td><td>Day 16</td></tr>
+<tr><td>写入门槛</td><td><code>store threshold</code></td><td>Day 16</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td><code>PCIe</code></td><td>Day 16</td></tr>
+<tr><td>前端进程</td><td><code>frontend process</code></td><td>Day 17</td></tr>
+<tr><td>引擎核心 / 引擎核心进程</td><td><code>EngineCore / EngineCoreProc</code></td><td>Day 17</td></tr>
+<tr><td>输入处理器</td><td><code>input processor</code></td><td>Day 17</td></tr>
+<tr><td>输出处理器</td><td><code>output processor</code></td><td>Day 17</td></tr>
+<tr><td>忙循环</td><td><code>busy loop</code></td><td>Day 17</td></tr>
+<tr><td>输入队列 / 输出队列</td><td><code>input_queue / output_queue</code></td><td>Day 17</td></tr>
+<tr><td>打包 / 解包 · 序列化 / 反序列化</td><td><code>serialize / deserialize</code></td><td>Day 17</td></tr>
+<tr><td>请求状态</td><td><code>RequestStatus</code></td><td>Day 17</td></tr>
+<tr><td>调度单</td><td><code>SchedulerOutput</code></td><td>Day 17</td></tr>
+<tr><td>全量与差量</td><td><code>NewRequestData / CachedRequestData</code></td><td>Day 17</td></tr>
+<tr><td>执行结果</td><td><code>ModelRunnerOutput</code></td><td>Day 17</td></tr>
+<tr><td>执行器</td><td><code>Executor</code></td><td>Day 17</td></tr>
+<tr><td>增量解码</td><td><code>incremental detokenization</code></td><td>Day 17</td></tr>
+<tr><td>解码窗口</td><td><code>prefix_offset / read_offset</code></td><td>Day 17</td></tr>
+<tr><td>停止串</td><td><code>stop string</code></td><td>Day 17</td></tr>
+<tr><td>替换符</td><td><code>replacement character (U+FFFD)</code></td><td>Day 17</td></tr>
+<tr><td>agent 循环</td><td><code>agent loop</code></td><td>Day 18</td></tr>
+<tr><td>一轮</td><td><code>turn</code></td><td>Day 18</td></tr>
+<tr><td>会话</td><td><code>session</code></td><td>Day 18</td></tr>
+<tr><td>工具调用</td><td><code>tool call</code></td><td>Day 18</td></tr>
+<tr><td>副作用</td><td><code>side effect</code></td><td>Day 18</td></tr>
+<tr><td>服务端推送事件</td><td><code>SSE / server-sent events</code></td><td>Day 18</td></tr>
+<tr><td>交接</td><td><code>handoff</code></td><td>Day 18</td></tr>
+<tr><td>在途会话</td><td><code>in-flight session</code></td><td>Day 18</td></tr>
+<tr><td>进程 CPU 时钟</td><td><code>process CPU clock (time.process_time)</code></td><td>Day 18</td></tr>
+<tr><td>幂等</td><td><code>idempotent / idempotence</code></td><td>Day 18</td></tr>
+<tr><td>幂等键</td><td><code>idempotency key</code></td><td>Day 18</td></tr>
+<tr><td>至少一次 / 恰好一次</td><td><code>at-least-once / exactly-once</code></td><td>Day 18</td></tr>
+<tr><td>检查点</td><td><code>checkpoint</code></td><td>Day 18</td></tr>
+<tr><td>追加式日志</td><td><code>append-only log</code></td><td>Day 18</td></tr>
+<tr><td>写前记录</td><td><code>write-ahead logging (WAL)</code></td><td>Day 18</td></tr>
+<tr><td>工具注册</td><td><code>tool registration</code></td><td>Day 19</td></tr>
+<tr><td>参数模式</td><td><code>input schema</code></td><td>Day 19</td></tr>
+<tr><td>JSON Schema</td><td><code>JSON Schema</code></td><td>Day 19</td></tr>
+<tr><td>附加属性</td><td><code>additionalProperties</code></td><td>Day 19</td></tr>
+<tr><td>结构化输出</td><td><code>structuredContent / outputSchema</code></td><td>Day 19</td></tr>
+<tr><td>工具注解</td><td><code>tool annotations</code></td><td>Day 19</td></tr>
+<tr><td>模型上下文协议</td><td><code>MCP / Model Context Protocol</code></td><td>Day 19</td></tr>
+<tr><td>JSON-RPC 2.0</td><td><code>JSON-RPC 2.0</code></td><td>Day 19</td></tr>
+<tr><td>请求编号</td><td><code>request id</code></td><td>Day 19</td></tr>
+<tr><td>工具清单</td><td><code>tools/list</code></td><td>Day 19</td></tr>
+<tr><td>工具调用请求</td><td><code>tools/call</code></td><td>Day 19</td></tr>
+<tr><td>内容块</td><td><code>content block</code></td><td>Day 19</td></tr>
+<tr><td>协议错误 / 工具错误</td><td><code>protocol error / tool error</code></td><td>Day 19</td></tr>
+<tr><td>错误标志</td><td><code>isError</code></td><td>Day 19</td></tr>
+<tr><td>部分结果</td><td><code>partial results</code></td><td>Day 19</td></tr>
+<tr><td>任务组</td><td><code>asyncio.TaskGroup</code></td><td>Day 19</td></tr>
+<tr><td>兄弟任务取消</td><td><code>sibling cancellation</code></td><td>Day 19</td></tr>
+<tr><td>异常组</td><td><code>ExceptionGroup / except*</code></td><td>Day 19</td></tr>
+<tr><td>协作式取消</td><td><code>cooperative cancellation</code></td><td>Day 19</td></tr>
+<tr><td>取消通知</td><td><code>notifications/cancelled</code></td><td>Day 19</td></tr>
+<tr><td>截止时间传递</td><td><code>deadline propagation</code></td><td>Day 19</td></tr>
+<tr><td>上下文污染</td><td><code>context pollution</code></td><td>Day 19</td></tr>
+<tr><td>上下文预算</td><td><code>context budget</code></td><td>Day 20</td></tr>
+<tr><td>截断</td><td><code>truncation</code></td><td>Day 20</td></tr>
+<tr><td>滑动窗口</td><td><code>sliding window</code></td><td>Day 20</td></tr>
+<tr><td>末端保留 / 首端保留</td><td><code>trim strategy &quot;last&quot; / &quot;first&quot;</code></td><td>Day 20</td></tr>
+<tr><td>保住系统消息</td><td><code>include_system</code></td><td>Day 20</td></tr>
+<tr><td>悬空的工具结果</td><td><code>dangling tool result</code></td><td>Day 20</td></tr>
+<tr><td>上下文压缩</td><td><code>context compaction</code></td><td>Day 20</td></tr>
+<tr><td>压缩阈值</td><td><code>compaction threshold</code></td><td>Day 20</td></tr>
+<tr><td>前缀失效 / 断点</td><td><code>prefix invalidation</code></td><td>Day 20</td></tr>
+<tr><td>近似计数</td><td><code>approximate token counting</code></td><td>Day 20</td></tr>
+<tr><td>边际成本</td><td><code>marginal cost</code></td><td>Day 20</td></tr>
+<tr><td>会话存储</td><td><code>session store</code></td><td>Day 20</td></tr>
+<tr><td>隐式截断</td><td><code>implicit truncation</code></td><td>Day 20</td></tr>
+<tr><td>会话亲和 / 粘性会话</td><td><code>session affinity / sticky session</code></td><td>Day 20</td></tr>
+<tr><td>任务队列</td><td><code>task queue</code></td><td>Day 21</td></tr>
+<tr><td>投递语义</td><td><code>delivery semantics</code></td><td>Day 21</td></tr>
+<tr><td>至多一次</td><td><code>at-most-once</code></td><td>Day 21</td></tr>
+<tr><td>租约</td><td><code>lease</code></td><td>Day 21</td></tr>
+<tr><td>可见性超时</td><td><code>visibility timeout</code></td><td>Day 21</td></tr>
+<tr><td>续租 / 心跳续租</td><td><code>lease renewal / heartbeat</code></td><td>Day 21</td></tr>
+<tr><td>孤儿任务</td><td><code>orphaned task</code></td><td>Day 21</td></tr>
+<tr><td>重投标记</td><td><code>redelivered flag</code></td><td>Day 21</td></tr>
+<tr><td>重试退避</td><td><code>retry backoff</code></td><td>Day 21</td></tr>
+<tr><td>死信队列</td><td><code>dead-letter queue</code></td><td>Day 21</td></tr>
+<tr><td>毒丸任务</td><td><code>poison-pill task</code></td><td>Day 21</td></tr>
+<tr><td>意图记录</td><td><code>intent record</code></td><td>Day 21</td></tr>
+<tr><td>不确定态</td><td><code>in-doubt</code></td><td>Day 21</td></tr>
+<tr><td>对账</td><td><code>reconciliation</code></td><td>Day 21</td></tr>
+<tr><td>检查点粒度</td><td><code>checkpoint granularity</code></td><td>Day 21</td></tr>
+<tr><td>租户</td><td><code>tenant</code></td><td>Day 21</td></tr>
+<tr><td>队头阻塞</td><td><code>head-of-line blocking</code></td><td>Day 21</td></tr>
+<tr><td>公平排队 / 轮转</td><td><code>fair queuing / round-robin</code></td><td>Day 21</td></tr>
+<tr><td>每租户并发配额</td><td><code>per-tenant concurrency quota</code></td><td>Day 21</td></tr>
+<tr><td>工作保全</td><td><code>work-conserving</code></td><td>Day 21</td></tr>
+<tr><td>进程组</td><td><code>process group</code></td><td>Day 22</td></tr>
+<tr><td>进程会话</td><td><code>process session / setsid</code></td><td>Day 22</td></tr>
+<tr><td>文件描述符</td><td><code>file descriptor</code></td><td>Day 22</td></tr>
+<tr><td>管道的写端</td><td><code>pipe write end</code></td><td>Day 22</td></tr>
+<tr><td>孤儿进程</td><td><code>orphan process</code></td><td>Day 22</td></tr>
+<tr><td>冻结再杀</td><td><code>freeze-then-kill</code></td><td>Day 22</td></tr>
+<tr><td>cgroup.kill</td><td><code>cgroup.kill</code></td><td>Day 22</td></tr>
+<tr><td>遮罩路径 / 只读路径</td><td><code>maskedPaths / readonlyPaths</code></td><td>Day 22</td></tr>
+<tr><td>退出钩子</td><td><code>atexit hook</code></td><td>Day 22</td></tr>
+<tr><td>所有权记录</td><td><code>ownership record</code></td><td>Day 22</td></tr>
+<tr><td>回收器</td><td><code>reaper</code></td><td>Day 22</td></tr>
+<tr><td>混淆代理</td><td><code>confused deputy</code></td><td>Day 22</td></tr>
+<tr><td>会话级沙箱 / 每调用沙箱</td><td><code>session-scoped / per-call sandbox</code></td><td>Day 22</td></tr>
+<tr><td>输出上限</td><td><code>output cap</code></td><td>Day 22</td></tr>
+<tr><td>间接提示注入</td><td><code>indirect prompt injection</code></td><td>Day 22</td></tr>
+</tbody>
+</table>
+</div>
+</details>
+<h2><span class="k">板块 8</span>专项深挖</h2>
+
+<p>今天放不下、但值得单独花一个晚上的三块。每一段可以直接粘给 Claude。</p>
+
+<div class="card">
+<h4>一 · 用户命名空间：不用 root 也能建沙箱</h4>
+<p>「我在学通用服务器 CPU 上的 AI 基础设施，已经掌握：命名空间、cgroup、seccomp、overlayfs、runc 与 OCI 规范的分层、以及用 cgroup 冻结加逐个 SIGKILL 来终止一整棵沙箱进程树。我今天所有的沙箱实验都是以 root 跑的，这在真实部署里不可接受。请给我讲透用户命名空间（user namespace）：UID/GID 映射是怎么建立的，<code>/proc/[pid]/uid_map</code> 的写入规则和一次性限制，能力集在用户命名空间里的语义变化（为什么容器里的 root 不是宿主的 root），以及 rootless 容器为什么需要 <code>newuidmap</code>/<code>newgidmap</code> 这类 setuid 辅助程序。请对照 runc 的 rootless 实现给出源码位置。产出形式：一份带可运行实验的讲解，每个结论后面附一条我能在 Linux 上亲手验证它的命令。」</p>
+</div>
+
+<div class="card">
+<h4>二 · 把执行沙箱做成 MCP 服务</h4>
+<p>「我在搭一个 agent runtime，已经有：工具注册与 JSON Schema、MCP 的 tools/list 与 tools/call、asyncio 的并发与协作式取消、上下文预算与压缩、任务队列与租约、以及一个基于 cgroup 和 overlayfs 的代码执行沙箱。现在我想把这个沙箱做成一个独立的 MCP 服务，让 agent 通过协议调用它而不是直接调函数。请帮我设计：会话怎么在协议层表达（sandbox 的生存期跟什么绑定）、长时间执行怎么流式回传中间输出、取消通知怎么真正传导到 SIGKILL、以及输出上限和截断标记在协议里放哪个字段。请对照 MCP 官方规范和 Python SDK 的实际代码，指出哪些是协议已有的、哪些要我自己在服务里约定。产出形式：一份接口设计文档加一个最小可跑的服务端骨架。」</p>
+</div>
+
+<div class="card">
+<h4>三 · 多租户执行机上的资源核算</h4>
+<p>「我在做 CPU 上的 agent 执行平台，已经掌握：cgroup 的 CPU 配额与周期、pids.max、内存上限与 OOM、每租户并发配额与公平排队、工作保全的概念、以及沙箱按调用建与按会话建的区别。现在我要在一台机器上同时跑几十个不同租户的沙箱，需要把资源核算做对。请讲透：cpu.stat 里的 throttled 指标怎么读、memory.stat 里哪些项算在这个沙箱头上（页缓存归谁）、一个沙箱的 CPU 时间怎么归因到租户的账单上、以及会话级沙箱在空转期间应该怎么计费和怎么被抢占。产出形式：一份指标清单，每个指标写清它从哪个文件读、单位是什么、以及它在什么情况下会误导人。」</p>
+</div>
+
+<h2><span class="k">板块 9</span>延伸材料</h2>
+
+<ol>
+<li><p><a href="https://github.com/opencontainers/runc/blob/main/libcontainer/init_linux.go">runc · <code>libcontainer/init_linux.go</code> 的 <code>signalAllProcesses</code></a>——今天第 8 节读的那一段。<em class="il">难度中等</em>，Go 但不需要懂 Go 的细节，二十行读下来就能看清「先冻住、取名单、逐个杀、解冻」这个顺序为什么是死的。同一个文件里 <code>setupPidfd</code> 附近还能顺带看到另一条更现代的路：内核允许你拿一个专门的句柄指向某个进程，这个句柄不会像进程号那样被回收后重用，也就不会误杀。</p></li>
+<li><p><a href="https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md">OCI 运行时规范 · <code>config-linux.md</code></a>——<code>maskedPaths</code> 和 <code>readonlyPaths</code> 在第 1065 到 1090 行。<em class="il">难度低</em>，是规范文档不是代码，适合当字典用。建议连着 <code>config.md</code> 里的 <code>process.capabilities</code> 一起读，那是 Day 12 那份能力清单的规范出处。</p></li>
+<li><p><a href="https://docs.kernel.org/admin-guide/cgroup-v2.html">Linux 内核文档 · Control Group v2</a>——找 <code>cgroup.kill</code> 那一节。<em class="il">难度中等偏高</em>，整篇很长，但那一节只有一段：写入 <code>1</code> 会杀掉这个 cgroup 及其全部后代，而且文档明确写了它能正确处理并发的 fork。读完再回头看第 8 节 runc 那个分支，就明白为什么 v2 上那条捷径能省掉冻结。</p></li>
+<li><p><a href="https://docs.python.org/3/library/subprocess.html">Python 文档 · <code>subprocess</code></a>——重点看 <code>Popen</code> 的 <code>start_new_session</code> 和 3.11 加进来的 <code>process_group</code>。<em class="il">难度低</em>。文档里明确写着 <code>start_new_session</code> 会在子进程里调 <code>setsid()</code>，今天表 D 第二行那个漏网的进程就是这一句话的后果。</p></li>
+</ol>
+
+<h2><span class="k">板块 10</span>今日五句话</h2>
+
+<div class="card five">
+<p>合上页面，用自己的话写五句。每句写完对照下面的自查标准。</p>
+<p>1 · 一次工具调用的沙箱在机器上拥有哪五样东西，各用什么命令数出来？</p>
+<div class="write"></div>
+<p>2 · 为什么 <code>os.killpg</code> 杀不干净模型生成的代码起的后台进程？</p>
+<div class="write"></div>
+<p>3 · 超时强杀之后，子进程在被杀之前已经打印出来的那行日志为什么会丢？</p>
+<div class="write"></div>
+<p>4 · 执行服务收到 <code>SIGTERM</code> 之后，为什么 <code>atexit</code> 里的清理代码不会跑？</p>
+<div class="write"></div>
+<p>5 · 账本上那一行为什么必须在所有回收动作完成之后才删？</p>
+<div class="write"></div>
+</div>
+
+<details>
+<summary>逐句自查</summary>
+<p><em class="il">第 1 句</em>　五样是：工作目录、overlay 挂载点、cgroup 目录、进程树、账本上的一行。如果你只写了前四样就漏了最要紧的那一样——前四样是资源，第五样是「这些资源是谁的」。写成「一个容器」也算错：今天整页的重点恰恰是它不是一个整体，五样各有各的还法，而且退出路径不同还的数量不同（表 H）。</p>
+<p><em class="il">第 2 句</em>　答案要落在「被杀的那一侧能改自己的分组」上。<code>start_new_session=True</code> 底下调的是 <code>setsid</code>，进程离开原来的组，按组发的信号就打不到它。如果你写成「因为 <code>killpg</code> 只杀直接子进程」就错了——它确实杀了整个组，包括同组的那个孙子，表 D 第二行存活数从 2 掉到 1 就是这个组起的作用。它的问题是组这个边界可以被跨出去。</p>
+<p><em class="il">第 3 句</em>　答案要提到管道的写端在谁手上。后台进程是 fork 出来的，继承了那个文件描述符，所以主进程死了写端还没关，读那一侧读不到结尾，等满二次超时之后放弃，连缓冲区里已有的内容一起丢掉。如果你写成「因为进程被 SIGKILL 了来不及 flush」就错了——那行 <code>started</code> 是带 <code>flush=True</code> 打出去的，它早就躺在管道里了，丢它的是读的那一侧不是写的那一侧。表 E 第二行 19.3 毫秒就把这个解释和别的解释分开了。</p>
+<p><em class="il">第 4 句</em>　因为 Python 对 <code>SIGTERM</code> 的默认处理是直接终止进程，不解栈、不跑 <code>finally</code>、不跑 <code>atexit</code>。如果你写成「因为信号是异步的所以不可靠」就太模糊了，方向也不对——这件事是完全确定的，而且有确定的修法：自己装一个处理函数把它转成正常退出，表 H 第一行就是这么来的。</p>
+<p><em class="il">第 5 句</em>　因为账本是「这些东西是谁的」的唯一记录，销早了那些还没还的东西就没人认得出来了。表 H 第一行是这个错误的实物：账本行归零，cgroup 和进程各留了 3 个，回收器扫过去一条都认不出来。如果你写成「为了防止重复回收」就搞反了——重复回收本身是安全的，那些操作都能承受做第二遍。</p>
+</details>
+
+<h2><span class="k">板块 11</span>明日预告</h2>
+
+<p>明天是 Agent Runtime 这一块的第六天，讲可观测性：结构化 trace、每一步耗时归因、token 与成本核算。今天表 A 那 16 个打点其实已经是一条手写的 trace 了，但它只活在一次实验里，落不到线上。明天要处理的正是这件事——而且会撞上一个今天顺手留下的口子：一次执行的 <code>duration_ms</code> 是 4019，其中 3019 毫秒花在等两个跟这次调用毫无关系的进程放手上，这笔时间该记在谁的账上。</p>
+
+<footer>
+<p><span class="id">AI Infra · Day 22 / 28 · 2026-09-03 · 块四 Agent Runtime（建造）</span></p>
+<p>实验条件：单机 2 个逻辑核（Intel Xeon @ 2.80GHz）、7 GiB 内存、Linux 6.18.44、cgroup v1 层级挂在 <code>/sys/fs/cgroup</code>（<code>pids</code>、<code>freezer</code>、<code>memory</code> 三个控制器）、overlayfs 内建、Python 3.11.15、util-linux 2.39.3 的 <code>unshare</code>。全部实验以 root 运行，无换根、无 seccomp、无能力集裁剪。</p>
+<p>源码出处：runc <code>0f96272</code>（<code>libcontainer/init_linux.go:684</code>、<code>libcontainer/rootfs_linux.go:1271 / 1333 / 1351 / 1401 / 1435</code>）；OCI runtime-spec <code>6999a89</code>（<code>config-linux.md:1065-1090</code>）。</p>
+</footer>
+
+</div>
+</body>
+</html>
