@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 19</title>
+<style>
+:root{
+  --bg:#faf6ef; --card:#fffdf8; --ink:#2e2a24; --ink2:#5c5449; --ink3:#8a8073;
+  --rule:#e6ddcd; --rule2:#d8ccb6;
+  --accent:#9a5b2c; --accent2:#3f6b5c; --accent3:#6a4f8a; --accent4:#8a6d1f;
+  --codebg:#2b2721; --codeink:#e9e2d5; --mark:#f0e4cd;
+  --tblhead:#f3ecdd; --tblzebra:#fbf7ef;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#191714; --card:#211e1a; --ink:#e7e0d4; --ink2:#bdb4a5; --ink3:#8f867a;
+    --rule:#3a352d; --rule2:#4a4238;
+    --accent:#d99a63; --accent2:#79b39c; --accent3:#ab8fd0; --accent4:#cfae55;
+    --codebg:#14120f; --codeink:#e2dacb; --mark:#3d3423;
+    --tblhead:#2a261f; --tblzebra:#1f1c18;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#191714; --card:#211e1a; --ink:#e7e0d4; --ink2:#bdb4a5; --ink3:#8f867a;
+  --rule:#3a352d; --rule2:#4a4238;
+  --accent:#d99a63; --accent2:#79b39c; --accent3:#ab8fd0; --accent4:#cfae55;
+  --codebg:#14120f; --codeink:#e2dacb; --mark:#3d3423;
+  --tblhead:#2a261f; --tblzebra:#1f1c18;
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",
+    "Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px; line-height:1.78; -webkit-text-size-adjust:100%;
+}
+.bar{
+  position:sticky; top:0; z-index:20; background:var(--card);
+  border-bottom:1px solid var(--rule2); padding:8px 16px;
+  display:flex; gap:14px; align-items:baseline; flex-wrap:wrap;
+  font-size:13.5px; color:var(--ink2);
+}
+.bar b{color:var(--accent); font-size:14.5px; letter-spacing:.02em}
+.bar .sp{margin-left:auto; color:var(--ink3)}
+main{max-width:820px; margin:0 auto; padding:0 18px 90px}
+h1{font-size:26px; line-height:1.45; margin:30px 0 6px; letter-spacing:-.01em}
+.sub{color:var(--ink2); margin:0 0 26px; font-size:15px}
+h2{
+  font-size:20px; margin:52px 0 14px; padding-top:16px;
+  border-top:2px solid var(--rule2); letter-spacing:-.01em;
+}
+h2 .kk{display:block; font-size:12.5px; color:var(--ink3); font-weight:600; letter-spacing:.09em; margin-bottom:3px}
+h3{font-size:17px; margin:32px 0 10px; color:var(--ink)}
+h4{font-size:15.5px; margin:22px 0 8px; color:var(--ink2)}
+p{margin:12px 0}
+strong{color:var(--accent); font-weight:650}
+.lead{font-size:17.5px; color:var(--accent2); font-weight:600; margin:20px 0 12px}
+.term{
+  background:var(--mark); border-bottom:1px solid var(--rule2);
+  padding:.5px 4px; border-radius:3px; font-weight:600;
+}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--mark); padding:1px 5px; border-radius:4px;
+  overflow-wrap:anywhere; word-break:break-word;
+}
+pre{
+  background:var(--codebg); color:var(--codeink); padding:15px 17px; border-radius:9px;
+  overflow-x:auto; line-height:1.62; font-size:13.2px; margin:14px 0;
+}
+pre code{background:none; padding:0; font-size:inherit; color:inherit; overflow-wrap:normal; word-break:normal}
+.scroll{overflow-x:auto; margin:16px 0; border-radius:9px; border:1px solid var(--rule)}
+table{border-collapse:collapse; width:100%; font-size:14.2px; min-width:460px; background:var(--card)}
+th,td{border-bottom:1px solid var(--rule); padding:8px 11px; text-align:left; vertical-align:top}
+th{background:var(--tblhead); font-weight:650; white-space:nowrap; color:var(--ink)}
+tbody tr:nth-child(even){background:var(--tblzebra)}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+.cap{font-size:13px; color:var(--ink3); margin:6px 0 0}
+.card{border-radius:10px; padding:16px 18px; margin:22px 0; background:var(--card); border:1px solid var(--rule)}
+.card>*:first-child{margin-top:0} .card>*:last-child{margin-bottom:0}
+.c-recall{border-left:5px solid var(--accent2)}
+.c-pred{border-left:5px solid var(--accent3)}
+.c-five{border-left:5px solid var(--accent4)}
+.q{font-weight:700; color:var(--accent3)}
+.c-key{border-left:5px solid var(--accent); background:linear-gradient(0deg,var(--card),var(--card))}
+.c-key .kt{font-size:12.5px; letter-spacing:.1em; color:var(--accent); font-weight:700; margin-bottom:4px}
+.breathe{color:var(--ink2); font-style:normal; border-left:3px solid var(--rule2); padding-left:14px; margin:20px 0}
+details{margin:12px 0; border:1px solid var(--rule); border-radius:9px; padding:10px 14px; background:var(--card)}
+details[open]{padding-bottom:14px}
+summary{cursor:pointer; font-weight:640; color:var(--accent2); font-size:14.5px}
+.wr{border:1px dashed var(--rule2); border-radius:8px; min-height:74px; margin:10px 0; background:var(--tblzebra)}
+.wr::before{content:"写在这里"; display:block; font-size:12px; color:var(--ink3); padding:6px 10px}
+figure{margin:22px 0}
+figure svg{display:block; max-width:100%; height:auto; color:var(--ink)}
+figcaption{font-size:13px; color:var(--ink3); margin-top:7px}
+ol,ul{padding-left:22px} li{margin:7px 0}
+footer{margin-top:60px; padding-top:20px; border-top:2px solid var(--rule2); font-size:13.2px; color:var(--ink3)}
+footer .ln{color:var(--ink2); font-weight:600; margin-bottom:8px}
+hr{border:0; border-top:1px solid var(--rule); margin:28px 0}
+</style>
+</head>
+<body>
+<div class="bar"><b>Day 19 / 28</b><span>阶段四 · Agent Runtime（八天项目 · 第 2 天 · 建造）</span><span class="sp">2026-09-03</span></div>
+<main>
+
+<h1>一轮里三个工具，中间那个两百毫秒就失败——运行时报错退出了，另外两个的副作用八百毫秒后照样落进账本</h1>
+<p class="sub">昨天那个工具是一行 <code>asyncio.sleep</code>：永远成功、永远准时。今天把它换成真的：协议怎么定、工具怎么注册、一轮要调三个怎么发、报错和超时的时候各自会发生什么。</p>
+
+<h2><span class="kk">板块 0</span>温故 · 闭卷</h2>
+<p>三道题，间隔分别是 1 天、3 天、7 天。别往前翻，先在心里答一遍。</p>
+
+<div class="card c-recall">
+<h3>第 1 题（Day 18 · 交接的计价方式）</h3>
+<p>昨天量到：账按交接次数收，一条六轮的会话非流式是六次交接，改成流式变成七百七十四次，同样六十四条并发，运行时占核从两成一涨到七成四。</p>
+<p>今天你要在一轮里调三个工具，而且是串行调。一条六轮会话的交接次数从六变成多少？运行时那堵墙往哪个方向挪？为什么方向可以直接推出来，具体挪到哪儿却必须重新扫一遍？</p>
+<details><summary>展开答案</summary>
+<p>次数从六变成二十四：每一轮一次模型调用加三次工具调用，六轮就是二十四次。</p>
+<p>方向可以推，是因为昨天第 7 节那张表已经把「每次交接净耗 CPU」这一列量出来了，而它在低并发段大致是个常数。同样的并发条数下，每条会话的交接次数翻了四倍，运行时要干的活就翻四倍，墙只会往前挪。</p>
+<p>具体挪到哪儿不能推，理由也在同一张表：那一列本身是并发数的函数，从一点一毫秒一路走到二十三点八毫秒。昨天那道「按单条开销外推得到四百零五条、实测墙在九十六到一百二十八之间」的账，就是这个错误的完整演示——用曲线最平那一段的斜率去外推，方向对，倍数一定是错的。</p>
+<p>接今天：今天这三个工具会改成并发发出去。并发之后交接次数一次都没少，变的是它们挤在同一段时间里——而这件事会把另一个东西暴露出来，和 CPU 无关。</p>
+</details>
+</div>
+
+<div class="card c-recall">
+<h3>第 2 题（Day 16 · 前缀缓存的命中率）</h3>
+<p>Day 16 量过：四十个 agent 任务、每个六轮，按「一个任务做到底再开下一个」的顺序重放，token 级前缀命中率是 84.5%；一条请求都不改，只把顺序换成四十个任务轮流各推进一轮，掉到 31.9%。</p>
+<p>现在换一件事：顺序不动，但你在第 3 轮往上下文末尾追加了一段一千字节的东西。第 4、5、6 轮的前缀命中率会因此变差吗？说出理由，再说出这一千字节真正要在哪两个地方付钱。</p>
+<details><summary>展开答案</summary>
+<p>不会变差。前缀缓存能复用的范围被因果注意力框死了：只能是前缀，一个 token 都不能错位。而「往末尾追加」这个动作恰恰不破坏前缀——第 4 轮的上下文仍然完整地包含第 3 轮的上下文作为开头，第 3 轮算过的那些块照样对得上。Day 16 那句「agent 场景天然是一条不断加长的公共前缀」，说的就是这个性质。</p>
+<p>钱付在另外两个地方。第一是传：Day 18 第 10 节量过，追加进上下文的东西会在后面每一轮被完整地重新序列化、写进 socket、跨过网络。前缀缓存省掉的是「算」，一个字节的传输都省不掉。第二是容量：这一千字节变成缓存里的若干个块，一直占着不放。Day 16 那张容量扫描表说过，容量不够的时候命中率会被复用距离拖下去——多占的每一块都在把别人的复用距离往外推。</p>
+<p>今天接在哪儿：第 11 节算的就是这笔账，只不过追加进去的那段东西是一段错误信息。</p>
+</details>
+</div>
+
+<div class="card c-recall">
+<h3>第 3 题（Day 12 · 出网白名单的兜底规则）</h3>
+<p>Day 12 那张表：白名单最后一条兜底规则用 <code>DROP</code> 时，被拦下的调用五次全都停在 10005 毫秒上下；换成 <code>REJECT</code>，五次全是 0.0 毫秒。</p>
+<p>那个 10005 毫秒是从哪儿来的？它不是网络的属性，那它是谁的属性？这件事对「给一次工具调用设多长超时」意味着什么？</p>
+<details><summary>展开答案</summary>
+<p>它是调用方自己设的超时。包被丢掉之后没有任何回音，调用方只能一直等到自己放弃，所以量出来的时长精确地等于那个超时值——改一下超时，这一列的数字就跟着改。</p>
+<p>换句话说，在 <code>DROP</code> 这条路上，「一次失败要多久」这个数完全不由被调用的那一侧决定，由你设的超时决定。<code>REJECT</code> 则把决定权交还给内核：连接被拒绝当场返回，代码走进自己的异常分支。</p>
+<p>对超时的意义有两层。第一层是数值上的：超时不是安全带，它是失败路径的时长，你设成多少，最坏情况就有多长。第二层更要紧：只要一次调用可能以「等满超时」的方式失败，那么一轮里调用的次数越多，这种失败被撞上的概率就越高，而串行调用会把每一次的时长直接相加。</p>
+<p>和今天的关系：第 9 节会看到，超时到点之后运行时这一侧确实停下来了，而被调的那一侧根本不知道有过这回事。</p>
+</details>
+</div>
+
+<h2><span class="kk">板块 1</span>今日概览</h2>
+<div class="scroll"><table>
+<tr><th>项</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 19 / 28 · 阶段四 · Agent Runtime（八天项目的第 2 天，建造）</td></tr>
+<tr><td>今日主题</td><td>把昨天那个假工具换成真的：一个工具在协议里长什么样、这份描述每一轮要花多少字节、一轮里三个工具怎么发出去、超时和取消能停住什么停不住什么、工具报错的那段文字该以什么形状回给模型</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+<p>上下文长了怎么办——窗口预算、压缩、截断、会话状态落库，那是 Day 20 一整天。今天只把「一段错误信息在后面每一轮里被重发一次」这件事量成一个具体的字节数，怎么把它清掉留到明天。</p>
+<p>任务队列、断点续跑、背压配额的完整做法留在 Day 21；工具执行接进真沙箱留在 Day 22；每一步的耗时怎么串成一条链留在 Day 23。今天这三样都只到「接口留在哪儿」为止。</p>
+<p>MCP 除 tools 之外的那几条线（resources、prompts、sampling、elicitation）今天不碰。运行时真正要接的是工具这一条，其余几条的形状是一样的 JSON-RPC，学会一条另外几条自己看得懂。</p>
+<p>工具的传输层和鉴权也不碰：今天三个进程都在本机、走一条明文 HTTP。传输层换成标准输入输出（stdio）还是长连接，改的是包在外面那一层，不改今天量的任何一件事。</p>
+</td></tr>
+</table></div>
+
+<h3>今天收工的时候，你应该能做到这三件</h3>
+<ol>
+<li>拿到一个普通的 Python 函数，能写出它在协议里的完整描述，并说出这份描述在一条会话里要花多少字节、这笔钱是按轮数线性涨还是按别的方式涨。</li>
+<li>一轮里要调三个工具，能说出四种写法各自在「什么时候返回」「拿不拿得到部分结果」「失败之后另外两个的副作用会不会发生」这三件事上的差别，并且知道其中哪一件是四种写法都管不住的。</li>
+<li>面对「工具报错了，要不要把堆栈原样喂回给模型」，能给出一个具体的形状，并算得出这个选择在一条 K 轮会话里值多少字节。</li>
+</ol>
+
+<h3>今天这一页怎么走</h3>
+<div class="scroll"><table>
+<tr><th>部分</th><th>它回答的问题</th></tr>
+<tr><td>第一部分 · 一个工具，在协议里长什么样</td><td>模型凭什么知道你有哪些工具？这份「凭什么」要花多少钱？</td></tr>
+<tr><td>第二部分 · 今天的台子</td><td>三个进程各装了什么、账本记在哪一侧、一轮的时间逐段怎么花掉？</td></tr>
+<tr><td>第三部分 · 一轮里三个工具</td><td>并发发出去之后，失败和超时各自能停住什么？</td></tr>
+<tr><td>第四部分 · 错误往哪儿去</td><td>工具报的错走哪条路回到模型？这段文字的长度值多少？</td></tr>
+</table></div>
+
+<h2><span class="kk">板块 2 · 第一部分</span>一个工具，在协议里长什么样</h2>
+<p>从你现在会写的那段分派代码起步。它缺的东西一条条列出来，合起来正好就是一份现成的规范。</p>
+
+<h3>1. 你现在会怎么分派</h3>
+<p class="lead">模型凭什么知道你有一个叫「读文件」的东西？</p>
+<p>昨天那个循环里，模型返回 <code>{"tool": "search", "arg": "step-1"}</code>，你解析出 <code>tool</code> 这个字段，然后照着它去做。做的那一步写出来大概是这样：</p>
+<pre><code>if d["tool"] == "search":
+    result = do_search(d["arg"])
+elif d["tool"] == "read_file":
+    result = read_file(d["arg"])
+else:
+    result = "unknown tool"</code></pre>
+<p>这段代码是对的，而且能跑。问题不在它执行得对不对，在它对模型完全不可见。</p>
+<p>模型那一侧只看得见你发过去的那段上下文。你的 <code>if</code> 分支写了什么、参数叫什么名字、少传一个会怎样，它一个字都不知道。它只能靠猜——而猜出来的东西你这段代码接不住，于是掉进 <code>else</code>。</p>
+<p>所以真正缺的不是执行的代码，是一份说明书，一份必须放进上下文里、由模型读的说明书。</p>
+
+<h3>2. 说明书上要有三样东西</h3>
+<p>把「让模型能正确发起一次调用」需要的信息一条条列出来，只有三样。</p>
+<div class="scroll"><table>
+<tr><th>要告诉模型的</th><th>为什么少不了</th><th>写成什么</th></tr>
+<tr><td>这个工具叫什么</td><td>模型要在输出里指名道姓，名字对不上就分派不了</td><td>一个字符串，比如 <code>read_file</code></td></tr>
+<tr><td>它是干什么用的</td><td>模型要在若干个工具之间挑一个，挑的依据只有这段话</td><td>一段自然语言</td></tr>
+<tr><td>参数长什么样</td><td>模型要生成一个参数对象。哪些必填、每个是什么类型、有没有默认值，它得先知道</td><td>一份机器可读的类型描述</td></tr>
+</table></div>
+<p>头两样是字符串，第三样需要一点结构。用什么写？这里不需要发明新东西：描述「一个 JSON 对象应该长什么样」这件事早就有一套标准写法，叫 <span class="term">JSON Schema</span>——用 <code>type</code> 说类型、<code>properties</code> 说有哪些字段、<code>required</code> 说哪些必填。</p>
+<p>把这三样打包成一条记录、放进一张表里、让模型每次都能看到，这个动作就叫 <span class="term">工具注册（tool registration）</span>，那份参数描述叫这个工具的 <span class="term">参数模式（input schema）</span>。</p>
+<div class="breathe">说明书这个类比可以再推一步：说明书要随货一起发出去，光放在仓库里没用。这句话决定了后面第 4 节那笔账。</div>
+
+<h3>3. 这套东西有一份现成的规范</h3>
+<p>三样东西怎么摆、调用请求怎么发、结果怎么回，每家都能自己定一套。<span class="term">模型上下文协议（MCP / Model Context Protocol）</span> 是其中被采用得最广的那一份，也是这门课里你最可能真的要接的那一份。</p>
+<p>它的底子不是新东西：消息格式用的是 <span class="term">JSON-RPC 2.0</span>——一种很老的远程调用约定，每条请求带一个方法名、一包参数、一个 <span class="term">请求编号（request id）</span>，回来的响应带同一个编号，靠编号把请求和响应配对。下面这些行号都出自本机装的 <code>mcp</code> 这个包的 1.27.0 版，路径写在页尾。</p>
+<div class="scroll"><table>
+<tr><th>协议里的东西</th><th>字段</th><th>源码位置</th></tr>
+<tr><td>一条请求</td><td><code>jsonrpc</code> · <code>id</code> · <code>method</code> · <code>params</code></td><td><code>types.py:152-158</code></td></tr>
+<tr><td>一条成功的响应</td><td><code>jsonrpc</code> · <code>id</code> · <code>result</code></td><td><code>types.py:168-174</code></td></tr>
+<tr><td>一条协议层面的错误</td><td><code>code</code> · <code>message</code> · <code>data</code></td><td><code>types.py:193-211</code></td></tr>
+<tr><td>一个工具的说明书</td><td><code>name</code> · <code>description</code> · <code>inputSchema</code> · <code>outputSchema</code> · <code>annotations</code></td><td><code>types.py:1315-1339</code></td></tr>
+<tr><td>要一份工具清单</td><td>方法名 <code>tools/list</code>，回来的是 <code>tools</code> 数组</td><td><code>types.py:1241</code> 与 <code>types.py:1342-1345</code></td></tr>
+<tr><td>调用一个工具</td><td>方法名 <code>tools/call</code>，参数是 <code>name</code> 加 <code>arguments</code></td><td><code>types.py:1348-1361</code></td></tr>
+<tr><td>调用的结果</td><td><code>content</code> · <code>structuredContent</code> · <code>isError</code></td><td><code>types.py:1363-1369</code></td></tr>
+</table></div>
+<p>第四行那个 <code>annotations</code> 值得单独看一眼。它是一组给客户端的提示，四个字段分别说这个工具只读不写、会不会造成破坏性改动、<strong>重复调用一次结果一样不一样</strong>、以及它碰不碰外部世界（<code>types.py:1262</code>、<code>:1268</code>、<code>:1276</code>、<code>:1284</code>）。第三个字段的名字是 <code>idempotentHint</code>——昨天第 12 节那个矩阵里，你自己给每一步配的那个键管的就是这件事，而协议在工具的说明书里给它留了一个格子。</p>
+<p>结果那一行里的 <code>content</code> 是一个数组，元素叫 <span class="term">内容块（content block）</span>，可以是文本、图片、音频或者一段资源引用（<code>types.py:1206</code>）。工具还可以额外声明一份 <code>outputSchema</code>，这时候结果里要多带一份 <span class="term">结构化输出（structuredContent）</span>，服务端会拿它跟 schema 校验一遍再发出去。</p>
+<p>把一个普通的 Python 函数变成上面那份说明书，这一步 SDK 是自动做的，而它取材的地方很直白：<code>server/fastmcp/tools/base.py:66</code> 那一行是 <code>func_doc = description or fn.__doc__ or ""</code>——函数的文档字符串原样变成给模型看的 <code>description</code>；下面第 77 行把函数签名转成一个 pydantic 模型（Python 里根据类型标注做校验的那个库）再从它导出 JSON Schema，变成 <code>inputSchema</code>。</p>
+<p>也就是说，你随手写的那句中文注释，会被完整地发给模型，而且是每一轮都发。这句话不是修辞，下一节把它换算成字节。</p>
+
+<h3>4. 一份说明书要花多少钱</h3>
+<p>拿 MCP 的 SDK 真的注册若干个工具，把 <code>tools/list</code> 返回的那份 JSON 序列化出来数字节。工具是同一个：三个参数（一个必填的路径、一个有默认值的编码、一个有默认值的字节上限），说明写成两行中文，带 <code>outputSchema</code>。</p>
+<div class="scroll"><table>
+<tr><th class="n">注册几个工具</th><th class="n">tools/list 的字节数</th><th class="n">平均每个工具</th></tr>
+<tr><td class="n">1</td><td class="n">670</td><td class="n">670.0</td></tr>
+<tr><td class="n">4</td><td class="n">2680</td><td class="n">670.0</td></tr>
+<tr><td class="n">8</td><td class="n">5360</td><td class="n">670.0</td></tr>
+<tr><td class="n">16</td><td class="n">10738</td><td class="n">671.1</td></tr>
+<tr><td class="n">32</td><td class="n">21506</td><td class="n">672.1</td></tr>
+</table></div>
+<p class="cap">第三列几乎是一个常数，因为这批工具是同一份模板复制出来的，名字里的序号变长才让最后两行多出个位数的字节。</p>
+<p>一个工具六百七十字节。这个数本身不吓人——吓人的是它出现的频率。工具清单在上下文里的位置是最前面，属于每一轮都要原样重发的那一段，所以一条 K 轮的会话为它付的是 <code>K × 670 × 工具数</code>。</p>
+<p>把这件事真的跑一遍：同一条六轮会话，只改注册表里挂几个工具，别的一个字不动。</p>
+<div class="scroll"><table>
+<tr><th class="n">挂几个工具</th><th class="n">注册表占几字节</th><th class="n">整条会话累计发给模型</th><th class="n">其中注册表占</th></tr>
+<tr><td class="n">0</td><td class="n">0</td><td class="n">6207</td><td class="n">—</td></tr>
+<tr><td class="n">1</td><td class="n">703</td><td class="n">10425</td><td class="n">40.5%</td></tr>
+<tr><td class="n">4</td><td class="n">2713</td><td class="n">22485</td><td class="n">72.4%</td></tr>
+<tr><td class="n">8</td><td class="n">5393</td><td class="n">38565</td><td class="n">83.9%</td></tr>
+<tr><td class="n">16</td><td class="n">10771</td><td class="n">70833</td><td class="n">91.2%</td></tr>
+<tr><td class="n">32</td><td class="n">21539</td><td class="n">135441</td><td class="n">95.4%</td></tr>
+</table></div>
+<p class="cap">第二列比上一张表每档多出三十几字节，那是把清单包进一条 <code>{"role":"system","content":…}</code> 消息的外壳；这三十几字节和工具数无关，所以每一档都一样。</p>
+<p>最后一列是这张表的重点。挂三十二个工具的时候，整条会话发给模型的东西里有九成半是工具说明书，真正的对话只剩下不到百分之五。而这条会话本身一个字都没变——第一行那个六千二百字节就是它。</p>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p>会话内容的字节数是轮数的平方（Day 18 第 10 节），工具注册表的字节数是轮数的一次方。平方项在长会话里最终会赢，但常数差得太远：六轮这个长度上，三十二个工具的说明书累计发出的量已经接近全部对话的二十一倍。</p>
+<p>所以「工具越多越好用」这句话在基础设施这一侧是有价钱的，而且这个价钱按轮数收。真实系统里的做法是不把全部工具都挂上去，而是先按任务筛一遍再注册——这一步值多少钱，你现在有了一把尺子可以自己算。</p>
+</div>
+
+<h2><span class="kk">板块 2 · 第二部分</span>今天的台子</h2>
+<p>三个进程、一个账本、四台外挂的账台。台子先摆清楚，后面每个数字都追得回来。</p>
+
+<h3>5. 实验装置</h3>
+<p>今天仍然没有真模型、没有加速器。被测的是中间那个运行时；模型那一侧和昨天同一份假货，工具那一侧是新的，而且它会往磁盘上写东西——那就是今天的副作用。</p>
+
+<h4>5.1 三个进程、一个账本</h4>
+<figure>
+<svg viewBox="0 0 760 350" role="img" aria-label="三个进程与账本的结构图">
+<defs>
+<marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="3.2" orient="auto">
+<path d="M0,0 L8,3.2 L0,6.4 z" fill="currentColor"/></marker>
+</defs>
+<g fill="none" stroke="currentColor" stroke-width="1.5">
+<rect x="8" y="130" width="128" height="96" rx="8" stroke-dasharray="5 4"/>
+<rect x="196" y="118" width="176" height="120" rx="8" stroke-width="2.4"/>
+<rect x="440" y="24" width="168" height="86" rx="8"/>
+<rect x="440" y="212" width="168" height="86" rx="8"/>
+<rect x="648" y="228" width="100" height="54" rx="8" stroke-dasharray="3 3"/>
+</g>
+<g font-size="13" fill="currentColor" font-weight="700">
+<text x="72" y="158" text-anchor="middle">账台</text>
+<text x="284" y="146" text-anchor="middle">P3 运行时 :8000</text>
+<text x="524" y="52" text-anchor="middle">P1 假模型 :8001</text>
+<text x="524" y="240" text-anchor="middle">P2 工具服务 :8002</text>
+<text x="698" y="252" text-anchor="middle">账本</text>
+</g>
+<g font-size="11.5" fill="currentColor" opacity="0.78">
+<text x="72" y="178" text-anchor="middle">P4 并发矩阵</text>
+<text x="72" y="194" text-anchor="middle">P5 取消</text>
+<text x="72" y="210" text-anchor="middle">P7 字节</text>
+<text x="284" y="168" text-anchor="middle">agent 循环</text>
+<text x="284" y="186" text-anchor="middle">四种并发写法</text>
+<text x="284" y="204" text-anchor="middle">超时 · 取消 · 组装</text>
+<text x="284" y="222" text-anchor="middle">在这里数发出字节</text>
+<text x="524" y="72" text-anchor="middle">只 sleep，不算</text>
+<text x="524" y="90" text-anchor="middle">回一段定长文本</text>
+<text x="524" y="260" text-anchor="middle">sleep 完写一行</text>
+<text x="524" y="278" text-anchor="middle">在这里数副作用</text>
+<text x="698" y="270" text-anchor="middle">jsonl</text>
+</g>
+<g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ah)">
+<path d="M136,178 L190,178"/>
+<path d="M372,150 L400,150 L400,67 L434,67"/>
+<path d="M372,206 L400,206 L400,255 L434,255"/>
+<path d="M608,255 L642,255"/>
+</g>
+<g font-size="11" fill="currentColor" opacity="0.7">
+<text x="163" y="170" text-anchor="middle">HTTP</text>
+<text x="404" y="122" text-anchor="start">一轮一次</text>
+<text x="404" y="196" text-anchor="start">一轮 1~3 次</text>
+</g>
+<g font-size="11.5" fill="currentColor" opacity="0.78">
+<text x="8" y="322">墙上时间由运行时用 time.monotonic 量；跨进程的先后由两侧共用的 time.time 对齐</text>
+<text x="8" y="340">「副作用发生了几次」只由账本里的 done 行数决定，运行时说了不算</text>
+</g>
+</svg>
+<figcaption>被测的是 P3。P1 和 P2 都是纯 sleep，不烧 CPU；账台在一轮进行当中也只是挂着等一条 HTTP 响应，不参与计时。这样今天量到的时间差异不会被它们污染。</figcaption>
+</figure>
+
+<h4>5.2 一次调用长什么样</h4>
+<p>运行时发给工具服务的是这一行。<code>cid</code> 是这一次调用的编号，<code>dur</code> 是这个工具要花多久，<code>fail</code> 决定它成功还是失败：</p>
+<pre><code>POST /call  {"name": "alpha", "cid": "a", "dur": 0.8, "fail": false}</code></pre>
+<p>工具服务在开工和收工各往账本追加一行。<code>t_ms</code> 是从这一轮开始算起的毫秒数：</p>
+<pre><code>{"ev": "start", "tool": "alpha", "cid": "a", "t_ms": 2.23, "epoch": 1788407656.37}
+{"ev": "done",  "tool": "alpha", "cid": "a", "t_ms": 803.18, "epoch": 1788407657.17}</code></pre>
+<p><code>done</code> 那一行就是今天的副作用：它一旦写下去就退不回去了。整页所有关于「这次调用到底算不算发生过」的判断，判据都是这一行在不在账本里。</p>
+<p>运行时跑完一轮，回的是这一行。<code>ms</code> 是这一轮的墙上时间，<code>n_out</code> 是它最终拿到几个工具的结果：</p>
+<pre><code>{"err": "tool beta failed: HTTP 500", "n_out": 0, "ms": 206.40}</code></pre>
+
+<h4>5.3 台子上有哪几样是假的</h4>
+<p>这张表两列一一对应：左边写这个台子在哪儿偷了懒，右边写这个懒换来的一句今天不能说的话。</p>
+<div class="scroll"><table>
+<tr><th>简化掉的地方</th><th>后果</th></tr>
+<tr><td>模型是假的：不做任何计算，按设定时序 sleep 后返回定长文本</td><td>今天不下任何关于模型延迟、token 数、命中率的结论。第 11 节那几张字节表里，模型那一侧只是个不动的横轴</td></tr>
+<tr><td>工具是一次 sleep 加一行文件追加，不起沙箱、不读真文件、不调外部接口</td><td>不下任何关于工具执行本身有多贵的结论。今天只关心「它发生了没有」，不关心它花了多少 CPU。真沙箱要等 Day 22</td></tr>
+<tr><td>失败的那个工具是必然失败、而且在固定时刻失败</td><td>不下关于失败率、重试成功率、抖动的结论。今天要的是「失败发生时，别的东西怎么动」这个因果，所以失败必须可控</td></tr>
+<tr><td>上下文里的「文字」是重复的汉字，全程没有分词器</td><td>今天只谈字节，不谈 token。所有长度单位都是字节</td></tr>
+<tr><td>工具服务和运行时在同一台机器上，走本机 HTTP，没有真网络</td><td>所有绝对时长只在这一页内部横着比。换成跨机调用，工具那一段会变长，而今天的几条结论都不依赖那一段有多长</td></tr>
+<tr><td>MCP 那部分是读源码，不是跑起来的服务</td><td>关于协议结构的每一句都附了文件和行号，可以自己去核；但今天不下任何关于 MCP 实现性能的结论</td></tr>
+<tr><td>两个进程的毫秒计数各有各的零点，只有 <code>epoch</code> 那一列是共用的</td><td>跨进程比先后要用 <code>epoch</code> 对齐过的那份轨迹（5.4 节那张就是）。同进程内部的段长才可以直接读 <code>t_ms</code></td></tr>
+</table></div>
+
+<h4>5.4 跟着走一遍</h4>
+<p>下面是一轮真实记录，用两个进程共用的挂钟对齐过。这一轮调三个工具，按顺序一个一个来：alpha 要八百毫秒并且会成功，beta 要两百毫秒并且必然失败，gamma 和 alpha 一样。</p>
+<p>本页一共有三条这样的轨迹（这里一条，第 7、8 节各一条），它们都是单独跑一遍、把每个时刻都记下来得到的，和第 8 节那张跑五遍取中位的表不是同一批数据。所以同一种写法在轨迹里的单次耗时，和表里的中位数差个一两毫秒是正常的。</p>
+<div class="scroll"><table>
+<tr><th class="n">时刻 ms</th><th class="n">这一段多长 ms</th><th>哪个进程</th><th>发生了什么</th></tr>
+<tr><td class="n">0.01</td><td class="n">0.01</td><td>运行时</td><td>把 alpha 的调用发出去</td></tr>
+<tr><td class="n">1.76</td><td class="n">1.75</td><td>工具服务</td><td>收到，开工，写下 start alpha</td></tr>
+<tr><td class="n">802.33</td><td class="n">800.57</td><td>工具服务</td><td>sleep 完，写下 done alpha</td></tr>
+<tr><td class="n">803.84</td><td class="n">1.51</td><td>运行时</td><td>收到 alpha 的结果</td></tr>
+<tr><td class="n">803.85</td><td class="n">0.01</td><td>运行时</td><td>把 beta 的调用发出去</td></tr>
+<tr><td class="n">805.34</td><td class="n">1.49</td><td>工具服务</td><td>收到，开工，写下 start beta</td></tr>
+<tr><td class="n">1009.09</td><td class="n">203.75</td><td>运行时</td><td>beta 回了 HTTP 500，这一轮到此为止</td></tr>
+</table></div>
+<p>第二列全部加起来是 1009.09，正好等于运行时自己报的这一轮耗时。这个加法值得亲手验一遍，因为后面每一张表都是在动这几段里的某几段。</p>
+<p>做完之后看两件事。第一，alpha 那一段的 800.57 和 beta 那一段的 203.75，减掉设定的八百和两百，剩下的零点几到三点几毫秒就是本机 HTTP 那一层的钱——这和昨天量到的「一次交接一到两毫秒」是同一笔账。第二，gamma 一次都没有出现：它排在 beta 后面，而 beta 把这一轮掐断了。</p>
+<p>这张表能首尾相接地加起来，是因为它是串行的那一版。后面三种写法里三个工具是叠在一起跑的，段和段互相重叠，那时候加法就不成立了——那不是记录出了问题，是并发本来就长这样。</p>
+
+<h4>5.5 每个旋钮是怎么定出来的</h4>
+<div class="scroll"><table>
+<tr><th>旋钮</th><th>取值</th><th>这个值怎么定出来的</th><th>哪一节动它</th></tr>
+<tr><td>慢工具的时长</td><td>800 毫秒</td><td>要明显大于那个会失败的工具，两者之间才拉得开一段能看清楚的空档。取整数是为了让 5.4 节那张表好做加法</td><td>不动</td></tr>
+<tr><td>失败工具的时长</td><td>200 毫秒</td><td>取慢工具的四分之一。太小了看不清运行时返回的时刻，太大了它和慢工具的结束时刻就分不开</td><td>不动</td></tr>
+<tr><td>一轮调几个工具</td><td>3</td><td>要至少三个：一个失败的，加两个别的，才看得出「失败的那一个」和「没失败的那些」各自会怎么样。两个不够，四个不多给任何信息</td><td>不动</td></tr>
+<tr><td>读账本的时机</td><td>运行时返回的那一刻，以及再等 1.5 秒之后</td><td>1.5 秒取自「慢工具八百毫秒加一点余量」：它要保证在第二次读之前，那两个慢工具无论如何都已经跑完了</td><td>第 7、9 节</td></tr>
+<tr><td>每种写法跑几遍</td><td>5 遍，报中位与范围</td><td>五遍里如果账本行数出现过分歧，那说明这件事是概率性的，结论就得换个写法。实测五遍全同，所以今天的几张矩阵表可以直接读</td><td>第 8、9 节</td></tr>
+<tr><td>正式计时之前先跑什么</td><td>完整跑一轮再开始计数</td><td>第一轮要替后面所有轮付一次建 TCP 连接的钱。Day 6 那条「扔掉开头」。这一步做没做，从范围那一列看得出来：五遍之间最宽的一档也只差不到一毫秒</td><td>第 8、9 节</td></tr>
+<tr><td>单个工具的超时预算</td><td>300 毫秒</td><td>必须夹在两个工具时长中间：大于二百，小于八百。这样它一定会掐掉慢工具，一定不会误伤快的那个</td><td>第 9 节</td></tr>
+<tr><td>会话轮数</td><td>6</td><td>和 Day 16、Day 18 对齐，好让三天的字节账横着能比</td><td>第 4、11 节</td></tr>
+<tr><td>出错的那一轮</td><td>第 2 轮</td><td>要早到「后面还剩好几轮会重发它」，又不能是第 1 轮——第 1 轮的上下文太短，那一段错误会占到失真的比例</td><td>第 11 节</td></tr>
+<tr><td>注册表里挂几个工具</td><td>0 / 1 / 4 / 8 / 16 / 32</td><td>从零开始是为了拿到一条没有工具的基线；往上每档乘二，加到 32 停下是因为那一档注册表已经占到发出总量的九成半，再往上不会有新信息</td><td>第 4 节</td></tr>
+</table></div>
+<p>页面上任何一个数，都能顺着下面这张表找回打印它的那个程序：</p>
+<div class="scroll"><table>
+<tr><th>表</th><th>出自</th><th>怎么读到</th></tr>
+<tr><td>第 4 节 tools/list 字节</td><td>P6 注册表账台</td><td>标准输出，用 MCP 的 SDK 直接问 <code>list_tools()</code></td></tr>
+<tr><td>第 4 节 会话累计字节（按工具数）</td><td>P7 上下文账台</td><td>运行时 <code>/session</code> 返回的 <code>sent_bytes</code></td></tr>
+<tr><td>5.4 节与第 7、8 节的三条轨迹</td><td>P10 轨迹账台</td><td>运行时的 <code>marks</code> 与工具服务的账本，按 <code>epoch</code> 归并</td></tr>
+<tr><td>第 8 节 四种写法的矩阵</td><td>P4 与 P9 并发矩阵账台</td><td>运行时 <code>/round</code> 的 <code>ms</code>、<code>n_out</code>，加两次读账本</td></tr>
+<tr><td>第 9 节 超时与取消</td><td>P5 与 P9</td><td>运行时 <code>/timeout</code> 的 <code>state</code>，加账本里的 <code>done</code> 与 <code>skip</code> 行数</td></tr>
+<tr><td>第 11 节 错误形状的字节</td><td>P7 上下文账台</td><td>运行时 <code>/errsizes</code> 与 <code>/session</code></td></tr>
+<tr><td>第 12 节 参数校验的报错</td><td>P8 校验账台</td><td>标准输出，直接调 <code>jsonschema.validate</code></td></tr>
+</table></div>
+
+<h3>6. 三个数，纸上先有答案</h3>
+<p>下面三个问题的答案分别在第 7、9、11 节。三道题都不需要算，需要的是先替自己表个态，写下来再往下翻。</p>
+
+<div class="card c-pred">
+<p><span class="q">问题一</span>　一轮里三个工具，改成一起发出去：alpha 和 gamma 各要八百毫秒并且各会往账本写一行，beta 两百毫秒就失败。用 <code>asyncio.gather</code> 收结果，它在 beta 失败的那一刻就把异常抛出来，这一轮两百毫秒出头就结束了。</p>
+<p>此后再等一秒半，去数账本。里面有几行 <code>done</code>？</p>
+<div class="wr"></div>
+<p><span class="q">问题二</span>　换成一个工具、八百毫秒，运行时给它三百毫秒的超时。到点了，<code>asyncio.timeout</code> 把这条协程取消掉，运行时报超时返回。</p>
+<p>工具服务那一侧此刻在干什么？它会写下那行 <code>done</code> 吗？</p>
+<div class="wr"></div>
+<p><span class="q">问题三</span>　一条六轮会话，第 2 轮的工具抛了一个 <code>JSONDecodeError</code>。把 <code>traceback.format_exc()</code> 的结果原样追加进上下文，和只追加一行 <code>str(e)</code>，两种写法整条会话累计发给模型的字节数相差多少？给个倍数。</p>
+<div class="wr"></div>
+</div>
+
+<h2><span class="kk">板块 2 · 第三部分</span>一轮里三个工具</h2>
+<p>三个工具一起发出去，省下来的时间很直观。这一部分讲的是另一件事：当其中一个失败或者超时，剩下那些会怎么样。</p>
+
+<h3>7. 揭晓（一）：运行时退出了，副作用还在路上</h3>
+<p>先看轨迹。同一轮三个工具，这次用 <code>asyncio.gather</code> 一起发出去，别的一个字不改。</p>
+<div class="scroll"><table>
+<tr><th class="n">时刻 ms</th><th>哪个进程</th><th>发生了什么</th></tr>
+<tr><td class="n">0.09</td><td>运行时</td><td>发出 alpha</td></tr>
+<tr><td class="n">0.58</td><td>运行时</td><td>发出 beta</td></tr>
+<tr><td class="n">1.12</td><td>运行时</td><td>发出 gamma</td></tr>
+<tr><td class="n">2.23</td><td>工具服务</td><td>start alpha</td></tr>
+<tr><td class="n">3.68</td><td>工具服务</td><td>start beta</td></tr>
+<tr><td class="n">4.04</td><td>工具服务</td><td>start gamma</td></tr>
+<tr><td class="n">206.37</td><td>运行时</td><td>beta 抛出 HTTP 500，这一轮结束，运行时把错误交回上层</td></tr>
+<tr><td class="n">803.18</td><td>工具服务</td><td>done alpha</td></tr>
+<tr><td class="n">804.84</td><td>工具服务</td><td>done gamma</td></tr>
+</table></div>
+<p>问题一的答案是两行，而且它们出现在运行时已经收工六百毫秒之后。</p>
+<p>发生了什么，一步一步说清楚。<code>asyncio.gather</code> 的行为是：把若干个协程一起交给事件循环，等它们全部完成；但只要其中一个抛了异常，它立刻把这个异常向上抛出，不再等别的。它做的是「不再等」，而不是「叫停」——另外两条协程仍然是活的，仍然挂在那个事件循环上，仍然在等自己那条 HTTP 响应。</p>
+<p>更要紧的是，就算它真把那两条协程杀了也没用。请求已经发出去了。工具服务那一侧收到的是一个完整的 HTTP 请求，它开工、sleep、写账本，这一串动作在另一个进程里，运行时这一侧做什么都影响不到它。</p>
+<div class="breathe">类比一下：你同时给三家店打电话下单，第二家说不做了，你挂断所有电话——但第一家和第三家已经在做了，而且做完会送到你门口。挂电话解决的是你要不要听，不解决他们做不做。</div>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p>并发发出去的那一刻，副作用会不会发生这件事就已经不由你决定了。运行时能决定的只有两件：要不要等，以及等到的结果算不算数。</p>
+<p>这句话直接接上昨天第 12 节那个矩阵。那天的窗口是「副作用生效了、检查点还没写」，今天这个窗口更宽：副作用生效的时刻，比运行时以为这一轮已经结束的时刻还要晚半秒多。所以那一步的幂等键在今天这个场合不是可选项——它是唯一能把账对上的东西。</p>
+</div>
+
+<h3>8. 四种写法，差在三件事</h3>
+<p>把四种写法在同一个场景下各跑五遍，报中位数和范围。场景一个字不改：三个工具，中间那个两百毫秒必然失败。</p>
+<div class="scroll"><table>
+<tr><th>写法</th><th class="n">这一轮多久 ms</th><th class="n">范围</th><th class="n">拿到几个结果</th><th class="n">返回时账本 done</th><th class="n">再等 1.5 秒后 done</th></tr>
+<tr><td>串行一个一个来</td><td class="n">1007.35</td><td class="n">1005.82 ~ 1007.55</td><td class="n">1</td><td class="n">1</td><td class="n">1</td></tr>
+<tr><td><code>gather</code> 默认</td><td class="n">204.39</td><td class="n">204.10 ~ 206.24</td><td class="n">0</td><td class="n">0</td><td class="n">2</td></tr>
+<tr><td><code>gather</code> 带 <code>return_exceptions</code></td><td class="n">805.33</td><td class="n">804.94 ~ 806.20</td><td class="n">3</td><td class="n">2</td><td class="n">2</td></tr>
+<tr><td><code>TaskGroup</code></td><td class="n">205.44</td><td class="n">205.04 ~ 206.49</td><td class="n">0</td><td class="n">0</td><td class="n">2</td></tr>
+</table></div>
+<p class="cap">五遍之间，后三列的取值一次分歧都没有出现，所以这三列可以当成确定的行为读，不是概率。第一列五次之间最宽的一档也只差两点五毫秒。</p>
+<figure>
+<svg viewBox="0 0 760 300" role="img" aria-label="四种写法的时间线对比">
+<g stroke="currentColor" fill="none" opacity="0.9">
+<line x1="112" y1="58" x2="704.9" y2="58" stroke-width="6" stroke-linecap="round"/>
+<line x1="112" y1="108" x2="232.3" y2="108" stroke-width="6" stroke-linecap="round"/>
+<line x1="112" y1="158" x2="586.0" y2="158" stroke-width="6" stroke-linecap="round"/>
+<line x1="112" y1="208" x2="232.9" y2="208" stroke-width="6" stroke-linecap="round"/>
+</g>
+<g stroke="currentColor" fill="none">
+<circle cx="584.2" cy="58" r="5.5" fill="none" stroke-width="2"/>
+<circle cx="585.2" cy="108" r="5.5" fill="none" stroke-width="2"/>
+<circle cx="585.1" cy="158" r="5.5" fill="none" stroke-width="2"/>
+<circle cx="585.0" cy="208" r="5.5" fill="none" stroke-width="2"/>
+</g>
+<g stroke="currentColor" fill="currentColor">
+<line x1="704.9" y1="45" x2="704.9" y2="71" stroke-width="1.6"/>
+<text x="704.9" y="40" text-anchor="middle" font-size="10.5">1007</text>
+<line x1="232.3" y1="95" x2="232.3" y2="121" stroke-width="1.6"/>
+<text x="232.3" y="90" text-anchor="middle" font-size="10.5">204</text>
+<line x1="586.0" y1="145" x2="586.0" y2="171" stroke-width="1.6"/>
+<text x="586.0" y="140" text-anchor="middle" font-size="10.5">805</text>
+<line x1="232.9" y1="195" x2="232.9" y2="221" stroke-width="1.6"/>
+<text x="232.9" y="190" text-anchor="middle" font-size="10.5">205</text>
+</g>
+<g font-size="12.5" fill="currentColor" font-weight="650">
+<text x="102" y="62" text-anchor="end">串行</text>
+<text x="102" y="112" text-anchor="end">gather</text>
+<text x="102" y="162" text-anchor="end">gather_re</text>
+<text x="102" y="212" text-anchor="end">TaskGroup</text>
+</g>
+<g fill="currentColor" opacity="0.8">
+<text x="584.2" y="74" text-anchor="middle" font-size="11">副作用 1 次</text>
+<text x="585.2" y="124" text-anchor="middle" font-size="11">副作用 2 次</text>
+<text x="585.1" y="174" text-anchor="middle" font-size="11">副作用 2 次</text>
+<text x="585.0" y="224" text-anchor="middle" font-size="11">副作用 2 次</text>
+</g>
+<g stroke="currentColor" fill="currentColor" opacity="0.75">
+<line x1="112" y1="248" x2="730" y2="248" stroke-width="1.2"/>
+<line x1="112.0" y1="248" x2="112.0" y2="254" stroke-width="1.2"/>
+<text x="112.0" y="270" text-anchor="middle" font-size="11">0</text>
+<line x1="229.7" y1="248" x2="229.7" y2="254" stroke-width="1.2"/>
+<text x="229.7" y="270" text-anchor="middle" font-size="11">200</text>
+<line x1="347.4" y1="248" x2="347.4" y2="254" stroke-width="1.2"/>
+<text x="347.4" y="270" text-anchor="middle" font-size="11">400</text>
+<line x1="465.2" y1="248" x2="465.2" y2="254" stroke-width="1.2"/>
+<text x="465.2" y="270" text-anchor="middle" font-size="11">600</text>
+<line x1="582.9" y1="248" x2="582.9" y2="254" stroke-width="1.2"/>
+<text x="582.9" y="270" text-anchor="middle" font-size="11">800</text>
+<line x1="700.6" y1="248" x2="700.6" y2="254" stroke-width="1.2"/>
+<text x="700.6" y="270" text-anchor="middle" font-size="11">1000</text>
+<text x="421" y="290" text-anchor="middle" font-size="11.5">毫秒</text>
+</g>
+<g font-size="11.5" fill="currentColor" opacity="0.8">
+<text x="8" y="18">粗线 = 运行时还留在这一轮里　竖线 = 它返回的时刻　空心圆 = 副作用落进账本的时刻</text>
+</g>
+</svg>
+<figcaption>四条粗线的长度差别是「谁在等」，而四行右端那些空心圆几乎排在同一条竖线上——那是副作用，它不看你用哪种写法。两次副作用相隔不到两毫秒，画出来是同一个圆，次数标在圆圈下面。</figcaption>
+</figure>
+<p>先横着读第一列。串行那一行是前两个工具的时长相加，第三个还没轮到这一轮就结束了。另外三行都不是相加，这就是并发省下来的东西：一轮从一秒掉到两百毫秒或者八百毫秒。省多少取决于最长的那一条有多长，不取决于有几条。</p>
+<p>再看第四列，这一列才是四种写法真正分道扬镳的地方。</p>
+<ul>
+<li>串行拿到一个结果：alpha 成功了，beta 炸了，gamma 根本没轮到。</li>
+<li>默认的 <code>gather</code> 拿到零个：异常一抛，那两个已经完成或即将完成的结果全都被丢掉了。</li>
+<li>加上 <code>return_exceptions</code> 之后拿到三个：它不再把异常往上抛，而是把异常本身当成一个结果放进列表里，等所有协程都有了结局才返回。这三个结果里有两个是成功的数据，一个是那个异常——都能拿去用。这种「一部分成功、一部分失败，都收下」的收法叫 <span class="term">部分结果（partial results）</span>。</li>
+<li>第四种拿到零个，理由和默认的 <code>gather</code> 不同。这种把若干个任务当成一整组来管、组里出事就整组一起收场的写法叫 <span class="term">任务组（asyncio.TaskGroup）</span>：其中一个任务失败时，它会主动去取消同一组里的其他任务（这叫 <span class="term">兄弟任务取消（sibling cancellation）</span>），然后把这一组的异常打包成一个 <span class="term">异常组（ExceptionGroup）</span> 抛出来，接的时候要用 <code>except*</code> 这个专门的语法。</li>
+</ul>
+<p>最后两列是第 7 节那件事在四种写法上的完整版：三种并发写法，最终账本都是两行。<code>TaskGroup</code> 确实取消了兄弟任务，轨迹里看得很清楚——</p>
+<div class="scroll"><table>
+<tr><th class="n">时刻 ms</th><th>哪个进程</th><th>发生了什么</th></tr>
+<tr><td class="n">205.49</td><td>运行时</td><td>beta 抛出 HTTP 500</td></tr>
+<tr><td class="n">205.94</td><td>运行时</td><td>gamma 这条协程被取消</td></tr>
+<tr><td class="n">206.00</td><td>运行时</td><td>alpha 这条协程被取消</td></tr>
+<tr><td class="n">803.53</td><td>工具服务</td><td>done alpha</td></tr>
+<tr><td class="n">803.73</td><td>工具服务</td><td>done gamma</td></tr>
+</table></div>
+<p>取消发生在两百零六毫秒，副作用照样在八百毫秒落地。所以选 <code>TaskGroup</code> 而不选 <code>gather</code>，买到的是运行时这一侧的整洁——协程不会变成没人管的孤儿、异常不会被吞掉。它买不到的是对面那一侧的任何东西。</p>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p>选哪一种写法，要按你最在意的那件事来选，而这三件事互相是有取舍的：<code>return_exceptions</code> 拿得到部分结果，代价是一定要等最慢的那个跑完；<code>TaskGroup</code> 返回得早、收得干净，代价是已经跑完的结果一个也拿不到。</p>
+<p>而最后一列不在这个取舍里。三种并发写法给出的答案完全一样，都是两行：发出去了几个调用，就发生几次副作用。串行那一行之所以只有一行，唯一的原因是 gamma 从来没被发出去过。</p>
+</div>
+
+<h3>9. 揭晓（二）：取消停得住协程，停不住对面</h3>
+<p>问题二问的是超时。一个八百毫秒的工具，运行时给它三百毫秒预算，到点由 <code>asyncio.timeout</code> 取消。跑五遍：</p>
+<div class="scroll"><table>
+<tr><th>做法</th><th class="n">运行时几时返回 ms</th><th class="n">账本里 done 几行</th><th class="n">账本里 skip 几行</th></tr>
+<tr><td>只在本地取消</td><td class="n">300.91</td><td class="n">1</td><td class="n">0</td></tr>
+<tr><td>取消之后再通知对面一声</td><td class="n">304.84</td><td class="n">0</td><td class="n">1</td></tr>
+</table></div>
+<p class="cap">两行的运行时返回时刻几乎一样，差的那四毫秒是多发的那一条通知本身。五遍里两列的取值都没有出现过分歧。</p>
+<p>第一行是问题二的答案：运行时三百毫秒就报了超时，五百毫秒之后，那行 <code>done</code> 照样写进了账本。取消这个动作发生在你的进程里——它让一条协程停止等待、抛出 <code>CancelledError</code>、把栈解开。这些事情对面一个字都不知道。</p>
+<p>第二行是修法，而修法的形状很朴素：多发一条消息，明确告诉对面「刚才那一次不要了」；对面在真正产生副作用之前查一下这个标记，是就跳过。工具服务在账本里留下的那行 <code>skip</code>，就是它查过并且跳过的证据。</p>
+<p>要注意这个修法成立的前提：<strong>被调的那一侧必须自己愿意查</strong>。你没有任何办法从外面强行终止另一个进程里的一段逻辑，能做的只是把「不要了」这个意思送到，剩下的由它自己决定。这种取消叫 <span class="term">协作式取消（cooperative cancellation）</span>，而那条专门用来送这个意思的消息叫 <span class="term">取消通知（cancellation notification）</span>。</p>
+<p>回到 MCP。这条通道在协议里是有的：<code>types.py:1740-1764</code> 定义了 <code>notifications/cancelled</code> 这个通知，参数是要取消的 <code>requestId</code> 加一句可选的原因。服务端也照着做了——<code>shared/session.py:403-406</code> 收到这个通知时，会去在飞的请求表里找对应的那一条，找到就取消它。</p>
+<p>有意思的是发送这一侧。客户端的超时逻辑在 <code>shared/session.py:289-302</code>：等响应超时之后它抛一个 <code>McpError</code>，然后在 <code>finally</code> 里（<code>:309-313</code>）把本地的几个登记项清掉，仅此而已。在整个 1.27.0 版的包里，<code>CancelledNotification</code> 这个类只在 <code>types.py</code> 里被定义过，没有任何一处构造它并发出去。</p>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p>协议里有一条取消通道，服务端会听，而客户端超时的时候默认不说。也就是说，用现成的 SDK 写一个带超时的工具调用，你拿到的行为正是上面那张表的第一行：本地干净了，对面照跑。</p>
+<p>所以「超时」这件事要拆成两个动作分别写：一个是本地停止等待，这个 <code>asyncio.timeout</code> 就够了；另一个是把取消送到对面，这个要你自己发。少了后半截，超时保护的只是你的延迟，不是你的正确性。</p>
+</div>
+<p>这也给昨天那份设计文档补上一条：<strong>超时的时长要往下传</strong>。一轮总共只剩三百毫秒的时候，没有理由给这一轮里的某个工具四秒的预算。把「还剩多久」当成参数一层层传下去，这个做法叫 <span class="term">截止时间传递（deadline propagation）</span>；Day 12 那道温故题给它补了一句注解——在 <code>DROP</code> 那条路上，你传下去的这个数就是失败路径的实际时长。</p>
+
+<h2><span class="kk">板块 2 · 第四部分</span>错误往哪儿去</h2>
+<p>工具失败是常态，不是异常路径。这一部分讲失败之后那段文字走哪条路、写成什么形状、以及这个选择在一条会话里值多少字节。</p>
+
+<h3>10. 一次失败，有两条完全不同的路</h3>
+<p>「工具调用失败了」这句话其实盖住了两件很不一样的事。</p>
+<p>第一件：这条消息本身就不对。方法名拼错了、参数不是合法 JSON、编号对不上。这类问题跟工具没关系，是你的客户端写坏了，走的是 JSON-RPC 的错误响应——一个 <code>code</code>、一句 <code>message</code>、一包可选的 <code>data</code>（<code>types.py:193-211</code>）。这类错误传上去是给你看的。</p>
+<p>第二件：消息完全正确，工具也确实被调用了，但它干活的时候出了问题——文件不存在、外部接口挂了、除零了。这类问题模型有可能自己绕过去：换个文件名、换个做法、或者告诉用户这条路走不通。所以它不该走错误响应那条路，它得走到模型面前。</p>
+<p>MCP 是这么区分的：第二类失败回的是一个<em>成功</em>的 JSON-RPC 响应，里面装着一个 <code>CallToolResult</code>，只是这个结果的 <code>isError</code> 字段是 <code>true</code>（<code>types.py:1363-1369</code>）。把这两类分开的英文叫法是 <span class="term">协议错误（protocol error）</span> 和 <span class="term">工具错误（tool error）</span>，后者的那个标志位就叫 <span class="term">错误标志（isError）</span>。</p>
+<p>SDK 里这一步只有两行。工具函数抛出任何异常，服务端接住，转成一个带错误标志的正常结果（<code>server/lowlevel/server.py:583-584</code>）：</p>
+<pre><code># mcp/server/lowlevel/server.py:583-584
+except Exception as e:
+    return self._make_error_result(str(e))</code></pre>
+<p>这两行里藏着今天最实用的一个决定：它用的是 <code>str(e)</code>，不是 <code>traceback.format_exc()</code>。异常的那一句话被留下，栈被扔掉。</p>
+<p>协议在另一处把同样的意思写成了规矩。<code>ErrorData</code> 的 <code>message</code> 字段旁边跟着一句注释（<code>types.py:199-203</code>）：这个 message 应该限制成一句简短的话。</p>
+<div class="breathe">两处都在说同一件事，而且这件事跟「哪种写法更优雅」无关。下一节把它换成字节。</div>
+
+<h3>11. 那段错误，后面每一轮都要再发一遍</h3>
+<p class="lead">把堆栈原样喂回给模型，到底贵在哪儿？</p>
+<p>先看这一段东西本身有多大。让一个工具在三层调用之后抛出一个 <code>JSONDecodeError</code>，把同一个异常写成三种形状：</p>
+<div class="scroll"><table>
+<tr><th>写法</th><th class="n">字节</th><th>内容</th></tr>
+<tr><td>原样堆栈</td><td class="n">1088</td><td><code>traceback.format_exc()</code> 的全文，七层调用帧</td></tr>
+<tr><td>一行摘要</td><td class="n">43</td><td><code>str(e)</code>，也就是 SDK 那两行用的写法</td></tr>
+<tr><td>结构化</td><td class="n">123</td><td>工具名、异常类型、那一句话、能不能重试，包成一个对象</td></tr>
+</table></div>
+<p>那一千零八十八字节里有什么，值得看一眼。七层调用帧里有三层在 Python 的 json 库内部（<code>json/__init__.py</code> 一处、<code>json/decoder.py</code> 两处），每一帧占三行：文件路径、源码那一行、还有一行插入符号。真正说明了发生什么事的只有最后一行，也就是那四十三字节。</p>
+<p>还有一件事让这个数更不该被信任：堆栈里占地方最多的成分之一是文件路径。把同一段代码原样放到两个不同深度的目录下各跑一次，行数一模一样（都是二十三行），全文一个是 1205 字节、一个是 981 字节——差出来的两百二十四字节全是路径。也就是说，同一个 bug 在你的机器上和在容器里，喂给模型的字节数都不一样。</p>
+<p>现在把它放进一条会话。六轮，第 2 轮的工具报错，别的一个字不改：</p>
+<div class="scroll"><table>
+<tr><th>第 2 轮的错误写成</th><th class="n">这一段字节</th><th class="n">整条会话累计发出</th><th class="n">末轮上下文</th><th class="n">比不报错多发</th></tr>
+<tr><td>不报错（对照）</td><td class="n">—</td><td class="n">6207</td><td class="n">2369</td><td class="n">—</td></tr>
+<tr><td>一行摘要</td><td class="n">43</td><td class="n">6347</td><td class="n">2404</td><td class="n">140</td></tr>
+<tr><td>结构化</td><td class="n">123</td><td class="n">6723</td><td class="n">2498</td><td class="n">516</td></tr>
+<tr><td>原样堆栈</td><td class="n">1088</td><td class="n">10687</td><td class="n">3489</td><td class="n">4480</td></tr>
+</table></div>
+<p class="cap">对照行的工具结果是一句 <code>alpha:ok</code>，八个字节，四行都用它当基准。</p>
+<p>问题三的答案在最后两行之间：原样堆栈那一行是一行摘要那一行的一点六八倍，多出来四千三百四十字节；而如果和完全不报错比，一段错误让这条会话发出的总量涨了七成二。</p>
+<p>四千四百八十这个数怎么来的，可以自己验一遍。错误在第 2 轮末尾追加进上下文，所以第 3、4、5、6 轮各要把它完整地重发一次，一共四次。每一次多发的不是一千零八十八，是一千一百二十——多出来的四十字节是这段文字被塞进 JSON 时，二十二个换行和十八个引号各自被转义成两个字符。四乘以一千一百二十，正好四千四百八十。</p>
+<p>另外两行同理：一行摘要每次多三十五字节，乘四是一百四十；结构化那一版里有十四个引号要转义，每次多一百二十九，乘四是五百一十六。</p>
+<div class="card c-key"><div class="kt">关键结论</div>
+<p>一段追加进上下文的东西，它的真实价钱不是它自己的长度，是长度乘以「它之后还有几轮」。同一段堆栈出现在第 2 轮和出现在第 5 轮，账完全不同。</p>
+<p>这就是 Day 18 第 10 节那个平方式子的另一副面孔：那天算的是每轮固定增长的那一截，今天算的是某一轮突然多出来的一大块。两者的机制是同一个——上下文只往后长，从来不改前面，所以任何进去的东西都会被后面每一轮重新搬一遍。</p>
+</div>
+<p>说清楚账之后，做法就不需要靠品味来定了：回给模型的那一段应该是能让它改变下一步动作的最短文字。堆栈里唯一具备这个作用的就是最后那一行，前面七层调用帧是给你排查用的——它们该进你的日志，不该进上下文。</p>
+<p>这个「不加区分地把大段文字塞进上下文、让它在后面每一轮里被重复搬运」的毛病有个通用叫法：<span class="term">上下文污染（context pollution）</span>。怎么把已经进去的东西清出来是 Day 20 的题目；今天做的是不让它进去。</p>
+
+<h3>12. 参数写错的时候，回给模型的是哪句话</h3>
+<p>模型生成的参数不合 schema，是最常见的一种工具错误。MCP 在真正执行之前先拿工具的 <code>inputSchema</code> 校一遍，不过就转成一句带错误标志的话回给模型（<code>server/lowlevel/server.py:528-532</code>），让它自己改了重来。</p>
+<p>这句话说得清不清楚，直接决定模型能不能改对。拿一份三个参数的 schema，喂三种典型的错法：</p>
+<div class="scroll"><table>
+<tr><th>模型写错的方式</th><th class="n">回给它的字节</th><th>回给它的那句话</th></tr>
+<tr><td>少了必填参数</td><td class="n">53</td><td><code>Input validation error: 'path' is a required property</code></td></tr>
+<tr><td>类型写错了</td><td class="n">57</td><td><code>Input validation error: '很多' is not of type 'integer'</code></td></tr>
+<tr><td>参数名拼错了</td><td class="n">53</td><td><code>Input validation error: 'path' is a required property</code></td></tr>
+</table></div>
+<p>前两行很好：五十来个字节，说清了是哪个字段、错在哪里，模型下一轮改得对。</p>
+<p>第三行和第一行一模一样，而它们其实是两回事。模型把 <code>path</code> 写成了 <code>pathh</code>，它得到的提示是「缺少 path」——于是它很可能再加一个 <code>path</code>，同时把那个拼错的键留在原地，然后重复同样的错法。</p>
+<p>原因在 JSON Schema 的默认行为：没写 <code>additionalProperties</code> 的时候，多出来的字段是被允许的，校验器只看见「必填的那个不在」。而 SDK 从函数签名自动生成的 schema 里，恰好没有这一项。</p>
+<p>补上 <code>"additionalProperties": false</code> 之后再试一遍，得到的是这个：</p>
+<div class="scroll"><table>
+<tr><th>补上之后的错法</th><th class="n">字节</th><th>那句话</th></tr>
+<tr><td>只拼错，必填的那个还是缺</td><td class="n">53</td><td>还是 <code>'path' is a required property</code></td></tr>
+<tr><td>拼错了，但必填的那个也带上了</td><td class="n">86</td><td><code>Additional properties are not allowed ('pathh' was unexpected)</code></td></tr>
+</table></div>
+<p>只修好了一半：必填项缺失这条规则先触发，多余字段那条规则轮不上。所以这一项该加，但加了它不等于拼错的场景都能说清楚——真要说清楚，得在校验失败之后自己比对一次键名，把「你是不是想写 path」这句话拼进去。这一步值多少字节、值不值，你现在有第 11 节那把尺子可以自己算。</p>
+
+<h3>13. 把今天量到的补进那份设计文档</h3>
+<p>昨天那份文档里有几条写的是「留到 Day 19」。今天把它们填上，每一条后面跟着一个自己量出来的数。</p>
+<div class="scroll"><table>
+<tr><th>要定的事</th><th>今天的依据</th><th>写成什么</th></tr>
+<tr><td>挂哪些工具</td><td>一个工具的说明书六百七十字节，每一轮重发一次；挂三十二个时它占发出总量的 95.4%（第 4 节）</td><td>不把全部工具无条件挂上。注册表按任务筛选，并且把「注册表字节数」列成一个要监控的指标</td></tr>
+<tr><td>工具说明怎么写</td><td>函数的文档字符串会原样进上下文（<code>base.py:66</code>）</td><td>文档字符串写给模型看，不写给同事看；实现细节写成代码注释，别写进文档字符串</td></tr>
+<tr><td>一轮里多个工具怎么发</td><td>四种写法在返回时刻、部分结果、副作用三件事上的矩阵（第 8 节）</td><td>默认用 <code>TaskGroup</code>；当这一轮的工具彼此独立、部分成功也有价值时，改用带 <code>return_exceptions</code> 的收法</td></tr>
+<tr><td>有副作用的工具怎么并发</td><td>三种并发写法最终账本都是两行，取消挡不住（第 7、8 节）</td><td>标了会写数据的工具，一轮里最多发一个；非要并发就每个带幂等键，规则和昨天第 12 节完全一样</td></tr>
+<tr><td>超时怎么设</td><td>本地取消之后对面照跑，通知一声才跳过（第 9 节）</td><td>三层超时：单个工具、一轮、整条会话。每一层到点都要往下发一条取消，并且把剩余预算作为参数传下去</td></tr>
+<tr><td>工具错误怎么回给模型</td><td>原样堆栈让一条六轮会话多发四千四百八十字节，一行摘要只多一百四十（第 11 节）</td><td>回给模型的只有异常那一句话加工具名，堆栈进日志。给每个错误标一个「能不能重试」的位</td></tr>
+<tr><td>参数校验的报错怎么写</td><td>拼错键名和漏填必填参数回的是同一句话（第 12 节）</td><td>schema 一律带 <code>additionalProperties: false</code>；校验失败时额外做一次键名比对，把最接近的候选名写进那句话</td></tr>
+<tr><td>协议选哪一套</td><td>MCP 的消息形状与三个方法（第 3 节）</td><td>对外的工具接口按 MCP 的形状定义，哪怕内部先自己实现——形状定死了，以后换成真的 MCP 服务端不用改上层</td></tr>
+</table></div>
+
+<h2><span class="kk">板块 3</span>动手任务</h2>
+<p>两个任务，约两小时。任务 A 是在昨天那个骨架上长出工具这一层；任务 B 把今天这套读法用到你手上已有的东西上。</p>
+
+<h3>任务 A（必做，约 80 分钟）· 把工具做成真的</h3>
+
+<h4>第 1 步：先有一个会写账本的工具服务</h4>
+<p>今天所有关于「副作用发生了没有」的判断，都要从一个运行时说了不算的地方读。所以工具必须住在另一个进程里，而且要在自己开工和收工的时候各留一行记录。</p>
+<pre><code>@app.post("/call")
+async def call(req: Request):
+    r = await req.json()
+    name, cid = r["name"], r.get("cid", "-")
+    dur = float(r.get("dur", 0.8))
+    fail = bool(r.get("fail", False))
+    mark("start", name, cid)
+    if fail:                      # 失败的那个工具：早早地抛，不写 done
+        await asyncio.sleep(dur)
+        return JSONResponse({"error": "boom"}, status_code=500)
+    await asyncio.sleep(dur)
+    if cid in CANCELLED:          # 产生副作用之前查一次：这一次还算不算数
+        mark("skip", name, cid)
+        return JSONResponse({"result": "cancelled"}, status_code=499)
+    mark("done", name, cid)       # 副作用在这一行生效
+    return JSONResponse({"result": f"{name}:ok"})</code></pre>
+<p>每一行记录里除了相对毫秒，还要记一个 <code>time.time()</code>。两个进程的 <code>monotonic</code> 零点不一样，只有这口挂钟是共用的，跨进程排先后要靠它。</p>
+<p>中间那个查取消标记的分支现在还用不上，它是第 4 步的东西，先照原样写进去。</p>
+<p>验收标准：<code>curl</code> 打一次，账本里出现两行，两行的时间差约等于你传的 <code>dur</code>。</p>
+<p>常见坑：把账本写在运行时进程里。这样你量的是「运行时以为发生了什么」，而今天整页要问的恰恰是它以为错了的地方。</p>
+
+<h4>第 2 步：写出工具注册表，量它的字节</h4>
+<p>挑三个你真会用的工具（读文件、执行一段代码、查一次外部接口），把名字、说明、参数 schema 三样写全。装了 <code>mcp</code> 这个包的话可以让它替你从函数签名生成；不装就手写 JSON Schema，形状是一样的。</p>
+<p>然后把这份注册表序列化，数字节，再乘以你打算跑多少轮。</p>
+<p>验收标准：你能说出「加一个工具，一条十轮会话要多花多少字节」，并且这个数是你自己算的，不是抄本页的六百七十。</p>
+<p>常见坑：只数了 schema，忘了它每一轮都要重发一次。这一步的答案里必须有轮数这个乘数。</p>
+
+<h4>第 3 步：一轮三个工具，四种写法各跑一遍</h4>
+<p>照本页第 8 节的场景：两个慢的会写账本，中间一个快的必然失败。四种写法各跑五遍，每遍在运行时返回的那一刻和一秒半之后各读一次账本。</p>
+<pre><code>if strategy == "serial":
+    try:
+        for p in plan:
+            out.append(await call_tool(**p))          # 一个一个来，前一个失败就到此为止
+    except Exception as e:
+        err = str(e)
+elif strategy == "gather":
+    tasks = [asyncio.ensure_future(call_tool(**p)) for p in plan]
+    try:
+        out = await asyncio.gather(*tasks)            # 一个失败就抛，已完成的结果全丢
+    except Exception as e:
+        err = str(e)
+elif strategy == "gather_re":
+    tasks = [asyncio.ensure_future(call_tool(**p)) for p in plan]
+    res = await asyncio.gather(*tasks, return_exceptions=True)   # 全等完，异常当结果收
+    out = [r if not isinstance(r, Exception) else {"error": str(r)} for r in res]
+    err = next((str(r) for r in res if isinstance(r, Exception)), None)
+elif strategy == "taskgroup":
+    try:
+        async with asyncio.TaskGroup() as tg:         # 一个失败，取消同组的兄弟
+            tasks = [tg.create_task(call_tool(**p)) for p in plan]
+        out = [t.result() for t in tasks]
+    except* Exception as eg:                          # 异常组要用 except* 接
+        err = str(eg.exceptions[0])</code></pre>
+<p>验收标准：你的表里，三种并发写法「一秒半之后账本几行 done」这一列必须相等。不相等说明有一个工具没真被发出去，最常见的原因是把协程建好了却没交给事件循环。</p>
+<p>常见坑：用 <code>time.sleep</code> 而不是 <code>asyncio.sleep</code> 写工具服务的等待。症状是三个工具排成一队，你会得到一个「并发根本没省时间」的假结论——Day 4 那条规矩在这里照样管用。</p>
+
+<h4>第 4 步：加超时，然后加取消通道</h4>
+<p>给单个工具调用套一层 <code>asyncio.timeout</code>，预算取一个夹在快慢两个工具中间的值。跑一遍，读账本。然后加上第二段：超时之后往工具服务发一条「这一次不要了」，工具服务在写 <code>done</code> 之前先查一下这个标记。</p>
+<pre><code>t0 = time.monotonic(); state = "ok"
+try:
+    async with asyncio.timeout(budget):
+        await call_tool("alpha", cid, dur)
+except asyncio.TimeoutError:
+    state = "timeout"
+    if notify:                       # 取消要走一条真的通道，对面才知道
+        await cli.post("http://127.0.0.1:8002/cancel", json={"cid": cid})
+return {"state": state, "ms": round((time.monotonic() - t0) * 1000, 2)}</code></pre>
+<p>验收标准：两次跑出来的账本必须不同——没有通知的那次有 <code>done</code>，有通知的那次没有。如果两次一样，检查工具服务是不是在 sleep 之前就查了标记（那时候通知还没到）。</p>
+<p>常见坑：以为把 HTTP 客户端的连接关掉就等于取消。关连接改变的是你这一侧的状态，对面的处理函数是不是跟着停，取决于对面那个框架的行为，不取决于你。要停就要发一条它认得的消息。</p>
+
+<h4>第 5 步：量错误的三种形状</h4>
+<p>让一个工具在几层调用之后真的抛一个异常，把 <code>traceback.format_exc()</code>、<code>str(e)</code>、和一个结构化对象三种写法各跑一条六轮会话，记录累计发出的字节。</p>
+<p>验收标准：三个数之间的差，应该正好等于「这一段的字节差」乘以「出错那一轮之后还剩几轮」。对不上就说明你的错误被追加进上下文的位置和你以为的不一样。</p>
+<p>常见坑：忘了 JSON 转义。堆栈里的换行和引号进 JSON 时各要多占一个字节，几十个加起来是实打实的差额。</p>
+
+<h3>任务 B（约 40 分钟）· 用到你自己手上的东西</h3>
+<p>挑一个你写过的、会并发调用别的服务的接口，做三件事：</p>
+<ol>
+<li>数一数这段并发里有几个调用是会写数据的。对每一个，回答：如果它的兄弟先失败了，它这一次到底会不会生效。</li>
+<li>找出这段代码用的是哪一种收法。如果是默认的 <code>gather</code>，把已经成功的那些结果找出来——它们现在被丢在哪里？丢掉它们的代价是什么？</li>
+<li>找出你设的超时。到点之后，你有没有向下游发过任何东西？如果没有，把「下游此刻还在跑」这件事写进你的故障预案。</li>
+</ol>
+<p>验收标准：你能指着某一行说出「这里失败之后，那边的写操作还是会发生」，并且给得出它的时间窗口有多宽——按你自己量到的那个下游调用时长算。</p>
+
+<h3>加分题</h3>
+<ol>
+<li>第 8 节那张表里，<code>TaskGroup</code> 和默认 <code>gather</code> 的最终账本一样。那这两者在什么情况下会不一样？提示：把工具服务改成「sleep 分成很多小段、每段之间检查一次客户端还在不在」，再跑一遍两种写法。</li>
+<li>第 9 节那条取消通知是在超时之后才发的，所以工具已经跑了三百毫秒。设计一个实验，量出「从发出取消到对面真的停下」这段时间有多长，并且说清楚这个时长由哪几段组成。</li>
+<li>第 11 节的账假设错误发生在第 2 轮。把出错轮次当变量扫一遍，画出「多发的字节」和「出错轮次」的关系。再回答：如果一条会话里出三次错，总账是三条曲线相加吗？</li>
+<li>第 12 节留了一个没做的：校验失败时自己比对键名，把「你是不是想写 path」拼进那句话。实现它，然后量一量这句话多了多少字节，以及它在一条会话里被重发几次。</li>
+<li>本页所有工具都在同一台机器上。把工具服务挪到一个有真实网络延迟的地方（Linux 上给网卡人为加延迟的 <code>tc</code> 命令就能做到），重跑第 8 节那张表。哪几列会变，哪几列不会变，先答再跑。</li>
+</ol>
+
+<h2><span class="kk">板块 4</span>工作现场</h2>
+
+<h3>场景一 · 「有个用户被重复执行了一次操作，可我们的代码明明报了错」</h3>
+<p>这句话里的「明明报了错」正是线索。第 7 节那张轨迹说得很清楚：运行时报错退出的时刻，和副作用真正落地的时刻，中间隔着最慢那个工具的剩余时长。日志里那条错误记录的时间戳，比事情真正发生的时间早了半秒多。</p>
+<p>排查顺序：先看这一轮是不是并发发出了多个工具调用。是的话，把「发出的调用数」和「日志里记下的成功数」分别数出来——前者才是副作用可能发生的次数，后者只是你收到了几个回执。这两个数不一致是正常的，不一致的量就是你的风险敞口。</p>
+<p>止血的做法和昨天一样：给会写数据的每一步配一个键，执行前先查。长期的做法是在注册表里就把工具分成两类，会写数据的那一类一轮里最多发一个。</p>
+
+<h3>场景二 · 「上下文涨得太快，我们才聊了几轮就顶到窗口上限了」</h3>
+<p>先分开两笔账再动手，因为它们的形状完全不同。</p>
+<p>一笔是每轮固定的那一截：工具注册表。它是轮数的一次方，但常数很大——第 4 节量到挂三十二个工具时它占发出总量的九成半。这一笔的修法是筛工具，不是压缩对话。</p>
+<p>另一笔是某几轮突然多出来的大块：报错时塞进去的堆栈、一次返回了整个文件的工具、一次没截断的查询结果。这一笔按「它之后还剩几轮」计价，所以越早进去的越贵。这一笔的修法是在写进上下文之前就把它裁短。</p>
+<p>判断是哪一笔很快：把每一轮发出的字节打出来，看它是一条平缓的直线，还是某一轮之后整体抬高了一截。抬高的那一截就是第二笔。</p>
+
+<h3>场景三 · 「模型总是把某个工具的参数写错」</h3>
+<p>先别急着改提示词。第 12 节那两张表说明，模型改不对的一个常见原因是它收到的报错本身指错了地方——键名拼错时，校验器说的是「缺少必填参数」。</p>
+<p>要看的第一样东西是那条失败调用的完整参数对象，和你回给模型的那句原话。如果模型每次都补一个字段而不是改一个字段，基本就是这个毛病。</p>
+<p>第二样是工具的 <code>description</code>。它取自函数的文档字符串，而文档字符串通常是写给同事看的——里面可能全是实现细节，一个字都没说清楚参数该传什么。这两样都改完还不对，再去想提示词。</p>
+
+<h3>同事和面试官常问的</h3>
+<p><span class="q">「一轮里要调好几个工具，你怎么发？」</span>——先反问这几个工具会不会写数据。都是只读的，就并发发，用任务组，返回得早、收得干净；有写操作的，一轮最多发一个，或者每个带键。然后再补一句关键的：无论哪种写法，请求发出去之后副作用就不由运行时决定了，实测三种并发写法的最终账本完全一样。能说到这一句，说明你不是在背 API。</p>
+<p><span class="q">「超时到了，你怎么把下游停掉？」</span>——本地取消和通知对面是两个动作，只做前一个的话下游照跑。MCP 里有 <code>notifications/cancelled</code> 这条通道，服务端会听，但 Python 的 SDK 客户端在超时路径上默认不发。追问「那怎么办」，答：自己发，并且下游要在产生副作用之前查一次。</p>
+<p><span class="q">「工具报错了，你回给模型什么？」</span>——异常那一句话加工具名，堆栈进日志。理由要给数：一段堆栈上千字节，在一条六轮会话里被重发四次；同一个异常写成一行只有四十来个字节。再补一句：MCP 自己也是这么做的，SDK 里那一行用的是 <code>str(e)</code>。</p>
+<p><span class="q">「你们挂了多少个工具？」</span>——这个问题问的其实是上下文成本。一个工具的说明书六七百字节，每一轮重发一次，挂三十二个的时候它能占到发出总量的九成半。所以工具不是越多越好，注册表要按任务筛。</p>
+<p><span class="q">「工具执行失败和调用失败，你们怎么区分？」</span>——两条路。消息本身不对是协议错误，走 JSON-RPC 的错误响应，那是给你看的；工具被正确调用但干活出了问题，回的是一个成功的响应，里面的结果带一个 <code>isError</code> 标志，那是给模型看的。分不开的话，模型会收到一堆它无能为力的东西，而你会漏掉真正该报警的那些。</p>
+
+<h2><span class="kk">板块 5</span>自检问题</h2>
+
+<details><summary>1. 有人说：「我们改用 TaskGroup 了，所以一个工具失败的时候，另外两个会被取消，副作用不会发生。」这句话对不对？</summary>
+<p>前半句对，后半句错，而且两句之间少了一步推理。</p>
+<p>任务组确实会取消兄弟任务，第 8 节那张轨迹里两条取消发生在两百零六毫秒。但取消这个动作的作用范围是你这个进程里的协程：它让协程停止等待、抛出取消异常、把栈解开。工具服务在另一个进程里，它收到的是一个完整的 HTTP 请求，早就开工了。实测两条 <code>done</code> 照样在八百毫秒落进账本。</p>
+<p>更直接的证据是三种并发写法的最终账本完全一样，都是两行。如果取消真能挡住副作用，任务组那一行应该比默认 <code>gather</code> 那一行少。</p>
+<p>错在哪：把「我不再等它了」当成了「它不会发生了」。这两件事之间隔着一个进程边界，而边界那一侧不听你的。</p>
+</details>
+
+<details><summary>2. 团队想给每个工具都加上重试：失败了就再调一次，最多三次。用今天的数评估这个提议。</summary>
+<p>这个提议有两笔账要分开算，而且它们指向不同的修法。</p>
+<p>第一笔是副作用。重试的前提是这一步可以安全地重来，而昨天第 12 节已经把这件事讲透了：崩溃恢复免费给你的只有至少一次，想要恰好一次得每一步自己带键。重试把这个问题从「偶尔崩一次」放大成「每次失败都必然重来」，所以没有幂等键的工具不能加重试，加了就是把偶发的重复变成常态。</p>
+<p>第二笔是上下文。失败的那次要不要写进上下文？如果每次失败都追加一段错误，重试三次就是三段，而按第 11 节的账，这三段都要在后面每一轮里重发。写成一行摘要的话代价可以接受；写成堆栈的话，三段堆栈就是三千多字节，乘以剩下的轮数。</p>
+<p>合理的做法是分层：能安全重来的工具在运行时内部悄悄重试，模型完全不知道有过这件事，上下文里一个字都不多；不能安全重来的工具不重试，直接把那一句话回给模型，由它决定下一步。</p>
+<p>错在哪：把重试当成一个纯粹的可靠性设置。它同时是一个副作用问题和一个上下文预算问题，而这两者的修法都不在重试次数这个旋钮上。</p>
+</details>
+
+<details><summary>3. 一条会话在第 2 轮工具报错，回给模型的是完整堆栈。有人说：「反正有前缀缓存，这段堆栈不会重新计算，成本可以忽略。」哪儿错了？</summary>
+<p>这句话把「算」和「传」当成了一件事。</p>
+<p>前缀缓存能做到的事情是：模型那一侧不必重新计算前面已经算过的 token。这一点在 agent 场景确实成立得很好——Day 16 量到顺序重放时命中率能到 84.5%，靠的正是上下文只往后长、不改前面这个性质，而追加一段堆栈同样不破坏这个性质。</p>
+<p>但字节还是要传。第 11 节量到，那段堆栈在第 2 轮末尾进上下文之后，第 3 到第 6 轮各要把它完整地重新序列化、写进 socket、跨过网络一次，四次合计四千四百八十字节，让整条会话的发出总量涨了七成二。这一段路上前缀缓存一个字节都省不掉。</p>
+<p>还有第二处代价：这段堆栈会变成缓存里的若干个块，一直占着不放，把别人的复用距离往外推。Day 16 那张容量扫描表说明，命中率掉下来的一种典型原因就是这个。</p>
+<p>错在哪：把前缀缓存当成了「上下文变长不要钱」的许可证。它省的是模型那一侧的计算，运行时这一侧的传输和缓存容量都照付。</p>
+</details>
+
+<details><summary>4. 有人提议：把工具的 description 写得越详细越好，「反正只是几句话」。用第 4 节的数评估。</summary>
+<p>「只是几句话」这个判断的问题在于它数错了单位。</p>
+<p>一个工具的完整说明书量出来是六百七十字节，其中说明文字占相当一部分。而这份说明书的位置在上下文最前面，属于每一轮都要原样重发的那一段——所以它的真实价钱是字节数乘以轮数，再乘以工具数。</p>
+<p>把数代进去看：挂三十二个工具，每一轮要发两万一千多字节的注册表，六轮累计十二万九千多，占整条会话发出总量的九成半；而真正的对话从头到尾只有六千二百字节。这时候多写几句话不是多几句话，是多几句话乘以一百九十二。</p>
+<p>但这不等于说明要写得越短越好。说明是模型挑工具的唯一依据，写得不清楚会直接变成第 12 节那种反复出错的循环，而每一次出错的代价同样按轮数收。真正该做的是把两件事分开：说明只写模型需要的（这个工具在什么情况下该用、参数是什么意思），实现细节写成代码注释——后者不会被发给模型。</p>
+<p>错在哪：只看了这段文字自己有多长，没看它会被复制多少份。</p>
+</details>
+
+<h2><span class="kk">板块 6</span>今日新词</h2>
+<p>前六个是「一个工具怎么被描述」这条线上的，中间七个是协议里那几种消息，再往后五个是并发那一组写法，最后四个是取消和上下文这两笔账。</p>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>工具注册</td><td>tool registration</td><td>把工具的名字、说明、参数描述打包成一条记录放进一张表，让模型每一轮都看得见</td></tr>
+<tr><td>参数模式</td><td>input schema</td><td>一个工具的参数该长什么样：哪些字段、什么类型、哪些必填、有没有默认值</td></tr>
+<tr><td>JSON Schema</td><td>JSON Schema</td><td>描述「一个 JSON 对象应该长什么样」的标准写法，用 type、properties、required 这几个关键字</td></tr>
+<tr><td>附加属性</td><td>additionalProperties</td><td>JSON Schema 里控制「允不允许出现没声明过的字段」的开关，默认是允许</td></tr>
+<tr><td>结构化输出</td><td>structuredContent / outputSchema</td><td>工具除了给一段文本，还可以额外给一个对象，并且声明这个对象该长什么样</td></tr>
+<tr><td>工具注解</td><td>tool annotations</td><td>挂在工具说明书上的几个提示位：只读吗、有破坏性吗、重复调用结果一样吗、碰不碰外部世界</td></tr>
+<tr><td>模型上下文协议</td><td>MCP / Model Context Protocol</td><td>规定工具怎么描述、怎么列出、怎么调用、结果怎么回的一套协议</td></tr>
+<tr><td>JSON-RPC 2.0</td><td>JSON-RPC 2.0</td><td>MCP 的消息底子：每条请求带方法名、参数和一个编号，响应带同一个编号</td></tr>
+<tr><td>请求编号</td><td>request id</td><td>把一条响应和它对应的那条请求配起来的那个值。取消一条在飞的请求时也靠它指名</td></tr>
+<tr><td>工具清单</td><td>tools/list</td><td>问一句「你有哪些工具」，回来的是一个工具说明书的数组</td></tr>
+<tr><td>工具调用请求</td><td>tools/call</td><td>发起一次调用，参数是工具名加一个参数对象</td></tr>
+<tr><td>内容块</td><td>content block</td><td>工具结果里的一个元素，可以是文本、图片、音频或一段资源引用</td></tr>
+<tr><td>协议错误 / 工具错误</td><td>protocol error / tool error</td><td>前者是这条消息本身不对，回给你；后者是工具干活出了问题，回给模型</td></tr>
+<tr><td>错误标志</td><td>isError</td><td>装在一个成功响应里的一个位，表示「调用是通的，但工具这一次失败了」</td></tr>
+<tr><td>部分结果</td><td>partial results</td><td>一组并发调用里有的成功有的失败，把两种结局都收下，而不是一失败就全丢</td></tr>
+<tr><td>任务组</td><td>asyncio.TaskGroup</td><td>把若干个任务当成一整组来管：组里出事，整组一起收场</td></tr>
+<tr><td>兄弟任务取消</td><td>sibling cancellation</td><td>同一组里一个任务失败时，主动取消组里其余任务</td></tr>
+<tr><td>异常组</td><td>ExceptionGroup / except*</td><td>把同时发生的多个异常打包成一个抛出来，接的时候用 except* 这个专门语法</td></tr>
+<tr><td>协作式取消</td><td>cooperative cancellation</td><td>取消只能靠通知：被取消的那一侧自己愿意查、愿意停，才真的停得下来</td></tr>
+<tr><td>取消通知</td><td>notifications/cancelled</td><td>协议里专门用来送「刚才那一次不要了」的那条消息，参数是要取消的请求编号</td></tr>
+<tr><td>截止时间传递</td><td>deadline propagation</td><td>把「这件事还剩多久」当成参数一层层往下传，而不是每一层各设各的超时</td></tr>
+<tr><td>上下文污染</td><td>context pollution</td><td>把对模型没用的大段文字塞进上下文，此后每一轮都要把它重新搬一遍</td></tr>
+</table></div>
+
+<h2><span class="kk">板块 7</span>已学词表</h2>
+<details><summary>Day 1 到今天的全部术语，标注首次引入于第几天（点开，共 235 条）</summary>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little&#x27;s Law</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td>Day 11</td></tr>
+<tr><td>对等组</td><td>peer group</td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount / MNT_DETACH</td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td>Day 11</td></tr>
+<tr><td>叠加文件系统</td><td>overlayfs / overlay filesystem</td><td>Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td>lowerdir / upperdir / workdir</td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td>copy-on-write / copy_up</td><td>Day 12</td></tr>
+<tr><td>白障</td><td>whiteout</td><td>Day 12</td></tr>
+<tr><td>只读根</td><td>read-only rootfs</td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td>tmpfs</td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td>page cache</td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td>shmem</td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td>inode</td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td>size= / nr_inodes=</td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td>buffered write</td><td>Day 12</td></tr>
+<tr><td>直写</td><td>direct I/O (O_DIRECT)</td><td>Day 12</td></tr>
+<tr><td>回写</td><td>writeback</td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td>blkio throttle / io.max</td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td>major:minor</td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td>veth pair</td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td>SNAT / MASQUERADE</td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td>packet filter / netfilter (iptables)</td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td>DROP / REJECT</td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td>egress allowlist</td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td>capability bounding set</td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td>masking</td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td>least privilege</td><td>Day 12</td></tr>
+<tr><td>开放容器倡议</td><td>OCI / Open Container Initiative</td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td>runtime-spec</td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td>image-spec</td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td>distribution-spec</td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td>filesystem bundle</td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td>config.json</td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td>low-level runtime / runtime engine</td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td>high-level runtime</td><td>Day 13</td></tr>
+<tr><td>libcontainer</td><td>libcontainer</td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td>runc init</td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td>binary cloning / exeseal</td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td>__attribute__((constructor))</td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td>nsexec stage 0 / 1 / 2</td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td>exec fifo</td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td>creating / created / running / stopped</td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td>lifecycle hooks</td><td>Day 13</td></tr>
+<tr><td>垫片</td><td>shim</td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td>ttRPC</td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td>subreaper / PR_SET_CHILD_SUBREAPER</td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td>zombie process</td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td>CRI / Container Runtime Interface</td><td>Day 13</td></tr>
+<tr><td>预热池</td><td>warm pool</td><td>Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td>zygote / fork server</td><td>Day 14</td></tr>
+<tr><td>懒加载</td><td>lazy loading / lazy pulling</td><td>Day 14</td></tr>
+<tr><td>并发上限</td><td>concurrency limit</td><td>Day 14</td></tr>
+<tr><td>许可</td><td>semaphore</td><td>Day 14</td></tr>
+<tr><td>准入控制</td><td>admission control</td><td>Day 14</td></tr>
+<tr><td>背压</td><td>backpressure</td><td>Day 14</td></tr>
+<tr><td>泊松到达</td><td>Poisson arrivals</td><td>Day 14</td></tr>
+<tr><td>宽限期</td><td>grace period</td><td>Day 14</td></tr>
+<tr><td>请求路径</td><td>request path</td><td>Day 14</td></tr>
+<tr><td>异步回收</td><td>deferred cleanup</td><td>Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td>KV cache</td><td>Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td>query head / KV head</td><td>Day 15</td></tr>
+<tr><td>每头维度</td><td>head_dim / head size</td><td>Day 15</td></tr>
+<tr><td>分组查询注意力</td><td>GQA / grouped-query attention</td><td>Day 15</td></tr>
+<tr><td>内部碎片</td><td>internal fragmentation</td><td>Day 15</td></tr>
+<tr><td>外部碎片</td><td>external fragmentation</td><td>Day 15</td></tr>
+<tr><td>紧凑</td><td>compaction</td><td>Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td>block</td><td>Day 15</td></tr>
+<tr><td>块表</td><td>block table</td><td>Day 15</td></tr>
+<tr><td>分页注意力</td><td>PagedAttention</td><td>Day 15</td></tr>
+<tr><td>每块字节数</td><td>page_size_bytes</td><td>Day 15</td></tr>
+<tr><td>空闲块队列</td><td>free block queue</td><td>Day 15</td></tr>
+<tr><td>上下文长度上限</td><td>max_model_len</td><td>Day 15</td></tr>
+<tr><td>显存占用比例</td><td>gpu_memory_utilization</td><td>Day 15</td></tr>
+<tr><td>因果注意力</td><td>causal attention</td><td>Day 16</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td>prefix caching / APC</td><td>Day 16</td></tr>
+<tr><td>token 级前缀命中率</td><td>prefix cache hit rate</td><td>Day 16</td></tr>
+<tr><td>块 hash 链</td><td>chained block hash</td><td>Day 16</td></tr>
+<tr><td>基数树 / 前缀树</td><td>radix tree / RadixAttention</td><td>Day 16</td></tr>
+<tr><td>节点分裂</td><td>node split</td><td>Day 16</td></tr>
+<tr><td>最近最少使用</td><td>LRU / least recently used</td><td>Day 16</td></tr>
+<tr><td>复用距离</td><td>reuse distance</td><td>Day 16</td></tr>
+<tr><td>缓存盐</td><td>cache salt</td><td>Day 16</td></tr>
+<tr><td>卸载</td><td>offloading</td><td>Day 16</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td>tiering / primary tier / secondary tier</td><td>Day 16</td></tr>
+<tr><td>提升</td><td>promotion</td><td>Day 16</td></tr>
+<tr><td>写入门槛</td><td>store threshold</td><td>Day 16</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td>PCIe</td><td>Day 16</td></tr>
+<tr><td>前端进程</td><td>frontend process</td><td>Day 17</td></tr>
+<tr><td>引擎核心 / 引擎核心进程</td><td>EngineCore / EngineCoreProc</td><td>Day 17</td></tr>
+<tr><td>输入处理器</td><td>input processor</td><td>Day 17</td></tr>
+<tr><td>输出处理器</td><td>output processor</td><td>Day 17</td></tr>
+<tr><td>忙循环</td><td>busy loop</td><td>Day 17</td></tr>
+<tr><td>输入队列 / 输出队列</td><td>input_queue / output_queue</td><td>Day 17</td></tr>
+<tr><td>打包 / 解包 · 序列化 / 反序列化</td><td>serialize / deserialize</td><td>Day 17</td></tr>
+<tr><td>请求状态</td><td>RequestStatus</td><td>Day 17</td></tr>
+<tr><td>调度单</td><td>SchedulerOutput</td><td>Day 17</td></tr>
+<tr><td>全量与差量</td><td>NewRequestData / CachedRequestData</td><td>Day 17</td></tr>
+<tr><td>执行结果</td><td>ModelRunnerOutput</td><td>Day 17</td></tr>
+<tr><td>执行器</td><td>Executor</td><td>Day 17</td></tr>
+<tr><td>增量解码</td><td>incremental detokenization</td><td>Day 17</td></tr>
+<tr><td>解码窗口</td><td>prefix_offset / read_offset</td><td>Day 17</td></tr>
+<tr><td>停止串</td><td>stop string</td><td>Day 17</td></tr>
+<tr><td>替换符</td><td>replacement character (U+FFFD)</td><td>Day 17</td></tr>
+<tr><td>agent 循环</td><td>agent loop</td><td>Day 18</td></tr>
+<tr><td>一轮</td><td>turn</td><td>Day 18</td></tr>
+<tr><td>会话</td><td>session</td><td>Day 18</td></tr>
+<tr><td>工具调用</td><td>tool call</td><td>Day 18</td></tr>
+<tr><td>副作用</td><td>side effect</td><td>Day 18</td></tr>
+<tr><td>服务端推送事件</td><td>SSE / server-sent events</td><td>Day 18</td></tr>
+<tr><td>交接</td><td>handoff</td><td>Day 18</td></tr>
+<tr><td>在途会话</td><td>in-flight session</td><td>Day 18</td></tr>
+<tr><td>进程 CPU 时钟</td><td>process CPU clock (time.process_time)</td><td>Day 18</td></tr>
+<tr><td>幂等</td><td>idempotent / idempotence</td><td>Day 18</td></tr>
+<tr><td>幂等键</td><td>idempotency key</td><td>Day 18</td></tr>
+<tr><td>至少一次 / 恰好一次</td><td>at-least-once / exactly-once</td><td>Day 18</td></tr>
+<tr><td>检查点</td><td>checkpoint</td><td>Day 18</td></tr>
+<tr><td>追加式日志</td><td>append-only log</td><td>Day 18</td></tr>
+<tr><td>写前记录</td><td>write-ahead logging (WAL)</td><td>Day 18</td></tr>
+<tr><td>工具注册</td><td>tool registration</td><td>Day 19</td></tr>
+<tr><td>参数模式</td><td>input schema</td><td>Day 19</td></tr>
+<tr><td>JSON Schema</td><td>JSON Schema</td><td>Day 19</td></tr>
+<tr><td>附加属性</td><td>additionalProperties</td><td>Day 19</td></tr>
+<tr><td>结构化输出</td><td>structuredContent / outputSchema</td><td>Day 19</td></tr>
+<tr><td>工具注解</td><td>tool annotations</td><td>Day 19</td></tr>
+<tr><td>模型上下文协议</td><td>MCP / Model Context Protocol</td><td>Day 19</td></tr>
+<tr><td>JSON-RPC 2.0</td><td>JSON-RPC 2.0</td><td>Day 19</td></tr>
+<tr><td>请求编号</td><td>request id</td><td>Day 19</td></tr>
+<tr><td>工具清单</td><td>tools/list</td><td>Day 19</td></tr>
+<tr><td>工具调用请求</td><td>tools/call</td><td>Day 19</td></tr>
+<tr><td>内容块</td><td>content block</td><td>Day 19</td></tr>
+<tr><td>协议错误 / 工具错误</td><td>protocol error / tool error</td><td>Day 19</td></tr>
+<tr><td>错误标志</td><td>isError</td><td>Day 19</td></tr>
+<tr><td>部分结果</td><td>partial results</td><td>Day 19</td></tr>
+<tr><td>任务组</td><td>asyncio.TaskGroup</td><td>Day 19</td></tr>
+<tr><td>兄弟任务取消</td><td>sibling cancellation</td><td>Day 19</td></tr>
+<tr><td>异常组</td><td>ExceptionGroup / except*</td><td>Day 19</td></tr>
+<tr><td>协作式取消</td><td>cooperative cancellation</td><td>Day 19</td></tr>
+<tr><td>取消通知</td><td>notifications/cancelled</td><td>Day 19</td></tr>
+<tr><td>截止时间传递</td><td>deadline propagation</td><td>Day 19</td></tr>
+<tr><td>上下文污染</td><td>context pollution</td><td>Day 19</td></tr>
+</table></div>
+</details>
+
+<h2><span class="kk">板块 8</span>专项深挖</h2>
+<p>今天放不下、但各自够花一晚上的三件事。三段互不相干，挑一段整段发给 Claude 就行。</p>
+
+<div class="card">
+<p>我已经量过一件事：一轮里并发发出三个工具调用，中间那个两百毫秒失败之后，运行时两百零六毫秒就带着错误返回了，而另外两个工具的副作用在八百毫秒才落进账本。我也验证过 <code>asyncio.gather</code>、带 <code>return_exceptions</code> 的 <code>gather</code>、以及 <code>TaskGroup</code> 三种写法的最终副作用次数完全相同，取消只作用在本进程的协程上。</p>
+<p>现在我想弄清楚工业界怎么处理「请求已经发出去、结果不要了」这一类问题。请对比这几条路线：一，两阶段的调用（先拿一个凭据，再确认或放弃）；二，服务端幂等键加去重窗口；三，补偿事务（做了之后再做一个反向操作撤销）；四，把副作用推迟到确认之后才真正生效。对每一条说明：它要求被调的那一侧提供什么能力、调用方的代码要写成什么样、以及当被调方是一个你改不了的第三方接口时它还剩下什么。产出用一张对比表加四段说明，每段不超过两百字，不要贴大段代码。</p>
+</div>
+
+<div class="card">
+<p>我已经量过工具注册表的上下文成本：一个带三个参数、两行中文说明、有 outputSchema 的工具，在 MCP 的 tools/list 里是六百七十字节；挂三十二个工具跑一条六轮会话，注册表占了发给模型的全部字节的九成半。我也知道工具的 description 取自函数的文档字符串。</p>
+<p>现在我想搞清楚「工具太多」这个问题有哪些解法。请评估这几条路各自的机制和代价：一，按任务先检索再注册（工具做成可检索的，每轮只挂相关的几个）；二，把工具分层（先挂几个大类，模型选中之后再展开子工具）；三，把多个工具合并成一个带 mode 参数的通用工具；四，把工具描述放在推理服务那一侧缓存、每轮只发引用。对每一条说明它对模型的选择准确率是帮忙还是添乱、它对前缀缓存命中率的影响、以及它把复杂度挪到了哪里。产出用一张表加一段结论。</p>
+</div>
+
+<div class="card">
+<p>我已经量过 MCP 的取消通道：协议里有 <code>notifications/cancelled</code>，服务端收到之后会去在飞的请求表里找对应那条并取消它，但 Python SDK 的客户端在请求超时的路径上并不发这条通知。我自己实现了一条等价的通道，验证了「超时之后通知对面，对面在产生副作用之前查一次」确实能把副作用挡住。</p>
+<p>现在我想把取消这件事在 Python 异步生态里彻底搞清楚。请讲清楚：<code>asyncio</code> 的 <code>CancelledError</code> 在 3.11 之后的语义（它为什么不是 <code>Exception</code> 的子类）、<code>uncancel</code> 和取消计数是解决什么问题的、<code>asyncio.shield</code> 该用在哪里而不该用在哪里、以及在一个 <code>finally</code> 块里做清理时怎么保证清理本身不被再次取消打断。每一条都要给一个会出错的小例子和对应的正确写法。产出以代码加说明为主，不超过一千五百字。</p>
+</div>
+
+<h2><span class="kk">板块 9</span>延伸材料</h2>
+<ol>
+<li>Model Context Protocol 规范（modelcontextprotocol.io）——重点看 Tools 那一节：工具怎么描述、调用消息长什么样、错误怎么分成两类。今天页面上引的每一处源码都能在这里找到对应的规范条文，对着读一遍收获最大。难度中等，一小时。</li>
+<li>本机那份 MCP 的 Python SDK 源码——装了 <code>mcp</code> 这个包之后就在 <code>site-packages/mcp/</code> 下。只读三个文件里的三段：<code>types.py</code> 里 Tool 和 CallToolResult 的定义、<code>server/lowlevel/server.py</code> 里 call_tool 那个处理函数、<code>shared/session.py</code> 里收到取消通知的那几行。加起来不到两百行，是今天所有协议结论的出处。难度中等，四十分钟。</li>
+<li>Python 官方文档 asyncio 的 Task Groups 与 Timeouts 两节（docs.python.org/3/library/asyncio-task.html）——把 <code>TaskGroup</code> 的取消语义和 <code>asyncio.timeout</code> 的行为定死的那一份。今天第 8、9 节的每一个结论都在这里有对应的一句话。难度低，四十分钟，是今天性价比最高的一篇。</li>
+<li>PEP 654 · Exception Groups and except*（peps.python.org/pep-0654/）——为什么并发场景需要一种能同时装下多个异常的东西，以及 <code>except*</code> 的匹配规则。读完你会明白任务组为什么不能只抛第一个异常。难度偏高，一个半小时，但它是理解结构化并发的门槛。</li>
+<li>Understanding JSON Schema（json-schema.org/understanding-json-schema）——当参考手册翻，重点看 object 那一章里的 required 和 additionalProperties。第 12 节那个「拼错键名报成缺少必填」的坑，原因就写在这一章里。难度低，半小时。</li>
+</ol>
+
+<h2><span class="kk">板块 10</span>今日五句话</h2>
+<div class="card c-five">
+<p>把这一页扣过去，用自己的话答下面五个问题，每题一两句。</p>
+<p>1 · 模型凭什么知道你有哪些工具？这份「凭什么」在一条 K 轮会话里要花多少字节，按什么方式增长？</p>
+<p>2 · 一轮里并发发出三个工具调用，其中一个失败了。四种收法在「什么时候返回」「拿到几个结果」「副作用发生几次」这三件事上分别是什么答案？哪一件是四种都改不了的？</p>
+<p>3 · 超时之后 <code>asyncio.timeout</code> 取消了那条协程。此刻工具服务那一侧在干什么？要让它真的停下来，还缺哪一步？</p>
+<p>4 · 一段一千零八十八字节的堆栈在第 2 轮进上下文，一条六轮会话为它多付多少字节？这个数是怎么算出来的？</p>
+<p>5 · 「工具调用失败」这句话盖住了哪两件不同的事？它们各自回给谁，为什么不能混成一条路？</p>
+<div class="wr"></div>
+</div>
+
+<h3>逐句自查</h3>
+<p>第 1 句如果只写「靠工具注册表」，缺了后半问。要给出增长的形状：注册表在上下文最前面，每一轮原样重发一次，所以是 <code>K × 每个工具的字节 × 工具数</code>，对轮数是一次方。再补一个量级：一个工具约六百七十字节，挂三十二个跑六轮，它占发给模型的总量的九成半。</p>
+<p>第 2 句如果只答了前两件事就漏掉了今天最要紧的一件。第三件的答案是：三种并发写法完全一样，都是两行——发出去几个调用就发生几次副作用，这一件不在收法的选择范围里。串行那一行只有一行，唯一的原因是第三个工具从来没被发出去。</p>
+<p>第 3 句如果写成「工具服务已经被取消了」就答反了。它什么都不知道，照常 sleep 完、照常写下那行 <code>done</code>——实测运行时三百毫秒出头就返回了，副作用八百毫秒才落地。缺的那一步是把取消送到对面，而且对面要在产生副作用之前查一次。</p>
+<p>第 4 句如果只写「一千零八十八乘以四」就差了一点。每一次重发多付的是一千一百二十，多出来的四十字节是二十二个换行和十八个引号在 JSON 里各被转义成两个字符；四次合计四千四百八十。乘数是四，因为错误在第 2 轮末尾进上下文，之后还剩四轮。</p>
+<p>第 5 句如果答成「一种是网络错误一种是业务错误」就抓错了分界。分界不在错误的成因，在这段信息回给谁：消息本身不对是协议错误，走 JSON-RPC 的错误响应，给你看；工具被正确调用但干活失败，回的是一个成功的响应加一个 <code>isError</code> 标志，给模型看。混成一条路的后果是模型收到一堆它无能为力的东西，而你漏掉真正该报警的那些。</p>
+
+<h2><span class="kk">板块 11</span>明日预告</h2>
+<p>今天量到，一段进了上下文的东西会在后面每一轮里被重新搬一遍，而它有多贵取决于它进去得有多早。今天做的是不让没用的东西进去；已经进去的怎么清出来，一整段对话长到装不下时先扔哪一截，是明天的事。</p>
+<p>明天 Day 20 讲上下文与会话管理：窗口预算怎么定、压缩和截断各自会丢掉什么、会话状态怎么落库。还有一个今天顺手埋下的钩子——你把上下文里靠前的那一段改掉或者删掉的那一刻，Day 16 那条「只往后长、从来不改前面」的性质就断了，而前缀命中率是从断点开始重新计算的。省下来的字节和赔进去的命中率，明天要放在同一张表上算。</p>
+
+<footer>
+<div class="ln">AI Infra · Day 19 / 28 · 2026-09-03 · 阶段四 · Agent Runtime（八天项目 · 第 2 天 · 建造）</div>
+<p>实验条件：2 核 Intel Xeon @ 2.10 GHz，L1d 96 KiB、L2 4 MiB、L3 260 MiB，7.84 GiB 内存，页大小 4096 字节；Linux 6.18.44。Python 3.11.15、FastAPI 0.141.1、uvicorn 0.46.0、httpx 0.28.1（与 Day 14、Day 18 同一套版本），mcp 1.27.0、jsonschema 4.26.0。这台机器与 Day 18 那台不是同一台（主频与缓存都不同），所以两天的绝对时长不横着比；今天所有对比都在本页内部完成。</p>
+<p>三个进程都在这一台机器上，进程间走本机明文 HTTP。假模型的时序是设定值：首 token 前 100 毫秒、token 间隔 5 毫秒、每轮 128 个字符。工具时长设定为慢的 800 毫秒、失败的 200 毫秒，均为纯 <code>asyncio.sleep</code>。段长由运行时用 <code>time.monotonic()</code> 量；跨进程的先后由两侧共用的 <code>time.time()</code> 对齐。并发矩阵与取消实验各跑 5 遍，表中为中位数与范围。</p>
+<p>一手材料：本机 site-packages 下的 <code>mcp</code> 1.27.0，页面上所有 <code>types.py</code>、<code>server/lowlevel/server.py</code>、<code>server/fastmcp/tools/base.py</code>、<code>shared/session.py</code> 的行号均以这一份为准。</p>
+</footer>
+
+</main>
+</body>
+</html>
