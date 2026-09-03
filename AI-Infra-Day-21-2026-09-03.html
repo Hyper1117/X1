@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 21</title>
+<style>
+:root{
+  --bg:#faf6ef; --fg:#2c2620; --muted:#6d6257; --rule:#e0d6c7; --card:#fffdf8;
+  --accent:#a8642a; --accent2:#2f6f5e; --accent3:#7a4b8c; --accent4:#8a6d1f;
+  --codebg:#211d19; --codefg:#f0e9df; --thbg:#f2ebe0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1a1815; --fg:#e8e0d4; --muted:#a89c8d; --rule:#3a342c; --card:#221f1a;
+    --accent:#e0a06a; --accent2:#6fbfa6; --accent3:#c39ad9; --accent4:#d6b95c;
+    --codebg:#12100e; --codefg:#e8e0d4; --thbg:#2a251f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1a1815; --fg:#e8e0d4; --muted:#a89c8d; --rule:#3a342c; --card:#221f1a;
+  --accent:#e0a06a; --accent2:#6fbfa6; --accent3:#c39ad9; --accent4:#d6b95c;
+  --codebg:#12100e; --codefg:#e8e0d4; --thbg:#2a251f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  line-height:1.78;font-size:16.5px;overflow-x:hidden}
+.bar{position:sticky;top:0;z-index:50;background:var(--card);border-bottom:1px solid var(--rule);
+  padding:8px 16px;display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;font-size:13.5px;color:var(--muted)}
+.bar b{color:var(--accent);font-weight:600;letter-spacing:.02em}
+main{max-width:820px;margin:0 auto;padding:0 18px 80px}
+h1{font-size:1.62rem;line-height:1.42;margin:1.6rem 0 .4rem;font-weight:700}
+h2{font-size:1.22rem;margin:2.6rem 0 .5rem;padding-top:.7rem;border-top:2px solid var(--rule);font-weight:700}
+h3{font-size:1.05rem;margin:1.9rem 0 .35rem;font-weight:650;color:var(--accent)}
+h4{font-size:.98rem;margin:1.3rem 0 .3rem;font-weight:650}
+p{margin:.62rem 0}
+.sub{color:var(--muted);font-size:.94rem;margin-top:.1rem}
+.lead{font-size:1.06rem;font-weight:600;margin:1.1rem 0 .5rem}
+.card{border-left:4px solid var(--accent);background:var(--card);border-radius:0 8px 8px 0;
+  padding:.7rem 1rem;margin:1.1rem 0}
+.card.recall{border-left-color:var(--accent2)}
+.card.predict{border-left-color:var(--accent3)}
+.card.five{border-left-color:var(--accent4)}
+.card.key{border-left-color:var(--accent)}
+.card .tag{font-size:.76rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:.2rem}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:.9rem 0;max-width:100%}
+table{border-collapse:collapse;font-size:.9rem;min-width:100%}
+th,td{border:1px solid var(--rule);padding:.36rem .58rem;text-align:left;vertical-align:top;white-space:normal;overflow-wrap:anywhere}
+th{background:var(--thbg);font-weight:650;white-space:nowrap}
+td.n,th.n{white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.cap{font-size:.84rem;color:var(--muted);margin:-.4rem 0 1rem}
+pre{background:var(--codebg);color:var(--codefg);padding:.85rem 1rem;border-radius:8px;
+  overflow-x:auto;line-height:1.6;font-size:.83rem;margin:.8rem 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+p code,li code,td code{background:var(--thbg);padding:.05rem .3rem;border-radius:4px;font-size:.87em;overflow-wrap:anywhere}
+.term{border-bottom:1px solid var(--accent);padding-bottom:1px;font-weight:550;color:inherit}
+details{border:1px solid var(--rule);border-radius:8px;padding:.5rem .85rem;margin:.7rem 0;background:var(--card)}
+summary{cursor:pointer;font-weight:600;font-size:.95rem}
+details[open] summary{margin-bottom:.4rem;border-bottom:1px solid var(--rule);padding-bottom:.35rem}
+.write{border:1px dashed var(--rule);border-radius:6px;min-height:4.2rem;margin:.5rem 0;background:var(--bg)}
+.write.s{min-height:2.6rem}
+ul,ol{margin:.55rem 0;padding-left:1.35rem}
+li{margin:.28rem 0}
+svg{max-width:none}
+.svgwrap{overflow-x:auto;margin:1rem 0;padding-bottom:.3rem}
+footer{border-top:2px solid var(--rule);margin-top:3rem;padding-top:1rem;font-size:.86rem;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--rule);margin:2rem 0}
+.small{font-size:.9rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="bar"><b>Day 21 / 28</b><span>阶段四 · Agent Runtime（八天项目 · 第 4 天 · 建造）</span><span>2026-09-03</span></div>
+<main>
+
+<h1>一条跑了两小时的任务，进程死在第九十分钟</h1>
+<p class="sub">昨天恢复的是一条会话：它有一个明确的当前轮，状态就是一段上下文。今天恢复的是一个长任务——中间调过几十次工具，有几次已经把钱扣了，而机器上同时还有几百个这样的任务在排队。</p>
+
+<h2>板块 0 · 温故 · 闭卷</h2>
+<p>三道题，间隔分别是 1 天、3 天、7 天。先在心里答一遍，答不上来再展开。</p>
+
+<div class="card recall">
+<span class="tag">第 1 题 · Day 20 · 会话恢复</span>
+<p>Day 20 量到：一条 30 轮的会话在第 20 轮被打断，读回来这一步本身很便宜，最长的一档、最慢的一种读法也只要两点二毫秒。既然这么便宜，为什么「恢复时只读回最近 8 条」是一个坏默认？把代价落到具体的数上，再说出这个坏处会持续多久。</p>
+<details><summary>展开答案</summary>
+<p>因为读回来快不快，和读回来对不对，是两笔账。快的那一列快正是因为它读得少。</p>
+<p>只读最近 8 条，第 21 轮的前缀命中率从九成六掉到不足两成。机制是位置：中间少了十二轮，头部之后的每一块 token 组合都变了，串出来的块 hash 全对不上，那一段要重算。</p>
+<p>它不是一次性的。那天量到后十轮累计要多算三千七百多个 token——因为每一轮都还在头部之后重新起算，这笔债一直跟着往后还。判据也在那天定死了：不是「能不能读出来」，是「读回来那串 token 和崩之前那串是不是逐字节相同」。</p>
+<p>接今天：今天恢复的东西比会话难一档。会话的状态全在你自己的磁盘上，读回来就完事；今天要恢复的任务，有一部分状态压根不在你这儿。</p>
+</details>
+</div>
+
+<div class="card recall">
+<span class="tag">第 2 题 · Day 18 · 那条堵不住的窗口</span>
+<p>Day 18 在一轮的三条缝上各硬杀了一次，两种设计各跑一遍，六种组合里只有一行出现了重复扣款。是哪一条缝？为什么把检查点写得更快、更勤，不能把那一行变成零？</p>
+<details><summary>展开答案</summary>
+<p>是「工具已经执行完、这件事还没被记下来」那一条。另外两条都不会重复：崩在模型之后，那一轮的工具还没动过，重来一遍是从头做；崩在检查点之后，这一轮已经被记下来了，重启会从下一轮开始。</p>
+<p>写得更快堵不住它，是因为这条缝的宽度就是写检查点那零点三毫秒，你可以把它压得更小，但压不到零——副作用发生在外部系统里，记录发生在你的磁盘上，两个动作在两个地方，没有办法让它们同时发生。</p>
+<p>那天那个零是靠换问法拿到的：不问「我崩之前写下了没有」，而问「这件事之前做过没有」，答案从账本自己那里读。</p>
+<p>接今天：那天的账本在本地磁盘上，缝的两侧刚好都被它盖住了。今天要在旁边再开一条缝，那个本地账本会失效。</p>
+</details>
+</div>
+
+<div class="card recall">
+<span class="tag">第 3 题 · Day 14 · 挪出请求路径</span>
+<p>Day 14 把一次最糟的沙箱终止加回收拆开算过：宽限期空等、SIGKILL、带 <code>-f</code> 的 delete、拆挂载，合计六百二十一毫秒。把这一段挪出请求路径之后，这六百二十一毫秒去哪儿了？什么情况下这笔钱还是会落到用户头上？</p>
+<details><summary>展开答案</summary>
+<p>哪儿也没去。机器还是要付它，变的只是谁在等：不再是某一条倒霉的请求，而是后台那条协程。</p>
+<p>落回用户头上的条件是后台跟不上：如果回收的速度长期低于请求到达的速度，池子会持续见底，每一条请求都要走冷路径。这时候那六百二十一毫秒又回到了请求路径上，只是换了个名字叫「池子空了」。</p>
+<p>接今天：今天要挪的东西更大——一整个任务。挪走之后同样有一条「后台跟不跟得上」的账，而且今天这条账多了一个新的收款方：等在队列里的那段时间，别人正在往缓存里塞东西。</p>
+</details>
+</div>
+
+<h2>板块 1 · 今日概览</h2>
+<div class="scroll"><table>
+<tr><th>项</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 21 / 28 · 阶段四 · Agent Runtime（八天项目的第 4 天，建造）</td></tr>
+<tr><td>今日主题</td><td>长任务与并发：任务队列的投递语义、租约与接手、带副作用步骤的恢复、多租户的排队与配额</td></tr>
+<tr><td>时间预算</td><td>约 3.5 小时（读 90 分钟 · 任务 A 90 分钟 · 任务 B 30 分钟）</td></tr>
+<tr><td>今天不讲</td><td>多个调度器之间怎么就「谁负责这条任务」达成一致（那是共识算法，单机单队列已经够把今天四件事讲透）；Celery / RabbitMQ / Temporal 的用法与选型（放到 Day 26 那天，和三块产出的接合面一起挑）；优先级与抢占（同样归 Day 26 的资源竞争）；cache-aware 路由的具体规则（Day 25 那一整天都是它）</td></tr>
+</table></div>
+
+<h4>今天结束后你应该能做到这三件事</h4>
+<ol>
+<li>给一条任务队列定出租约时长，并且说清楚这个数往长里调、往短里调各自要付什么。</li>
+<li>拿到一段带副作用的恢复路径，指出缝在哪一条边上，并且用两条办法之一把它封住。</li>
+<li>看到「一个租户的突发把别人堵死了」，判断该动排队规则还是该动配额，并说出这个选择在利用率上的价钱。</li>
+</ol>
+
+<h4>今天这一页怎么走</h4>
+<div class="scroll"><table>
+<tr><th>部分</th><th>它回答的问题</th></tr>
+<tr><td>一 · 队列本身也是状态</td><td>进程重启之后，那些还没做完的任务在哪儿？「取出来」这个动作到底做了什么</td></tr>
+<tr><td>二 · 今天的台子</td><td>四个程序、两处硬杀，数字从哪儿读出来</td></tr>
+<tr><td>三 · 租约那个数，两头都要付钱</td><td>租约取长取短各丢什么，续租凭什么能两头都要</td></tr>
+<tr><td>四 · 账本在你这儿，钱在对方那儿</td><td>Day 18 那个幂等键，为什么在这条缝上等于没写</td></tr>
+<tr><td>五 · 几百个在同时等</td><td>一个租户凭什么让别人等；等待本身在别处还要收一笔</td></tr>
+</table></div>
+
+<h2>板块 2 · 第一部分 · 队列本身也是状态</h2>
+
+<h3>1. 队列先放在哪儿</h3>
+<p class="lead">进程重启之后，那些还没做完的任务在哪儿？</p>
+<p>Day 18 定的接口里有一条：长会话交一个任务号回来，进度另开一路取。要接住这条，你需要一个地方放「已经收下但还没做完」的任务。</p>
+<p>你写过的每一个后端服务里都有类似的零件，最顺手的那个是 <code>asyncio.Queue</code>：<code>put</code> 进去、<code>await get()</code> 出来，几行就跑通了，而且 Day 19 那些并发工具全都能直接接上。</p>
+<p>它的问题不在性能上。Day 20 已经把会话这一侧的状态搬出了进程——上下文写进了会话存储，崩了能读回来。可队列没搬：<code>asyncio.Queue</code> 是进程内存里的一个双端队列，进程一没，队列里排着的东西一起没。</p>
+<p>所以第一句话是：队列不是一个数据结构，它是一份状态，和上下文一样要活在进程之外。</p>
+<p>把它挪出去之后，队列变成一张表，或者一个数据库里的键。这时候「取一条任务出来」这个动作会长出一个新问题，而这个问题在内存队列里根本不存在。</p>
+
+<h3>2. 「取出来」那一刻，任务在哪儿</h3>
+<p>内存队列的 <code>get()</code> 是一个动作：拿到手，队列里就没有了。落到表上，这个动作要拆成两步——把它标记成「有人在做」，和把它删掉。两步之间隔着整个任务的执行时间，可能是两个小时。</p>
+<p>先看最省事的写法：领的时候就删。这样一来队列里剩下的永远是「还没人碰过的」，干净。代价是这条任务从此只存在于那个工作进程的内存里，那个进程一死，它就不见了，而且没有任何人知道它不见了。这种投递方式叫<span class="term">至多一次（at-most-once）</span>。</p>
+<p>反过来：领的时候只标记，做完了才删。进程死掉的时候，那条任务还在表里躺着，状态是「有人在做」。</p>
+<p>可它躺在那儿也没用——没有人会去看它。你需要一样东西告诉别人「这个『有人在做』已经过期了」。做法是领取的时候顺手写一个到期时刻，这个时刻之前别人不许碰它，过了这个时刻谁都能领走。这个到期时刻叫一份<span class="term">租约（lease）</span>；在消息队列的说法里，同一件事叫<span class="term">可见性超时（visibility timeout）</span>——任务被领走之后对别人「不可见」多久。</p>
+<p>本机装着的 kombu 里就是这么实现的。领取的那一刻，它把这条消息的标签和领取时刻一起写进一个按分数排序的集合：</p>
+<pre><code># kombu/transport/redis.py:363-375  领走的时候把「领取时刻」记下来
+def append(self, message, delivery_tag):
+    ...
+    zadd_args = [{delivery_tag: time()}]      # 分数就是领取的时刻
+    pipe.zadd(self.unacked_index_key, *zadd_args) \
+        .hset(self.unacked_key, delivery_tag, dumps([...]))
+
+# kombu/transport/redis.py:410-424  谁过期了，就把谁放回队列
+def restore_visible(self, start=0, num=10, interval=10):
+    self._vrestore_count += 1
+    if (self._vrestore_count - 1) % interval:  # 每 10 次调用才真扫一遍
+        return
+    ceil = time() - self.visibility_timeout    # 领取时刻早于这个的，算过期
+    visible = client.zrevrangebyscore(self.unacked_index_key, ceil, 0, ...)
+    for tag, score in visible or []:
+        self.restore_by_tag(tag, client)       # 放回队列，别人能看见了</code></pre>
+<p><code>zadd</code> 是往一个按分数排序的集合里放一项，<code>zrevrangebyscore</code> 是把分数落在某个区间里的项取出来。三件事从这几行里读得出来。第一，索引里的分数是领取时刻，过期与否是扫描的时候现算的（<code>ceil</code> 那一行）。第二，只有 <code>ack</code> 才把它从索引里删掉（同一个文件第 386 到 388 行），所以「做完才删」是这套设计的前提。第三，那个 <code>interval</code> 默认是 10，也就是说这个检查十次调用才真跑一次——回收从来不是精确到点的，这一点在 3.4 节那条轨迹的最后一段加法里会露出来。</p>
+<p>被这样放回队列的任务，叫<span class="term">孤儿任务（orphaned task）</span>；kombu 放回去的时候会给它打一个标记，告诉下一个领走的人「你不是第一个」：</p>
+<pre><code># kombu/transport/redis.py:796-800
+payload['headers']['redelivered'] = True
+payload['properties']['delivery_info']['redelivered'] = True</code></pre>
+<p>这个<span class="term">重投标记（redelivered flag）</span>是免费送的一句提醒：任何一条任务都可能被执行第二遍。Day 18 那句话在这里换了个场合成立——崩溃恢复能免费给你的只有<span class="term">至少一次（at-least-once）</span>。到这里三种<span class="term">投递语义（delivery semantics）</span>就齐了：至多一次、至少一次，以及要靠每一步自己带键去重才能拿到的恰好一次。</p>
+<p>那么租约取多长？kombu 的默认值写在第 644 行，是 3600 秒。这个数从哪儿来、取大取小各输什么，是第三部分整段要回答的事。</p>
+
+<h2>板块 2 · 第二部分 · 今天的台子</h2>
+<p>今天有四个程序。两个要真的杀进程，另外两个是单进程的账台。</p>
+
+<h3>3.1 四个程序，两处硬杀</h3>
+<div class="svgwrap"><svg width="880" height="392" viewBox="0 0 880 392" role="img" aria-label="P1 队列账台与 P2 副作用账台的结构图" style="color:currentColor">
+<g fill="none" stroke="currentColor" stroke-width="1.4" font-family="sans-serif" font-size="12">
+  <text x="8" y="16" font-size="13" font-weight="700" stroke="none" fill="currentColor">P1 队列账台（4 个进程）</text>
+  <rect x="8" y="28" width="212" height="52" rx="6"/>
+  <text x="18" y="47" stroke="none" fill="currentColor">控制器进程</text>
+  <text x="18" y="66" stroke="none" fill="currentColor" font-size="11">造 60 条任务 · 盯 execlog · 发 SIGKILL</text>
+
+  <rect x="8" y="140" width="212" height="70" rx="6"/>
+  <text x="18" y="159" stroke="none" fill="currentColor">队列文件（SQLite · WAL）</text>
+  <text x="18" y="177" stroke="none" fill="currentColor" font-size="11">tasks：状态 / 租约到期时刻 / 领取次数</text>
+  <text x="18" y="195" stroke="none" fill="currentColor" font-size="11">execlog：每次执行的起止时刻</text>
+
+  <rect x="8" y="272" width="64" height="46" rx="6"/><text x="24" y="300" stroke="none" fill="currentColor">w0</text>
+  <rect x="82" y="272" width="64" height="46" rx="6"/><text x="98" y="300" stroke="none" fill="currentColor">w1</text>
+  <rect x="156" y="272" width="64" height="46" rx="6"/><text x="172" y="300" stroke="none" fill="currentColor">w2</text>
+  <text x="8" y="336" stroke="none" fill="currentColor" font-size="11">三个工作进程：领 / 干 / 续租 / 标完成</text>
+  <text x="8" y="354" stroke="none" fill="currentColor" font-size="11">指标全部由控制器从 execlog 算出</text>
+
+  <path d="M114 140 L114 82"/>
+  <path d="M110 90 L114 80 L118 90 Z" fill="currentColor" stroke="none"/>
+  <path d="M40 272 L40 210"/><path d="M114 272 L114 210"/><path d="M188 272 L188 210"/>
+  <path d="M36 210 L40 218 L44 210 Z" fill="currentColor" stroke="none"/>
+  <path d="M110 210 L114 218 L118 210 Z" fill="currentColor" stroke="none"/>
+  <path d="M184 210 L188 218 L192 210 Z" fill="currentColor" stroke="none"/>
+  <text x="122" y="114" stroke="none" fill="currentColor" font-size="11">读 execlog</text>
+  <path d="M228 54 L262 54 L262 295 L226 295" stroke-dasharray="5 4"/>
+  <path d="M232 291 L224 295 L232 299 Z" fill="currentColor" stroke="none"/>
+  <text x="268" y="180" stroke="none" fill="currentColor" font-size="11" transform="rotate(90 268 180)">SIGKILL（领到长任务 200 ms 后）</text>
+
+  <line x1="330" y1="20" x2="330" y2="370" stroke-dasharray="3 5" stroke-width="1"/>
+
+  <text x="352" y="16" font-size="13" font-weight="700" stroke="none" fill="currentColor">P2 副作用账台（2 个进程）</text>
+  <rect x="352" y="28" width="292" height="106" rx="6"/>
+  <text x="362" y="47" stroke="none" fill="currentColor">控制器进程</text>
+  <rect x="362" y="56" width="272" height="30" rx="4"/>
+  <text x="372" y="76" stroke="none" fill="currentColor" font-size="11">计费服务（HTTP · 127.0.0.1:8791）= 外部系统</text>
+  <rect x="362" y="94" width="130" height="30" rx="4"/>
+  <text x="372" y="114" stroke="none" fill="currentColor" font-size="11">服务端账本（扣款行）</text>
+  <rect x="504" y="94" width="130" height="30" rx="4"/>
+  <text x="514" y="114" stroke="none" fill="currentColor" font-size="11">见过的幂等键</text>
+
+  <rect x="352" y="272" width="130" height="46" rx="6"/>
+  <text x="362" y="300" stroke="none" fill="currentColor">工作进程</text>
+  <rect x="514" y="272" width="130" height="46" rx="6"/>
+  <text x="524" y="294" stroke="none" fill="currentColor" font-size="11">本地日志文件</text>
+  <text x="524" y="311" stroke="none" fill="currentColor" font-size="11">intent / done 行</text>
+
+  <path d="M400 272 L400 136"/><path d="M396 144 L400 134 L404 144 Z" fill="currentColor" stroke="none"/>
+  <text x="406" y="182" stroke="none" fill="currentColor" font-size="11">POST /charge · GET /lookup</text>
+  <path d="M470 90 L490 90 L490 250 L440 250 L440 268" stroke-dasharray="5 4"/>
+  <path d="M436 268 L440 276 L444 268 Z" fill="currentColor" stroke="none"/>
+  <text x="498" y="236" stroke="none" fill="currentColor" font-size="11">SIGKILL：落账之后、回话之前</text>
+  <path d="M482 295 L512 295"/><path d="M506 291 L514 295 L506 299 Z" fill="currentColor" stroke="none"/>
+  <text x="352" y="345" stroke="none" fill="currentColor" font-size="11">指标：扣款次数在计费服务这一侧数，恢复行为看本地日志</text>
+  <text x="352" y="363" stroke="none" fill="currentColor" font-size="11">另有 P3 排队账台、P4 等待代价账台，各是一个单进程程序</text>
+</g>
+</svg></div>
+<p><code>SIGKILL</code> 就是 <code>kill -9</code>：进程当场消失，没有任何收尾的机会，析构函数、缓冲区、正在写的那半行日志全都不作数。两条虚线是今天仅有的两处硬杀，位置不一样：P1 杀在「任务干到一半」，P2 杀在「钱已经扣了、回话还没到」。第五部分那两张表出自 P3 和 P4，都是单进程程序，没有跨进程通信，也没有杀。</p>
+
+<h3>3.2 一条任务、一次扣款长什么样</h3>
+<p>P1 的队列表里，一条任务就是一行。下面这一行是控制器造出来、工作进程领走之后的样子：</p>
+<pre><code>sqlite&gt; SELECT * FROM tasks WHERE id=4;
+id  turns  state    lease_until      attempts  done_at
+4   40     running  1788420885.51    1         NULL
+     ↑              ↑                ↑
+     要跑 40 轮      租约到期的绝对时刻  被领走过 1 次</code></pre>
+<p>每一次执行在 <code>execlog</code> 里留一行，起止时刻各一列；被杀掉的那次执行，结束时刻那一格永远是空的——这正是它被杀掉的证据。</p>
+<p>P2 那一侧，工作进程往计费服务发的是一行 JSON，本地日志里记的是另一行：</p>
+<pre><code>发给计费服务： {"key": "T1-2", "amount": 100, "step": 2, "task": "T1", "dedup": true}
+本地日志一行： {"t": "intent", "step": 2, "key": "T1-2"}
+计费服务回话： {"applied": true}          # 或者 {"applied": false, "dup": true}</code></pre>
+
+<h3>3.3 台子上哪些是真的、哪些是假的</h3>
+<div class="scroll"><table>
+<tr><th>这一样</th><th>真的还是假的</th><th>所以今天不下什么结论</th></tr>
+<tr><td>进程、崩溃、信号</td><td>真。工作进程是真的 <code>subprocess</code>，杀法是 <code>SIGKILL</code>，没有任何收尾机会</td><td>—</td></tr>
+<tr><td>队列</td><td>真。SQLite 文件，WAL 模式，领取走一句立刻拿写锁的事务（<code>BEGIN IMMEDIATE</code>，任务 A 第 2 步会用到它）</td><td>不下关于 Redis / RabbitMQ / SQS 性能的结论，那些是另一套实现</td></tr>
+<tr><td>外部系统（计费服务）</td><td>真进程间的 HTTP 调用，但它跑在同一台机器的回环地址上</td><td>不下关于网络分区、超时重传的结论。今天的失败只有一种：调用方死了</td></tr>
+<tr><td>任务里的「干活」</td><td>假。一轮就是一次 <code>sleep</code>，不调模型、不占 CPU</td><td>不下关于「运行时自己花多少 CPU」的结论——那是 Day 18 量过的东西</td></tr>
+<tr><td>一轮的时长</td><td>假。折算过，见 3.5 节</td><td>绝对毫秒数不能和 Day 18 的 738 毫秒横着比，只能看比值</td></tr>
+<tr><td>P1 的任务长度</td><td>假。只有 3 轮和 40 轮两种，没有长尾</td><td>不下关于「服务时间长尾下租约该取哪个分位数」的结论，那是页尾加分题</td></tr>
+<tr><td>P3 的服务时间</td><td>假。固定 40 毫秒的 <code>asyncio.sleep</code>，一点方差都没有</td><td>不下关于「服务时间方差会怎么改变排队公平」的结论</td></tr>
+<tr><td>P4 的缓存</td><td>假。一个块级 LRU 模拟器，没有真引擎、没有加速器</td><td>不下关于绝对命中率数值的结论，只看它随旋钮怎么动</td></tr>
+<tr><td>租户</td><td>假。三个租户只是任务上的一个标签</td><td>不下关于计费、鉴权、配额下发的结论</td></tr>
+</table></div>
+
+<h3>3.4 跟着走一遍：被杀掉的那条任务</h3>
+<p>下面这一条出自 P1 的一次单独运行，租约取 0.8 秒。表里的时刻都是相对于「这条任务第一次被领走」那一刻的毫秒数。</p>
+<div class="scroll"><table>
+<tr><th class="n">时刻</th><th class="n">这一段多长</th><th>发生了什么</th></tr>
+<tr><td class="n">0.00</td><td class="n">—</td><td>w1 领走任务 4（40 轮），把租约到期时刻写成 800.00，开始干活</td></tr>
+<tr><td class="n">200.52</td><td class="n">200.52</td><td>控制器把 w1 杀掉。库里这条还是 running，租约还剩 599.48</td></tr>
+<tr><td class="n">800.00</td><td class="n">599.48</td><td>租约到期。从这一刻起，任何空闲的工作进程都能领走它</td></tr>
+<tr><td class="n">812.28</td><td class="n">12.28</td><td>w0 领走它，领取次数从 1 变成 2</td></tr>
+<tr><td class="n">1617.34</td><td class="n">805.06</td><td>w0 跑完 40 轮，把它标成 done</td></tr>
+</table></div>
+<p class="cap">出自 P1 队列账台的 execlog 表，单位毫秒。这是单独的一次运行，第 5 节那张表是三次运行的中位数，同一格上两者会差几十毫秒。</p>
+<p>四段加起来是 1617.34，和最后一行的时刻一分不差，你可以自己验算一遍。</p>
+<p>另外两处加法也值得自己做。最后一段 805.06 毫秒对应 40 轮，每轮折算 20 毫秒正好是 800，多出来的五毫秒是四十次 <code>sleep</code> 的累计误差加上三次 SQLite 写。而「从被杀到被别人接手」是 812.28 减 200.52，等于 611.76——它几乎就是租约剩下的那 599.48 毫秒，多出来的十几毫秒是空闲进程轮询的间隔。</p>
+<p>这条轨迹里还藏着一段不出现在任何指标上的东西：w1 在被杀之前已经跑掉了 200.52 毫秒，也就是十轮。那十轮的成果没有任何地方存着，w0 是从第一轮重头开始跑的。</p>
+
+<h3>3.5 每个旋钮是怎么定出来的</h3>
+<div class="scroll"><table>
+<tr><th>旋钮</th><th>取值</th><th>这个值怎么定出来的</th><th>哪一节动它</th></tr>
+<tr><td>一轮折算多少毫秒</td><td>20 ms</td><td>Day 18 实测一轮模型调用是 738 毫秒。按真实时长跑完今天这套扫描要一个多小时，除以约 37 折成 20 毫秒；折算只改绝对值，不改「长任务比短任务长一个量级」这个关系</td><td>全页锁死</td></tr>
+<tr><td>短任务 / 长任务的轮数</td><td>3 轮 / 40 轮</td><td>Day 18 那条实测会话是 6 轮。短任务取它的一半，长任务取一个明显进入「比租约还长」区间的值，好让租约扫描的两侧都被覆盖到</td><td>全页锁死</td></tr>
+<tr><td>长任务占比</td><td>60 条里 6 条</td><td>一成。要让长任务足够多到能稳定命中，又不至于让整批任务的时长被它们主导</td><td>全页锁死</td></tr>
+<tr><td>工作进程数</td><td>3</td><td>这台机器 2 个核，而任务几乎全是 sleep，不占 CPU；取核数加一，保证被杀掉一个之后还剩两个能干活</td><td>全页锁死</td></tr>
+<tr><td>租约时长</td><td>0.1 ~ 3.2 秒</td><td>下界取比短任务（60 毫秒）长、比长任务（800 毫秒）短的一档；上界取长任务的四倍。这样扫描同时盖住「租约比任务短」和「租约比任务长」两侧</td><td>第 5 节</td></tr>
+<tr><td>续租周期</td><td>租约的三分之一</td><td>一次续租失败还能再试两次才到期。取二分之一的话，一次垃圾回收停顿就可能让它超时</td><td>第 6 节</td></tr>
+<tr><td>杀进程的时刻</td><td>领到任务后 200 ms</td><td>长任务全长 800 毫秒的四分之一，确保是「干到一半」而不是刚开始或快结束</td><td>第 4、5、6 节</td></tr>
+<tr><td>P3 的并发上限</td><td>8 个许可</td><td>Day 18 定的规矩是这个数必须扫出来。今天不重扫，取一个能让全部任务在两秒左右做完的值，好让三种排法的对比在同一个量级上</td><td>全页锁死</td></tr>
+<tr><td>P3 的服务时间</td><td>40 ms</td><td>取一个远大于 <code>asyncio</code> 调度抖动（Day 18 量到事件循环延迟在毫秒以下）、又小到能跑几百条的值</td><td>全页锁死</td></tr>
+<tr><td>P3 的三个租户</td><td>甲 400 条一次性投；乙、丙各 20 条，每 50 ms 一条</td><td>甲的 400 条正好占满池子约两秒，比乙丙的到达窗口（各 1 秒）长——只有这样，乙丙才会在甲还没做完的时候到达</td><td>第 11、12 节</td></tr>
+<tr><td>P4 的块大小 / 头部长度</td><td>16 token / 1024 token</td><td>和 Day 16、Day 20 的模拟器取同一组值，好让「块 hash 串起来、改一处则后面全废」这条性质保持一致</td><td>全页锁死</td></tr>
+<tr><td>P4 的缓存容量</td><td>1536 块</td><td>八条会话跑到最后一共占 1216 块（头部 64 块，加 8 × 12 × 12 块私有）。容量取它的约 1.26 倍——「装得下一切」是起点，衰减只能来自别人的请求</td><td>全页锁死</td></tr>
+<tr><td>P4 插进来的请求数</td><td>每两轮之间 0 ~ 16 条</td><td>下界 0 就是 Day 20 那种「没有排队」的情形；上界取到会话私有那一半正好归零为止，再大没有信息</td><td>第 13 节</td></tr>
+</table></div>
+<p>后面每一节动的都是这里的某一个旋钮，别的锁死不动。哪张表出自哪个程序：</p>
+<div class="scroll"><table>
+<tr><th>表</th><th>出自</th><th>数字从哪儿读</th></tr>
+<tr><td>第 4、5、6 节三张表</td><td>P1 队列账台</td><td>控制器跑完之后查 tasks 与 execlog 两张表，每格 3 次运行取中位</td></tr>
+<tr><td>3.4 节那条轨迹</td><td>P1 队列账台（单次运行）</td><td>execlog 里这条任务的两行，加上控制器记下的杀进程时刻</td></tr>
+<tr><td>第 9 节那张表</td><td>P2 副作用账台</td><td>计费服务进程内的账本列表长度，以及工作进程的本地日志文件</td></tr>
+<tr><td>第 11、12 节那张表</td><td>P3 排队账台</td><td>每条任务记下「进队列」和「拿到许可」两个时刻，差值就是排队等待；3 次运行取中位</td></tr>
+<tr><td>第 13 节那张表</td><td>P4 等待代价账台</td><td>模拟器自己数的块命中数乘以块大小；确定性程序，重跑结果一样</td></tr>
+</table></div>
+
+<h2>板块 2 · 第三部分 · 租约那个数，两头都要付钱</h2>
+
+<h3>4. 取出即删，丢的是哪一条</h3>
+<p>先把两种取法各跑一遍。同一批 60 条任务、同样在长任务干到一半的时候杀掉一个工作进程，唯一的差别是领取那一刻做了什么：</p>
+<div class="scroll"><table>
+<tr><th>取任务的方式</th><th class="n">做完的</th><th class="n">没做完的</th><th>被中断那条的下场</th></tr>
+<tr><td>领取时就从队列里删掉</td><td class="n">59</td><td class="n">1</td><td>没有任何人接手，也没有任何人知道它不见了</td></tr>
+<tr><td>领取时打一份 0.8 秒的租约，做完才删</td><td class="n">60</td><td class="n">0</td><td>租约到期后被另一个进程领走，跑完</td></tr>
+</table></div>
+<p class="cap">出自 P1 队列账台，3 次运行取中位。</p>
+<p>第一行那个 59 不是随机的：被杀的工作进程手上正好有一条任务，那条就是丢掉的那条。剩下 59 条都跑完了，队列干干净净，日志上不会有任何异常——这正是它难查的地方。</p>
+<p>第二行的代价现在还看不见，它在下一节。</p>
+
+<h3>5. 租约取长取短，各输一样东西</h3>
+<p>把租约从 0.1 秒扫到 3.2 秒，别的全不动：</p>
+<div class="scroll"><table>
+<tr><th class="n">租约（秒）</th><th class="n">做完的</th><th class="n">被两个进程同时跑过的任务数</th><th class="n">中断后被接手的延迟（毫秒）</th></tr>
+<tr><td class="n">0.1</td><td class="n">60</td><td class="n">5</td><td class="n">58.8</td></tr>
+<tr><td class="n">0.2</td><td class="n">60</td><td class="n">4</td><td class="n">48.5</td></tr>
+<tr><td class="n">0.4</td><td class="n">60</td><td class="n">4</td><td class="n">234.6</td></tr>
+<tr><td class="n">0.8</td><td class="n">60</td><td class="n">1</td><td class="n">660.1</td></tr>
+<tr><td class="n">1.6</td><td class="n">60</td><td class="n">0</td><td class="n">1415.8</td></tr>
+<tr><td class="n">3.2</td><td class="n">60</td><td class="n">0</td><td class="n">3007.3</td></tr>
+</table></div>
+<p class="cap">出自 P1 队列账台，3 次运行取中位。「同时跑过」的判据是同一条任务的两次执行在时间上有重叠。</p>
+<p>两列往相反方向走，这是今天第一个真取舍。</p>
+<p>先看右边那一列。它几乎等于租约减去任务已经跑掉的那 0.2 秒：租约 0.4 对应两百多毫秒，租约 3.2 对应三秒整。机制在 3.4 节那条轨迹里已经摊开过——租约是在领取那一刻定死的，进程死掉不会通知任何人，别人只能等它自然过期。租约多长，一次故障就要多晾多久。</p>
+<p>再看中间那一列。长任务全长 800 毫秒，租约比它短的时候，任务还在好好地跑，租约却已经过期了，于是另一个空闲进程把它当成孤儿领走，同一条任务被两个进程同时执行。租约 0.8 那一行是边界：租约和任务几乎一样长，三次运行里两次撞上、一次没撞上。</p>
+<div class="card key"><span class="tag">关键结论</span>
+<p>租约时长不是一个可以拍脑袋的配置项，它同时是两件事的上界：故障后多久有人接手，和多长的任务会被误判成死了。定它的时候手上必须有服务时间的分布，否则你只是在两种故障之间盲选一种。</p>
+<p>kombu 那个默认值 3600 秒就是这么来的：把它调得足够大，让第二列几乎不可能发生，代价是一次崩溃要晾一个小时。</p>
+</div>
+
+<h3>6. 续租：把两头都拿到</h3>
+<p>上一节的取舍看起来无解，因为租约在领取那一刻就定死了。松开这个前提，取舍就散了：干活的时候周期性地把到期时刻往后推一次，这个动作叫<span class="term">续租（lease renewal）</span>，也叫心跳续租。</p>
+<p>租约仍然取 0.4 秒，续租周期取它的三分之一，其余不动：</p>
+<div class="scroll"><table>
+<tr><th>做法</th><th class="n">租约（秒）</th><th class="n">被两个进程同时跑过的任务数</th><th class="n">中断后被接手的延迟（毫秒）</th></tr>
+<tr><td>只在领取时定一次</td><td class="n">0.4</td><td class="n">4</td><td class="n">234.6</td></tr>
+<tr><td>干活期间周期性续租</td><td class="n">0.4</td><td class="n">0</td><td class="n">355.0</td></tr>
+</table></div>
+<p class="cap">出自 P1 队列账台，3 次运行取中位。</p>
+<p>第三列归零了，而第四列只涨了一百多毫秒。原因不难推：进程被杀的时候，最后一次续租刚发生不久，所以到期时刻是「最后一次续租的时刻加 0.4 秒」，比不续租那一档晚一点点，但绝不会晚一整个任务那么多。</p>
+<p>换句话说，续租把「租约必须比最长的任务还长」这条约束去掉了。租约的长度从此只管一件事——故障之后能忍多久没人接手。</p>
+<p>SQS 把这件事做成了显式接口：默认可见性超时是 30 秒，上限 12 小时，而文档里明确推荐用 <code>ChangeMessageVisibility</code> 做一个心跳，在处理期间反复延长。kombu 的 Redis 传输里没有这一步——那个索引全文只有领取时那一处写入，没有第二处，所以一个跑得比可见性超时还长的任务一定会被重投。</p>
+<p>还有一段账，这两张表都没有：3.4 节那条轨迹里被扔掉的十轮。接手的进程是从第一轮重头开始的，因为库里只记着「这条任务被领了几次」，没有记「它做到哪儿了」。要让接手的人从第十轮接着跑，得把 Day 18 那种检查点从「一条会话一份」下沉到「一个任务的每一步一份」，这件事叫<span class="term">检查点粒度（checkpoint granularity）</span>。</p>
+<p>而只要一往那个方向走，就会撞上一个新问题：重跑那十轮，真的只是浪费时间吗？</p>
+
+<h2>板块 2 · 第四部分 · 账本在你这儿，钱在对方那儿</h2>
+
+<h3>7. 先押一个数</h3>
+<p>第四部分只有一个任务，三步，每一步去外部计费服务扣一次款。正确的结果是账本三行、零次重复。</p>
+<p>计费服务在第 2 步做了一件很具体的事：把扣款行写进账本之后、把回话发出去之前，它把工作进程 <code>SIGKILL</code> 掉。然后工作进程重启，接着往下跑。</p>
+<p>四种设计的区别只在于「本地记什么、什么时候记、键发不发给对方」：</p>
+<div class="scroll"><table>
+<tr><th>设计</th><th>它做了什么</th></tr>
+<tr><td>只有检查点</td><td>每一步做完往本地日志追加一行 done。重启后从最后一个 done 的下一步接着跑</td></tr>
+<tr><td>幂等键记在本地账本</td><td>Day 18 那一版：执行之前先翻本地日志，这个键在里面就跳过。键不发给计费服务</td></tr>
+<tr><td>键随请求发出，对方按键去重</td><td>先往本地写一行 intent，再把键放进请求里，计费服务见过这个键就不再扣</td></tr>
+<tr><td>键随请求发出，恢复时回去对账</td><td>同样先写 intent、同样把键发过去，但计费服务只把键存下来不去重；重启时拿 intent 里的键回去查一次</td></tr>
+</table></div>
+<div class="card predict"><span class="tag">预测框 · 先写下来再往下读</span>
+<p>四种设计各自会重复扣几次款？把你的四个数写下来。写完再补一句：你觉得哪几种设计在重启的那一刻，程序自己知道「有一步的结局我不知道」？</p>
+<div class="write"></div>
+</div>
+
+<h3>8. 揭晓：本地账本盖不住对面那一半</h3>
+<div class="scroll"><table>
+<tr><th>设计</th><th class="n">崩之前对方账本几行</th><th class="n">重启跑完几行</th><th class="n">重复扣了几次</th><th>重启时知不知道有一步结局未知</th></tr>
+<tr><td>只有检查点</td><td class="n">2</td><td class="n">4</td><td class="n">1</td><td>不知道</td></tr>
+<tr><td>幂等键记在本地账本</td><td class="n">2</td><td class="n">4</td><td class="n">1</td><td>不知道</td></tr>
+<tr><td>键随请求发出，对方按键去重</td><td class="n">2</td><td class="n">3</td><td class="n">0</td><td>知道</td></tr>
+<tr><td>键随请求发出，恢复时回去对账</td><td class="n">2</td><td class="n">3</td><td class="n">0</td><td>知道</td></tr>
+</table></div>
+<p class="cap">出自 P2 副作用账台。正确结果是 3 行、0 次重复。</p>
+<p>头两行完全一样，这是今天最该带走的一格。Day 18 那张六行表里，「加幂等键」这一列每一行都是 0；同一个设计搬到今天这条缝上，它和什么都不做没有任何区别。</p>
+<p>原因是那个键写在哪儿。Day 18 的缝在「工具已经返回、检查点还没写」之间，那时候调用方是活着的，它知道自己做过了，只是还没记下来——把记录写在本地够用。今天的缝在「对方已经落账、回话还没到」之间，调用方在这个瞬间被杀，它手上没有任何这件事发生过的证据。重启之后翻本地日志，那一步干干净净，于是它理所当然地又扣了一次。</p>
+<p>后两行的 0 是两条不同的路走出来的，值得分开看。第三行是把去重的责任交给了对方：键跟着请求过去，计费服务见过就不再扣，你重试多少次都只算一次。第四行是把判断留给自己：键同样发过去，但对方只是把它存下来，重启的时候你拿这个键回去问一句「这个你收过没有」，收过就跳过。</p>
+<p>两条路的共同前提只有一个：<strong>键必须跨过那条缝，到达对方那一侧。</strong> 留在你自己的磁盘上，它盖不住对面那一半。</p>
+
+<h3>9. 意图记录、不确定态、对账</h3>
+<p>最后一列那个「知不知道」，来自一个很小的动作：动手之前先往本地写一行「我打算做这件事，键是 K」。这一行叫<span class="term">意图记录（intent record）</span>。</p>
+<p>把三种设计崩完重启、跑到底之后的本地日志摊开对比，它的作用一眼就看得见：</p>
+<pre><code># 只有检查点 —— 第 2 步崩过，日志上一点痕迹都没有
+{"t": "done", "step": 1, "key": "T1-1"}
+{"t": "done", "step": 2, "key": "T1-2"}
+{"t": "done", "step": 3, "key": "T1-3"}
+
+# 键随请求发出、对方去重 —— 两行 intent，一行 done
+{"t": "intent", "step": 1, "key": "T1-1"}
+{"t": "done",   "step": 1, "key": "T1-1"}
+{"t": "intent", "step": 2, "key": "T1-2"}      ← 崩之前写下的
+{"t": "intent", "step": 2, "key": "T1-2"}      ← 重启之后又写了一次
+{"t": "done",   "step": 2, "key": "T1-2"}
+{"t": "intent", "step": 3, "key": "T1-3"}
+{"t": "done",   "step": 3, "key": "T1-3"}
+
+# 键随请求发出、恢复时对账 —— done 那一行带着它是怎么得出来的
+{"t": "intent", "step": 2, "key": "T1-2"}
+{"t": "done",   "step": 2, "key": "T1-2", "via": "reconcile"}</code></pre>
+<p>第一段日志读起来一切正常，可对方账本上那一步是两行。第二段里那两行连着的 intent 就是崩溃留下的形状：有意图、没有完成。这个「意图写下了、完成没写下」的步骤，它的结局此刻是不知道的——可能对方压根没收到，也可能对方已经扣完了钱只是话没传回来。这种状态有个名字，叫<span class="term">不确定态（in-doubt）</span>。</p>
+<p>不确定态不是一个错误，它是一个必然会出现的中间状态。你能做的只有一件事：拿键去外部系统问一句，把不知道变成知道。这个动作叫<span class="term">对账（reconciliation）</span>，第三段日志里那个 <code>"via": "reconcile"</code> 就是它留下的痕迹。</p>
+<p>Stripe 的幂等键文档把这条路的边界写得很清楚，有两处值得记住。一是它保存的是第一次请求的状态码和响应体，包括失败的那次——所以同一个键重试回来的可能是一个 500，而不是「这次成功了」。二是键不是永久的：至少 24 小时之后可以被清理，键被清掉之后再用同一个键，会被当成一次全新的请求。</p>
+<div class="card key"><span class="tag">关键结论</span>
+<p>幂等这件事不属于你的代码，它属于你和外部系统之间的那份约定。约定的载体就是那个键：它必须由调用方生成（这样重试时才生成得出同一个）、必须跟着请求过去、必须在对方那儿有一个足够长的有效期。三条缺一条，你写的那些去重逻辑就只是在你自己这一侧自我安慰。</p>
+</div>
+
+<h3>10. 做不完的那些：退避与死信</h3>
+<p>到这里，一条任务失败了会被重投，重投是安全的。剩下最后一个问题：它要是每次都失败呢？</p>
+<p>没有别的机制的话，这条任务会被无限地领走、失败、过期、再领走。更糟的是它会一直占着工作进程——一条永远失败的任务能把整个池子拖垮，这种任务叫<span class="term">毒丸任务（poison-pill task）</span>。</p>
+<p>两个东西一起用来堵它。第一个是<span class="term">重试退避（retry backoff）</span>：每失败一次，下一次可以被领走的时刻往后推得更远，通常是翻倍。这样一条坏任务占用的资源随失败次数指数下降，而一次偶发故障（对方抖了一下）仍然能很快重试成功。</p>
+<p>第二个是<span class="term">死信队列（dead-letter queue）</span>：领取次数超过上限之后，不再放回原队列，而是挪到另一条谁也不消费的队列里去，等人来看。P1 那张表里的 <code>attempts</code> 列就是这个上限要读的数——它已经在库里了，只差一句判断。</p>
+<p>这两样和上一节是配套的：退避决定重试多久之后发生，幂等键决定重试发生了会不会出事。只做一半的后果很具体——只有退避没有键，你只是把重复扣款推迟了；只有键没有退避，一条坏任务会以最快的速度把池子占满。</p>
+
+<h2>板块 2 · 第五部分 · 几百个在同时等</h2>
+
+<h3>11. 一个租户把队伍占满</h3>
+<p class="lead">一个客户的批量提交，凭什么让另一个客户等？</p>
+<p>Day 14 给过一套东西：一个并发上限，一个许可，满了就准入控制、就背压。那套东西里所有任务都是平等的，队伍只有一条，先进先出。</p>
+<p>现在给任务加一个标签，标签叫<span class="term">租户（tenant）</span>——它可以是客户、团队，或者一个 API key。三个租户里，甲一次性投 400 条，乙和丙各自细水长流地投 20 条。池子还是 8 个许可。</p>
+<div class="scroll"><table>
+<tr><th>排法</th><th class="n">甲 P50</th><th class="n">甲 P99</th><th class="n">乙 P50</th><th class="n">乙 P99</th><th class="n">丙 P50</th><th class="n">丙 P99</th><th class="n">全部做完</th><th class="n">池子忙着的比例</th></tr>
+<tr><td>单一 FIFO 队列</td><td class="n">1016.2</td><td class="n">1987.0</td><td class="n">1599.6</td><td class="n">1974.9</td><td class="n">1599.5</td><td class="n">1974.9</td><td class="n">2.230</td><td class="n">98.7%</td></tr>
+<tr><td>每租户一条队列，轮转取</td><td class="n">1216.7</td><td class="n">2187.7</td><td class="n">20.3</td><td class="n">30.5</td><td class="n">20.3</td><td class="n">30.5</td><td class="n">2.229</td><td class="n">98.7%</td></tr>
+<tr><td>每租户各自一份并发配额</td><td class="n">2025.7</td><td class="n">3963.4</td><td class="n">0.1</td><td class="n">0.1</td><td class="n">0.0</td><td class="n">0.1</td><td class="n">4.044</td><td class="n">54.4%</td></tr>
+</table></div>
+<p class="cap">出自 P3 排队账台，排队等待单位毫秒、全部做完单位秒，3 次运行取中位。最后一列 = 全部任务的服务时间之和（440 条 × 40 毫秒 = 17.60 秒）÷（8 个许可 × 全部做完的秒数）。乙和丙的投递方式完全对称，所以它们四列必须两两相等——这是这张表的自检项。</p>
+<p>先看第一行。乙和丙每人只投了 20 条，却要等一秒六——它们排在甲那 400 条后面，而 FIFO 只认到达顺序，不认是谁投的。这件事叫<span class="term">队头阻塞（head-of-line blocking）</span>：队伍前面那一坨和你毫无关系，你却只能等它走完。</p>
+<p>第二行换了排法：每个租户各有一条队列，取任务的时候一圈一圈轮着取，一次从每条非空队列各取一条。这个做法叫<span class="term">公平排队（fair queuing）</span>，最简单的实现就是轮转。乙丙的中位等待从一秒六掉到二十毫秒，掉了将近八十倍；代价是甲的中位等待多了两百毫秒。</p>
+<p>第二行里有一个数一点没变：全部做完的时刻。轮转只改了「下一个空位给谁」，没改「一共有多少活儿」，所以池子从头到尾一样忙。</p>
+
+<h3>12. 硬配额买到的公平，价钱在利用率上</h3>
+<p>第三行是另一种做法：不排队了，直接给每个租户划一份并发额度——甲最多同时占 4 个许可，乙丙各 2 个。这叫<span class="term">每租户并发配额（per-tenant concurrency quota）</span>，和 Day 10 那个 CPU 配额只是名字像，管的东西完全不同。</p>
+<p>乙丙的等待掉到了零点一毫秒，比轮转还好看两百倍——它们一到就有专属的空位，根本不用排。</p>
+<p>价钱在最后两列上。全部做完的时刻从两秒二涨到四秒，池子忙着的比例从九成九掉到五成四。机制很直白：乙丙手上握着 4 个许可，可它们绝大多数时间无事可做，而甲有 400 条任务等着，却只能用自己那 4 个。将近一半的池子在空转。</p>
+<p>那一行里甲的 P50 几乎正好是第一行的两倍，这个巧合不是巧合——甲能用的许可从 8 个变成了 4 个，同样多的活儿要用一半的通道过完。</p>
+<p>能一直把资源喂满的排法有个名字，叫<span class="term">工作保全（work-conserving）</span>：只要还有活儿等着，就不让位置闲着。轮转是工作保全的，硬配额不是。真实系统里常见的折中是把配额当保底而不是上限：属于你的那一份永远留着，别人闲下来的部分你可以借用。</p>
+<div class="card key"><span class="tag">关键结论</span>
+<p>「乙被甲堵住了」有两种改法，它们付的钱不一样。改排队规则（轮转）付的是甲的一点点延迟，池子利用率一分不掉；改配额付的是利用率，而且是永久性地付——哪怕今天只有甲一个人在用这台机器。</p>
+<p>先动排队规则，配额留给「必须给某个租户一个书面承诺」的场合。</p>
+</div>
+
+<h3>13. 等待期间，别人在往缓存里塞东西</h3>
+<p>前两节把排队的代价算成了延迟。它还有一笔账记在别处。</p>
+<p>Day 20 最后量到：八条会话都固定回到同一台副本，命中率八成二；随机分派掉到五成四。那天的假设是每条会话一轮接一轮地推进，中间没有等待。今天这些任务不一样，它们会在队列里躺很久。</p>
+<p>躺着的时候，副本没有闲着——别人的请求正在进来，正在往那个固定容量的缓存里塞块，正在把你的块按 LRU 挤出去。Day 16 那个词在这儿又出现了一次：复用距离，中间隔了多少别人的东西。排队等待就是复用距离的一个来源，而且是会话亲和管不着的那个来源。</p>
+<p>把它量出来。会话亲和一直开着，缓存容量固定，唯一变的旋钮是「一条会话的两轮之间，插进来多少条别人的请求」：</p>
+<div class="scroll"><table>
+<tr><th class="n">两轮之间插进来几条</th><th class="n">发出 token</th><th class="n">命中 token</th><th class="n">其中头部</th><th class="n">其中会话私有</th><th class="n">命中率</th></tr>
+<tr><td class="n">0</td><td class="n">199680</td><td class="n">181760</td><td class="n">97280</td><td class="n">84480</td><td class="n">91.0%</td></tr>
+<tr><td class="n">1</td><td class="n">199680</td><td class="n">181760</td><td class="n">97280</td><td class="n">84480</td><td class="n">91.0%</td></tr>
+<tr><td class="n">2</td><td class="n">199680</td><td class="n">181760</td><td class="n">97280</td><td class="n">84480</td><td class="n">91.0%</td></tr>
+<tr><td class="n">4</td><td class="n">199680</td><td class="n">168320</td><td class="n">97280</td><td class="n">71040</td><td class="n">84.3%</td></tr>
+<tr><td class="n">8</td><td class="n">199680</td><td class="n">111104</td><td class="n">97280</td><td class="n">13824</td><td class="n">55.6%</td></tr>
+<tr><td class="n">16</td><td class="n">199680</td><td class="n">97280</td><td class="n">97280</td><td class="n">0</td><td class="n">48.7%</td></tr>
+</table></div>
+<p class="cap">出自 P4 等待代价账台。确定性程序，重跑结果完全一样。</p>
+<p>第四列一个数都没变，这是先要注意的地方。头部是全部会话共用的那一段，每一次请求都会碰它一下，LRU 永远把它排在最近使用的那一端，谁也挤不掉它。97280 除以头部长度 1024 是 95，而总共有 96 次请求——只有第一次是冷的。</p>
+<p>掉下去的全是第五列。前三行完全没动，因为容量还吃得下；到第四行开始松动，第五行塌掉，最后一行归零，命中率落到只剩头部那一档。</p>
+<p>把这一列和 Day 20 那张表并排读，一件事就清楚了：会话亲和保住的是「这条会话回到那台机器」，它保不住「那台机器上还留着这条会话的东西」。前者由分派规则决定，后者由等待时间和缓存容量一起决定。一条在队列里躺了很久的任务，就算准确无误地回到了原来那台副本，拿到的也可能只是头部那点命中。</p>
+<p>这条正好补上 Day 20 留的一个口子：那天说副本数在亲和这个口径下根本不是变量，八行里亲和那四行一个数都没变。今天说的是同一句话的另一半——不是变量的是副本数，等待时间是。</p>
+
+<h2>板块 3 · 动手任务</h2>
+<p>两个任务，约两小时。任务 A 在 Day 20 那个骨架上长出队列和恢复这一层；任务 B 把今天这套读法用到你手上已有的东西上。</p>
+
+<h3>任务 A（必做，约 90 分钟）· 让一条任务活过一次 SIGKILL</h3>
+<h4>第 1 步：把队列落到表上</h4>
+<p>先要一张能同时装下「状态」和「租约」的表。下面这张就够，字段的含义在 3.2 节摊开过：</p>
+<pre><code>CREATE TABLE tasks(
+  id INTEGER PRIMARY KEY,
+  payload      TEXT NOT NULL,
+  state        TEXT NOT NULL,     -- ready / running / done / dead
+  lease_until  REAL DEFAULT 0,    -- 租约到期的绝对时刻
+  attempts     INTEGER DEFAULT 0, -- 领取次数，死信判据读它
+  next_visible REAL DEFAULT 0     -- 退避用：这个时刻之前谁也别领
+);
+CREATE INDEX idx_pick ON tasks(state, next_visible);</code></pre>
+<p>跑起来之后 <code>SELECT state, COUNT(*) FROM tasks GROUP BY state</code> 应该只看到 ready 一行。看到别的说明造数据那一步就写错了。</p>
+
+<h4>第 2 步：领取必须是一个原子动作</h4>
+<p>领取要做两件事——挑一条、把它标成 running 并写上租约。这两件事之间如果有别的进程插进来，两个进程会领到同一条：</p>
+<pre><code>def claim(conn, lease_s):
+    now = time.time()
+    conn.execute("BEGIN IMMEDIATE")          # 立刻拿写锁，不能用默认的 DEFERRED
+    row = conn.execute(
+        "SELECT id,payload FROM tasks WHERE next_visible&lt;=? AND "
+        "(state='ready' OR (state='running' AND lease_until&lt;?)) "  # 过期的也能领
+        "ORDER BY id LIMIT 1", (now, now)).fetchone()
+    if row:
+        conn.execute("UPDATE tasks SET state='running', lease_until=?, "
+                     "attempts=attempts+1 WHERE id=?", (now + lease_s, row[0]))
+    conn.execute("COMMIT")
+    return row</code></pre>
+<p>验一下这一步对不对：起四个进程同时领同一批任务，跑完检查每条任务的领取次数。没有故障的情况下，全部应该是 1。出现 2 说明事务的隔离级别没对。</p>
+
+<h4>第 3 步：续租、意图、对账</h4>
+<p>剩下三件事按第 6、9 节做：干活期间每过租约的三分之一续一次；每个有副作用的步骤动手前写一行 intent、键跟着请求发出去；重启时先扫一遍「有 intent 没 done」的步骤，拿键回去问一次。</p>
+
+<h4>验收标准</h4>
+<ul>
+<li>随便挑一个工作进程 <code>kill -9</code>，它手上那条任务会被另一个进程接手跑完。接手延迟落在「租约剩余时间」到「租约剩余时间加一次轮询间隔」之间。</li>
+<li>把租约调到比最长的任务还短，关掉续租：同一条任务出现两次重叠执行。打开续租：重叠归零，而接手延迟基本不变。</li>
+<li>无论杀在哪一步、杀多少次，外部系统里的副作用总次数等于步骤数。</li>
+<li>让一条任务每次都失败，它最终进 dead 状态而不是占着池子；相邻两次重试的间隔在翻倍。</li>
+</ul>
+
+<h4>常见坑</h4>
+<ul>
+<li>领取用了默认的 <code>BEGIN</code>（DEFERRED）。读的时候还没拿写锁，两个进程会挑到同一行。</li>
+<li>续租周期取成租约的一半。一次垃圾回收停顿就可能让它晚到，而晚到一次就等于一次误判。</li>
+<li>幂等键用时间戳或者随机数生成。重试的时候键不一样，等于没有键——键必须从任务本身的内容里推出来，重试多少次都得是同一个。</li>
+<li>意图那一行写了但没 <code>fsync</code>。进程被 <code>SIGKILL</code> 时页缓存里的东西还在（Day 12 那对缓冲写和回写），但整机断电就没了。</li>
+<li>退避只推迟了 <code>lease_until</code> 没推迟 <code>next_visible</code>。任务会立刻被下一个空闲进程捞走，退避形同虚设。</li>
+</ul>
+
+<h3>任务 B（约 30 分钟）· 找出你自己服务里的那条缝</h3>
+<p>在你手上任何一个已有的服务里，找一条带副作用的路径：发一封邮件、写一次第三方 API、往另一个库里插一行。然后做三件事：</p>
+<ul>
+<li>画出这条路径上的每一条缝，标明哪一侧是你的磁盘、哪一侧是对方的系统。</li>
+<li>对每一条缝回答：崩在这里，重试会不会让副作用发生两次？</li>
+<li>找出这条路径上有没有一个键跨过了那条缝。没有的话，写下如果要加，这个键应该从哪几个字段推出来。</li>
+</ul>
+
+<h3>加分题</h3>
+<p>今天 P1 的任务只有两种长度，3 轮和 40 轮，而真实任务的长度是长尾的。给它换一个真正长尾的分布（比如大部分很短、少数长出两三个数量级），然后回答：不开续租的情况下，租约取服务时间分布的哪一个分位数，能让「重叠执行次数」和「接手延迟」的加权代价最小？这个最优分位数会随长尾的厚度怎么变？</p>
+
+<h2>板块 4 · 工作现场</h2>
+
+<h4>场景一 · 一批任务卡在 running 好几个小时</h4>
+<p>监控报「处理中的任务数」一直不降。这个现象至少有三个完全不同的原因，而且分辨它们靠的是同一张表里的不同列。任务真的在跑（<code>lease_until</code> 在被反复往后推）、领它的进程已经死了但租约太长还没到期（<code>lease_until</code> 是一个很远的未来时刻且不再变化）、或者它在无限重投（<code>attempts</code> 在涨）。第一件事永远是把这三列打出来看，而不是重启服务。</p>
+
+<h4>场景二 · 财务说同一笔扣了两次</h4>
+<p>先不要找代码里的循环。按第 8 节那条路往回推：这次调用有没有一个键跨过去了？对方是按键去重的还是只存不查？重复的那两次之间隔了多久——隔几毫秒通常是一次重试，隔几十分钟通常是一次租约过期后的重投。这三个问题的答案会把范围收得很窄。</p>
+
+<h4>场景三 · 大客户凌晨批量提交，别的客户早上全在投诉慢</h4>
+<p>这是第 11 节那张表的第一行。要判断的是它到底是队头阻塞还是容量不够：把等待时间按租户拆开看，如果小客户的等待和大客户的提交量高度相关，而池子的利用率一直很高，那就是排队规则的问题，加机器只会把这个现象往后推一天。</p>
+
+<h4>同事和面试官常问的</h4>
+<ul>
+<li>你们的队列是至少一次还是恰好一次？——这个问题真正在问的是「你知不知道恰好一次不是队列给的」。</li>
+<li>可见性超时设多少，为什么？——想听的是你手上有没有服务时间的分布，以及有没有续租。</li>
+<li>任务失败重试几次，两次之间等多久？——退避和死信，两样都要答到。</li>
+<li>怎么保证不会重复扣款？——答「加了幂等键」不够，要说清楚键在哪一侧生成、跨没跨过那条缝、对方的有效期多长。</li>
+<li>一个租户能把整个池子打满吗？——如果能，接下来会问你打算付延迟还是付利用率。</li>
+</ul>
+
+<h2>板块 5 · 自检问题</h2>
+
+<details><summary>1 · 你把租约从 30 秒调到 5 分钟，因为「有几个任务偶尔会跑很久被误杀」。这个改动解决了什么，又制造了什么？还有一个改动能只解决不制造，是什么？</summary>
+<p>解决的是误判：租约比最长的任务长之后，活着的任务不会再被当成孤儿领走，重叠执行归零。</p>
+<p>制造的是恢复延迟：一个进程真的死了，它手上的任务要晾满剩下的租约才有人接手。第 5 节那张表里两列往相反方向走，就是这件事。而且这笔账落在最坏的那些请求上——正常任务一点感觉都没有，出事的那条要多等好几分钟。</p>
+<p>只解决不制造的改动是续租。租约仍然取一个短值，干活期间周期性往后推。第 6 节那两行：重叠从 4 掉到 0，接手延迟只从两百多毫秒涨到三百多。续租之后租约的长度只管一件事，就是故障后能忍多久没人接手。</p>
+</details>
+
+<details><summary>2 · 一个同事说：「我们每一步做完都写检查点，而且写完就 fsync，所以不会重复扣款。」这句话在什么情况下成立，什么情况下不成立？</summary>
+<p>成立的情况是副作用发生在你自己的进程或磁盘里——那时候「做完了」和「记下来了」可以做在同一个事务里，两者要么一起生效要么一起不生效。</p>
+<p>不成立的情况是副作用发生在外部系统里。那时候两个动作在两个地方，中间必然有一条缝：对方已经落账、你还没记下来。<code>fsync</code> 只让你的那一半更可靠，它管不到对方那一半。第 8 节头两行给的就是这个：只有检查点和本地幂等键，重复次数都是 1。</p>
+<p>顺带说清楚 Day 18 那个 0 为什么不矛盾：那天崩的位置在「工具返回之后」，工具都返回了，说明调用方还活着、知道自己做过。今天崩在回话到达之前，调用方手上没有任何证据。同一个设计，两条缝，两个结果。</p>
+</details>
+
+<details><summary>3 · 每租户配额把小客户的等待做到了近乎零，比轮转还好看两百倍。既然这样，为什么不直接用配额？</summary>
+<p>因为那个近乎零是拿池子的一半空转换来的。第 12 节那一行：全部做完从两秒二涨到四秒，利用率从九成九掉到五成四。小客户手上握着的许可绝大多数时间没有活儿干，而大客户有 400 条排着却用不上。</p>
+<p>更要紧的是这笔钱是永久付的。哪怕今天只有一个租户在用这台机器，它也只能用到自己那一份。轮转不一样：它只决定「下一个空位给谁」，只要还有活儿等着就不让位置闲着，所以第 11 节那张表里轮转那一行的完成时刻和 FIFO 一模一样。</p>
+<p>配额该用在需要给某个租户一个书面承诺的场合，而且实现上通常做成保底加借用，而不是硬上限。</p>
+</details>
+
+<details><summary>4 · 一条任务在队列里等了二十分钟才被调度。你的路由器很尽责地把它送回了原来那台副本。这二十分钟在缓存那一侧花了多少钱？这个损失和 Day 20 那个「随机分派」的损失是同一种吗？</summary>
+<p>花的钱取决于这二十分钟里那台副本服务了多少别人的请求，以及缓存有多大。第 13 节那张表：容量吃得下的时候一分不花，前三行完全一样；超过之后会话私有那一半塌下去，最后落到只剩头部的那一档。</p>
+<p>和随机分派不是同一种，但机制是同一个。两者都是复用距离变大：随机分派是「隔了几台机器」，排队等待是「隔了多少别人的东西」。区别在于该动哪个旋钮——随机分派要改分派规则，排队等待改分派规则没有用，要改的是队列的深度、或者缓存的容量、或者干脆承认这条任务的前缀已经凉了。</p>
+<p>还有一点值得记住：掉下去的是私有那一半，头部那一半在实测里一个数都没变，因为每一次请求都碰它，LRU 挤不掉它。所以看到命中率下降，第一件事是把它拆成两半，看是哪一半在掉。</p>
+</details>
+
+<h2>板块 6 · 今日新词</h2>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>任务队列</td><td>task queue</td><td>存放「已经收下但还没做完」的任务的地方；它是一份要活过进程重启的状态，不是一个数据结构</td></tr>
+<tr><td>投递语义</td><td>delivery semantics</td><td>一条任务最终被执行的次数的保证：至多一次、至少一次、恰好一次</td></tr>
+<tr><td>至多一次</td><td>at-most-once</td><td>领取那一刻就从队列里删掉；不会重复，但进程一死这条任务就没了，而且没人知道</td></tr>
+<tr><td>租约</td><td>lease</td><td>领取任务时写下的一个到期时刻，这之前别人不许碰它，过期之后谁都能领走</td></tr>
+<tr><td>可见性超时</td><td>visibility timeout</td><td>租约在消息队列里的叫法：任务被领走之后对其他消费者「不可见」的时长</td></tr>
+<tr><td>续租 / 心跳续租</td><td>lease renewal / heartbeat</td><td>干活期间周期性地把到期时刻往后推，使租约长度不必大于最长的任务</td></tr>
+<tr><td>孤儿任务</td><td>orphaned task</td><td>领它的进程已经不在了、租约到期后被放回队列的任务</td></tr>
+<tr><td>重投标记</td><td>redelivered flag</td><td>放回队列时打在消息上的标记，告诉下一个领走的人「你不是第一个」</td></tr>
+<tr><td>重试退避</td><td>retry backoff</td><td>每失败一次，下一次可被领取的时刻往后推得更远，通常翻倍</td></tr>
+<tr><td>死信队列</td><td>dead-letter queue</td><td>领取次数超过上限之后任务被挪去的地方，谁也不消费，等人来看</td></tr>
+<tr><td>毒丸任务</td><td>poison-pill task</td><td>每次执行都失败、又会被无限重投的任务，能把整个工作池占满</td></tr>
+<tr><td>意图记录</td><td>intent record</td><td>动手之前先写下的一行「我打算做这件事，键是 K」，用来在重启时认出不确定态</td></tr>
+<tr><td>不确定态</td><td>in-doubt</td><td>意图写下了、完成没写下的那个步骤；它到底做没做成，此刻不知道</td></tr>
+<tr><td>对账</td><td>reconciliation</td><td>拿键回到外部系统问一句「这个你收过没有」，把不确定态变成确定态</td></tr>
+<tr><td>检查点粒度</td><td>checkpoint granularity</td><td>状态多久落一次盘；粒度越细，接手的人要重做的部分越少</td></tr>
+<tr><td>租户</td><td>tenant</td><td>任务上的归属标签，可以是客户、团队或一个 API key；排队和配额都按它划分</td></tr>
+<tr><td>队头阻塞</td><td>head-of-line blocking</td><td>队伍前面那一坨和你无关，你却只能等它走完</td></tr>
+<tr><td>公平排队 / 轮转</td><td>fair queuing / round-robin</td><td>每个租户一条队列，一圈一圈轮着取，让一个租户的突发不吃掉别人的位置</td></tr>
+<tr><td>每租户并发配额</td><td>per-tenant concurrency quota</td><td>给每个租户划死一份能同时占用的许可数；和 Day 10 那个 CPU 配额只是名字像</td></tr>
+<tr><td>工作保全</td><td>work-conserving</td><td>只要还有活儿等着就不让位置闲着；轮转是，硬配额不是</td></tr>
+</table></div>
+
+<h2>板块 7 · 已学词表</h2>
+<details><summary>Day 1 到今天的全部术语（点开）</summary>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little's Law</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td>Day 11</td></tr>
+<tr><td>对等组</td><td>peer group</td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount / MNT_DETACH</td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td>Day 11</td></tr>
+<tr><td>叠加文件系统</td><td>overlayfs / overlay filesystem</td><td>Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td>lowerdir / upperdir / workdir</td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td>copy-on-write / copy_up</td><td>Day 12</td></tr>
+<tr><td>白障</td><td>whiteout</td><td>Day 12</td></tr>
+<tr><td>只读根</td><td>read-only rootfs</td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td>tmpfs</td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td>page cache</td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td>shmem</td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td>inode</td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td>size= / nr_inodes=</td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td>buffered write</td><td>Day 12</td></tr>
+<tr><td>直写</td><td>direct I/O (O_DIRECT)</td><td>Day 12</td></tr>
+<tr><td>回写</td><td>writeback</td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td>blkio throttle / io.max</td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td>major:minor</td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td>veth pair</td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td>SNAT / MASQUERADE</td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td>packet filter / netfilter (iptables)</td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td>DROP / REJECT</td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td>egress allowlist</td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td>capability bounding set</td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td>masking</td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td>least privilege</td><td>Day 12</td></tr>
+<tr><td>开放容器倡议</td><td>OCI / Open Container Initiative</td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td>runtime-spec</td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td>image-spec</td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td>distribution-spec</td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td>filesystem bundle</td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td>config.json</td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td>low-level runtime / runtime engine</td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td>high-level runtime</td><td>Day 13</td></tr>
+<tr><td>libcontainer</td><td>libcontainer</td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td>runc init</td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td>binary cloning / exeseal</td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td>__attribute__((constructor))</td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td>nsexec stage 0 / 1 / 2</td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td>exec fifo</td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td>creating / created / running / stopped</td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td>lifecycle hooks</td><td>Day 13</td></tr>
+<tr><td>垫片</td><td>shim</td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td>ttRPC</td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td>subreaper / PR_SET_CHILD_SUBREAPER</td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td>zombie process</td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td>CRI / Container Runtime Interface</td><td>Day 13</td></tr>
+<tr><td>预热池</td><td>warm pool</td><td>Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td>zygote / fork server</td><td>Day 14</td></tr>
+<tr><td>懒加载</td><td>lazy loading / lazy pulling</td><td>Day 14</td></tr>
+<tr><td>并发上限</td><td>concurrency limit</td><td>Day 14</td></tr>
+<tr><td>许可</td><td>semaphore</td><td>Day 14</td></tr>
+<tr><td>准入控制</td><td>admission control</td><td>Day 14</td></tr>
+<tr><td>背压</td><td>backpressure</td><td>Day 14</td></tr>
+<tr><td>泊松到达</td><td>Poisson arrivals</td><td>Day 14</td></tr>
+<tr><td>宽限期</td><td>grace period</td><td>Day 14</td></tr>
+<tr><td>请求路径</td><td>request path</td><td>Day 14</td></tr>
+<tr><td>异步回收</td><td>deferred cleanup</td><td>Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td>KV cache</td><td>Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td>query head / KV head</td><td>Day 15</td></tr>
+<tr><td>每头维度</td><td>head_dim / head size</td><td>Day 15</td></tr>
+<tr><td>分组查询注意力</td><td>GQA / grouped-query attention</td><td>Day 15</td></tr>
+<tr><td>内部碎片</td><td>internal fragmentation</td><td>Day 15</td></tr>
+<tr><td>外部碎片</td><td>external fragmentation</td><td>Day 15</td></tr>
+<tr><td>紧凑</td><td>compaction</td><td>Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td>block</td><td>Day 15</td></tr>
+<tr><td>块表</td><td>block table</td><td>Day 15</td></tr>
+<tr><td>分页注意力</td><td>PagedAttention</td><td>Day 15</td></tr>
+<tr><td>每块字节数</td><td>page_size_bytes</td><td>Day 15</td></tr>
+<tr><td>空闲块队列</td><td>free block queue</td><td>Day 15</td></tr>
+<tr><td>上下文长度上限</td><td>max_model_len</td><td>Day 15</td></tr>
+<tr><td>显存占用比例</td><td>gpu_memory_utilization</td><td>Day 15</td></tr>
+<tr><td>因果注意力</td><td>causal attention</td><td>Day 16</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td>prefix caching / APC</td><td>Day 16</td></tr>
+<tr><td>token 级前缀命中率</td><td>prefix cache hit rate</td><td>Day 16</td></tr>
+<tr><td>块 hash 链</td><td>chained block hash</td><td>Day 16</td></tr>
+<tr><td>基数树 / 前缀树</td><td>radix tree / RadixAttention</td><td>Day 16</td></tr>
+<tr><td>节点分裂</td><td>node split</td><td>Day 16</td></tr>
+<tr><td>最近最少使用</td><td>LRU / least recently used</td><td>Day 16</td></tr>
+<tr><td>复用距离</td><td>reuse distance</td><td>Day 16</td></tr>
+<tr><td>缓存盐</td><td>cache salt</td><td>Day 16</td></tr>
+<tr><td>卸载</td><td>offloading</td><td>Day 16</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td>tiering / primary tier / secondary tier</td><td>Day 16</td></tr>
+<tr><td>提升</td><td>promotion</td><td>Day 16</td></tr>
+<tr><td>写入门槛</td><td>store threshold</td><td>Day 16</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td>PCIe</td><td>Day 16</td></tr>
+<tr><td>前端进程</td><td>frontend process</td><td>Day 17</td></tr>
+<tr><td>引擎核心 / 引擎核心进程</td><td>EngineCore / EngineCoreProc</td><td>Day 17</td></tr>
+<tr><td>输入处理器</td><td>input processor</td><td>Day 17</td></tr>
+<tr><td>输出处理器</td><td>output processor</td><td>Day 17</td></tr>
+<tr><td>忙循环</td><td>busy loop</td><td>Day 17</td></tr>
+<tr><td>输入队列 / 输出队列</td><td>input_queue / output_queue</td><td>Day 17</td></tr>
+<tr><td>打包 / 解包 · 序列化 / 反序列化</td><td>serialize / deserialize</td><td>Day 17</td></tr>
+<tr><td>请求状态</td><td>RequestStatus</td><td>Day 17</td></tr>
+<tr><td>调度单</td><td>SchedulerOutput</td><td>Day 17</td></tr>
+<tr><td>全量与差量</td><td>NewRequestData / CachedRequestData</td><td>Day 17</td></tr>
+<tr><td>执行结果</td><td>ModelRunnerOutput</td><td>Day 17</td></tr>
+<tr><td>执行器</td><td>Executor</td><td>Day 17</td></tr>
+<tr><td>增量解码</td><td>incremental detokenization</td><td>Day 17</td></tr>
+<tr><td>解码窗口</td><td>prefix_offset / read_offset</td><td>Day 17</td></tr>
+<tr><td>停止串</td><td>stop string</td><td>Day 17</td></tr>
+<tr><td>替换符</td><td>replacement character (U+FFFD)</td><td>Day 17</td></tr>
+<tr><td>agent 循环</td><td>agent loop</td><td>Day 18</td></tr>
+<tr><td>一轮</td><td>turn</td><td>Day 18</td></tr>
+<tr><td>会话</td><td>session</td><td>Day 18</td></tr>
+<tr><td>工具调用</td><td>tool call</td><td>Day 18</td></tr>
+<tr><td>副作用</td><td>side effect</td><td>Day 18</td></tr>
+<tr><td>服务端推送事件</td><td>SSE / server-sent events</td><td>Day 18</td></tr>
+<tr><td>交接</td><td>handoff</td><td>Day 18</td></tr>
+<tr><td>在途会话</td><td>in-flight session</td><td>Day 18</td></tr>
+<tr><td>进程 CPU 时钟</td><td>process CPU clock (time.process_time)</td><td>Day 18</td></tr>
+<tr><td>幂等</td><td>idempotent / idempotence</td><td>Day 18</td></tr>
+<tr><td>幂等键</td><td>idempotency key</td><td>Day 18</td></tr>
+<tr><td>至少一次 / 恰好一次</td><td>at-least-once / exactly-once</td><td>Day 18</td></tr>
+<tr><td>检查点</td><td>checkpoint</td><td>Day 18</td></tr>
+<tr><td>追加式日志</td><td>append-only log</td><td>Day 18</td></tr>
+<tr><td>写前记录</td><td>write-ahead logging (WAL)</td><td>Day 18</td></tr>
+<tr><td>工具注册</td><td>tool registration</td><td>Day 19</td></tr>
+<tr><td>参数模式</td><td>input schema</td><td>Day 19</td></tr>
+<tr><td>JSON Schema</td><td>JSON Schema</td><td>Day 19</td></tr>
+<tr><td>附加属性</td><td>additionalProperties</td><td>Day 19</td></tr>
+<tr><td>结构化输出</td><td>structuredContent / outputSchema</td><td>Day 19</td></tr>
+<tr><td>工具注解</td><td>tool annotations</td><td>Day 19</td></tr>
+<tr><td>模型上下文协议</td><td>MCP / Model Context Protocol</td><td>Day 19</td></tr>
+<tr><td>JSON-RPC 2.0</td><td>JSON-RPC 2.0</td><td>Day 19</td></tr>
+<tr><td>请求编号</td><td>request id</td><td>Day 19</td></tr>
+<tr><td>工具清单</td><td>tools/list</td><td>Day 19</td></tr>
+<tr><td>工具调用请求</td><td>tools/call</td><td>Day 19</td></tr>
+<tr><td>内容块</td><td>content block</td><td>Day 19</td></tr>
+<tr><td>协议错误 / 工具错误</td><td>protocol error / tool error</td><td>Day 19</td></tr>
+<tr><td>错误标志</td><td>isError</td><td>Day 19</td></tr>
+<tr><td>部分结果</td><td>partial results</td><td>Day 19</td></tr>
+<tr><td>任务组</td><td>asyncio.TaskGroup</td><td>Day 19</td></tr>
+<tr><td>兄弟任务取消</td><td>sibling cancellation</td><td>Day 19</td></tr>
+<tr><td>异常组</td><td>ExceptionGroup / except*</td><td>Day 19</td></tr>
+<tr><td>协作式取消</td><td>cooperative cancellation</td><td>Day 19</td></tr>
+<tr><td>取消通知</td><td>notifications/cancelled</td><td>Day 19</td></tr>
+<tr><td>截止时间传递</td><td>deadline propagation</td><td>Day 19</td></tr>
+<tr><td>上下文污染</td><td>context pollution</td><td>Day 19</td></tr>
+<tr><td>上下文预算</td><td>context budget</td><td>Day 20</td></tr>
+<tr><td>截断</td><td>truncation</td><td>Day 20</td></tr>
+<tr><td>滑动窗口</td><td>sliding window</td><td>Day 20</td></tr>
+<tr><td>末端保留 / 首端保留</td><td>trim strategy "last" / "first"</td><td>Day 20</td></tr>
+<tr><td>保住系统消息</td><td>include_system</td><td>Day 20</td></tr>
+<tr><td>悬空的工具结果</td><td>dangling tool result</td><td>Day 20</td></tr>
+<tr><td>上下文压缩</td><td>context compaction</td><td>Day 20</td></tr>
+<tr><td>压缩阈值</td><td>compaction threshold</td><td>Day 20</td></tr>
+<tr><td>前缀失效 / 断点</td><td>prefix invalidation</td><td>Day 20</td></tr>
+<tr><td>近似计数</td><td>approximate token counting</td><td>Day 20</td></tr>
+<tr><td>边际成本</td><td>marginal cost</td><td>Day 20</td></tr>
+<tr><td>会话存储</td><td>session store</td><td>Day 20</td></tr>
+<tr><td>隐式截断</td><td>implicit truncation</td><td>Day 20</td></tr>
+<tr><td>会话亲和 / 粘性会话</td><td>session affinity / sticky session</td><td>Day 20</td></tr>
+<tr><td>任务队列</td><td>task queue</td><td>Day 21</td></tr>
+<tr><td>投递语义</td><td>delivery semantics</td><td>Day 21</td></tr>
+<tr><td>至多一次</td><td>at-most-once</td><td>Day 21</td></tr>
+<tr><td>租约</td><td>lease</td><td>Day 21</td></tr>
+<tr><td>可见性超时</td><td>visibility timeout</td><td>Day 21</td></tr>
+<tr><td>续租 / 心跳续租</td><td>lease renewal / heartbeat</td><td>Day 21</td></tr>
+<tr><td>孤儿任务</td><td>orphaned task</td><td>Day 21</td></tr>
+<tr><td>重投标记</td><td>redelivered flag</td><td>Day 21</td></tr>
+<tr><td>重试退避</td><td>retry backoff</td><td>Day 21</td></tr>
+<tr><td>死信队列</td><td>dead-letter queue</td><td>Day 21</td></tr>
+<tr><td>毒丸任务</td><td>poison-pill task</td><td>Day 21</td></tr>
+<tr><td>意图记录</td><td>intent record</td><td>Day 21</td></tr>
+<tr><td>不确定态</td><td>in-doubt</td><td>Day 21</td></tr>
+<tr><td>对账</td><td>reconciliation</td><td>Day 21</td></tr>
+<tr><td>检查点粒度</td><td>checkpoint granularity</td><td>Day 21</td></tr>
+<tr><td>租户</td><td>tenant</td><td>Day 21</td></tr>
+<tr><td>队头阻塞</td><td>head-of-line blocking</td><td>Day 21</td></tr>
+<tr><td>公平排队 / 轮转</td><td>fair queuing / round-robin</td><td>Day 21</td></tr>
+<tr><td>每租户并发配额</td><td>per-tenant concurrency quota</td><td>Day 21</td></tr>
+<tr><td>工作保全</td><td>work-conserving</td><td>Day 21</td></tr>
+</table></div>
+</details>
+
+<h2>板块 8 · 专项深挖</h2>
+<p>今天放不下、但各自够花一个晚上的三件事。三段互不相干，挑一段整段发给 Claude 就行。</p>
+<p>我已经量过单机上的租约：租约比任务短的时候，同一条任务会被两个进程同时执行；租约比任务长的时候，一次崩溃要晾满剩下的租约才有人接手；周期性续租能让这两件事同时归零。这些全建立在一个前提上——所有进程读的是同一个时钟。现在我想弄清楚租约在多台机器上怎么才靠得住。请讲清楚这几件事：进程暂停（垃圾回收、虚拟机被挂起）为什么会让一个自以为还持有租约的进程写出脏数据；隔离令牌（fencing token）是怎么把这个问题变成一次单调计数器比较的；以及为什么「把租约调长一点」不是解法。产出以机制说明为主，配一张「哪一步会失败、失败之后谁会写坏什么」的表，不超过一千五百字。</p>
+<p>我已经量过三种排队规则在一个突发租户面前的表现：单一 FIFO 队列下，小租户的中位等待是大租户提交量的函数；每租户一条队列轮转取，小租户的中位等待掉了将近八十倍，而池子利用率一分没掉；每租户硬配额能把小租户的等待做到近乎零，代价是池子利用率从九成九掉到五成四。现在我想把「公平」这件事做细一点。请对比这几种排队规则的机制与失效模式：加权轮转、赤字轮转（Deficit Round Robin）、最早虚拟完成时间（WFQ 那一族）、以及「配额作保底、空闲可借用」的层级式做法。对每一条说明：它需要知道任务的什么信息（长度？租户权重？）、租户数量很多的时候开销怎么变、以及一个租户提交的任务长度极不均匀的时候它会怎么退化。产出用一张对比表加一段结论，不超过一千二百字。</p>
+<p>我已经量过带副作用的恢复路径：崩在「对方已落账、回话未到」这条缝上，只有检查点、或者把幂等键记在本地账本，都会重复扣一次；把键随请求发给对方（对方去重），或者恢复时拿键回去对账，都能做到零重复。现在我想搞清楚工作流引擎是怎么把这件事系统化的。请以 Temporal 这一类「重放式」引擎为例讲清楚：它把什么记进事件历史、重放的时候怎么保证程序走出同一条路径（为什么代码里不能直接调 <code>time.now()</code> 和随机数）、活动（activity）的重试和我今天做的队列重投是不是同一件事、以及它对「不确定态」的处理和对账有什么区别。产出以机制说明加一个最小例子为主，不超过一千五百字。</p>
+
+<h2>板块 9 · 延伸材料</h2>
+<p><b>本机 kombu 5.6.2 的 Redis 传输</b>——<code>/usr/local/lib/python3.11/dist-packages/kombu/transport/redis.py</code>。只读四段：<code>append</code>（363 行起，领取时把领取时刻写进索引）、<code>ack</code> 与 <code>reject</code>（386 行起，做完才从索引里删）、<code>restore_visible</code>（410 行起，过期判据和那个每十次才扫一遍的 <code>interval</code>）、以及第 644 行那个默认 3600 秒。今天第 2 节每一句关于租约的话都出自这里。难度低，40 分钟；先读它最省事，今天第 2 节的每一句都能在这四段里找到出处。</p>
+<p><b>Amazon SQS Visibility Timeout</b>——<a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html">docs.aws.amazon.com</a>。同一个机制的另一套实现：默认 30 秒、上限 12 小时，而且它把续租做成了显式接口 <code>ChangeMessageVisibility</code>，文档里直接推荐用心跳延长。读它是为了看清「租约」这个概念在工业界的标准形状。难度低，30 分钟。</p>
+<p><b>Stripe · Idempotent requests</b>——<a href="https://docs.stripe.com/api/idempotent_requests">docs.stripe.com</a>。今天第 9 节那条约定的甲方视角：键由调用方生成、保存的是第一次的状态码和响应体（包括 500）、参数不一致会直接报错、至少 24 小时之后可以被清理。读完你会明白为什么「键的有效期」是一个必须问清楚的参数。难度低，30 分钟。</p>
+<p><b>Efficient Fair Queueing using Deficit Round Robin</b>，M. Shreedhar 与 George Varghese——第 12 节那个轮转最朴素的版本假设每条任务一样大。这篇讲的是任务大小不等的时候怎么还能保持公平，代价只有常数时间。它出自网络包调度，但今天这套排队规则和它是同一个问题。难度较高，一个半小时，先读前三节即可。</p>
+
+<h2>板块 10 · 今日五句话</h2>
+<div class="card five">
+<span class="tag">扣过这一页，用自己的话答，每题一两句</span>
+<p>1 · 「取出一条任务」在内存队列里是一个动作，落到表上要拆成哪两步？两步之间那段时间里，这条任务的处境是什么？</p>
+<p>2 · 租约取长和取短，各自输掉什么？续租凭什么能两头都不输？</p>
+<p>3 · 一个写在本地磁盘上的幂等键，能堵住哪条缝、堵不住哪条缝？分界线在哪儿？</p>
+<p>4 · 「小租户被大租户堵住了」有两种改法，它们各自付什么钱？哪一种是永久付的？</p>
+<p>5 · 会话亲和保住的是什么、保不住的是什么？一条在队列里等了很久的任务，回到原来那台副本还剩多少命中？</p>
+<div class="write"></div>
+</div>
+<h4>逐句自查</h4>
+<p>第 1 句如果只写「先标记再删除」就差一层。两步之间那段时间正是整个任务的执行时间，可能是两个小时，而这段时间里这条任务同时具备两个性质：队列里还有它（所以丢不了），但别人不许碰它（所以不会重复）。租约就是用来给「不许碰」定一个到期时刻的。</p>
+<p>第 2 句如果答成「租约短了会重复、长了会慢」就只说了现象没说机制。取短输在误判：任务还在跑租约就过期了，别人把它当孤儿领走，同一条任务被两个进程同时执行。取长输在恢复：租约是领取那一刻定死的，进程死掉不会通知任何人，只能等它自然过期，实测里租约三秒二对应的接手延迟就是三秒整。续租能两头都要，是因为它把「租约必须比最长的任务长」这条约束去掉了——租约的长度从此只管故障后能忍多久没人接手。</p>
+<p>第 3 句如果答成「幂等键能防重复」就把今天最要紧的一格漏了。分界线是这次崩溃发生的时候，调用方手上有没有「这件事发生过」的证据。Day 18 那条缝在工具返回之后，调用方活着且知道自己做过，本地记录够用；今天这条缝在对方落账之后、回话之前，调用方被杀的瞬间手上什么都没有，本地账本干干净净，于是它会再扣一次。实测里这一行和「只有检查点」的结果一模一样。</p>
+<p>第 4 句如果只答「配额更公平」就答反了方向。改排队规则付的是大租户的一点点延迟，实测里中位等待多了两百毫秒，而池子利用率一分没掉、全部做完的时刻一秒没变；改配额付的是利用率，实测从九成九掉到五成四，而且这笔钱哪怕机器上只有一个租户也照付不误。永久付的是后者。</p>
+<p>第 5 句如果答成「亲和保住了命中率」就漏了今天新加的那一维。亲和保住的是「这条会话回到那台机器」，它保不住「那台机器上还留着这条会话的东西」——后者由等待时间和缓存容量一起决定。实测里等待期间插进来的请求足够多的时候，命中率落到只剩头部那一档，而头部那一列从头到尾一个数都没变，因为每次请求都碰它。</p>
+
+<h2>板块 11 · 明日预告</h2>
+<p>今天所有的重试都建立在一个前提上：重试是安全的，最多多扣一次钱，而且有键就不会。明天这个前提要塌一半——Day 22 讲沙箱接合，agent 要执行的是模型现写的代码，跑在块二那套隔离里。重投一次意味着那段代码再执行一遍，而它可能已经往磁盘上写过东西了，你连它写了什么都不知道。</p>
+<p>今天还留了一个钩子：3.4 节那条轨迹里被扔掉的十轮，接手的进程是从头重跑的。明天那十轮里如果有一轮是「在沙箱里跑了一段用户代码」，重跑就不只是浪费时间了。Day 14 那个异步回收明天会和今天的租约撞在一起——沙箱还没拆完，任务的租约已经到期了。</p>
+
+<footer>
+<p>AI Infra · Day 21 / 28 · 2026-09-03 · 阶段四 · Agent Runtime（八天项目 · 第 4 天 · 建造）</p>
+<p>实验条件：2 核 Intel Xeon @ 2.10 GHz，L1d 96 KiB、L2 4 MiB、L3 260 MiB，7.8 GiB 内存，页大小 4096 字节；Linux 6.18.44。Python 3.11.15、sqlite3 3.45.1、kombu 5.6.2（随 celery 5.6.3 装入）。这台机器与 Day 20 那台的缓存规格不同，所以两天的绝对毫秒数不横着比；今天所有对比都在本页内部完成。</p>
+<p>四个账台都在本机运行，没有模型、没有加速器、没有跨机器网络。P1 的工作进程是真的子进程，杀法是 <code>SIGKILL</code>；P2 的计费服务跑在回环地址上，杀在它落账之后、回话之前。P1 与 P3 每格 3 次运行取中位；P4 是确定性程序，重跑结果完全一样，会话生成不含随机数。一手材料：本机 <code>site-packages</code> 下的 kombu 5.6.2，页面上所有 <code>kombu/transport/redis.py</code> 的行号均以这一份为准。</p>
+</footer>
+
+</main>
+</body>
+</html>
