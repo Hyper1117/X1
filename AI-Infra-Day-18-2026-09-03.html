@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 18</title>
+<style>
+:root{
+  --bg:#f7f3ec; --panel:#fffdf8; --ink:#2c2823; --dim:#6b6258; --line:#e2d9ca;
+  --accent:#a4652a; --accent2:#4a6f52; --accent3:#7a5a8e; --accent4:#8a5340;
+  --codebg:#282420; --codefg:#ece4d6; --mark:#f0e4cf; --thead:#efe7d9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17161a; --panel:#201f24; --ink:#e6e1d8; --dim:#a29a8e; --line:#37343c;
+    --accent:#d99a5b; --accent2:#8fc0a0; --accent3:#c0a3d8; --accent4:#e0a08a;
+    --codebg:#14131a; --codefg:#ded6c8; --mark:#3a3229; --thead:#2a282f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17161a; --panel:#201f24; --ink:#e6e1d8; --dim:#a29a8e; --line:#37343c;
+  --accent:#d99a5b; --accent2:#8fc0a0; --accent3:#c0a3d8; --accent4:#e0a08a;
+  --codebg:#14131a; --codefg:#ded6c8; --mark:#3a3229; --thead:#2a282f;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",
+    "Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px; line-height:1.78; overflow-x:hidden;
+}
+.wrap{max-width:820px; margin:0 auto; padding:0 20px 90px}
+.bar{
+  position:sticky; top:0; z-index:20; background:var(--panel);
+  border-bottom:1px solid var(--line); padding:9px 20px; font-size:13px; color:var(--dim);
+}
+.bar .in{max-width:820px; margin:0 auto; display:flex; gap:14px; flex-wrap:wrap; align-items:baseline}
+.bar .track{flex:1 1 120px; min-width:90px; height:5px; border-radius:3px; background:var(--line); position:relative; align-self:center}
+.bar .track i{position:absolute; inset:0 auto 0 0; width:64.3%; background:var(--accent); border-radius:3px}
+h1{font-size:1.62rem; line-height:1.45; margin:1.5rem 0 .3rem; letter-spacing:.01em}
+.sub{color:var(--dim); font-size:.97rem; margin:0 0 1.6rem}
+h2{font-size:1.2rem; margin:2.9rem 0 .9rem; padding-bottom:.35rem; border-bottom:2px solid var(--line)}
+h3{font-size:1.06rem; margin:2.1rem 0 .6rem}
+h4{font-size:.99rem; margin:1.5rem 0 .4rem; color:var(--dim)}
+.part{
+  margin:3.4rem 0 1.2rem; padding:.7rem 0 .7rem 1rem; border-left:5px solid var(--accent);
+  background:linear-gradient(90deg,var(--mark),transparent 70%); border-radius:0 8px 8px 0;
+}
+.part h2{border:0; margin:0; font-size:1.28rem}
+.part p{margin:.25rem 0 0; color:var(--dim); font-size:.93rem}
+p{margin:.85rem 0}
+ul,ol{margin:.8rem 0; padding-left:1.4rem}
+li{margin:.35rem 0}
+a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--line)}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--mark); padding:.1em .35em; border-radius:4px;
+  overflow-wrap:anywhere; word-break:break-word;
+}
+pre{
+  background:var(--codebg); color:var(--codefg); padding:14px 16px; border-radius:10px;
+  overflow-x:auto; line-height:1.62; font-size:13.2px; margin:1rem 0;
+}
+pre code{background:none; padding:0; color:inherit; font-size:inherit; overflow-wrap:normal; word-break:normal}
+.scroll{overflow-x:auto; margin:1.1rem 0; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; font-size:14.2px; min-width:440px}
+th,td{border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top}
+th{background:var(--thead); font-weight:600}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--panel) 60%,transparent)}
+.card{border-left:5px solid var(--accent); background:var(--panel); border-radius:0 10px 10px 0;
+  padding:.9rem 1.1rem; margin:1.4rem 0}
+.card h4{margin-top:0; color:var(--accent)}
+.recall{border-left-color:var(--accent2)}
+.recall h4{color:var(--accent2)}
+.predict{border-left-color:var(--accent3)}
+.predict h4{color:var(--accent3)}
+.five{border-left-color:var(--accent4)}
+.five h4{color:var(--accent4)}
+.key{border-left-color:var(--accent); background:var(--mark)}
+.key h4{margin-top:0}
+.term{background:var(--mark); border-bottom:1.5px solid var(--accent); padding:0 .18em; border-radius:3px 3px 0 0}
+details{border:1px solid var(--line); border-radius:9px; padding:.55rem .9rem; margin:.8rem 0; background:var(--panel)}
+details[open]{padding-bottom:.9rem}
+summary{cursor:pointer; font-weight:600; color:var(--accent2)}
+.note{color:var(--dim); font-size:.9rem}
+.write{border:1px dashed var(--line); border-radius:9px; min-height:74px; margin:.7rem 0;
+  background:repeating-linear-gradient(transparent,transparent 36px,var(--line) 36px,var(--line) 37px)}
+figure{margin:1.3rem 0}
+figcaption{color:var(--dim); font-size:.88rem; margin-top:.4rem}
+svg{display:block; max-width:100%; height:auto; color:var(--ink)}
+svg text{font-family:inherit}
+footer{margin-top:3.6rem; padding-top:1.2rem; border-top:1px solid var(--line); color:var(--dim); font-size:.87rem}
+hr{border:0; border-top:1px solid var(--line); margin:2.4rem 0}
+.lbl{font-weight:600;color:var(--accent2)}
+.qs{font-weight:600;color:var(--accent3)}
+.mat{font-weight:600}
+.daylabel{color:var(--accent);font-weight:700;letter-spacing:.02em}
+.lead{font-size:1.06rem; color:var(--accent); font-weight:600; margin:1.4rem 0 .6rem}
+.breath{color:var(--dim); font-style:normal; border-left:3px solid var(--line); padding-left:.9rem; margin:1.3rem 0}
+</style>
+</head>
+<body>
+<div class="bar"><div class="in">
+  <span class="daylabel">AI Infra · Day 18 / 28</span>
+  <span>阶段四 · Agent Runtime（八天项目 · 第 1 天 · 立项）</span>
+  <span class="track"><i></i></span>
+  <span>2026-09-03</span>
+</div></div>
+<div class="wrap">
+
+<h1>一条会话 5187 毫秒，其中 5186 毫秒在等——可这台机器扛不住 128 条</h1>
+<p class="sub">今天开始一个八天的项目：自己写一个 agent 运行时。第一天把交付物的规格定下来，先量清楚这东西的钱花在哪儿。</p>
+<h2>板块 0 · 温故 · 闭卷</h2>
+<p>三道闭卷题，间隔分别是 1 天、3 天、7 天。别往前翻，先在心里答一遍，答不上来再展开。</p>
+
+<div class="card recall">
+<h4>第 1 题（Day 17 · vLLM 源码走读）</h4>
+<p>昨天量到：vLLM 前端和引擎之间过一个来回是 131.1 微秒，而这台机器上一个引擎步是 125.9 毫秒，比例是千分之一，所以拆成两个进程划得来。</p>
+<p>现在换一个小模型、批量也开得小，一个引擎步只要 2 毫秒。这个「划得来」还成立吗？把账重算一遍，然后说出该动哪个旋钮——为什么不是换一个更省的消息格式？</p>
+<details><summary>展开答案</summary>
+<p>比例从千分之一变成 131.1 ÷ 2000 ≈ 6.6%。同一个绝对值，因为分母缩了六十倍，从「不值一提」变成了「六个多点的固定税」。</p>
+<p>不该动消息格式，昨天那张表已经把这条路堵死了两次。一次是打包解包的绝对值：32 条并发那一行，打包 1.77 微秒加解包 4.44 微秒合计 6.21 微秒，不到一个来回的百分之五，换个格式最多省掉这 5%。另一次是尺寸对来回时间的影响：消息从 24 字节涨到 2693 字节，涨了一百一十二倍，一个来回只从 129.2 微秒走到 133.9 微秒，多了不到百分之四。也就是说过河的钱几乎全是固定开销——两次系统调用、一次进程唤醒、一次调度——它按次数收，不按字节收。</p>
+<p>所以要动的是交接的次数：把好几个引擎步的结果攒起来一次送回去，或者把两层放回同一个进程，再用 Day 4 那个办法把纯 Python 的活儿甩进线程池。</p>
+<p><span class="lbl">接今天：</span>今天你要为自己的运行时定这个数。你的循环和模型之间多久交接一次、一次多少钱，是今天要量出来的第一件事。</p>
+</details>
+</div>
+
+<div class="card recall">
+<h4>第 2 题（Day 15 · KV Cache 内存账）</h4>
+<p>Day 15 最后算过一笔：给 KV 留 40 GiB、按 float16、一条按 2048 个 token 算，装得下 1310720 个 token 位，也就是 640 条。</p>
+<p>这个 640 是「这台机器能同时服务 640 个用户」吗？它是什么的上限，又不是什么的上限——至少说出三件它管不着的事。</p>
+<details><summary>展开答案</summary>
+<p>它只是「同时把 KV 放在显存里的序列条数」的上限。三件它管不着的事：</p>
+<p>一，不是同时在线的用户数。一个用户在读上一段回答、在想下一句话的时候，他的会话并不需要占着 KV——除非你为了前缀命中率故意把它留着，而 Day 16 量过留着这件事值多少：五十二个百分点的命中率，或者十六倍的缓存容量。</p>
+<p>二，不是每一步能算几条。那是 <code>max_num_seqs</code> 和 token 预算说了算的，Day 9 引过它的默认值 128。装得下 640 条不等于一步能推进 640 条。</p>
+<p>三，不是吞吐上限。Day 15 第 13 节那张表：批量 32、上下文 2048 的时候，KV 占一步要读的字节的 88.9%。装得下，也可能读不动。</p>
+<p><span class="lbl">今天接在哪儿：</span>「并发」这个词今天会再分出一层含义。一个 agent 运行时里，在途的会话数，和这些会话里此刻真的在等模型的条数，是两个数——而且差得很远。</p>
+</details>
+</div>
+
+<div class="card recall">
+<h4>第 3 题（Day 11 · 手搓最小容器）</h4>
+<p>Day 11 那张启动开销分解表，一行一行往上叠，最贵的一行是 40.98 毫秒。可整张表漏掉了一样东西，那样东西比表上所有数字加起来还大。</p>
+<p>漏掉的是什么？它有多大？这件事给「先测再优化」这条规矩补了哪一条？</p>
+<details><summary>展开答案</summary>
+<p>漏掉的是「从零复制一份 80 MB、1332 个文件的根文件系统」，中位 1327.10 毫秒。表上从 B 到 G 那整段隔离机制加起来是 25.13 毫秒，两者差了三十多倍；三把锁加换根在一次完整冷启动里占不到百分之二。</p>
+<p>补的那一条是：拆账的完整性比每一段的精度更值钱。你只会去优化你量到的那几段，没有进表的那一段再大也不会被看见。当时那张表每一行都量得很准，准确度不是问题，覆盖面才是。</p>
+<p><span class="lbl">和今天的关系：</span>今天也要拆一条会话的账。这次要提防的是反过来那种漏：各段加起来严丝合缝地等于端到端，一毫秒不差，可每一段内部「在等」和「在干活」是混着的。光看那张表，你会得出「运行时几乎不花钱」这个结论，而它是错的。</p>
+</details>
+</div>
+
+<h2>板块 1 · 今日概览</h2>
+<div class="scroll"><table>
+<tr><th style="width:22%">项</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 18 / 28 · 阶段四 · Agent Runtime（八天项目的第 1 天，立项）</td></tr>
+<tr><td>今日主题</td><td>把一个 agent 循环的完整链路画出来，搭出能跑通「单轮、无工具」的骨架，然后量清楚三件事：这个循环的钱花在哪儿、一台机器能同时转多少条、状态存在哪儿才不会崩了就丢</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+  <p style="margin:.2rem 0">工具调用的协议长什么样、工具怎么注册、并发执行怎么做——那是 Day 19 一整天。今天的循环里只有一个工具，而且是假的，它存在的唯一目的是让循环转得起来。</p>
+  <p style="margin:.5rem 0 .2rem">上下文长了怎么办：窗口预算、压缩、截断、会话状态怎么落库——Day 20。今天只把「它只往后长」这个事实量出来，量成一个具体的字节数。</p>
+  <p style="margin:.5rem 0 .2rem">任务队列、断点续跑、背压配额的完整做法——Day 21。今天只做到「崩在哪一步会重复扣一次款」这一步，把问题摆在桌面上。</p>
+  <p style="margin:.5rem 0 .2rem">怎么让 agent 更聪明：提示词、规划、反思那一套。这在这 28 天里是明确排除的。这门课讲的是底下那一层跑得住、停得掉、恢复得了。</p>
+</td></tr>
+</table></div>
+
+<h4>今天收工的时候，你应该能做到这三件</h4>
+<ol>
+<li>画出一个 agent 循环的完整链路，并指出它和一个普通 HTTP 接口在哪四件事上不同，每一件对基础设施提出的是哪一条具体要求。</li>
+<li>拿到「这个运行时能同时跑多少条会话」这个问题，你知道要量哪两个数、为什么不能拿单条开销直接乘除外推、以及塌下来的时候先动的是哪个指标。</li>
+<li>写出一份设计文档，里面每一条决定后面要么跟着一个你自己量出来的数，要么跟着一句明确的「这一条留到第几天」。</li>
+</ol>
+
+<h4>今天这一页怎么走</h4>
+<div class="scroll"><table>
+<tr><th style="width:30%">部分</th><th>它回答的问题</th></tr>
+<tr><td>第一部分 · 一个循环，和一个普通接口差在哪</td><td>你现在会怎么写这个服务？这个写法在哪四件事上不够用？</td></tr>
+<tr><td>第二部分 · 今天的台子</td><td>三个进程各装了什么、一条真实会话的时间逐段是怎么花掉的？</td></tr>
+<tr><td>第三部分 · 这台机器的墙在哪</td><td>会话几乎全程在等，为什么一百多条就把运行时压塌了？</td></tr>
+<tr><td>第四部分 · 状态那一侧</td><td>上下文、检查点、崩溃——哪些能靠写得快解决，哪些不能？</td></tr>
+</table></div>
+<div class="part"><h2>第一部分 · 一个循环，和一个普通接口差在哪</h2>
+<p>先把你已经会的那个写法摆出来，再逐条说明它在哪儿不够。</p></div>
+
+<h3>1. 你现在会怎么写这个服务</h3>
+<p class="lead">一个能调模型的 HTTP 接口，你半小时就能写完。那为什么这一块要占八天？</p>
+<p>你作为后端工程师，第一版大概长这样：一个 <code>POST /chat</code>，里面把用户那句话组装成请求，调一次模型的接口，把返回的文字发回去。加上超时和重试，这就是一个完整、正确、上线也不会出事的服务。</p>
+<p>这个写法有一个前提：一次请求进来，做一件事，出去。请求和它做的事一一对应，做完就没有了。你过去写的绝大多数接口都满足这个前提，Day 14 那个沙箱执行服务也满足——收到一段代码，跑，返回结果，把沙箱拆掉，什么都不留下。</p>
+<p>而你要做的这个东西不满足。模型返回的可能不是答案，而是一句「请你替我把 <code>report.csv</code> 读出来」。你得真去读，把读到的内容拼在前面那些话的后面，再问一次。模型看了文件内容，可能又说「再帮我算一下第三列的平均值」。这样来回几次，它才给出最终答案。</p>
+
+<h3>2. 这个来回有个名字</h3>
+<p>把上面那段话拆成动作，一共四步，然后第四步接回第一步：组装上下文、调模型、看它要什么、去做，做完把结果追加进上下文。这个转圈的结构就叫 <span class="term">agent 循环（agent loop）</span>，转一圈叫<span class="term">一轮（turn）</span>，从用户提一个任务到最终答案出来这一整段叫一次<span class="term">会话（session）</span>。模型说「请替我执行某某」这句话叫一次<span class="term">工具调用（tool call）</span>。</p>
+
+<figure><div class="scroll">
+<svg viewBox="0 0 800 336" width="800" role="img" aria-label="agent 循环链路图">
+<g fill="none" stroke="currentColor" stroke-width="1.4">
+<rect x="10" y="122" width="86" height="52" rx="7"/>
+<rect x="118" y="20" width="428" height="260" rx="12" stroke-dasharray="5 4" opacity=".55"/>
+<rect x="146" y="66" width="152" height="46" rx="7"/>
+<rect x="372" y="66" width="152" height="46" rx="7"/>
+<rect x="372" y="196" width="152" height="46" rx="7"/>
+<rect x="146" y="196" width="152" height="46" rx="7"/>
+<rect x="590" y="66" width="200" height="46" rx="7"/>
+<rect x="590" y="196" width="200" height="46" rx="7"/>
+<path d="M298 89 H366"/><path d="M448 112 V190"/><path d="M366 219 H304"/><path d="M222 196 V118"/>
+<path d="M524 89 H584"/><path d="M584 96 H528"/>
+<path d="M524 219 H584"/><path d="M584 226 H528"/>
+<path d="M96 148 H140 V96"/>
+<path d="M436 242 V266 H60 V174"/>
+</g>
+<g fill="currentColor" stroke="none">
+<path d="M366 89 l-9 -4 v8 z"/><path d="M448 190 l-4 -9 h8 z"/><path d="M304 219 l9 4 v-8 z"/>
+<path d="M222 118 l-4 -9 h8 z"/><path d="M584 89 l-9 -4 v8 z"/><path d="M528 96 l9 4 v-8 z"/>
+<path d="M584 219 l-9 -4 v8 z"/><path d="M528 226 l9 4 v-8 z"/>
+<path d="M140 96 l-4 -9 h8 z"/><path d="M60 174 l-4 9 h8 z"/>
+</g>
+<g fill="currentColor" font-size="13.5" text-anchor="middle">
+<text x="53" y="144">调用方</text><text x="53" y="162">（用户 / 上游）</text>
+<text x="222" y="94">① 组装上下文</text>
+<text x="448" y="94">② 调模型</text>
+<text x="448" y="224">③ 看它要什么</text>
+<text x="222" y="224">④ 执行工具</text>
+<text x="690" y="94">模型服务（另一个进程）</text>
+<text x="690" y="224">工具 / 沙箱（另一个进程）</text>
+</g>
+<g fill="currentColor" font-size="12" opacity=".78">
+<text x="690" y="56" text-anchor="middle">每轮一次交接</text>
+<text x="690" y="186" text-anchor="middle">每次工具调用一次交接</text>
+<text x="128" y="38" opacity=".7">运行时（一条会话在这里转）</text>
+<text x="12" y="306">上下文只往后长：这一列的条数是 1 → 3 → 5 → … 一路加，从不改前面</text>
+<text x="12" y="324">③ 判定这一轮是「最终答案」的时候，才从这个圈里出来</text>
+</g>
+</svg>
+</div><figcaption>一次会话就是这个圈转 N 圈。N 在请求进来的时候是不知道的——它由模型每一轮的输出决定。</figcaption></figure>
+
+<p class="breath">如果把它当成一个人在做事：你交代一件任务，他去查一份资料，回来告诉你查到了什么，再问你下一步，如此几个来回。区别只在于，中间那个「他」每次回来时已经把之前所有对话忘光了，你必须把整段对话原样再念一遍给他听。这个「每次都要原样再念一遍」是后面很多账的源头。</p>
+
+<h3>3. 四件事把它和普通接口分开</h3>
+<p>把上面那张图和你熟悉的接口逐条对照，差别有四条。每一条右边跟着的，是它对底下这层提出的具体要求。</p>
+
+<div class="scroll"><table>
+<tr><th style="width:8%">#</th><th style="width:30%">不一样的地方</th><th>它要求基础设施做什么</th></tr>
+<tr><td class="n">1</td><td>一次请求对应 N 次模型调用，而 N 在请求进来时不知道</td><td>服务时间不再是一个可以事先估出来的常数。Day 14 那个「并发上限的下界等于到达率乘服务时间」的算法，右边那个乘数变成了一个分布。超时也不能只设一个：一轮的超时和一整条会话的超时是两个数。</td></tr>
+<tr><td class="n">2</td><td>上下文只往后长，从来不改前面</td><td>每一轮发出去的字节比上一轮多。一次会话往模型发的总量不是「最终上下文的大小」，而是它的好几倍——第 10 节会把这个倍数算出来。同时它也意味着内存占用随轮数涨，一个在途会话不是零成本地挂在那儿。</td></tr>
+<tr><td class="n">3</td><td>中间那几步有<span class="term">副作用（side effect）</span>：文件写了、钱扣了、邮件发了</td><td>整条会话不能像一个普通请求那样「失败了就整个重试」。重试会把已经生效的副作用再来一遍。所以每一步都要能回答「我是不是已经做过了」。</td></tr>
+<tr><td class="n">4</td><td>一次会话持续几秒到几十分钟，横跨很多次外部等待</td><td>进程重启、机器换掉、发布上线，都会打断一条正在跑的会话。状态必须落在进程之外，而且落的时刻要选对——第 12 节会看到时刻选错时会发生什么。</td></tr>
+</table></div>
+
+<p><b>上下文只往后长，从来不改前面</b>——第 2 条听起来最平淡，但它是今天四条里唯一一条在 Day 16 就已经出现过的：那天说 agent 场景的前缀缓存命中率能到 84.5%，靠的正是这个性质。今天它会以另一副面孔再出现一次，而那一次它是坏消息。</p>
+<div class="part"><h2>第二部分 · 今天的台子</h2>
+<p>三个进程、四个探针、一条真实轨迹。台子先摆清楚，后面每个数字都追得回来。</p></div>
+
+<h3>4. 实验装置</h3>
+<p>今天没有真模型，也没有加速器。三个真的操作系统进程，走真的 HTTP；被测的是中间那个运行时，另外两个是给它喂料和收料的。</p>
+<p class="note">第 7 节和第 9 节那几张表走的是 P2 自带的 <code>/bench</code>：并发会话由运行时自己开，压测器完全不参与——Day 6 那条规矩，压测器和被测服务不能挤同一个核。P3 只在第 8 节用了一次，读它带回的交接次数。</p>
+
+<h4>4.1 三个进程和四个探针</h4>
+<figure><div class="scroll">
+<svg viewBox="0 0 800 300" width="800" role="img" aria-label="三个进程的结构图">
+<g fill="none" stroke="currentColor" stroke-width="1.4">
+<rect x="12" y="104" width="168" height="84" rx="9"/>
+<rect x="236" y="40" width="300" height="212" rx="10"/>
+<rect x="258" y="92" width="256" height="34" rx="6" opacity=".8"/>
+<rect x="258" y="136" width="256" height="34" rx="6" opacity=".8"/>
+<rect x="258" y="180" width="256" height="34" rx="6" opacity=".8"/>
+<rect x="600" y="104" width="188" height="84" rx="9"/>
+<path d="M180 132 H228"/><path d="M228 162 H184"/>
+<path d="M544 132 H592"/><path d="M592 162 H548"/>
+</g>
+<g fill="currentColor" stroke="none">
+<path d="M228 132 l-9 -4 v8 z"/><path d="M184 162 l9 4 v-8 z"/>
+<path d="M592 132 l-9 -4 v8 z"/><path d="M548 162 l9 4 v-8 z"/>
+</g>
+<g fill="currentColor" font-size="13.5" text-anchor="middle">
+<text x="96" y="140">P3 压测器</text><text x="96" y="160">（独立进程）</text>
+<text x="386" y="30">P2 运行时 · 一个事件循环 · 端口 8002</text>
+<text x="386" y="114">n 条会话协程，各转各的圈</text>
+<text x="386" y="158">探针协程：每 10 毫秒醒一次</text>
+<text x="386" y="202">/bench 内建台架：自己开 n 条</text>
+<text x="694" y="134">P1 假模型服务</text><text x="694" y="154">端口 8001</text>
+<text x="694" y="174">只按时序 sleep</text>
+</g>
+<g fill="currentColor" font-size="12" opacity=".78" text-anchor="middle">
+<text x="204" y="124">请求</text><text x="204" y="182">应答</text>
+<text x="568" y="124">请求</text><text x="568" y="182">文本</text>
+</g>
+<g fill="currentColor" font-size="12" opacity=".82">
+<text x="12" y="246">指标在哪一侧算出来：</text>
+<text x="12" y="266">运行时 CPU = P2 自己调 time.process_time()　·　事件循环延迟 = P2 里那个探针协程</text>
+<text x="12" y="286">模型侧 CPU = P2 读 /proc/&lt;模型进程号&gt;/stat　·　端到端延迟 = P3 一侧，或 /bench 内部</text>
+</g>
+</svg>
+</div><figcaption>P2 是被测对象。P1 故意做得极轻——第 7 节那整段并发扫描里，它最多用掉一个核的 3.1%——这样「运行时自己烧了多少」才量得准。</figcaption></figure>
+
+<h4>4.2 一条请求和一条回答长什么样</h4>
+<p>运行时收到的是这一行，只有一个任务描述：</p>
+<pre><code>POST /run  {"task": "T1"}</code></pre>
+<p>它发给模型的是这一行。<code>messages</code> 是到这一轮为止的全部上下文，<code>turn</code> 是第几轮：</p>
+<pre><code>POST /v1/generate  {"messages": [{"role":"user","content":"任务 T1"}], "turn": 1}</code></pre>
+<p>模型回的是一段固定长度的文本。前面那一小段是结构化的决定，后面是凑长度的填充字符，好让每一轮的输出长度都一样：</p>
+<pre><code>{"text": "{\"tool\": \"search\", \"arg\": \"step-1\"}词词词……（共 128 个字符）", "n_out": 128}</code></pre>
+<p>会话跑完，运行时回这一行。<code>hands</code> 是这条会话一共和模型交接了几次，<code>sent_bytes</code> 是累计往模型发出去多少字节：</p>
+<pre><code>{"task":"T1","turns":6,"hands":6,"sent_bytes":12057,"ctx_bytes":4319,"ms":5187.3,"queue_ms":0.008}</code></pre>
+
+<h4>4.3 台子上有哪几样是假的</h4>
+<p>左边每一条是被简化掉的东西，右边是它换来的一句「今天不能说的话」。两列一一对应。</p>
+<div class="scroll"><table>
+<tr><th style="width:42%">简化掉的地方</th><th>后果</th></tr>
+<tr><td>模型是假的：它不做任何计算，只按设定好的时序 <code>sleep</code>，然后返回一段固定长度的文本</td><td>今天不下任何关于模型延迟、token 数、显存、命中率的结论。模型那一侧的时序在今天只是横轴，第 9 节会把它当变量扫一遍</td></tr>
+<tr><td>模型服务几乎不烧 CPU（并发扫描的每一档里最多用掉一个核的 3.1%；只有第 8 节流式那一档例外，它要往外发 774 次事件，那一档模型侧吃到 27.8%）</td><td>这是故意留的。真实推理服务和运行时挤在同一台机器上时会抢核，所以今天量到的那个并发上界，换到真环境只会更低，不会更高</td></tr>
+<tr><td>工具是一次 <code>asyncio.sleep</code></td><td>不下任何关于工具执行本身（起沙箱、读文件、调外部接口）的结论。真沙箱要等 Day 22 才接进来</td></tr>
+<tr><td>上下文里的「文字」是重复的汉字，全程没有分词器</td><td>今天只谈字节，不谈 token。所有关于长度的数字单位都是字节</td></tr>
+<tr><td>第 12 节那个「扣款」只是往一个文件里追加一行</td><td>副作用的形状是真的（不可回退、可以按键去重），代价不是。不下关于真实外部系统重试成本的结论</td></tr>
+<tr><td>三个进程都在同一台 2 核机器上（第 7 节和第 9 节那几档里只有运行时和模型两个进程在跑，压测器不参与）</td><td>它们仍然共享这两个核，所以今天所有绝对值只在这一页内部横着比，换一台机器一定变。「纯等待」那个对照列就是用来保证：两个口径经历的是同一台机器、同一个时刻的同一种拥挤</td></tr>
+<tr><td>会话之间不共享任何东西，只有一台机器</td><td>不下任何关于会话粘性、路由、负载均衡、跨机恢复的结论</td></tr>
+</table></div>
+
+<h4>4.4 一条真实会话，逐段摊开</h4>
+<p>下面是运行时在一条会话上留下的完整记录，29 段，一段不落。第一列是从这条会话开始算起的毫秒数，第二列是这一段自己有多长。</p>
+<div class="scroll"><table>
+<tr><th class="n" style="width:12%">时刻 ms</th><th class="n" style="width:14%">这一段多长 ms</th><th>发生了什么</th></tr>
+<tr><td class="n">0.00</td><td class="n">—</td><td>收到任务，上下文里只有用户那一句</td></tr>
+<tr><td class="n">0.03</td><td class="n">0.03</td><td>第 1 轮 ① 组装完上下文，② 把 67 字节发给模型</td></tr>
+<tr><td class="n">738.40</td><td class="n">738.38</td><td>第 1 轮 模型的回答到齐</td></tr>
+<tr><td class="n">738.43</td><td class="n">0.03</td><td>第 1 轮 ③ 解析出这是一次工具调用</td></tr>
+<tr><td class="n">738.44</td><td class="n">0.01</td><td>第 1 轮 ④ 开始执行工具</td></tr>
+<tr><td class="n">889.42</td><td class="n">150.98</td><td>第 1 轮 ④ 工具返回，结果追加进上下文</td></tr>
+<tr><td class="n">889.48</td><td class="n">0.06</td><td>第 2 轮 ① 组装完上下文，② 把 844 字节发给模型</td></tr>
+<tr><td class="n">1628.46</td><td class="n">738.98</td><td>第 2 轮 模型的回答到齐</td></tr>
+<tr><td class="n">1628.50</td><td class="n">0.03</td><td>第 2 轮 ③ 解析出这是一次工具调用</td></tr>
+<tr><td class="n">1628.50</td><td class="n">0.01</td><td>第 2 轮 ④ 开始执行工具</td></tr>
+<tr><td class="n">1779.44</td><td class="n">150.94</td><td>第 2 轮 ④ 工具返回，结果追加进上下文</td></tr>
+<tr><td class="n">1779.50</td><td class="n">0.06</td><td>第 3 轮 ① 组装完上下文，② 把 1621 字节发给模型</td></tr>
+<tr><td class="n">2518.32</td><td class="n">738.82</td><td>第 3 轮 模型的回答到齐</td></tr>
+<tr><td class="n">2518.37</td><td class="n">0.04</td><td>第 3 轮 ③ 解析出这是一次工具调用</td></tr>
+<tr><td class="n">2518.38</td><td class="n">0.01</td><td>第 3 轮 ④ 开始执行工具</td></tr>
+<tr><td class="n">2668.94</td><td class="n">150.56</td><td>第 3 轮 ④ 工具返回，结果追加进上下文</td></tr>
+<tr><td class="n">2669.00</td><td class="n">0.06</td><td>第 4 轮 ① 组装完上下文，② 把 2398 字节发给模型</td></tr>
+<tr><td class="n">3407.39</td><td class="n">738.39</td><td>第 4 轮 模型的回答到齐</td></tr>
+<tr><td class="n">3407.42</td><td class="n">0.03</td><td>第 4 轮 ③ 解析出这是一次工具调用</td></tr>
+<tr><td class="n">3407.43</td><td class="n">0.01</td><td>第 4 轮 ④ 开始执行工具</td></tr>
+<tr><td class="n">3558.08</td><td class="n">150.66</td><td>第 4 轮 ④ 工具返回，结果追加进上下文</td></tr>
+<tr><td class="n">3558.18</td><td class="n">0.09</td><td>第 5 轮 ① 组装完上下文，② 把 3175 字节发给模型</td></tr>
+<tr><td class="n">4297.02</td><td class="n">738.84</td><td>第 5 轮 模型的回答到齐</td></tr>
+<tr><td class="n">4297.05</td><td class="n">0.03</td><td>第 5 轮 ③ 解析出这是一次工具调用</td></tr>
+<tr><td class="n">4297.05</td><td class="n">0.01</td><td>第 5 轮 ④ 开始执行工具</td></tr>
+<tr><td class="n">4448.67</td><td class="n">151.61</td><td>第 5 轮 ④ 工具返回，结果追加进上下文</td></tr>
+<tr><td class="n">4448.76</td><td class="n">0.09</td><td>第 6 轮 ① 组装完上下文，② 把 3952 字节发给模型</td></tr>
+<tr><td class="n">5187.26</td><td class="n">738.49</td><td>第 6 轮 模型的回答到齐</td></tr>
+<tr><td class="n">5187.29</td><td class="n">0.04</td><td>第 6 轮 ③ 解析出这是最终答案</td></tr>
+<tr><td class="n">5187.30</td><td class="n">0.01</td><td>循环退出，会话结束，结果交回调用方</td></tr>
+</table></div><p>把第二列全部加起来是 5187.30，正好等于运行时自己报的 <code>ms</code>。请自己做一遍这个加法：后面每一张表都是在动这 29 段里的某几段，只有先确认这 29 段是完整的、不重叠的，那些表才读得懂。</p>
+<p>按角色归一下堆：模型那 6 段合计 4431.90 毫秒（85.44%），工具那 5 段合计 754.75 毫秒（14.55%），剩下 18 段是运行时自己在组装、解析、追加，合计 0.65 毫秒（0.01%）。</p>
+<p class="note">六轮模型调用每一轮都是 738 毫秒出头，这不是巧合：设定是首 token 前等 100 毫秒，之后每个 token 5 毫秒，一轮 128 个 token，也就是 100 + 5 × 127 = 735 毫秒。多出来的三毫秒是 HTTP 那一层。工具那五段同理，设定 150 毫秒，量到 150.56 ~ 151.61。</p>
+
+<h4>4.5 每个旋钮是怎么定出来的</h4>
+<div class="scroll"><table>
+<tr><th style="width:20%">旋钮</th><th style="width:16%">取值</th><th>这个值怎么定出来的</th><th style="width:14%">哪一节动它</th></tr>
+<tr><td>模型首 token 前的等待</td><td>100 毫秒</td><td rowspan="2">这两个是设定值，不是这台机器上量出来的。这台机器没有加速器，Day 17 那副 8 层骨架跑一步 decode 就要 125.9 毫秒，拿它当模型会让一条会话跑到几十秒，一轮扫描要几个钟头。所以今天所有结论都写成「运行时开销相对模型耗时的比例」，这两个数只决定横轴；第 9 节末尾会把它们各调小一档再看结论怎么动</td><td rowspan="2">第 9 节</td></tr>
+<tr><td>token 之间的间隔</td><td>5 毫秒</td></tr>
+<tr><td>每轮吐几个 token</td><td>128</td><td>一次工具调用的量级：一个函数名加几个参数。Day 16 那批 agent 负载用的是每轮 96 ~ 192，取中间这个整数</td><td>不动，但它决定第 8 节流式那一档的交接次数</td></tr>
+<tr><td>一条会话几轮</td><td>6</td><td>和 Day 16 那批 agent 负载对齐（那天也是每个任务 6 轮），好让两天的数字横着能比</td><td>不动</td></tr>
+<tr><td>工具耗时</td><td>150 毫秒</td><td>一次文件读或一次搜索返回的量级。它是纯等待，不烧 CPU，这样它不会污染「运行时自己烧了多少」这个测量</td><td>不动</td></tr>
+<tr><td>同时在跑的会话数</td><td>4 / 16 / 32 / 64 / 96 / 128</td><td>下界 4 取「比核数多一点」；往上每档大致乘二，一直加到运行时塌掉为止。塌点落在最后两档之间，所以 96 和 128 之间没有再插值</td><td>第 7 节</td></tr>
+<tr><td>每档跑几遍</td><td>每档内部转 2 圈，整条扫描独立跑 3 遍取中位</td><td>正式计时之前先并发发 n 次模型调用，把 n 条连接建好——不然第一批会话要替后面所有会话付一次建连接的钱，Day 6 那条「扔掉开头」。整条扫描跑 3 遍是因为这台机器上还有别的进程，单遍会有一两成的浮动</td><td>全页</td></tr>
+<tr><td>探针的间隔</td><td>10 毫秒</td><td>要比一轮模型调用（735 毫秒）小两个数量级，才看得出事件循环有没有卡住；再密就要开始自己占 CPU 了</td><td>第 7 节</td></tr>
+<tr><td>检查点的上下文长度</td><td>1 / 6 / 12 / 24 / 48 / 96 轮</td><td>每轮 777 字节，这个数取自 4.4 节那条真实轨迹里相邻两轮发出字节的差（844 − 67 = 777，往后每一轮都正好差 777）</td><td>第 11 节</td></tr>
+<tr><td>检查点重复次数</td><td>41 次取中位，另打 P10 / P90</td><td>单次零点几毫秒，41 次合起来几十毫秒。P10 ~ P90 用来给这一节定噪声底</td><td>第 11 节</td></tr>
+<tr><td>崩溃点</td><td>模型之后 / 工具之后 / 检查点之后</td><td>不是挑出来的，是穷举：一轮里就只有这三条缝</td><td>第 12 节</td></tr>
+<tr><td>函数调用计数的重复次数</td><td>每种口径 20 次</td><td>先完整跑一轮热身，把连接建好、把代码路径走热，再开计数器跑第二轮。Day 6 那条「扔掉开头」</td><td>第 8 节</td></tr>
+</table></div>
+
+<p>想知道某一个数是谁打印的，查这张：</p>
+<div class="scroll"><table>
+<tr><th style="width:34%">表</th><th style="width:24%">出自</th><th>怎么读到</th></tr>
+<tr><td>4.4 节 一条会话的轨迹</td><td>P2 运行时（<code>TRACE</code> 打开）</td><td>轨迹文件里的 <code>marks</code> 数组</td></tr>
+<tr><td>第 7 节 并发扫描（两个口径）</td><td>P2 的 <code>/bench</code> 接口</td><td>返回 JSON 里的「运行时CPU秒」「墙上秒」「循环延迟均值ms」「会话P50ms」</td></tr>
+<tr><td>第 8 节 交接次数</td><td>P3 压测器</td><td>输出里的「每条交接次数」，这个数由 P2 自己数出来带回</td></tr>
+<tr><td>第 8 节 函数调用次数</td><td>P7 计数器</td><td><code>cProfile</code> 的 <code>total_calls</code></td></tr>
+<tr><td>第 10 节 每轮发出的字节</td><td>P2 轨迹里的标记</td><td><code>marks</code> 里 <code>model_out</code> 那几行</td></tr>
+<tr><td>第 11 节 检查点耗时</td><td>P5 检查点账台</td><td>标准输出</td></tr>
+<tr><td>第 12 节 崩溃矩阵</td><td>P6 崩溃账台</td><td>标准输出</td></tr>
+</table></div>
+
+<h3>5. 三个数，纸上先有答案</h3>
+<p>下面三个问题的答案都在第三部分。每题先落一个数在纸上，再翻。</p>
+<div class="card predict">
+<h4>预测 · 落笔再翻页</h4>
+<p><span class="lbl">问题一</span>：4.4 节那条轨迹里，运行时自己那 18 段加起来是 0.65 毫秒。如果换一把秤——不看墙上时钟，改看这个进程真正消耗的 CPU 时间——一条会话要花掉多少毫秒？和 0.65 是同一个量级吗？</p>
+<p><span class="lbl">问题二</span>：一条会话 5.2 秒里几乎全程在等。这台 2 核机器上，同时跑多少条这样的会话，运行时会先撑不住？给个量级：几十条、几百条，还是几千条？（做个参照：Day 14 那台机器上，沙箱执行服务的并发上限量出来是 2。）</p>
+<p><span class="lbl">问题三</span>：把模型调用从「等它吐完一轮，一次性拿回来」改成流式——每吐一个 token 就送一次。字节总量一样，交接次数会涨到 129 倍。运行时自己烧的 CPU 会涨多少倍？</p>
+<div class="write"></div>
+</div>
+<div class="part"><h2>第三部分 · 这台机器的墙在哪</h2>
+<p>一条会话几乎全程在等。这一部分回答：等待到底要不要钱，钱按什么收，以及这台机器能同时转多少条。</p></div>
+
+<h3>6. 揭晓（一）：轨迹上那 0.65 毫秒，是真实开销的二十分之一</h3>
+<p>4.4 节那张表严丝合缝：29 段加起来 5187.30，和端到端一毫秒不差。按它读下来，运行时自己只花了 0.65 毫秒，也就是万分之一点二五。结论似乎是「运行时不要钱」。</p>
+<p>这个结论是错的，而错的地方正是 Day 11 那道温故题反过来的样子。那天漏的是「有一段没进表」；今天没有任何一段没进表，漏的是每一段内部的成分。</p>
+<p>看轨迹里这两行的间隔：「第 1 轮 ② 把 67 字节发给模型」到「第 1 轮 模型的回答到齐」，738.38 毫秒。这 738 毫秒里，运行时并不是全程在睡：它要把上下文序列化成 JSON——也就是 Day 17 那个「打包」——从连接池（把建好的 TCP 连接留着复用，省掉每次重新握手）里取一条连接、把 HTTP 请求头和请求体写进 socket、等、被唤醒、读回响应、拼帧、解析、反序列化。这些动作全都发生在这一段的两端和中间，而墙上时钟分不出「在等」和「在干活」。</p>
+<p>这正是 Day 3 那对 on-CPU 分析和 off-CPU 分析的分界，只不过这一次两者落在同一段里，所以一把秤不够，得换一把：不看墙上时钟，看这个进程真正消耗掉的 CPU 时间。Python 里现成的量法是 <code>time.process_time()</code>，它是进程 CPU 时钟，纳秒级分辨率，比 <code>/proc</code> 里那份百分之一秒的滴答细得多。</p>
+<p>用它量下来，在 32 条并发这个健康工作点上，一条会话消耗运行时 <b>12.94 毫秒的 CPU，是轨迹上那 0.65 毫秒的二十倍</b>。差掉的那十几毫秒，全部藏在「等模型」那六段里面。</p>
+<p class="breath">两把秤各说各的，而且都没说谎。墙上时钟回答的是「用户等了多久」，CPU 时钟回答的是「这台机器为此干了多少活」。这条会话上，两个答案是 5187 毫秒和 12.94 毫秒，差了四百倍，所以拿任何一个单独去做容量规划都会翻车。</p>
+
+<h3>7. 揭晓（二）：等待不要钱，交接才要钱</h3>
+<p class="lead">一条会话的 5187 毫秒里，运行时真正占着 CPU 的只有十几毫秒。那这台机器为什么在 128 条上就塌了？</p>
+<p>把同时在跑的会话数从 4 加到 128，别的一律锁死：还是 6 轮、还是 128 个 token 一轮、还是 150 毫秒的工具。为了把「协程挂着等本身值多少」和「HTTP 那一层值多少」分开，每一档都跑第二遍对照——对照里唯一改的一件事，是把那次 HTTP 调用换成一次时长完全相同的 <code>asyncio.sleep</code>，等待一秒不少，HTTP 那一层整个拿掉。</p>
+<div class="scroll"><table>
+<tr><th class="n">同时在跑</th><th class="n">运行时 CPU 占一个核</th><th class="n">每次交接净耗 CPU 毫秒</th><th class="n">事件循环延迟均值 毫秒</th><th class="n">会话 P50 毫秒</th><th class="n">对照：会话 P50 毫秒</th></tr>
+<tr><td class="n">4</td><td class="n">1.5%</td><td class="n">1.13</td><td class="n">0.21</td><td class="n">5192</td><td class="n">5170</td></tr>
+<tr><td class="n">16</td><td class="n">3.6%</td><td class="n">1.42</td><td class="n">0.24</td><td class="n">5204</td><td class="n">5171</td></tr>
+<tr><td class="n">32</td><td class="n">7.8%</td><td class="n">1.86</td><td class="n">0.35</td><td class="n">5238</td><td class="n">5171</td></tr>
+<tr><td class="n">64</td><td class="n">21.9%</td><td class="n">3.05</td><td class="n">0.99</td><td class="n">5523</td><td class="n">5174</td></tr>
+<tr><td class="n">96</td><td class="n">54.5%</td><td class="n">8.59</td><td class="n">5.19</td><td class="n">7463</td><td class="n">5171</td></tr>
+<tr><td class="n">128</td><td class="n">81.8%</td><td class="n">23.84</td><td class="n">22.62</td><td class="n">19492</td><td class="n">5174</td></tr>
+</table></div>
+<p class="note">每一档跑三遍，表里是三遍的中位数；三遍之间的离散很小，占核那一列最宽的一档是 53.2% 到 55.6%。「每次交接净耗」是这样算的：同一档下 HTTP 口径每条会话的 CPU，减去对照口径每条会话的 CPU（这一步扣掉的是探针和 uvicorn 空转那份固定背景，两个口径完全一样），再除以每条会话的 6 次交接。空转背景本身单独量过：什么都不跑的时候，这个进程 10 秒烧掉 0.0195 秒 CPU。</p>
+
+<p>最后一列是这张表的地基，先看它。会话数从 4 加到 128，对照口径的会话耗时从 5170 走到 5174，动了 4 毫秒；同一时间它的 CPU 占用一直在一个核的 0.94% 到 1.63% 之间。<b>一百二十八条协程同时挂着等，代价接近于零。</b></p>
+<p>这一条在 Python 的源码里有直接的依据。事件循环转一圈的函数是 <code>asyncio/base_events.py:1859</code> 的 <code>_run_once</code>。它做三件事：把到期的定时器从一个堆里搬进就绪队列（<code>:1905-1911</code>），向操作系统问一次「哪些 fd 有动静」（<code>:1898</code>），然后跑就绪队列里的回调——那一段的第一行是 <code>ntodo = len(self._ready)</code>（<code>:1919</code>），循环的范围是<em>就绪的个数</em>，不是挂起的总数。而 <code>asyncio/tasks.py:637</code> 的 <code>sleep</code> 一共只做两件事：造一个 future，调一次 <code>loop.call_later</code>。挂起的那段时间里，它在事件循环眼里就是一个堆里的条目，转多少圈都不会碰它一下。</p>
+<p>所以涨上去的那部分，全部来自另外一个口径独有的那件事：真的走了一次 HTTP。</p>
+<p>再横着看前三列。到 32 条为止，每次交接是 1.1 到 1.9 毫秒 CPU，基本是个常数；会话耗时也几乎没动。从 64 条开始，同一次交接开始变贵——3.05、8.59、23.84，最后一档是 32 条那一档的十三倍。也就是说，运行时的开销既不是常数，也不是并发数的正比函数，它比正比涨得快。</p>
+<p>第四列给出了这条曲线的另一面。事件循环延迟这个词 Day 4 引入过：一个协程说「叫我睡 10 毫秒」，实际被叫醒时晚了多少。0.2 毫秒的时候一切正常；到 128 条时，平均晚 22.62 毫秒，最大晚 488.2 毫秒。而这一档的 CPU 占用是 81.8%——<em>没有</em>打满一个核。</p>
+<div class="card key"><h4>关键结论</h4>
+<p>先塌的不是 CPU 使用率。到「一个核用满」之前很久，事件循环延迟就已经上去了，而它一上去，每一次交接就要排更久的队、被拆成更多次读、于是更贵。这是一个自己咬自己的圈，所以曲线不是慢慢弯，是在两档之间掉下去。</p>
+<p>监控 agent 运行时，光看 CPU 使用率会来不及。要看的是事件循环延迟，它比 CPU 早两档报警。</p>
+</div>
+
+<h3>8. 揭晓（三）：账按交接次数收</h3>
+<p>问题三问的是流式。同一条会话、同样的 128 个 token、同样的字节数，唯一的改动是模型每吐一个 token 就送一次，运行时每收到一个就处理一次。这种「一次请求，服务端分很多次往回送」的做法有个现成的格式，叫<span class="term">服务端推送事件（SSE / server-sent events）</span>：连接一直开着，服务端每写一行 <code>data: …</code> 就是一个事件。交接次数由运行时自己数出来带回：非流式一条会话 6 次，流式 774 次（6 轮 × 129 个事件，128 个 token 加一个结束事件）。</p>
+<div class="scroll"><table>
+<tr><th>口径（都在 64 条并发下）</th><th class="n">每条会话交接次数</th><th class="n">每条会话运行时 CPU 毫秒</th><th class="n">运行时 CPU 占一个核</th><th class="n">会话 P50 毫秒</th></tr>
+<tr><td>每轮一次（等它吐完一次性拿回来）</td><td class="n">6</td><td class="n">19.48</td><td class="n">21.9%</td><td class="n">5523</td></tr>
+<tr><td>每个 token 一次（流式）</td><td class="n">774</td><td class="n">72.14</td><td class="n">74.2%</td><td class="n">6029</td></tr>
+</table></div>
+<p>次数涨了 129 倍，CPU 只涨了 3.7 倍。这两个数不矛盾，它们说的是同一件事的两半：一次流式事件比一次完整的 HTTP 往返便宜得多，但便宜的东西做一百二十九遍，总账还是要涨三倍多。而 21.9% 到 74.2% 这一步，在这台机器上就是「离墙还很远」和「快贴到墙上」的差别。</p>
+<p>便宜多少可以直接数出来。换一把完全不同的秤：用 <code>cProfile</code>（Python 自带的插桩式剖析器，Day 3 那两类里的后一类）数一数这三种做法各自触发了多少次 Python 函数调用。</p>
+<div class="scroll"><table>
+<tr><th>做一轮的三种方式</th><th class="n">每轮函数调用次数</th><th class="n">每次交接函数调用次数</th></tr>
+<tr><td>什么都不做，纯等 735 毫秒</td><td class="n">63</td><td class="n">63</td></tr>
+<tr><td>一次 HTTP 往返，等它吐完（1 次交接）</td><td class="n">2577</td><td class="n">2577</td></tr>
+<tr><td>流式，一轮 129 个事件（129 次交接）</td><td class="n">41817</td><td class="n">324</td></tr>
+</table></div>
+<p>第一行是尺子：等 735 毫秒这件事本身，从头到尾只触发 63 次函数调用。第二行是它的 41 倍——一次 HTTP 往返比整整 735 毫秒的等待贵四十倍。第三行里，单个流式事件是 324 次，比一次完整往返便宜八倍，但一轮要做 129 次，合计是非流式的 16.2 倍。</p>
+<p class="note">两把秤给出的倍数不一样：函数调用次数说流式贵 16.2 倍，CPU 时间说贵 3.7 倍。这不是哪一边错了，是它们数的东西不同——解析一行 SSE 文本的那 324 次调用，平均每次比 HTTP 状态机里那 2577 次要轻。两把秤只需要指向同一个方向，不需要给出同一个倍数。</p>
+<div class="card key"><h4>关键结论</h4>
+<p><b>账按交接次数收，不按字节收。</b>这正是 Day 17 那条结论换了个场合再出现一次——那天说「拆进程这个决定的正确问法不是消息有多大，而是多久要交接一次」，那天的分子是每个引擎步一次；今天你自己就是那个做决定的人，而你手上的旋钮是「一轮一次」还是「一个 token 一次」。</p>
+</div>
+
+<h3>9. 并发上限这个数，今天怎么算</h3>
+<p>Day 14 给过一个算法：下界是「到达率乘服务时间」，低于它队伍会发散；上界是这台机器上真正被这类任务占满的那种资源的数量。那天任务是纯 CPU 的，上界就是核数，量出来是 2。</p>
+<p>今天这条会话是那句话的另一个极端：整整 5187 毫秒的墙上时间，运行时真正占着 CPU 的只有 12.94 毫秒。所以上界肯定不是 2。那是多少？</p>
+<p>最直接的算法是：一条会话平均占用一个核的 12.94 ÷ 5238 = 0.247%，一个核除以 0.247%，等于 405 条。</p>
+<p>而实测的墙在 96 到 128 之间：96 条时会话耗时已经比 4 条那一档多了 44%，128 条时是它的 3.8 倍。这个算法高估了大约四倍。</p>
+<p>它错在把「每条会话的 CPU」当成了常数，而第 7 节第三列已经把这件事否掉了：那个数从 1.13 毫秒一路走到 23.84 毫秒，它本身就是并发数的函数。用低并发下量到的单条开销去外推容量，方向一定是高估，因为你用的是这条曲线最平的那一段。</p>
+<h4>模型变快会怎么样</h4>
+<p>把模型那一侧的两个数各调小一档（首 token 前 100 → 50 毫秒、token 间隔 5 → 3 毫秒），一条会话的理想耗时从 5.16 秒降到 3.34 秒（实测 5192 和 3380 毫秒），别的全不动，再扫一遍：</p>
+<div class="scroll"><table>
+<tr><th class="n">同时在跑</th><th class="n">每条会话 CPU 毫秒<br>（原时序 / 减半）</th><th class="n">运行时占一个核<br>（原时序 / 减半）</th><th class="n">事件循环延迟均值<br>（原时序 / 减半）</th></tr>
+<tr><td class="n">16</td><td class="n">11.66 / 11.26</td><td class="n">3.6% / 5.3%</td><td class="n">0.24 / 0.26</td></tr>
+<tr><td class="n">32</td><td class="n">12.94 / 12.23</td><td class="n">7.8% / 11.3%</td><td class="n">0.35 / 0.40</td></tr>
+<tr><td class="n">64</td><td class="n">19.48 / 19.45</td><td class="n">21.9% / 32.0%</td><td class="n">0.99 / 1.46</td></tr>
+</table></div>
+<p>第二列两个数几乎重合：模型那边快了，运行时为每条会话干的活一点没少——交接次数没变、字节数没变，它凭什么少干。变的是第三列：三档的占核比例分别涨到 1.47、1.45、1.46 倍，而会话时长从 5192 毫秒缩到 3380 毫秒，正好是 1.54 倍。同样多的活儿被压进短一截的时间里，比值就该是这个量级。</p>
+<p>写成一句可以带走的话：运行时的容量不以「同时在跑几条」计价，以「每秒要交接多少次」计价。下游模型变快，会在你什么都没改的情况下把你的墙往前推。</p>
+<div class="card key"><h4>关键结论</h4>
+<p>agent 运行时的并发上限有三条约束，形状各不相同：一是下游模型服务的容量，那是别人的机器；二是每条在途会话在内存里的上下文，那随轮数涨；三是本进程每秒能处理多少次交接，那是今天量到的这堵墙。三条里哪一条先撞上，不能推，只能扫。</p>
+<p>而这个数要扫出来，判据是事件循环延迟，不是 CPU 使用率，也不是端到端延迟——后两个都比它晚。</p>
+</div>
+<div class="part"><h2>第四部分 · 状态那一侧</h2>
+<p>启动那一侧算完了。这一部分是另一半：上下文往哪儿长、状态存在哪儿、以及为什么有一类问题不是存得快就能解决的。</p></div>
+
+<h3>10. 上下文只往后长，这笔账要付两次</h3>
+<p>回到 4.4 节那条轨迹。每一轮「② 把 N 字节发给模型」那一行都记了 N，六轮分别是：</p>
+<div class="scroll"><table>
+<tr><th class="n">第几轮</th><th class="n">1</th><th class="n">2</th><th class="n">3</th><th class="n">4</th><th class="n">5</th><th class="n">6</th><th class="n">合计</th></tr>
+<tr><td>这一轮发出的字节</td><td class="n">67</td><td class="n">844</td><td class="n">1621</td><td class="n">2398</td><td class="n">3175</td><td class="n">3952</td><td class="n">12057</td></tr>
+<tr><td>比上一轮多</td><td class="n">—</td><td class="n">777</td><td class="n">777</td><td class="n">777</td><td class="n">777</td><td class="n">777</td><td class="n">—</td></tr>
+</table></div>
+<p>每一轮比上一轮多 777 字节，一个不多一个不少——那正是「模型这一轮吐的 128 个字」加上「工具返回的那一段」加上 JSON 的括号引号。会话结束时上下文是 4319 字节，而这一路上往模型发出去的是 12057 字节，2.8 倍。</p>
+<p>这两个数之间有个闭式：第 k 轮发 <code>67 + 777 × (k−1)</code> 字节，K 轮加起来就是 <code>67K + 777 × K(K−1)/2</code>。代进 K = 6：402 + 777 × 15 = 12057，和实测一个字节不差。既然式子对得上，就可以往前推：</p>
+<div class="scroll"><table>
+<tr><th class="n">轮数 K</th><th class="n">累计发给模型的字节</th><th class="n">会话结束时的上下文字节</th><th class="n">倍数</th></tr>
+<tr><td class="n">6</td><td class="n">12057</td><td class="n">3952</td><td class="n">3.1</td></tr>
+<tr><td class="n">10</td><td class="n">35635</td><td class="n">7060</td><td class="n">5.0</td></tr>
+<tr><td class="n">20</td><td class="n">148970</td><td class="n">14830</td><td class="n">10.0</td></tr>
+<tr><td class="n">50</td><td class="n">955175</td><td class="n">38140</td><td class="n">25.0</td></tr>
+<tr><td class="n">100</td><td class="n">3852850</td><td class="n">76990</td><td class="n">50.0</td></tr>
+</table></div>
+<p>最后一列几乎正好是 K 除以二。<b>一次 K 轮的会话，往模型发出去的总量大约是最终上下文的 K/2 倍</b>——因为累计量是轮数的平方，而最终上下文只是轮数的一次方。一条转了一百轮的会话，最终上下文 77 KB，路上却搬了 3.85 MB。</p>
+<p>现在把这件事和 Day 16 摆在一起。那天的结论是：agent 场景的前缀缓存命中率能到 84.5%，因为「agent 的上下文只往后长、不改前面，所以它天然就是一条不断加长的公共前缀」。同一个性质，今天从另一面看。</p>
+<div class="card key"><h4>关键结论</h4>
+<p>前缀缓存省掉的是「算」，它省不掉「传」。命中率 84.5% 意味着模型那一侧不必重新计算前面那 84.5% 的 token，但这些 token 每一轮仍然要被完整地序列化、写进 socket、跨过网络、在对面反序列化一遍。第 7 节量到一次交接的固定开销是 1.1 到 1.9 毫秒 CPU，那还是 67 到 3952 字节这个尺度；上下文长到几百 KB 的时候，交接的成本里字节那一项才开始说话。</p>
+<p>这是一条只有运行时这一侧看得见的账。推理服务那边的指标板上，它是不出现的。</p>
+</div>
+
+<h3>11. 检查点便宜到没有理由不写</h3>
+<p>第 4 条差别说的是会话会被打断。要接得上，状态就得落在进程之外。最朴素的做法是每一轮结束时把整段上下文写一份到磁盘，叫一次<span class="term">检查点（checkpoint）</span>。</p>
+<p>它多贵？把上下文按 4.4 节量到的 777 字节一轮造出来，三种写法各量一遍：整份重写、整份重写再 <code>fsync</code>（叫内核把字节真正推到盘上，而不是留在页缓存里等回写——Day 12 那对「缓冲写」和「回写」的分界就在这一句系统调用上）、以及只往一个文件末尾追加这一轮新增的那一条再 <code>fsync</code>——最后这种叫<span class="term">追加式日志（append-only log）</span>。</p>
+<div class="scroll"><table>
+<tr><th class="n">轮数</th><th class="n">上下文字节</th><th class="n">整份重写 不同步</th><th class="n">整份重写 + fsync</th><th class="n">追加一条 + fsync</th><th class="n">只序列化不落盘</th></tr>
+<tr><td class="n">1</td><td class="n">815</td><td class="n">0.094</td><td class="n">0.243</td><td class="n">0.210</td><td class="n">0.004</td></tr>
+<tr><td class="n">6</td><td class="n">4890</td><td class="n">0.123</td><td class="n">0.305</td><td class="n">0.210</td><td class="n">0.011</td></tr>
+<tr><td class="n">12</td><td class="n">9780</td><td class="n">0.175</td><td class="n">0.321</td><td class="n">0.212</td><td class="n">0.021</td></tr>
+<tr><td class="n">24</td><td class="n">19560</td><td class="n">0.231</td><td class="n">0.386</td><td class="n">0.198</td><td class="n">0.039</td></tr>
+<tr><td class="n">48</td><td class="n">39120</td><td class="n">0.341</td><td class="n">0.556</td><td class="n">0.205</td><td class="n">0.075</td></tr>
+<tr><td class="n">96</td><td class="n">78240</td><td class="n">0.497</td><td class="n">0.756</td><td class="n">0.218</td><td class="n">0.167</td></tr>
+</table></div>
+<p class="note">单位毫秒，每格是 41 次的中位数。噪声底：6 轮那一档「整份重写 + fsync」的 P10 ~ P90 是 0.253 ~ 0.301 毫秒，所以小于 0.05 毫秒的差别今天一律当成量不出来。</p>
+<p>两列之间的对比比任何一列的绝对值都重要。整份重写那两列随上下文变长而变长——不同步那一列从 0.094 走到 0.497，加 fsync 那一列从 0.243 走到 0.756，因为它们每一次都要把整份重新序列化、重新写一遍。而「追加一条」那一列从头到尾在 0.198 到 0.218 之间，一动不动：它每次只写这一轮新增的那一条，写多少和已经积了多久毫无关系。</p>
+<p>但更该注意的是量级。最贵的那一格是 0.756 毫秒，而一轮模型调用是 738 毫秒。哪怕每一轮都整份重写加 <code>fsync</code>，这笔钱也只占一轮的千分之一。</p>
+<p class="breath">这个比例值得记一下，因为它把一类争论直接终结了。「要不要落盘、要不要 fsync」在这里不是一个性能问题——你付得起。真正难的两个问题在别处：存什么，和什么时候存。下一节就是「什么时候」。</p>
+
+<h3>12. 那个堵不住的窗口</h3>
+<p class="lead">检查点写得这么便宜，那把它写得再勤一点，是不是就不会重复扣款了？</p>
+<p>把一轮拆开，里面只有三条缝：调完模型之后、执行完工具之后、写完检查点之后。进程可能死在任何一条缝上。写一个只有三轮的极简循环，工具是一次有副作用的动作——往一个账本文件里追加一行，代表一次扣款；然后在这三个位置各硬杀一次（<code>os._exit</code>，不给任何收尾机会），重启，看账本。</p>
+<p>两种设计各跑一遍。甲是「只有检查点」：每轮执行完工具就写一次检查点，重启后从检查点记的轮数往下接。乙是在甲的基础上给每一步配一个<span class="term">幂等键（idempotency key）</span>——执行工具之前先翻一下账本，这个键要是已经在里面了，就跳过。三轮循环的正确结果是账本 3 行、0 次重复。</p>
+<div class="scroll"><table>
+<tr><th>崩在哪一条缝</th><th>设计</th><th class="n">崩之前账本几行</th><th class="n">重启跑完账本几行</th><th class="n">重复扣了几次</th></tr>
+<tr><td>模型之后</td><td>只有检查点</td><td class="n">1</td><td class="n">3</td><td class="n">0</td></tr>
+<tr><td>模型之后</td><td>加幂等键</td><td class="n">1</td><td class="n">3</td><td class="n">0</td></tr>
+<tr><td>工具之后</td><td>只有检查点</td><td class="n">2</td><td class="n">4</td><td class="n">1</td></tr>
+<tr><td>工具之后</td><td>加幂等键</td><td class="n">2</td><td class="n">3</td><td class="n">0</td></tr>
+<tr><td>检查点之后</td><td>只有检查点</td><td class="n">2</td><td class="n">3</td><td class="n">0</td></tr>
+<tr><td>检查点之后</td><td>加幂等键</td><td class="n">2</td><td class="n">3</td><td class="n">0</td></tr>
+</table></div>
+<p>六行里只有一行是坏的。崩在「模型之后」不会重复，因为那一轮的工具还没执行过，重来一遍是从头做；崩在「检查点之后」也不会，因为这一轮已经被记下来了，重启会从下一轮开始。</p>
+<p><b>重复只可能发生在「副作用已经生效、而这件事还没被记下来」这个缝里</b>。而这个缝的宽度就是写检查点那 0.3 毫秒——上一节已经量过，它已经很小了，你还可以让它更小，可它永远不会变成零。两个动作发生在两个地方（一个在外部系统，一个在你的磁盘上），没有任何办法让它们同时发生。</p>
+<p>所以第四行那个 0 不是靠「写得更快」拿到的，是靠换了一个问法拿到的：不再问「我崩之前写下了没有」，而是问「这件事之前做过没有」，答案从账本自己那里读。这就把「重来一遍会不会出事」从一个时序问题变成了一个查表问题。</p>
+<p>这个性质有个名字：一个操作做一遍和做很多遍结果一样，就叫它是<span class="term">幂等（idempotent）</span>的。工程上通常这么说：崩溃恢复能免费给你的只有<span class="term">至少一次（at-least-once）</span>——每一步保证不会漏做，但可能多做；想要<span class="term">恰好一次（exactly-once）</span>，得靠每一步自己带一个键去重。</p>
+<p class="note">还有第四条缝，今天这个装置照不到：崩在工具执行到一半的时候。那时候外部系统里可能留下一个做了一半的状态，账本上什么都没有，而重试会把那一半接着做完还是从头做一遍，取决于那个外部系统而不取决于你。这一条留在了页尾的加分题里。</p>
+
+<h3>13. 把今天量到的写进设计文档</h3>
+<p>立项日的产出是一份设计文档。它和一份「功能列表」的区别在于：每一条决定后面要么跟着一个数，要么跟着一句「这一条留到第几天」。下面这张表就是今天该交出去的那一份的骨架。</p>
+<div class="scroll"><table>
+<tr><th style="width:22%">要定的事</th><th style="width:38%">今天的依据</th><th>先写成什么</th></tr>
+<tr><td>对外接口的形状</td><td>一条会话 5.2 秒，而且轮数事先不知道。同步等待一个可能几十分钟的东西不现实</td><td>两个接口：短会话走一次请求一次应答；长会话交一个任务号回来，进度另开一路取。取哪一路的门槛也要写死（比如预计超过多少轮）</td></tr>
+<tr><td>循环和模型之间多久交接一次</td><td>非流式一条会话 6 次交接、流式 774 次；同样 64 条并发，占核 74.2% 对 21.9%（第 8 节）</td><td>默认非流式；只有当产品明确要求边生成边显示时才开流式，并且要把并发上限按第 7 节那张表往下调</td></tr>
+<tr><td>并发上限取多少</td><td>墙在 96 到 128 之间，而按单条开销外推是 405（第 9 节）</td><td>不写死一个数，写死一条规矩：这个数必须扫出来，判据是事件循环延迟，模型服务换代之后要重扫</td></tr>
+<tr><td>队列和拒绝</td><td>Day 14 的许可、准入控制、背压，原样搬过来</td><td>许可在「结果拿到」那一刻归还，不等落盘；队列有长度上限，满了当场拒绝</td></tr>
+<tr><td>状态存什么、什么时候存</td><td>整份重写 0.756 毫秒对一轮 738 毫秒（第 11 节）</td><td>每一轮都存，别为省这千分之一去攒批。追加式写法优先，因为它的成本不随会话变长</td></tr>
+<tr><td>有副作用的步骤怎么办</td><td>六种组合里那一行重复（第 12 节）</td><td>每一步一个键，工具执行前先查。没法做成幂等的工具单独标出来，写清楚它的重试策略</td></tr>
+<tr><td>超时</td><td>轮数不确定，服务时间不是常数（第 3 节第 1 条）</td><td>两个超时：一轮一个，整条会话一个。会话超时要能在两轮之间干净地停下，而不是砍在一次工具执行的中间</td></tr>
+<tr><td>每一轮打哪几个数</td><td>今天量到的那几个：轮数、每轮交接次数、每轮发出字节、事件循环延迟</td><td>先把字段名定下来，具体怎么串成一条链留到 Day 23</td></tr>
+<tr><td>八天之后拿什么验收</td><td>—</td><td>四个数：单条会话的分段账、能稳住的并发条数、崩溃重启后的重复次数（必须是 0）、以及一条会话的成本明细</td></tr>
+</table></div>
+<h2>板块 3 · 动手任务</h2>
+<p>两个任务，约两小时。任务 A 是今天的交付物本身；任务 B 把这套拆账的读法用到你手上已有的东西上。</p>
+
+<h3>任务 A（必做，约 80 分钟）· 骨架、账、和那堵墙</h3>
+
+<h4>第 1 步：先有一个假模型，才好量运行时</h4>
+<p>没有加速器就没法跑真模型，但今天要量的东西根本不需要真模型——需要的只是「一个会按某个时序返回文本的东西」。把它做成一个独立进程，是为了让它的开销记在它自己头上，不混进运行时的账里。</p>
+<p>这个服务只做三件事：等一个首 token 的时间、按间隔吐 128 个字符、按轮数决定这一轮回工具调用还是回最终答案。它必须是纯 <code>sleep</code>，不能有任何真计算。</p>
+<pre><code>@app.post("/v1/generate")
+async def generate(req: Request):
+    r = await req.json()
+    turn = int(r.get("turn", 1))
+    text = body_for(turn)
+    n = len(text)
+    if not r.get("stream"):
+        await asyncio.sleep(TTFT + ITL * (n - 1))          # 一次性等完，再一次性返回
+        return JSONResponse({"text": text, "n_out": n})
+    async def gen():
+        await asyncio.sleep(TTFT)
+        for i, ch in enumerate(text):                      # 每个 token 一个 SSE 事件
+            if i:
+                await asyncio.sleep(ITL)
+            yield b"data: " + json.dumps({"t": ch}, ensure_ascii=False).encode() + b"\n\n"
+        yield b"data: [DONE]\n\n"
+    return StreamingResponse(gen(), media_type="text/event-stream")</code></pre>
+<p><span class="lbl">验收标准</span>：用 <code>curl</code> 打一次，返回的 <code>n_out</code> 是 128，而且这次调用的墙上时间应该正好是 <code>TTFT + ITL × 127</code>（本页设定下是 735 毫秒）。差得多，说明你的 <code>sleep</code> 写在了循环外面或者算错了个数。</p>
+<p><span class="lbl">常见坑</span>：把 <code>time.sleep</code> 写成了同步版本。症状是并发一上来所有请求排成一队，而不是一起等——Day 4 那条规矩，这里照样管用。</p>
+
+<h4>第 2 步：把循环写出来，先跑通单轮无工具</h4>
+<p>这是今天的骨架。它不到四十行，先要求它能跑通最简单的一圈：发一次、拿回来、判定是最终答案、返回。工具那一支先写着，但今天不必让它做任何真事。</p>
+<pre><code>MODEL = "http://127.0.0.1:8001/v1/generate"
+
+async def step(cli, msgs, turn):
+    """一轮：把整段上下文发出去，拿回一段文本。这是运行时和模型之间唯一的交接点。"""
+    r = await cli.post(MODEL, json={"messages": msgs, "turn": turn})
+    return r.json()["text"]
+
+def parse(text):
+    """把模型的输出读成一个决定：要么请你执行某个工具，要么到此为止。"""
+    try:
+        head = json.loads(text[:text.index("}") + 1])
+    except Exception:
+        return {"final": text}                    # 解析不出来就当成最终答案，别把循环卡死
+    return head
+
+async def loop(cli, task, max_turns=12):
+    msgs = [{"role": "user", "content": task}]
+    for turn in range(1, max_turns + 1):          # 上限是安全带：模型不肯停时由你来停
+        text = await step(cli, msgs, turn)
+        msgs.append({"role": "assistant", "content": text})
+        d = parse(text)
+        if "final" in d:
+            return {"turns": turn, "answer": d["final"], "msgs": msgs}
+        msgs.append({"role": "tool", "content": f"（{d['tool']} 的结果）"})
+    return {"turns": max_turns, "answer": None, "msgs": msgs}   # 撞上限也要有个明确出口</code></pre>
+<p><span class="lbl">跑起来应该看到</span>：本页这一份跑出来是「转了 6 轮，上下文 12 条，耗时 4436.1 ms」。6 轮 × 735 毫秒 = 4410，多出来的二十几毫秒是六次 HTTP 加上进程启动的零头。</p>
+<p><span class="lbl">验收标准</span>：把假模型的 <code>TURNS</code> 改成 1，让它第一轮就回最终答案，循环应该转一圈就出来，耗时 735 毫秒左右。这就是「单轮、无工具」跑通了。</p>
+<p><span class="lbl">常见坑</span>：忘了写 <code>max_turns</code>。模型一旦因为解析问题永远不返回「最终答案」，这个循环会一直转下去，而且每一轮的上下文都更长——它不会报错，只会越来越慢，直到把内存吃光。</p>
+
+<h4>第 3 步：把一条会话的账拆出来</h4>
+<p>在循环的每一个动作前后打一个 <code>time.monotonic()</code>（单调时钟，只往前走，不会被系统对时拨来拨去），照 4.4 节那张表的形状记下来。</p>
+<p><span class="lbl">验收标准</span>：把各段加起来，和端到端那个数差不超过 0.1 毫秒。差得多说明有一段没被记进去。</p>
+<p><span class="lbl">常见坑</span>：只在「调模型」前后各打一个点。这样你会得到和本页 4.4 节一样的表，然后得出「运行时不花钱」这个错结论。第 6 节说过为什么，所以这一步做完必须接着做下一步。</p>
+
+<h4>第 4 步：换第二把秤，量运行时自己的 CPU</h4>
+<p>在运行时进程里量 <code>time.process_time()</code> 的差值，除以这段时间里完成的会话数。</p>
+<p><span class="lbl">验收标准</span>：这个数应该比第 3 步那个「运行时自己那几段之和」大一个数量级以上。如果两个数差不多，检查一下你是不是把量 CPU 的代码写在了另一个进程里。</p>
+<p><span class="lbl">常见坑</span>：用 <code>/proc/&lt;pid&gt;/stat</code> 里的 <code>utime + stime</code>。那份的分辨率是百分之一秒，一条会话只有十几毫秒，量出来会是一串 0 和 10。要么换 <code>time.process_time()</code>，要么把窗口拉长到几百条会话。</p>
+
+<h4>第 5 步：扫出那堵墙</h4>
+<p>让运行时自己开 n 条并发会话（别用外部压测器，那样压测器和被测服务会抢核，Day 6 那条规矩），n 从 4 扫到你的机器塌掉为止。每一档记四个数：运行时 CPU 占一个核的比例、事件循环延迟、会话 P50、以及把 HTTP 换成等长 <code>asyncio.sleep</code> 的对照。</p>
+<p>探针协程长这样：</p>
+<pre><code>async def _probe():                       # 事件循环延迟探针：睡 10 毫秒，看实际晚了多少
+    while not stop:
+        a = time.monotonic()
+        await asyncio.sleep(0.010)
+        d = (time.monotonic() - a - 0.010) * 1000
+        lag["max"] = max(lag["max"], d); lag["sum"] += d; lag["cnt"] += 1</code></pre>
+<p><span class="lbl">验收标准</span>：对照那一列的会话耗时应该从头到尾几乎不动（本页是 5170 到 5174）。如果对照列也跟着涨，说明你的对照没写干净——最常见的原因是对照里还留着一次 JSON 序列化或者一次日志写。</p>
+<p><span class="lbl">常见坑</span>：探针的开销被算进了「每条会话的 CPU」。它每 10 毫秒醒一次；本页的对照口径最低那一档是一个核的 0.94%，而什么都不跑的空转只有 0.195%，差的那 0.7% 主要就是它。在低并发档里这一份能占到测量值的一大半。所以扫描要跑两遍：一遍开探针只看延迟，一遍关探针只看 CPU。</p>
+
+<h3>任务 B（约 40 分钟）· 用到你自己手上的东西</h3>
+<p>挑一个你写过的、会去调用别的服务的接口——任何一个都行，不必和 agent 有关。做三件事：</p>
+<ol>
+<li>数一数处理一次请求，你的进程和外部一共交接了几次（每一次数据库查询、每一次下游调用、每一次缓存读写都算一次）。</li>
+<li>用 <code>time.process_time()</code> 量出这个进程为一次请求消耗了多少 CPU，和端到端时间放在一起，算出「等待占了多少」。</li>
+<li>把并发压上去，找出事件循环延迟开始明显变差的那一档。</li>
+</ol>
+<p><span class="lbl">验收标准</span>：你能指着某一次交接说出「这一次可以合并掉」或者「这一次可以挪出请求路径」，并且给得出它值多少——按你自己量到的每次交接成本乘以次数。</p>
+
+<h4>加分题</h4>
+<ol>
+<li>第 7 节里，每次交接的成本从 32 条时的 1.86 毫秒涨到 128 条时的 23.84 毫秒，多出来的 22 毫秒去哪儿了？把 Day 3 那把采样式剖析器挂在运行时进程上，在 64 条和 128 条各打一张火焰图，对比一下哪几个函数的自身耗时涨了。这道题今天这个装置回答不了，它需要的正是那把工具。</li>
+<li>第 12 节那个矩阵有第四条缝没照到：崩在工具执行到一半的时候。设计一个能复现它的实验——提示：让工具变成「往账本里写两行」，在两行中间硬杀。然后想清楚，这一类崩溃能不能靠运行时这一侧的任何设计解决。</li>
+<li>把第 10 节那个式子推广：如果模型每一轮的输出长度不是常数，而是有长有短，累计发出的字节还是轮数的平方吗？平方项前面那个系数变成什么？</li>
+<li>第 8 节两把秤给出的倍数不一样（16.2 对 3.7）。设计一个实验把这个差别定量地解释掉——提示：分别量「一次完整 HTTP 往返」和「解析一行 SSE」各自的 CPU 时间，而不是函数调用次数。</li>
+</ol>
+
+<h2>板块 4 · 工作现场</h2>
+
+<h3>场景一 · 「agent 的 P99 很难看，但模型那边说他们的指标都正常」</h3>
+<p>这话大概率两边都没说错。模型服务的指标板上是 TTFT 和 TPOT，它们量的是模型进程内部；而一条 agent 会话的端到端里，模型那几段只是其中一部分，剩下的在你这边。</p>
+<p>排查顺序照今天这一页：先按 4.4 节的形状把一条会话拆成互不重叠的段，确认加起来等于端到端。如果模型那几段之和确实正常，而端到端不正常，差额就在你的进程里。这时候看事件循环延迟，不要先看 CPU 使用率——第 7 节那张表里，CPU 刚过一半的时候延迟已经涨了二十四倍。</p>
+<p>还有一个容易被忽略的方向：轮数。同样的端到端预算，一条转 12 轮的会话和一条转 4 轮的会话完全是两回事。P99 变差可能不是每一轮变慢了，而是长会话变多了。这个要看轮数的分布，看平均值会被短会话冲淡。</p>
+
+<h3>场景二 · 「有个用户的任务卡了二十分钟，我们不知道它卡在哪一步」</h3>
+<p>这是「状态只在内存里」的直接后果：那条会话此刻的全部信息都在一个协程的栈上，从外面看不见。</p>
+<p>今天量到的数直接给出了做法：每一轮写一次检查点，最贵的写法也只占一轮的千分之一，所以没有理由不写。检查点里至少要有：现在是第几轮、上一轮模型返回了什么、当前正在等谁。有了这三样，「卡在哪一步」就变成了读一行文件。</p>
+<p>再往前一步是给每一轮加超时。第 3 节第 1 条说过这里要两个超时：一轮一个，整条会话一个。只设会话超时的话，卡在第三轮的会话会一直挂到会话超时才被发现；只设单轮超时的话，一条会转三十轮的会话可以合法地跑一小时。</p>
+
+<h3>场景三 · 「发布上线之后，有几个用户被重复扣了款」</h3>
+<p>先别去查是谁重试了。第 12 节那张矩阵说，重复只可能来自一个地方：副作用已经生效，而这件事还没被记下来，然后进程没了。发布上线正是制造这种情况的标准动作——滚动重启会在任意时刻打断正在跑的会话。</p>
+<p>所以要问的第一个问题不是「谁重试的」，是「这一步有没有幂等键」。没有的话，重复是必然的，只是概率高低——第 12 节穷举的三个崩溃点里，有一个会命中。</p>
+<p>短期的止血是给发布加一个排空阶段：不再接新会话，等在途的跑完再重启。它能把窗口从「任意时刻」缩小到「超过排空时限的那几条」。但它只是缩小窗口，不是关掉窗口，真正的修法还是每一步一个键。</p>
+
+<h3>同事和面试官常问的</h3>
+<ul>
+<li><span class="qs">「你们的 agent 运行时能扛多少并发？」</span>——先反问口径：是同时在途的会话数，还是同时真的在等模型的条数，还是每秒能开始几条新会话。今天这台机器上，第一个量出来的墙在 96 到 128 之间；第二个大约是它的 85%，因为一条会话 85% 的时间花在等模型上；第三个用在途数除以会话时长得到，96 ÷ 5.2 秒，每秒十八条左右。问的人通常想知道的是第三个，而它是前两个推出来的。这个数必须扫出来，判据是事件循环延迟。</li>
+<li><span class="qs">「一条 agent 会话和一个普通 HTTP 请求，在服务端有什么不一样？」</span>——四条：轮数事先不知道所以服务时间不是常数；上下文只往后长所以每轮发的字节递增；中间几步有副作用所以不能整条重试；持续时间长所以状态必须落在进程外。能把这四条各配一个具体后果，比背名词有用。</li>
+<li><span class="qs">「上下文越来越长，你怎么控制成本？」</span>——要分开两笔账。算的那一笔靠前缀缓存，Day 16 那套；传的那一笔前缀缓存管不着，它是轮数的平方，只能靠压缩上下文或者减少轮数。只答前缀缓存等于只答了一半。</li>
+<li><span class="qs">「进程重启了，正在跑的任务怎么办？」</span>——检查点加幂等键，两件事缺一不可。只有检查点是「至少一次」，加上幂等键才是「恰好一次」。追问「为什么不把检查点写得更勤一点」，答：那个窗口的宽度可以缩小但不可能变成零，因为副作用发生在别人的机器上。</li>
+<li><span class="qs">「为什么要用流式？什么时候不该用？」</span>——用它是为了让用户早点看见第一个字，这是产品要求不是技术要求。不该用的时候是：这一轮的输出根本不给人看（比如一次工具调用的参数），那就白白把交接次数乘上一百多倍。一个 agent 循环里，中间那几轮通常都属于这一类。</li>
+</ul>
+<h2>板块 5 · 自检问题</h2>
+
+<details><summary>1. 有人看了第 7 节那张表说：「32 条并发时运行时才占一个核的 7.8%，那把机器换成 8 核，并发上限就能开到八倍。」对不对？</summary>
+<p>不对，而且错在两个互相独立的地方。</p>
+<p>第一个错在单位。表里那个百分比是「一个核的百分之几」，不是「这台机器的百分之几」。运行时是一个 Python 进程里的一个事件循环，它只跑在一个线程上，多给它七个核，这个循环一点也不会变快。第 7 节最后那一档就是证据：CPU 占用停在 81.8%，机器上还有另一个整核闲着，可端到端已经是 4 条那一档的 3.8 倍了。</p>
+<p>第二个错在外推的方式。就算你真的起八个运行时进程，也不能算成「一个能扛 96 条，八个就能扛 768 条」。第三列说过，每次交接的成本本身是并发数的函数——从 1.13 毫秒涨到 23.84 毫秒。八个进程各扛各的 96 条，每个进程都在自己那条曲线的同一个位置上，这一条是成立的；但八个进程要共享同一台机器的两个核（或者八个核），它们之间还会互相挤。总量得重新扫。</p>
+<p><span class="lbl">错在哪</span>：把「一个核的百分之几」读成了「这台机器的百分之几」。对单事件循环的服务，这两个数之间隔着一个不能跨的边界。</p>
+</details>
+
+<details><summary>2. 上线后端到端 P99 变差，CPU 使用率只有 40%，模型服务那一侧的指标一切正常。你先看哪个数？为什么不是先加机器？</summary>
+<p>先看事件循环延迟。</p>
+<p>第 7 节那张表是这么排的：96 条那一档，CPU 占用 54.5%，事件循环延迟已经是 5.19 毫秒——比 4 条那一档的 0.21 毫秒大了二十四倍，而端到端也已经多了 44%。到 128 条那一档，CPU 才 81.8%，延迟已经 22.62 毫秒、最大 488.2 毫秒。也就是说，在这类服务上，CPU 使用率比事件循环延迟晚两档报警。40% 这个数字什么都不能证明。</p>
+<p>不先加机器，是因为在确认瓶颈之前，加机器可能是在花钱买一个不解决问题的东西。如果瓶颈真的是「这一个事件循环每秒能处理多少次交接」，那多起几个进程确实有用；但在此之前有一步更便宜：数一数每条会话交接了多少次，看有没有能减掉的。第 8 节量过，把流式改回非流式，同样的 64 条并发，占核从 74.2% 掉到 21.9%——这一步不用加任何机器。</p>
+<p><span class="lbl">错在哪</span>：把 CPU 使用率当成「离塌了还有多远」的那个数。对单事件循环的服务它不是——它既滞后，又有一个够不到 100% 的天花板。</p>
+</details>
+
+<details><summary>3. 团队想给每条会话加一个功能：每轮结束时把上下文存一份到数据库，方便回放。有人担心「这会让每轮多一次网络往返，太贵」。用今天的数评估这个担心。</summary>
+<p>这个担心问对了地方，但很多人会用错的方式把它驳回去。</p>
+<p>错的驳法是拿第 11 节那张表说「落盘最贵也才 0.756 毫秒，对一轮 738 毫秒是千分之一，不值一提」。这句话本身没错，但它量的是本地文件，而「存到数据库」根本不是落盘，它是又一次跨进程的交接。</p>
+<p>而今天整页的结论就是账按交接次数收。第 8 节那把尺子：一次 HTTP 往返触发 2577 次 Python 函数调用，比等整整 735 毫秒还贵四十倍。每轮多存一次，等于把每条会话的交接次数从 6 提到 12，第 7 节那堵墙直接往前挪一半。</p>
+<p>正确的问法不是「贵不贵」，是「这次交接能不能不在请求路径上」。Day 14 那条原则原样成立：让写库这件事交给后台，会话这一侧只把它排进一个队列。这样交接次数还是 12，但其中 6 次不占用户的时间，也不和会话争同一段延迟预算——它只争 CPU。</p>
+<p><span class="lbl">错在哪</span>：把「存一份」默认成了本地落盘。这两件事在今天这一页的成本模型里差着一整个数量级。</p>
+</details>
+
+<details><summary>4. 有人提议把第 12 节那个幂等键去掉，理由是「我们把检查点改成在工具执行之前写，先记下要做什么，这样崩了就知道该不该重来」。这个提议对不对？</summary>
+<p>方向对了一半。它确实解决了一件事，但不是它以为解决的那件。</p>
+<p>先说它解决不了的那一半：把检查点挪到工具之前，崩溃的窗口并没有消失，只是换了个位置。现在崩在「记完要做什么、还没执行」这个缝里，重启看到一条记录，可你没法从这条记录知道工具到底执行成功了没有。这时候要么重来（可能重复），要么跳过（可能漏做），两条路都有一半的概率是错的。原来的窗口在副作用后面，现在的窗口在副作用前面，宽度没变。</p>
+<p>再看它真正解决的：崩了之后，你至少知道「有一件事可能做了一半」，而不是完全不知道有过这么一件事。这条信息很有价值——它让恢复逻辑有机会去外部系统查一句「这件事你那边收到没有」。这种「先记下打算做什么，再去做」的写法有名字，叫<span class="term">写前记录（write-ahead logging）</span>。</p>
+<p>而「去查一句」这个动作，需要的正是一个能拿去查的东西：一个键。所以两件事是配套的，不是二选一。写前记录让你知道该去查什么，幂等键让这一查问得出结果。</p>
+<p><span class="lbl">错在哪</span>：把「知道发生过什么」和「能安全地重来一遍」当成了同一件事。前者是记录问题，后者是操作性质问题，改记录的时机改不了操作的性质。</p>
+</details>
+
+<h2>板块 6 · 今日新词</h2>
+<p>前五个是这个循环本身的零件，中间四个是「怎么收费」这条线上的，最后六个属于「崩了怎么办」那一段。它们本来就长在同一件事上。</p>
+<div class="scroll"><table>
+<tr><th style="width:20%">中文</th><th style="width:24%">英文原词</th><th>一句话解释</th></tr>
+<tr><td>agent 循环</td><td>agent loop</td><td>组装上下文 → 调模型 → 看它要什么 → 执行工具 → 把结果追加回去，然后回到第一步</td></tr>
+<tr><td>一轮</td><td>turn</td><td>这个圈转一次。一轮里恰好有一次模型调用</td></tr>
+<tr><td>会话</td><td>session</td><td>从用户提一个任务到最终答案出来的一整段，由 N 轮组成，N 事先不知道</td></tr>
+<tr><td>工具调用</td><td>tool call</td><td>模型的输出不是答案，而是「请你替我执行某某」这句话</td></tr>
+<tr><td>副作用</td><td>side effect</td><td>一步执行在你的进程之外留下的、退不回去的改变：文件写了、钱扣了、邮件发了</td></tr>
+<tr><td>服务端推送事件</td><td>SSE / server-sent events</td><td>一次请求，服务端在同一条连接上分很多次往回写；每一行 <code>data: …</code> 是一个事件</td></tr>
+<tr><td>交接</td><td>handoff</td><td>你的进程和外面某个东西之间的一次完整往返。Day 17 一直管它叫「过河」，今天它成了计价单位</td></tr>
+<tr><td>在途会话</td><td>in-flight session</td><td>此刻已经开始、还没结束的会话条数。它和「每秒能开始几条」是两个数，中间差一个会话时长</td></tr>
+<tr><td>进程 CPU 时钟</td><td>process CPU clock（<code>time.process_time</code>）</td><td>只在这个进程真的占着 CPU 时才走的那口钟。等待期间它不走，所以它能把「在等」和「在干活」分开</td></tr>
+<tr><td>幂等</td><td>idempotent / idempotence</td><td>一个操作做一遍和做很多遍，结果一样</td></tr>
+<tr><td>幂等键</td><td>idempotency key</td><td>给每一步配一个唯一的名字，执行之前先查这个名字做过没有</td></tr>
+<tr><td>至少一次 / 恰好一次</td><td>at-least-once / exactly-once</td><td>崩溃恢复免费给你的是前者（不会漏做，但可能多做）；后者要靠每一步自己带键去重换来</td></tr>
+<tr><td>检查点</td><td>checkpoint</td><td>把「跑到哪儿了」写到进程外面去，好让另一个进程能接着跑</td></tr>
+<tr><td>追加式日志</td><td>append-only log</td><td>只往文件末尾添，从不重写前面。它的写入成本不随已积累的量变大</td></tr>
+<tr><td>写前记录</td><td>write-ahead logging（WAL）</td><td>动手之前先把「我打算做什么」记下来，再去做</td></tr>
+</table></div>
+<h2>板块 7 · 已学词表</h2>
+<details><summary>Day 1 到今天的全部术语，标注首次引入于第几天（点开，共 213 条）</summary>
+<div class="scroll"><table>
+<tr><th style="width:30%">中文</th><th style="width:44%">英文原词</th><th style="width:14%">引入于</th></tr>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little's Law</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td>Day 11</td></tr>
+<tr><td>对等组</td><td>peer group</td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount / MNT_DETACH</td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td>Day 11</td></tr>
+<tr><td>叠加文件系统</td><td>overlayfs / overlay filesystem</td><td>Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td>lowerdir / upperdir / workdir</td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td>copy-on-write / copy_up</td><td>Day 12</td></tr>
+<tr><td>白障</td><td>whiteout</td><td>Day 12</td></tr>
+<tr><td>只读根</td><td>read-only rootfs</td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td>tmpfs</td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td>page cache</td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td>shmem</td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td>inode</td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td>size= / nr_inodes=</td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td>buffered write</td><td>Day 12</td></tr>
+<tr><td>直写</td><td>direct I/O (O_DIRECT)</td><td>Day 12</td></tr>
+<tr><td>回写</td><td>writeback</td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td>blkio throttle / io.max</td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td>major:minor</td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td>veth pair</td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td>SNAT / MASQUERADE</td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td>packet filter / netfilter (iptables)</td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td>DROP / REJECT</td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td>egress allowlist</td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td>capability bounding set</td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td>masking</td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td>least privilege</td><td>Day 12</td></tr>
+<tr><td>开放容器倡议</td><td>OCI / Open Container Initiative</td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td>runtime-spec</td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td>image-spec</td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td>distribution-spec</td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td>filesystem bundle</td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td>config.json</td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td>low-level runtime / runtime engine</td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td>high-level runtime</td><td>Day 13</td></tr>
+<tr><td>libcontainer</td><td>libcontainer</td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td>runc init</td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td>binary cloning / exeseal</td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td>__attribute__((constructor))</td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td>nsexec stage 0 / 1 / 2</td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td>exec fifo</td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td>creating / created / running / stopped</td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td>lifecycle hooks</td><td>Day 13</td></tr>
+<tr><td>垫片</td><td>shim</td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td>ttRPC</td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td>subreaper / PR_SET_CHILD_SUBREAPER</td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td>zombie process</td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td>CRI / Container Runtime Interface</td><td>Day 13</td></tr>
+<tr><td>预热池</td><td>warm pool</td><td>Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td>zygote / fork server</td><td>Day 14</td></tr>
+<tr><td>懒加载</td><td>lazy loading / lazy pulling</td><td>Day 14</td></tr>
+<tr><td>并发上限</td><td>concurrency limit</td><td>Day 14</td></tr>
+<tr><td>许可</td><td>semaphore</td><td>Day 14</td></tr>
+<tr><td>准入控制</td><td>admission control</td><td>Day 14</td></tr>
+<tr><td>背压</td><td>backpressure</td><td>Day 14</td></tr>
+<tr><td>泊松到达</td><td>Poisson arrivals</td><td>Day 14</td></tr>
+<tr><td>宽限期</td><td>grace period</td><td>Day 14</td></tr>
+<tr><td>请求路径</td><td>request path</td><td>Day 14</td></tr>
+<tr><td>异步回收</td><td>deferred cleanup</td><td>Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td>KV cache</td><td>Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td>query head / KV head</td><td>Day 15</td></tr>
+<tr><td>每头维度</td><td>head_dim / head size</td><td>Day 15</td></tr>
+<tr><td>分组查询注意力</td><td>GQA / grouped-query attention</td><td>Day 15</td></tr>
+<tr><td>内部碎片</td><td>internal fragmentation</td><td>Day 15</td></tr>
+<tr><td>外部碎片</td><td>external fragmentation</td><td>Day 15</td></tr>
+<tr><td>紧凑</td><td>compaction</td><td>Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td>block</td><td>Day 15</td></tr>
+<tr><td>块表</td><td>block table</td><td>Day 15</td></tr>
+<tr><td>分页注意力</td><td>PagedAttention</td><td>Day 15</td></tr>
+<tr><td>每块字节数</td><td>page_size_bytes</td><td>Day 15</td></tr>
+<tr><td>空闲块队列</td><td>free block queue</td><td>Day 15</td></tr>
+<tr><td>上下文长度上限</td><td>max_model_len</td><td>Day 15</td></tr>
+<tr><td>显存占用比例</td><td>gpu_memory_utilization</td><td>Day 15</td></tr>
+<tr><td>因果注意力</td><td>causal attention</td><td>Day 16</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td>prefix caching / APC</td><td>Day 16</td></tr>
+<tr><td>token 级前缀命中率</td><td>prefix cache hit rate</td><td>Day 16</td></tr>
+<tr><td>块 hash 链</td><td>chained block hash</td><td>Day 16</td></tr>
+<tr><td>基数树 / 前缀树</td><td>radix tree / RadixAttention</td><td>Day 16</td></tr>
+<tr><td>节点分裂</td><td>node split</td><td>Day 16</td></tr>
+<tr><td>最近最少使用</td><td>LRU / least recently used</td><td>Day 16</td></tr>
+<tr><td>复用距离</td><td>reuse distance</td><td>Day 16</td></tr>
+<tr><td>缓存盐</td><td>cache salt</td><td>Day 16</td></tr>
+<tr><td>卸载</td><td>offloading</td><td>Day 16</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td>tiering / primary tier / secondary tier</td><td>Day 16</td></tr>
+<tr><td>提升</td><td>promotion</td><td>Day 16</td></tr>
+<tr><td>写入门槛</td><td>store threshold</td><td>Day 16</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td>PCIe</td><td>Day 16</td></tr>
+<tr><td>前端进程</td><td>frontend process</td><td>Day 17</td></tr>
+<tr><td>引擎核心 / 引擎核心进程</td><td>EngineCore / EngineCoreProc</td><td>Day 17</td></tr>
+<tr><td>输入处理器</td><td>input processor</td><td>Day 17</td></tr>
+<tr><td>输出处理器</td><td>output processor</td><td>Day 17</td></tr>
+<tr><td>忙循环</td><td>busy loop</td><td>Day 17</td></tr>
+<tr><td>输入队列 / 输出队列</td><td>input_queue / output_queue</td><td>Day 17</td></tr>
+<tr><td>打包 / 解包 · 序列化 / 反序列化</td><td>serialize / deserialize</td><td>Day 17</td></tr>
+<tr><td>请求状态</td><td>RequestStatus</td><td>Day 17</td></tr>
+<tr><td>调度单</td><td>SchedulerOutput</td><td>Day 17</td></tr>
+<tr><td>全量与差量</td><td>NewRequestData / CachedRequestData</td><td>Day 17</td></tr>
+<tr><td>执行结果</td><td>ModelRunnerOutput</td><td>Day 17</td></tr>
+<tr><td>执行器</td><td>Executor</td><td>Day 17</td></tr>
+<tr><td>增量解码</td><td>incremental detokenization</td><td>Day 17</td></tr>
+<tr><td>解码窗口</td><td>prefix_offset / read_offset</td><td>Day 17</td></tr>
+<tr><td>停止串</td><td>stop string</td><td>Day 17</td></tr>
+<tr><td>替换符</td><td>replacement character (U+FFFD)</td><td>Day 17</td></tr>
+<tr><td>agent 循环</td><td>agent loop</td><td>Day 18</td></tr>
+<tr><td>一轮</td><td>turn</td><td>Day 18</td></tr>
+<tr><td>会话</td><td>session</td><td>Day 18</td></tr>
+<tr><td>工具调用</td><td>tool call</td><td>Day 18</td></tr>
+<tr><td>副作用</td><td>side effect</td><td>Day 18</td></tr>
+<tr><td>服务端推送事件</td><td>SSE / server-sent events</td><td>Day 18</td></tr>
+<tr><td>交接</td><td>handoff</td><td>Day 18</td></tr>
+<tr><td>在途会话</td><td>in-flight session</td><td>Day 18</td></tr>
+<tr><td>进程 CPU 时钟</td><td>process CPU clock (time.process_time)</td><td>Day 18</td></tr>
+<tr><td>幂等</td><td>idempotent / idempotence</td><td>Day 18</td></tr>
+<tr><td>幂等键</td><td>idempotency key</td><td>Day 18</td></tr>
+<tr><td>至少一次 / 恰好一次</td><td>at-least-once / exactly-once</td><td>Day 18</td></tr>
+<tr><td>检查点</td><td>checkpoint</td><td>Day 18</td></tr>
+<tr><td>追加式日志</td><td>append-only log</td><td>Day 18</td></tr>
+<tr><td>写前记录</td><td>write-ahead logging (WAL)</td><td>Day 18</td></tr>
+</table></div>
+</details><h2>板块 8 · 专项深挖</h2>
+<p>今天放不下、但各自够花一晚上的三件事。三段互不相干，挑一段整段发给 Claude 就行。</p>
+
+<div class="card">
+<p>我已经量过一个 agent 运行时的开销：一条 6 轮的会话端到端 5187 毫秒，其中模型占 85%、工具占 15%、运行时自己在墙上时钟里只占 0.65 毫秒，但用 <code>time.process_time()</code> 量到它实际消耗 12.9 毫秒 CPU。我也扫出了并发的墙：同时 96 条时事件循环延迟从 0.21 毫秒涨到 5.19 毫秒，128 条时涨到 22.6 毫秒而 CPU 只有 81.8%。对照实验证明这些开销全部来自 HTTP 那一层，纯 <code>asyncio.sleep</code> 的等待几乎不要钱。</p>
+<p>现在我想把「每次交接为什么会随并发变贵」这件事拆到函数级。请用 Python 3.11 加 httpx（异步 HTTP 客户端）加 uvicorn 这套组合，帮我设计一组实验，把一次 HTTP 往返的 CPU 开销拆成：连接池获取、请求序列化、socket 写、事件循环调度、响应帧解析、反序列化这几段，并说明其中哪几段的成本会随「同时在飞的请求数」增长、机制分别是什么。产出要一张表加一段说明，附上每一段该怎么量（用什么工具、打点打在哪），不要贴大段库源码。</p>
+</div>
+
+<div class="card">
+<p>我已经用一个三条缝的崩溃矩阵验证过：检查点写在工具之后时，崩在「工具已执行、检查点未写」这条缝上会重复执行一次副作用；加一个幂等键（执行前先查账本）之后六种组合全部只执行一次。我也知道写前记录能让恢复逻辑知道「有一件事可能做了一半」，但它自己不解决重复。</p>
+<p>现在我想弄清楚工业界怎么做这件事。请对比 Temporal、Restate、以及基于消息队列自建这三条路线，分别说明：状态存在哪儿、一次「活动」的执行是怎么做到恰好一次的、以及它们各自要求业务代码写成什么样（哪些约束是硬的）。重点回答一个问题：当外部系统本身不提供幂等接口时（比如一个只能 POST 且没有去重键的第三方 API），这三条路线分别拿它怎么办。产出用一张对比表加三段说明，每段不超过两百字。</p>
+</div>
+
+<div class="card">
+<p>我已经量过 agent 会话的上下文账：每轮比上一轮多 777 字节，一条 K 轮的会话累计发给模型的字节大约是最终上下文的 K/2 倍（K=100 时最终上下文 77 KB，路上搬了 3.85 MB）。我也知道 Day 16 那套前缀缓存省的是「算」不是「传」。</p>
+<p>现在我想搞清楚「传」这一侧还有什么办法。请评估这几条路各自的机制和代价：一，把上下文放在推理服务那一侧、每轮只发增量（各家 API 有没有这种能力，协议长什么样）；二，会话粘性加服务端会话状态；三，客户端做上下文压缩再发。对每一条说明它对前缀缓存命中率是帮忙还是添乱，以及它把复杂度挪到了哪里。产出用一张表加一段结论，不要写代码。</p>
+</div>
+
+<h2>板块 9 · 延伸材料</h2>
+<ul>
+<li><span class="mat">Python 官方文档「协程与任务」</span>（<code>docs.python.org/3/library/asyncio-task.html</code>）——把 <code>gather</code>、<code>create_task</code>、超时和取消的语义定死的那一份。今天骨架里每一个 <code>await</code> 的行为都在这里。<em>难度低，一小时，是今天性价比最高的一篇。</em></li>
+<li><span class="mat">CPython 的 <code>Lib/asyncio/base_events.py</code></span>——你机器上就有一份，在 <code>/usr/lib/python3.11/asyncio/base_events.py</code>。只读 <code>_run_once</code> 那三十行（第 7 节引的就是它），你会看清「一百二十八条协程挂着等几乎不要钱」这句话为什么成立。<em>难度中等，半小时，但读完你对 asyncio 的直觉会换一个层次。</em></li>
+<li><span class="mat">Model Context Protocol 规范</span>（<code>modelcontextprotocol.io</code>）——明天 Day 19 的主角。今天先翻一遍「工具怎么描述、调用的消息长什么样」这两节，明天读起来会轻松很多。<em>难度中等，一小时，属于提前预习。</em></li>
+<li><span class="mat">《Designing Data-Intensive Applications》第 11 章「Stream Processing」</span>（Martin Kleppmann）——「至少一次」和「恰好一次」这对概念的标准出处，第 12 节那张矩阵是它在一个很小的场合里的复现。<em>难度偏高，这一章要读两三个小时，但它管的不只是 agent。</em></li>
+<li><span class="mat">httpx 官方文档的 Async 一节</span>（<code>www.python-httpx.org</code>）——重点看连接池那几个参数（<code>max_connections</code>、<code>max_keepalive_connections</code>）。今天扫到高并发时，这两个参数会直接决定你的墙在哪儿。<em>难度低，二十分钟，当参考手册翻。</em></li>
+</ul>
+
+<div class="card five">
+<h4>板块 10 · 今日五句话</h4>
+<p>把这一页扣过去，用自己的话答下面五个问题，每题一两句。</p>
+<ol>
+<li>一条 agent 会话的轨迹上，各段加起来严丝合缝地等于端到端，为什么还是会得出错的结论？该换哪把秤？</li>
+<li>「一百多条协程同时挂着等」和「一百多次 HTTP 往返」，哪一个贵？贵多少？这个差别是怎么被证明的？</li>
+<li>把模型调用从每轮一次改成每个 token 一次，交接次数涨了 129 倍，而 CPU 只涨了 3.7 倍。这两个数为什么不矛盾？</li>
+<li>一条转 K 轮的会话，往模型发出去的字节总量和最终上下文是什么关系？前缀缓存能省掉其中哪一半？</li>
+<li>检查点写得再快，为什么也消灭不了重复执行？靠什么才能消灭？</li>
+</ol>
+<div class="write"></div>
+<h4 style="margin-top:1.2rem">逐句自查</h4>
+<p><span class="lbl">第 1 句</span>如果只写「因为漏了一段」就错了，那是 Day 11 那道题的答案。今天没有任何一段没进表，漏的是每一段<em>内部</em>的成分：「等模型」那 738 毫秒里同时含着等待和干活，墙上时钟分不开。要换的秤是进程 CPU 时钟，两个数在今天是 0.65 对 12.94。</p>
+<p><span class="lbl">第 2 句</span>如果只答「HTTP 贵」，缺了最关键的一半——怎么证明的。要点出对照实验：同样的会话、同样的等待时长，唯一改动是把 HTTP 换成等长的 <code>asyncio.sleep</code>，对照那一列从 4 条到 128 条会话耗时只动了 4 毫秒，CPU 一直在一个核的 1.7% 以内。没有这个对照，「HTTP 贵」只是一个说法。</p>
+<p><span class="lbl">第 3 句</span>如果写成「因为流式效率更高」就答反了。正确的说法是：单次流式事件比一次完整 HTTP 往返便宜（函数调用 324 对 2577，八倍），但做 129 遍，所以总账还是涨。两个方向合起来才是那个 3.7。</p>
+<p><span class="lbl">第 4 句</span>如果只写「是平方关系」，还差一步：要给出倍数的形式，大约是 K/2。第二问如果答「前缀缓存能省掉大部分」就错了——它省的是模型那一侧的计算，字节该传还是要传，一次不少。</p>
+<p><span class="lbl">第 5 句</span>如果写成「因为磁盘有延迟」就抓错了因。窗口的存在和磁盘快慢无关：副作用发生在别人的机器上，记录发生在你的磁盘上，两个动作没有办法同时发生，所以窗口可以任意小但不可能是零。消灭它靠的是换问法——不问「我崩之前记下了没有」，问「这件事之前做过没有」，而那需要一个键。</p>
+</div>
+
+<h2>板块 11 · 明日预告</h2>
+<p>今天那个工具是假的：它是一行 <code>asyncio.sleep(0.15)</code>，永远成功，永远准时，返回的内容永远一样长。四条差别里的第 3 条——副作用——今天只在第 12 节那个三轮的小程序里露了个脸。</p>
+<p>明天 Day 19 把工具做成真的。协议长什么样、工具怎么注册、一轮里要调三个工具时怎么并发执行、超时和取消怎么往下传。还有一个今天完全没碰、但每个人第一次写都会踩的问题：工具报错了，那段错误信息要不要原样喂回给模型？喂回去它可能真的能修，也可能从此在上下文里留下一大段没用的堆栈，而按今天第 10 节那个式子，这一段会在后面每一轮里被重新发一遍。</p>
+
+<footer>
+<p>AI Infra · Day 18 / 28 · 2026-09-03 · 阶段四 · Agent Runtime（八天项目 · 第 1 天 · 立项）</p>
+<p>实验条件：2 核 Intel Xeon @ 2.80 GHz，L1d 64 KiB、L2 2 MiB、L3 33 MiB，7.84 GiB 内存，页大小 4096 字节；Linux 6.18.44。Python 3.11.15、FastAPI 0.141.1、uvicorn 0.46.0、httpx 0.28.1，与 Day 14 同一套版本。三个程序都在这一台机器上，进程间走本机 TCP；第 7 节和第 9 节那几张表只用到运行时和模型两个进程，压测器不参与。</p>
+<p>模型服务的时序是设定值（首 token 前 100 毫秒、token 间隔 5 毫秒、每轮 128 个 token），第 9 节那一组用的是 50 毫秒和 3 毫秒；工具是一次 150 毫秒的 <code>asyncio.sleep</code>。运行时 CPU 用 <code>time.process_time()</code> 在进程内量，模型侧 CPU 读 <code>/proc/&lt;pid&gt;/stat</code> 的 <code>utime + stime</code>。空转基线：运行时进程什么都不跑时 10 秒烧掉 0.0195 秒 CPU。</p>
+<p>一手材料：CPython 3.11.15 自带的 <code>Lib/asyncio/base_events.py</code> 与 <code>Lib/asyncio/tasks.py</code>，第 7 节所有行号以这一份为准。</p>
+</footer>
+</div>
+</body>
+</html>
