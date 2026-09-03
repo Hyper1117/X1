@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 17</title>
+<style>
+:root{
+  --bg:#faf6ef; --panel:#fffdf8; --ink:#2e2a24; --ink2:#5d564c; --ink3:#8a8073;
+  --line:#e3dacb; --line2:#d3c7b3;
+  --accent:#a8632c; --accent2:#7a6a3f; --green:#4a6b43; --blue:#3f5f78; --plum:#7a4a63;
+  --codebg:#2b2722; --codeink:#e9e0d2; --mark:#f0e4cf;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16130f; --panel:#1e1a15; --ink:#e9e2d6; --ink2:#c0b6a6; --ink3:#948a7b;
+    --line:#332c23; --line2:#463d31;
+    --accent:#e0995c; --accent2:#c3b579; --green:#8fbb82; --blue:#87b0cd; --plum:#c894ae;
+    --codebg:#0f0d0a; --codeink:#e3d9c9; --mark:#3a3021;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16130f; --panel:#1e1a15; --ink:#e9e2d6; --ink2:#c0b6a6; --ink3:#948a7b;
+  --line:#332c23; --line2:#463d31;
+  --accent:#e0995c; --accent2:#c3b579; --green:#8fbb82; --blue:#87b0cd; --plum:#c894ae;
+  --codebg:#0f0d0a; --codeink:#e3d9c9; --mark:#3a3021;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  font-size:16.5px; line-height:1.78; overflow-x:hidden;
+}
+.bar{
+  position:sticky; top:0; z-index:50; background:var(--panel);
+  border-bottom:1px solid var(--line2); padding:9px 18px;
+  display:flex; gap:14px; align-items:baseline; flex-wrap:wrap;
+  font-size:13.5px; color:var(--ink2);
+}
+.bar b{color:var(--accent); font-size:14.5px; letter-spacing:.02em}
+.bar .sp{margin-left:auto; color:var(--ink3)}
+main{max-width:820px; margin:0 auto; padding:30px 18px 80px}
+h1{font-size:27px; line-height:1.4; margin:.2em 0 .35em; letter-spacing:-.01em}
+.sub{color:var(--ink2); font-size:17px; margin:0 0 1.6em}
+h2{font-size:20.5px; margin:2.4em 0 .8em; padding-bottom:.35em; border-bottom:2px solid var(--line2)}
+h3{font-size:18px; margin:2em 0 .6em; color:var(--accent)}
+h4{font-size:16.5px; margin:1.6em 0 .5em; color:var(--ink)}
+p{margin:.85em 0}
+.lead{font-size:17.5px; color:var(--ink); margin:1.2em 0 .6em}
+ul,ol{padding-left:1.35em} li{margin:.4em 0; overflow-wrap:anywhere}
+a{color:var(--accent); text-decoration:underline; text-underline-offset:2px; overflow-wrap:anywhere}
+a:hover{text-decoration-thickness:2px}
+blockquote{overflow-wrap:anywhere}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.885em; background:var(--mark); padding:.08em .34em; border-radius:3px;
+  overflow-wrap:anywhere;
+}
+pre{
+  background:var(--codebg); color:var(--codeink); padding:14px 16px; border-radius:8px;
+  overflow-x:auto; line-height:1.62; font-size:13.5px; margin:1.1em 0;
+  border:1px solid var(--line2);
+}
+pre code{background:none; padding:0; font-size:inherit; color:inherit; overflow-wrap:normal}
+.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:1.1em 0}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:440px}
+th,td{border:1px solid var(--line2); padding:7px 10px; text-align:left; vertical-align:top}
+th{background:var(--mark); font-weight:600; white-space:nowrap}
+td code{font-size:.9em}
+.term{background:var(--mark); border-bottom:1.5px solid var(--accent); padding:.05em .22em; border-radius:2px}
+.card{border-left:4px solid var(--line2); background:var(--panel); padding:2px 18px; margin:1.6em 0; border-radius:0 7px 7px 0}
+.card.recall{border-left-color:var(--blue)}
+.card.pred{border-left-color:var(--plum)}
+.card.five{border-left-color:var(--green)}
+.card.key{border-left-color:var(--accent)}
+.card h4{margin-top:1.1em}
+.card .tag{display:inline-block; font-size:12.5px; letter-spacing:.08em; color:var(--ink3); margin-top:1.1em}
+.card.key .tag{color:var(--accent)}
+details{margin:.8em 0; border:1px solid var(--line2); border-radius:7px; background:var(--panel)}
+summary{cursor:pointer; padding:9px 14px; font-size:14.5px; color:var(--ink2); user-select:none}
+summary:hover{color:var(--accent)}
+details[open]{padding-bottom:6px}
+details > *:not(summary){padding-left:14px; padding-right:14px}
+details > .scroll{padding-left:14px; padding-right:14px}
+.write{border:1px dashed var(--line2); border-radius:6px; min-height:74px; margin:.7em 0; background:var(--bg)}
+.map{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:4px 18px; margin:1.4em 0; font-size:15px}
+.map div{margin:.55em 0; color:var(--ink2)}
+.map b{color:var(--ink); font-weight:600}
+figure{margin:1.4em 0}
+figcaption{font-size:13.5px; color:var(--ink3); margin-top:.5em}
+svg{display:block; color:var(--ink)}
+.note{font-size:14px; color:var(--ink3); margin:.5em 0 1.4em}
+footer{margin-top:4em; padding-top:1.2em; border-top:1px solid var(--line2); font-size:13.5px; color:var(--ink3)}
+footer .id{color:var(--ink2); font-weight:600; margin-bottom:.5em}
+hr{border:0; border-top:1px solid var(--line); margin:2.4em 0}
+</style>
+</head>
+<body>
+<div class="bar"><b>AI Infra Day 17 / 28</b><span>阶段二 · 推理服务与 KV Cache</span><span class="sp">2026-09-03</span></div>
+<main>
+<h1>一条请求走进 vLLM，代码依次经过哪些文件</h1>
+<p class="sub">今天的裁判是源码本身：每一个论断后面跟着文件路径和行号</p>
+
+<h2>板块 0 · 温故 · 闭卷</h2>
+<p>三道题，分别来自昨天、三天前、七天前。先凭记忆答，答不出再展开。</p>
+
+<div class="card recall">
+<h4>第 1 题（Day 16 · 前缀缓存）</h4>
+<p>两条请求共享一段 100 个 token 的开头，块大小是 16。前缀缓存最多能替这第二条省下多少个 token 的计算？剩下的那几个去哪了？</p>
+<details><summary>看答案</summary>
+<p>能省 96 个，也就是 6 整块。</p>
+<p>100 除以 16 是 6 余 4。前 6 块每块都装满 16 个 token，两条请求的内容逐字节相同，算出来的 hash 也就相同，查表能对上。</p>
+<p>剩下 4 个 token 落在第 6 块里。那一块要凑满 16 个才会被算 hash，而后面那 12 个 token 两条请求各写各的，凑出来的内容不一样，这一块的 hash 就不一样。于是这 4 个 token 只能重算。</p>
+<p>这个零头在公共前缀不是块大小整数倍时一定存在，块开得越大零头越大。</p>
+<p>今天要接的是同一条链的另一端：这次"查一下缓存里有没有"的动作，在代码里究竟站在哪一步——是在调度器决定这一步给谁分 token 之前，还是之后。</p>
+</details>
+</div>
+
+<div class="card recall">
+<h4>第 2 题（Day 14 · 服务化与冷启动）</h4>
+<p>沙箱执行超时，标准做法是先发 SIGTERM、等一个宽限期、再发 SIGKILL。实测下来这个宽限期几乎全是白等。为什么？而且孙子进程没人单独去杀，它是怎么跟着一起没的？</p>
+<details><summary>看答案</summary>
+<p>白等的原因是信号的规矩：一个进程只会对它自己装了处理函数的信号做出反应。用户提交的代码不会装 SIGTERM 的处理函数，所以这一下发过去等于没发。宽限期取多久，它就在那儿待多久，状态一点不变。</p>
+<p>实测那条路径 520 毫秒里有 500 毫秒是宽限期，真正清空 cgroup 的是后面那一下 SIGKILL，用了不到 10 毫秒。</p>
+<p>孙子进程跟着没了，靠的是进程号命名空间的一条内核规则：这个命名空间里的 1 号进程一旦终止，内核会把命名空间里剩下的所有进程都用 SIGKILL 收走。所以杀 1 号就够了，不用自己去追进程树——前提是这个沙箱确实有自己的进程号命名空间。</p>
+<p>判断"杀干净了没有"，看的应该是 cgroup 里还剩几个任务，那是内核在数；容器状态是运行时自己记在文件里的东西。</p>
+</details>
+</div>
+
+<div class="card recall">
+<h4>第 3 题（Day 10 · 隔离谱系）</h4>
+<p>你想禁止沙箱里的代码打开文件，于是在 seccomp 名单里把 <code>open</code> 这个系统调用号禁掉了。跑一遍，程序照样把文件打开了。发生了什么？如果索性把能打开文件的号全禁掉，又会怎样？</p>
+<details><summary>看答案</summary>
+<p>名单挡的是号码，不是"打开文件"这件事。Linux 上打开文件有两个入口，老的 <code>open</code> 是 2 号，新的 <code>openat</code> 是 257 号，后者能干前者的一切。只禁 2 号，程序走 257 号照样进去。</p>
+<p>两个号一起禁，程序连 main 都到不了：动态链接器要装 libc 这类共享库，而装共享库就得打开文件，它在启动阶段就死了。这就是写名单最难的地方——禁少了不管用，禁多了起不来。</p>
+<p>还有一条更根本的限制：过滤器不能顺着指针去看内容，所以"只禁止打开 /etc/shadow"这种规则 seccomp 永远写不出来，它只能按号码一刀切。要按路径限制，得换一把锁。</p>
+</details>
+</div>
+
+<h2>板块 1 · 今日概览</h2>
+<div class="scroll">
+<table>
+<tr><th>项目</th><th>内容</th></tr>
+<tr><td>进度</td><td>Day 17 / 28 · 阶段二 · 推理服务与 KV Cache</td></tr>
+<tr><td>今日主题</td><td>vLLM 源码走读：一条请求从进门到吐出第一个字，代码依次经过哪些文件、每一步交给谁</td></tr>
+<tr><td>时间预算</td><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td>
+<p style="margin:.3em 0">模型那一侧的事：输入张量怎么摆、注意力算子长什么样、怎么把一串显卡调用录下来重放。今天这条路走到"把调度单交给执行器"就掉头，因为再往下就进了手写算子的地界，那不是这份工作要做的东西。</p>
+<p style="margin:.3em 0">调度策略本身。哪条请求该上车、token 预算怎么分、内存不够踢谁，Day 9 已经用一整天讲完了。今天只关心这些决定摆在代码的哪个位置、它前后各是谁。</p>
+<p style="margin:.3em 0">投机解码（先猜几个 token 再一起验证的那种优化）、多机并行、把 KV 往别的机器上搬的那套通道。它们在源码里都挂在同一条主路径上，但每一个都会把主线拉长一倍。</p>
+</td></tr>
+</table>
+</div>
+
+<h4>今天结束后你应该能做到这三件事</h4>
+<ul>
+<li>拿到一份 vLLM 源码，能在十分钟内找到"请求从这里进"和"token 从这里出"这两个位置，并说出中间隔着几个进程、几个队列。</li>
+<li>看到一个推理服务的延迟报告，能判断某一段耗时该去前端进程查还是去引擎进程查，因为你知道每一段代码住在哪一侧。</li>
+<li>说清楚为什么"设置了 stop 字符串的请求"会比"到达 EOS 的请求"多花一个来回才真正停下。</li>
+</ul>
+
+<div class="map">
+<div><b>第一部分 · 为什么这份代码住在两个进程里</b>　一个进程能不能装下？装不下的那件事是什么？</div>
+<div><b>第二部分 · 进门</b>　文本在哪一行变成 token id，那条过河的消息里装着什么，过河要花多少钱。</div>
+<div><b>第三部分 · 一步之内</b>　调度器眼里的一条请求长什么样，它交出去和收回来的两张单子各装什么。</div>
+<div><b>第四部分 · 出门</b>　数字怎么变回字，两种"停"分别在哪一侧判，整条路合起来是什么形状。</div>
+</div>
+<h2>板块 2 · 核心讲解</h2>
+<h3>第一部分 · 为什么这份代码住在两个进程里</h3>
+
+<h4>1. 你会怎么摆这份代码</h4>
+<p class="lead">如果让你从零写一个推理服务的骨架，你会把它摆成几个进程？</p>
+<p>你是后端工程师，最自然的答案是一个。一个进程里跑 FastAPI，收到请求就丢进一个队列，另起一个协程转引擎循环，算完把 token 塞回各自的响应流。Day 9 那个玩具服务就是这么写的，一百多行，跑得挺好。</p>
+<p>这个写法能撑到哪儿，Day 4 已经给过答案了。Python 里同一时刻只有一个线程能执行字节码，这条规矩叫全局解释器锁。HTTP 那一侧要做的事——解析请求头、分词、把生成的字拼成 JSON 再编码成字节——全是纯 Python 的活，全都要占着这把锁。而引擎那一侧每一步都要抢同一把锁去发起下一次计算。</p>
+<p>并发一上来，这两拨活儿开始互相踩。用户多打一个字，引擎就晚一点点开始下一步；引擎步一密，HTTP 那边的响应就开始积压。</p>
+<p>vLLM 的做法是把这两拨活儿放进两个操作系统进程，各自一把锁，互不干扰。今天这条路要走的，就是这两个进程之间的来回。</p>
+
+<h4>2. 今天的实验台</h4>
+<p>今天不跑 vLLM——它要显卡，这台机器没有。今天的裁判换成两样东西：一样是 vLLM 的源码本身，路径和行号都能指着看；另一样是四个小程序，它们在这台机器上量的是"两个进程之间那条消息"的实际成本，用的是和 vLLM 同样的两个库。</p>
+
+<h4>2.1 装置长什么样</h4>
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 880 545" width="880" height="545" role="img" aria-label="前端进程与引擎核心进程的结构图">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+<path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+</marker>
+</defs>
+<g fill="none" stroke="currentColor" stroke-width="1.5">
+<rect x="8" y="30" width="368" height="404" rx="10" opacity=".55"/>
+<rect x="504" y="30" width="368" height="404" rx="10" opacity=".55"/>
+</g>
+<g font-size="14" font-weight="600" fill="currentColor">
+<text x="24" y="52">前端进程</text>
+<text x="520" y="52">引擎核心进程</text>
+</g>
+<g font-size="11.5" fill="currentColor" opacity=".65">
+<text x="104" y="52">HTTP · 分词 · 解码</text>
+<text x="632" y="52">调度 · 内存 · 计算</text>
+</g>
+
+<g fill="none" stroke="currentColor" stroke-width="1.2">
+<rect x="24" y="66" width="336" height="46" rx="6"/>
+<rect x="24" y="126" width="336" height="96" rx="6" stroke-dasharray="4 3"/>
+<rect x="40" y="146" width="304" height="30" rx="5"/>
+<rect x="40" y="182" width="304" height="30" rx="5"/>
+<rect x="24" y="236" width="336" height="52" rx="6"/>
+<rect x="24" y="312" width="336" height="40" rx="6"/>
+</g>
+<g font-size="12.5" fill="currentColor">
+<text x="38" y="86">输入处理器（跑在线程池里）</text>
+<text x="38" y="103" font-size="11" opacity=".7">文本 → token id 列表</text>
+<text x="52" y="166">generate() 协程 · 每条请求一个</text>
+<text x="52" y="202">output_handler 协程 · 全局一个</text>
+<text x="38" y="256">输出处理器</text>
+<text x="38" y="274" font-size="11" opacity=".7">摊给各条请求 · 增量解码 · 判停止串</text>
+<text x="38" y="337">每条请求自己的输出队列</text>
+</g>
+<text x="34" y="140" font-size="10.5" fill="currentColor" opacity=".7">事件循环</text>
+
+<g fill="none" stroke="currentColor" stroke-width="1.2">
+<rect x="520" y="66" width="336" height="40" rx="6"/>
+<rect x="520" y="120" width="336" height="30" rx="6" stroke-dasharray="4 3"/>
+<rect x="520" y="164" width="336" height="130" rx="6"/>
+<rect x="536" y="196" width="304" height="28" rx="5"/>
+<rect x="536" y="230" width="304" height="28" rx="5"/>
+<rect x="536" y="262" width="304" height="26" rx="5"/>
+<rect x="520" y="308" width="336" height="30" rx="6" stroke-dasharray="4 3"/>
+<rect x="520" y="352" width="336" height="40" rx="6"/>
+</g>
+<g font-size="12.5" fill="currentColor">
+<text x="534" y="91">输入 socket 线程</text>
+<text x="534" y="140">input_queue（普通队列）</text>
+<text x="534" y="187" font-weight="600">忙循环（主线程）</text>
+<text x="548" y="215">调度器 schedule()</text>
+<text x="548" y="249">执行器 → 模型 → 采样</text>
+<text x="548" y="280">update_from_output()</text>
+<text x="534" y="328">output_queue（普通队列）</text>
+<text x="534" y="377">输出 socket 线程</text>
+</g>
+
+<g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ah)">
+<path d="M378,88 L500,88"/>
+<path d="M502,372 L462,372 L462,262 L378,262"/>
+<path d="M192,112 L192,140"/>
+<path d="M192,222 L192,232"/>
+<path d="M192,288 L192,308"/>
+<path d="M688,106 L688,116"/>
+<path d="M688,150 L688,160"/>
+<path d="M688,294 L688,304"/>
+<path d="M688,338 L688,348"/>
+</g>
+<g font-size="11" fill="currentColor" opacity=".75">
+<text x="404" y="80">进门</text>
+<text x="404" y="392">出门</text>
+<text x="386" y="176">msgpack</text>
+<text x="386" y="192">+ socket</text>
+</g>
+
+<g font-size="11.5" fill="currentColor" opacity=".62">
+<text x="10" y="472">P1 只读源码，不跑任何东西——第 3、8、14 节那三张表出自它</text>
+<text x="10" y="494">P2 和 P5 量两个进程之间那条消息：字节数、打包耗时、一来一回，以及出门那一段的分段</text>
+<text x="10" y="516">P3 在引擎那一侧提供"一步大概多久"的标尺　P4 量前端里"token id 变回文字"这一段</text>
+</g>
+</svg>
+</div>
+<figcaption>两个操作系统进程。左边这个装着 HTTP、分词和解码，右边这个装着调度、内存和计算。左边的三个虚线框是同一个事件循环里的协程，右边的两个虚线框是两个普通队列——socket 线程和忙循环靠它们交接。</figcaption>
+</figure>
+<p>右边那个进程从头到尾不碰一个字符。它收到的是一串整数，吐出去的也是一串整数。"字"这个东西只存在于左边。这一点后面会反复用到。</p>
+
+<h4>2.2 一条过河的消息里装着什么</h4>
+<p>请求进门时过河的那条消息，字段照 <code>vllm/v1/engine/__init__.py:107</code> 的定义摆。把它写成一行 JSON 是这样（真正上 socket 的是 msgpack 压出来的字节，不是这段文本；msgpack 是一种把对象压成紧凑字节串的格式，可以理解成二进制版的 JSON）：</p>
+<pre><code>["req-000000", [1000, 1001, 1002, ..., 2023], null,
+ {"temperature": 0.7, "top_p": 0.9, "max_tokens": 256, "stop": []},
+ null, 1756857600.123, null]</code></pre>
+<p>七个位置依次是：请求 id、prompt 的 token id 列表、多模态输入（图片、音频这类非文本的东西）、采样参数、池化参数（只有做向量化这类任务才用）、到达时刻、LoRA。中间那串整数就是分词的结果，例子里是 1024 个。这条消息在这台机器上压出来是 3156 字节。</p>
+<p>回程的消息更短，字段照 <code>vllm/v1/engine/__init__.py:196</code>：</p>
+<pre><code>[[["req-000000", [31337], null, null, null, null, null],
+  ["req-000001", [22981], null, null, null, null, null]], null]</code></pre>
+<p>每条请求两样东西：id，和这一步新采出来的 token id。同时在跑 32 条时，这条消息是 677 字节。</p>
+<h4>2.3 哪些是真的，哪些是假的</h4>
+<p>今天的数字分两类来源，各有各的适用范围。先把边界划清楚，后面每一节的结论都不会越过这条线。</p>
+<div class="scroll">
+<table>
+<tr><th>东西</th><th>真的部分</th><th>假的或简化掉的部分</th><th>所以今天不下什么结论</th></tr>
+<tr><td>源码</td><td>vLLM 仓库某个确定提交的全部文件。行号、函数长度、调用关系都是用 <code>ast</code> 从这份源码里读出来的，不是手抄的</td><td>没有跑起来。控制流是静态读出来的，不是运行时追踪</td><td>不下"运行时哪个分支走得多"的结论，只说代码摆在哪里</td></tr>
+<tr><td>消息的形状</td><td>字段个数、类型、顺序照源码定义摆；序列化库和 socket 库和 vLLM 用的是同两个</td><td>字段里填的是造出来的值。采样参数只写了四项，真实请求可能带几十项</td><td>不下"真实线上一条消息就是这么多字节"的结论，只比两种形状之间的倍数</td></tr>
+<tr><td>过河的耗时</td><td>两个真实的操作系统进程，走 Unix 域套接字，一来一回的墙上时钟</td><td>vLLM 的两条方向各用一个单向 socket，这里用的是一来一回的请求应答；引擎侧还有一个真实系统里存在的 IO 线程没有模拟</td><td>不下"vLLM 的端到端延迟是多少"的结论，只说这个量级和一步计算比是多少</td></tr>
+<tr><td>一步前向的耗时</td><td>真的做了 8 次 4096×4096 的矩阵乘法，权重真的有 512 MiB</td><td>不是模型。没有注意力，没有 KV cache，权重是随机数</td><td>不下任何关于模型、精度、加速器的结论。它只提供"一步大概多久"这一个量级</td></tr>
+<tr><td>解码那一段</td><td>字节片词表、窗口偏移的推进方式、遇到没凑齐的字节怎么办，都照源码的形状写</td><td>词表是自己按 utf-8 字节随机切出来的，不是真分词器的词表</td><td>不下"某个模型的解码开销是多少"的结论，只比两种写法的形状差异</td></tr>
+</table>
+</div>
+
+<h4>2.4 跟着一条消息走一遍</h4>
+<p>把"一步的结果从引擎进程回到前端、变成字、落进各条请求的队列"这一段拆成四节，每节记起止时刻。同时在跑 32 条，跑 600 次，取合计落在中位数的那一次。</p>
+<div class="scroll">
+<table>
+<tr><th>这一节做了什么</th><th>耗时 μs</th><th>累计 μs</th></tr>
+<tr><td>引擎侧把这一步的结果打包，送过 socket，前端收到</td><td>116.0</td><td>116.0</td></tr>
+<tr><td>前端把这串字节解回对象</td><td>6.3</td><td>122.2</td></tr>
+<tr><td>32 个 token id 各变成一个字</td><td>14.1</td><td>136.4</td></tr>
+<tr><td>32 个字分别放进各自请求的输出队列</td><td>5.0</td><td>141.4</td></tr>
+</table>
+</div>
+<p>四行加起来正好是 141.4，你可以自己验一遍。μs 读作微秒，一微秒是一百万分之一秒。</p>
+<p>第一行在不同次运行之间抖得厉害，几十微秒到一百四十微秒都出现过——它包含一次进程唤醒，而这台机器只有两个核，别的活儿一挤它就变。后面三行很稳，每次都落在同一个位置上。</p>
+<p>这四节合起来，就是一个引擎步的产出回到用户手上要走的全部路程——不含计算本身。计算那一段在同一台机器上是 125.9 毫秒，也就是 125900 微秒。两个数摆在一起是什么关系，第 6 节让你先猜一次。</p>
+<p>第一行和第 7 节那张表量的不是同一件事：那里来回送的是一段现成的字节，这里引擎侧每次都要重新打包一遍。两个数落在同一个量级上。</p>
+
+<h4>2.5 每个取值是从哪儿来的</h4>
+<p>下面每个取值都不是随手挑的。</p>
+<div class="scroll">
+<table>
+<tr><th>旋钮</th><th>取值</th><th>这个值是怎么定出来的</th><th>哪一节动它</th></tr>
+<tr><td>prompt 长度</td><td>1024 个 token</td><td>从 vLLM 的默认 token 预算倒推。<code>max_num_batched_tokens</code> 默认 2048（Day 9 引过），1024 正好是一步预算的一半——这样"一条新请求过河"和"一步能算多少"落在同一个量级上，比出来的比值才有意义</td><td>第 5、7 节</td></tr>
+<tr><td>同时在跑几条</td><td>1 / 8 / 32 / 128</td><td>上界 128 是源码里 <code>max_num_seqs</code> 的默认值（Day 9 引过），扫到这儿就到头了。中间三档每档乘四，够看出趋势又不至于点太密</td><td>第 7、10 节</td></tr>
+<tr><td>一块装几个 token</td><td>16</td><td>取自 <code>vllm/config/cache.py:80</code> 的默认值。1024 个 token 就是 64 块，这决定了全量单子里块表那一段有多长</td><td>第 10 节</td></tr>
+<tr><td>打包解包重复次数</td><td>2000 次</td><td>单次几微秒，两千次合计几毫秒。再少了会被计时器本身的分辨率干扰，再多了没有额外收益</td><td>第 7 节</td></tr>
+<tr><td>一来一回重复次数</td><td>每种尺寸 800 次</td><td>要报 P99，样本数至少得三位数。四种尺寸在同一个循环里轮着发，这样它们经历的机器状态一样，尺寸之间才可比</td><td>第 7 节</td></tr>
+<tr><td>权重规格</td><td>8 层 4096×4096 float32</td><td>Day 8 起一直用的同一副。合计 512 MiB，超过这台机器 33 MiB 的 L3，所以每一步都必须从内存里真的读一遍</td><td>第 7 节</td></tr>
+<tr><td>标尺的列数</td><td>32</td><td>和"同时在跑 32 条"对齐。一步 decode 每条序列出一个 token，32 条就是 32 列，两个数才能放进同一个句子</td><td>第 7 节</td></tr>
+<tr><td>解码的输出长度</td><td>256 / 1024 / 4096 个 token</td><td>每档乘四。4096 是一次长回答的量级，短的那档用来看两种写法在小规模上分不分得开</td><td>第 13 节</td></tr>
+</table>
+</div>
+<p>四个程序各管一摊，后面每张表都能追到具体哪一个。</p>
+<div class="scroll">
+<table>
+<tr><th>程序</th><th>它干什么</th><th>本页哪些表出自它</th></tr>
+<tr><td>P1 源码清点器</td><td>用 <code>ast</code> 解析源码，报出每个函数的文件、起止行、体长，并检查调用关系是否真的存在</td><td>第 3 节的站点表、第 8 节的状态表、第 14 节的合表</td></tr>
+<tr><td>P2 过河账台</td><td>照源码的字段摆出三种消息，量字节数、打包解包耗时、一来一回耗时</td><td>第 7 节的两张表、第 10 节的全量差量表</td></tr>
+<tr><td>P3 前向标尺</td><td>8 层权重过一遍，提供"一步大概多久"</td><td>第 7 节的标尺行</td></tr>
+<tr><td>P4 解码账台</td><td>整段重解和窗口解各跑一遍，另外演示一个汉字被切成三片时逐片解出来是什么</td><td>第 13 节的两张表</td></tr>
+<tr><td>P5 分段计时</td><td>把出门那一段拆成四节逐节计时</td><td>第 2.4 节那张表</td></tr>
+</table>
+</div>
+
+<h4>3. 两个进程，三个线程，和一句注释</h4>
+<p>第一部分开头说"一个进程装不下"，这话在源码里有一处非常直白的落点。引擎进程启动时会另起两个线程，注释写着它们为什么存在（<code>vllm/v1/engine/core.py:1111-1114</code>）：</p>
+<pre><code># Background Threads and Queues for IO. These enable us to
+# overlap ZMQ socket IO with GPU since they release the GIL,
+# and to overlap some serialization/deserialization with the
+# model forward pass.</code></pre>
+<p>翻成中文：这两个后台线程负责 socket 的收发，它们在等 socket 的时候会放开全局解释器锁，所以收发消息这件事可以和计算同时进行；顺带还能让打包解包和前向重叠起来。</p>
+<p>Day 4 讲过这条规矩的两面：一个线程在纯 Python 代码里跑的时候占着锁，别人干等；而它一旦进了等待 IO 或者调 C 库的状态，锁就放开了，别人可以跑。socket 的收发正好属于后者。<strong>这两个线程的存在，是为了让 socket 上的等待和引擎的计算同时发生</strong>，而不是为了并行地算什么。</p>
+<p>两个线程，加上跑忙循环的主线程，引擎进程里一共三个。线程之间不直接说话，靠两个普通队列交接：输入 socket 线程收到消息放进 <code>input_queue</code>，主线程从里面取；主线程算完把结果放进 <code>output_queue</code>，输出 socket 线程从里面取着发。这两个交接点在源码里各是一行（<code>core.py:1453</code> 和 <code>core.py:1833</code>）。</p>
+<p>主线程那个循环本身只有十二行（<code>core.py:1411-1422</code>）：</p>
+<pre><code>def run_busy_loop(self):
+    """Core busy loop of the EngineCore."""
+    while self._handle_shutdown():
+        # 1) Poll the input queue until there is work to do.
+        self._process_input_queue()      # 先把队列里堆着的新请求全收进来
+        self._maybe_publish_request_counts()
+        # 2) Step the engine core and return the outputs.
+        self._process_engine_step()      # 再走一个引擎步
+        self._maybe_publish_request_counts()
+    raise SystemExit</code></pre>
+<p>收信，走一步，回到开头。这个循环有个名字叫 <span class="term">忙循环（busy loop）</span>。Day 9 里那个"引擎步"就是第二行做的事，它在这里只是一次函数调用。</p>
+<p>把主路径上的十六个函数用 <code>ast</code> 抓出来，能看清这条路的形状。体长指的是从 <code>def</code> 那一行到函数末尾一共几行。</p>
+<div class="scroll">
+<table>
+<tr><th>住在哪</th><th>文件</th><th>函数</th><th>行号</th><th>体长</th></tr>
+<tr><td>前端</td><td>engine/async_llm.py</td><td>AsyncLLM.generate</td><td>618-731</td><td>114</td></tr>
+<tr><td>前端</td><td>engine/async_llm.py</td><td>AsyncLLM.add_request</td><td>341-485</td><td>145</td></tr>
+<tr><td>前端</td><td>engine/async_llm.py</td><td>AsyncLLM._add_request</td><td>487-507</td><td>21</td></tr>
+<tr><td>前端</td><td>engine/core.py</td><td>EngineCoreProc.process_input_sockets</td><td>1694-1795</td><td>102</td></tr>
+<tr><td>引擎</td><td>engine/core.py</td><td>EngineCoreProc.run_busy_loop</td><td>1411-1422</td><td>12</td></tr>
+<tr><td>引擎</td><td>engine/core.py</td><td>EngineCoreProc._process_input_queue</td><td>1437-1466</td><td>30</td></tr>
+<tr><td>引擎</td><td>engine/core.py</td><td>EngineCore.add_request</td><td>452-496</td><td>45</td></tr>
+<tr><td>引擎</td><td>engine/core.py</td><td>EngineCoreProc._process_engine_step</td><td>1468-1485</td><td>18</td></tr>
+<tr><td>引擎</td><td>engine/core.py</td><td>EngineCore.step</td><td>597-627</td><td>31</td></tr>
+<tr><td>引擎</td><td>core/sched/scheduler.py</td><td>Scheduler.schedule</td><td>509-1392</td><td>884</td></tr>
+<tr><td>引擎</td><td>core/kv_cache_manager.py</td><td>KVCacheManager.allocate_slots</td><td>343-564</td><td>222</td></tr>
+<tr><td>引擎</td><td>core/sched/scheduler.py</td><td>Scheduler.update_from_output</td><td>1810-2232</td><td>423</td></tr>
+<tr><td>引擎</td><td>engine/core.py</td><td>EngineCoreProc.process_output_sockets</td><td>1797-1864</td><td>68</td></tr>
+<tr><td>前端</td><td>engine/async_llm.py</td><td>AsyncLLM._run_output_handler</td><td>733-815</td><td>83</td></tr>
+<tr><td>前端</td><td>engine/output_processor.py</td><td>OutputProcessor.process_outputs</td><td>621-750</td><td>130</td></tr>
+<tr><td>前端</td><td>engine/detokenizer.py</td><td>BaseIncrementalDetokenizer.update</td><td>96-143</td><td>48</td></tr>
+</table>
+</div>
+<p>体长那一列有一处特别刺眼：<code>Scheduler.schedule</code> 一个函数 884 行，而调用它的 <code>EngineCore.step</code> 只有 31 行。整条路上一半以上的代码量集中在这一个函数里。第三部分会走进去看它在这 884 行里干了什么。</p>
+<p>这张表还有个用法：报事故的时候，"某段耗时异常"总要归到某一侧。左边四行是前端进程的，中间八行是引擎进程的——归错了侧，去查的日志、去看的剖析器都是错的。</p>
+<h3>第二部分 · 进门：文本怎么变成调度器里的一条记录</h3>
+
+<h4>4. 文本在哪一行变成 token id</h4>
+<p>用户发来的是一串字。引擎那一侧只认整数。这个转换发生在前端进程，具体是 <code>vllm/v1/engine/async_llm.py:435</code> 这一行：</p>
+<pre><code>request = await self.input_processor.process_inputs_async(
+    request_id, prompt, params, ...)</code></pre>
+<p>把文本切成 token 这件事是纯 Python 加 C 扩展的活，几十毫秒起步，而且它是同步的。如果直接在事件循环里做，这几十毫秒里整个前端一个请求都收不了。所以它没有直接调，调的是一个带 <code>_async</code> 后缀的版本。这个版本是这样造出来的（<code>vllm/v1/engine/input_processor.py:73</code>）：</p>
+<pre><code># Raw-prompt preprocessing (tokenization and multimodal processing)
+# is blocking, so async callers should run it on the renderer's
+# thread pool to keep their event loop responsive.
+self.process_inputs_async = make_async(
+    self.process_inputs, executor=self.renderer._executor
+)</code></pre>
+<p>而 <code>make_async</code> 里干活的就一行（<code>vllm/utils/async_utils.py:43</code>）：</p>
+<pre><code>return loop.run_in_executor(executor=executor, func=p_func)</code></pre>
+<p>这正是 Day 4 那个动作。当时那一天的结论是：事件循环里出现任何一段长时间占着解释器的纯计算，整个服务的响应就跟着停一下；解法是把它甩进线程池。分词就是这样一段。你在 Day 4 手写的那个修法，和这里是同一行代码。</p>
+<p>做完这一步，一条请求就从"一段文字加一些参数"变成了"一串整数加一些参数"。后面它再也不会变回文字，直到出门那一刻。</p>
+
+<h4>5. 过河的那条消息里装着什么</h4>
+<p>转换完的请求要送到另一个进程去。交接点在 <code>async_llm.py:501-504</code>，两行，先后顺序有讲究：</p>
+<pre><code># Register locally before the first await so concurrent tasks see this request.
+self.output_processor.add_request(request, prompt, parent_req, index, queue)
+
+# Add the EngineCoreRequest to EngineCore (separate process).
+await self.engine_core.add_request_async(request)</code></pre>
+<p>先在本进程的输出处理器里登记，再把请求送过河。注释解释了为什么是这个顺序：登记这一步没有 <code>await</code>，中间不会切走；如果反过来先送过河，那么在 <code>await</code> 挂起的这段时间里，引擎可能已经把第一个 token 算出来送回来了，而前端这边还没有这条请求的登记，回来的东西无处安放。</p>
+<p>Day 5 讲过挂起的协程：一个 <code>await</code> 就是一个可以被切走的点。这两行的顺序就是在数这些点。</p>
+<p>送过河的这条消息叫 <code>EngineCoreRequest</code>，形状 2.2 节已经摆过。它经过的路是：前端把它 <span class="term">打包（serialize）</span> 成 msgpack 字节 → 走 socket → 引擎进程的输入 socket 线程收到并 <span class="term">解包（deserialize）</span> → 放进 <code>input_queue</code> → 主线程从队列里取出来，调 <code>EngineCore.add_request</code>（<code>core.py:452</code>），最后一行是把它交给调度器。</p>
+<p>从这一刻起，这条请求在引擎里就是一条排队的记录了。</p>
+
+<h4>6. 这笔账，你先估一遍</h4>
+<p>这个过河的动作，一条请求进门时发生一次，之后每一个引擎步的结果回来时都要再发生一次。它到底要花多少钱，写下来再往下看。</p>
+<div class="card pred">
+<span class="tag">预测 · 先写下来</span>
+<p><b>问题一</b>：同时在跑 32 条时，一步的结果那条回程消息是 677 字节。把它在两个进程之间送一个来回，中位数大约是多少？给个量级：几微秒、几十微秒、几百微秒，还是几毫秒。</p>
+<div class="write"></div>
+<p><b>问题二</b>：把同时在跑的条数从 1 加到 128，消息从 24 字节涨到 2693 字节，涨了一百一十二倍。那个"一来一回"的时间大约会涨多少倍？</p>
+<div class="write"></div>
+<p><b>问题三</b>：这台机器上一步 decode 是 125.9 毫秒。上面那个来回占一步的多少？写一个百分比或者千分比。</p>
+<div class="write"></div>
+<p>提示：2.4 节那张表已经把答案的一半摆出来了，但它只量了一种尺寸。问题二问的是这个数怎么随尺寸变。</p>
+</div>
+
+<h4>7. 揭晓：一步里有千分之一花在过河上</h4>
+<p>先看回程消息这一组。四种并发条数，字节数、打包耗时、解包耗时，以及一来一回的三个百分位。</p>
+<div class="scroll">
+<table>
+<tr><th>同时在跑</th><th>消息字节</th><th>打包 μs</th><th>解包 μs</th><th>一来一回 P50 μs</th><th>P90 μs</th><th>P99 μs</th></tr>
+<tr><td>1 条</td><td>24</td><td>0.13</td><td>0.27</td><td>129.2</td><td>161.3</td><td>204.5</td></tr>
+<tr><td>8 条</td><td>171</td><td>0.54</td><td>1.20</td><td>129.9</td><td>159.1</td><td>204.5</td></tr>
+<tr><td>32 条</td><td>677</td><td>1.77</td><td>4.44</td><td>131.1</td><td>161.8</td><td>245.2</td></tr>
+<tr><td>128 条</td><td>2693</td><td>6.36</td><td>18.49</td><td>133.9</td><td>161.5</td><td>203.4</td></tr>
+</table>
+</div>
+<p>三件事从这张表里读出来。</p>
+<p>第一，一个来回是一百三十微秒上下。和一步 decode 的 125.9 毫秒比，131.1 微秒占千分之一。问题三的答案是千分之一，不是百分之几。</p>
+<p>第二，打包和解包比过河本身便宜得多。32 条那一行，打包加解包合计 6.21 微秒，不到一个来回的百分之五。所以"消息格式选得省不省"这件事，在这个尺度上几乎不影响什么。</p>
+<p>第三，也是最容易猜错的一条：<strong>消息大了一百一十二倍，一个来回只多了不到百分之四</strong>。</p>
+<p>从 24 字节到 2693 字节，P50 从 129.2 微秒走到 133.9 微秒。这说明在这个尺寸区间里，过河的成本几乎全部是固定开销——两次系统调用、一次进程唤醒、一次调度——而不是按字节收费。字节那一部分要等消息大到几十上百 KB 才开始显形，第 10 节会碰到那个尺度。</p>
+<p>标尺那一侧的数是这么来的：8 层 4096×4096 的 float32 权重过一遍，列数取 32。</p>
+<div class="scroll">
+<table>
+<tr><th>做了什么</th><th>列数</th><th>跑几次</th><th>中位数 ms</th><th>最快 ms</th><th>最慢 ms</th></tr>
+<tr><td>一步 decode 的替身</td><td>32</td><td>12</td><td>125.9</td><td>124.3</td><td>132.8</td></tr>
+<tr><td>一次 prefill 的替身</td><td>1024</td><td>5</td><td>2304.4</td><td>2267.7</td><td>2359.2</td></tr>
+</table>
+</div>
+<p>第二行顺便回答了进门那条消息的账：一条 1024 token 的请求过河一次，而这条请求的 prefill 在这台机器上要两秒三。过河那一下在这个量级面前基本不存在。</p>
+<div class="card key">
+<span class="tag">关键结论</span>
+<p>把一个 Python 服务拆成两个进程，代价不是"多了一次序列化"，而是"每次交接多一次固定的进程往返"。这笔固定开销跟消息大小几乎无关，跟交接的频率完全相关。</p>
+<p>所以拆进程这个决定的正确问法不是"消息有多大"，而是"多久要交接一次"。vLLM 每个引擎步交接一次，这台机器上一步一百二十多毫秒，交接一百三十微秒，比例是千分之一，划得来。如果改成每个 token 都单独交接一次，账就完全不同了。</p>
+</div>
+<p>过河的钱算清楚了，接下来是过河之后的事：一条请求进了调度器，它在那 884 行里是什么身份。</p>
+<h3>第三部分 · 一步之内，三方各交出什么</h3>
+
+<h4>8. 请求的身份证：一个枚举，和一次比大小</h4>
+<p class="lead">一条请求在引擎眼里是什么？</p>
+<p>是一个对象，上面挂着 token id 列表、算到第几个了、块表在哪儿，以及一个状态。状态这个东西定义在 <code>vllm/v1/request.py:364</code>，是一个整数枚举，十二个取值，顺序有意义：</p>
+<div class="scroll">
+<table>
+<tr><th>序号</th><th>状态</th><th>它表示什么</th><th>算不算结束</th></tr>
+<tr><td>1</td><td>WAITING</td><td>在等待队列里，还没被调度过或者刚被踢回来</td><td>否</td></tr>
+<tr><td>2</td><td>WAITING_FOR_STRUCTURED_OUTPUT_GRAMMAR</td><td>要求模型必须按某种格式输出时，得先把格式编译成一份规则，它在等这个</td><td>否</td></tr>
+<tr><td>3</td><td>WAITING_FOR_REMOTE_KVS</td><td>在等别处的 KV 搬过来（Day 16 那条阶梯的上一级）</td><td>否</td></tr>
+<tr><td>4</td><td>WAITING_FOR_STREAMING_REQ</td><td>在等流式输入的下一段</td><td>否</td></tr>
+<tr><td>5</td><td>RUNNING</td><td>在跑</td><td>否</td></tr>
+<tr><td>6</td><td>PREEMPTED</td><td>被抢占了，进度清零等着重来（Day 9 讲的那个动作）</td><td>否</td></tr>
+<tr><td>7</td><td>FINISHED_STOPPED</td><td>正常停：吐出了 EOS，或者撞上停止条件</td><td>是</td></tr>
+<tr><td>8</td><td>FINISHED_LENGTH_CAPPED</td><td>到长度上限了</td><td>是</td></tr>
+<tr><td>9</td><td>FINISHED_ABORTED</td><td>被取消了</td><td>是</td></tr>
+<tr><td>10</td><td>FINISHED_IGNORED</td><td>prompt 就超了上下文上限，压根没算</td><td>是</td></tr>
+<tr><td>11</td><td>FINISHED_ERROR</td><td>出错了</td><td>是</td></tr>
+<tr><td>12</td><td>FINISHED_REPETITION</td><td>检测到重复，主动掐掉</td><td>是</td></tr>
+</table>
+</div>
+<p>最后那一列不是查表查出来的，是算出来的。判断一条请求有没有结束，源码里是一次比大小（<code>request.py:387</code>）：</p>
+<pre><code>@staticmethod
+def is_finished(status: "RequestStatus") -> bool:
+    return status > RequestStatus.PREEMPTED</code></pre>
+<p>PREEMPTED 的序号是 6，所以 7 到 12 全部算结束。枚举定义里还专门留了一行注释盯着这件事：<code>Note: anything after PREEMPTED will be considered as a finished status</code>——排在 PREEMPTED 后面的都算结束。这意味着往这个枚举里加取值必须看位置，加错了地方，一条还在跑的请求会被当成已经结束。</p>
+<p>这个写法值得记一下，因为它是一类常见做法：把语义编进枚举的顺序里，换来的是判断变成一次整数比较。代价是这个顺序从此不能随便动，而编译器不会替你检查。</p>
+
+<h4>9. 查前缀这个动作站在哪</h4>
+<p>Day 16 留了一个问题：查最长命中前缀这件事，是在调度器决定这一步给谁分 token 之前，还是之后？</p>
+<p>答案在 <code>Scheduler.schedule</code> 这 884 行里。它的顺序是固定的三段：</p>
+<ul>
+<li><code>scheduler.py:558</code>　<code># First, schedule the RUNNING requests.</code>　先给正在跑的续上</li>
+<li><code>scheduler.py:782</code>　<code># Next, schedule the WAITING requests.</code>　剩下的 token 预算才轮到等待队列</li>
+<li><code>scheduler.py:1343</code>　把这一步的决定装成一张单子交出去</li>
+</ul>
+<p>查前缀在第二段里面，<code>scheduler.py:845-853</code>：</p>
+<pre><code># Get already-cached tokens.
+if request.num_computed_tokens == 0:      # 只在这条请求第一次被考虑时查
+    did_prefix_cache_lookup = True
+    (
+        new_computed_blocks,
+        num_new_local_computed_tokens,
+        request.shared_prefix_boundary,
+        hit_diverged,
+    ) = self._get_local_prefix_cache_hit(request)</code></pre>
+<p>这段代码往下走两百多行，才到向内存要块那一步（<code>scheduler.py:1085</code>，调的是 Day 15 讲的 <code>allocate_slots</code>）。所以顺序是：先查缓存里有多少现成的，再按"还差多少"去要块。</p>
+<p>这个位置说明三件事。</p>
+<p>第一，查前缀发生在调度决定的<em>中间</em>，不是之前也不是之后。正在跑的那些请求已经先把 token 预算分掉了，等待队列的请求才轮到查缓存。所以缓存命中率高的请求并不会因此插队——它只是在轮到自己的时候少要一些块。</p>
+<p>第二，那个 <code>if request.num_computed_tokens == 0</code> 说明查一次就够了。一条请求被分块预填充切成好几步慢慢算，只有第一步会查缓存，后面几步不会重查。</p>
+<p>第三，命中的结果直接变成 <code>allocate_slots</code> 的一个入参，而不是走另一条路。这就是 Day 15 和 Day 16 那两天在代码里合流的地方：块表这个东西既是"内存怎么分"的产物，也是"哪一段不用算"的载体，同一个数据结构管两件事。</p>
+
+<h4>10. 发出去的那张单子：新人发全量，老人发差量</h4>
+<p>调度器最后交出来的东西叫 <code>SchedulerOutput</code>，装的是这一步的全部决定。它头上两个字段和它们的注释，把一个重要的设计写得很直白（<code>vllm/v1/core/sched/output.py:220-227</code>）：</p>
+<pre><code># list of the requests that are scheduled for the first time.
+# We cache the request's data in each worker process, so that we don't
+# need to re-send it every scheduling step.
+scheduled_new_reqs: list[NewRequestData]
+# list of the requests that have been scheduled before.
+# Since the request's data is already cached in the worker processes,
+# we only send the diff to minimize the communication cost.
+scheduled_cached_reqs: CachedRequestData</code></pre>
+<p>两个列表。第一次被调度的请求进第一个，带整份数据：prompt 的全部 token id、整张块表、采样参数。之前已经被调度过的进第二个，只带这一步的变化：新添的块号、算到第几个 token 了。</p>
+<p>为什么值得这么分，把两种形状的字节数摆出来就清楚了。prompt 1024 个 token，块大小 16 所以块表 64 项，一步 decode 最多新添一块。</p>
+<div class="scroll">
+<table>
+<tr><th>同时在跑</th><th>全量单子字节</th><th>差量单子字节</th><th>倍数</th><th>全量打包 μs</th><th>差量打包 μs</th></tr>
+<tr><td>1 条</td><td>3182</td><td>27</td><td>117.9</td><td>4.03</td><td>0.15</td></tr>
+<tr><td>8 条</td><td>25449</td><td>160</td><td>159.1</td><td>28.49</td><td>0.49</td></tr>
+<tr><td>32 条</td><td>101795</td><td>626</td><td>162.6</td><td>120.14</td><td>1.56</td></tr>
+<tr><td>128 条</td><td>407171</td><td>2450</td><td>166.2</td><td>475.57</td><td>5.49</td></tr>
+</table>
+</div>
+<p>倍数那一列稳定在一百六十上下，而且随并发条数变大还略往上走。原因是全量单子里最大的一块是 prompt 的 token id 列表，它的长度只跟 prompt 有关，跟这一步算了几个 token 没有任何关系——一条 1024 token 的请求已经算到第 900 个了，每步还要把这 1024 个数原样再发一遍。<strong>新人发全量，老人发差量</strong>，省掉的就是这个。</p>
+<p>看最后两列的绝对值：128 条时全量单子光打包就要 476 微秒，而差量是 5.5 微秒。第 7 节说过，一百多微秒的量级在一步 125.9 毫秒面前是千分之一；476 微秒也还在千分之四。所以在这台机器上，就算写成每步都发全量，也不至于要命。</p>
+<p>但这个比例是"一步多久"的函数。一步越短，同样这笔固定开销占的比例越大。这一点留成第 3 节动手任务的加分题，那里有个具体的算法。</p>
+
+<h4>11. 收回来的那张单子：只有数字，没有字</h4>
+<p><code>EngineCore.step</code> 那三十一行是这条路的中枢，主干只有三句（<code>core.py:608, 609, 622</code>）：</p>
+<pre><code>scheduler_output = self.scheduler.schedule(self._should_throttle_prefills())
+future = self.model_executor.execute_model(scheduler_output, non_block=True)
+...
+engine_core_outputs = self.scheduler.update_from_output(
+    scheduler_output, model_output
+)</code></pre>
+<p>调度，执行，回收。中间那句把单子交给 <span class="term">执行器（Executor）</span>，往下就是模型那一侧，今天到这儿掉头。</p>
+<p>值得看的是执行器交回来的东西。它叫 <code>ModelRunnerOutput</code>，核心字段只有一个（<code>vllm/v1/outputs.py:345</code>）：</p>
+<pre><code># num_reqs x num_generated_tokens
+sampled_token_ids: list[list[int]] = field(default_factory=list)</code></pre>
+<p>每条请求一个整数列表，装着这一步新采出来的 token id。通常一条一个；如果开了"先猜几个再一起验证"那类优化，可能一次好几个。除此之外是一些可选的东西——每个 token 的概率信息、向量化任务的输出、以及把 KV 往别处搬那套通道的状态。</p>
+<p>整份输出里没有任何字符串形式的生成内容。模型那一侧不知道自己生成的是"你"还是"好"，它只知道是 31337 号还是 22981 号。</p>
+<p>回收这一步做的事，落到每条请求上就是这么几行（<code>scheduler.py:2278</code>）：</p>
+<pre><code>for num_new, output_token_id in enumerate(new_token_ids, 1):
+    request.append_output_token_ids(output_token_id)   # 新 token 挂到这条请求上
+
+    # Check for stop and update request state.
+    # This must be called before we make the EngineCoreOutput.
+    stopped = check_stop(request, self.max_model_len)  # 该停了吗
+    if stopped:
+        del new_token_ids[num_new:]                    # 停了就把后面多出来的截掉
+        break</code></pre>
+<p>token 挂上去，问一句该不该停，该停就把这一步多算的截掉。这个 <code>check_stop</code> 就是下一节的主角。</p>
+<h3>第四部分 · 出门：数字怎么变回字</h3>
+
+<h4>12. 两种停：一种在引擎里判，一种在前端判</h4>
+<p>上一节那个 <code>check_stop</code> 定义在 <code>vllm/v1/core/sched/utils.py:94</code>，它检查的东西很具体：</p>
+<pre><code>last_token_id = request.output_token_ids[-1]
+if last_token_id == sampling_params.eos_token_id:       # 吐出了结束符
+    request.status = RequestStatus.FINISHED_STOPPED
+    return True
+
+if last_token_id in (sampling_params.stop_token_ids or ()):   # 撞上指定的停止 token
+    request.status = RequestStatus.FINISHED_STOPPED
+    request.stop_reason = last_token_id
+    return True
+
+if (
+    request.num_tokens >= max_model_len                  # 到上下文上限
+    or request.num_output_tokens >= request.max_tokens   # 到这条请求自己的长度上限
+):
+    request.status = RequestStatus.FINISHED_LENGTH_CAPPED
+    return True</code></pre>
+<p>三种情况，判据全是整数：某个 token id 等不等于结束符、在不在停止列表里、数量到没到上限。全部能在引擎进程里当场判完。</p>
+<p>但用户还能提另一种要求。采样参数里有个 <code>stop</code> 字段，装的是一串文本，比如 <code>["\n\n", "答："]</code>——看到这几个字就停。这个东西叫 <span class="term">停止串（stop string）</span>。</p>
+<p>引擎进程判不了它，因为引擎进程手上只有整数。而且这件事不是"把 token id 翻译一下"就能解决的：一个停止串可能横跨两个 token，也可能只占某个 token 的后半截，只有拼成文字之后才能找。</p>
+<p>所以停止串的判定发生在前端。<code>output_processor.py:695</code> 拿到解码出来的文字之后顺手查一遍，命中就把这条请求标记成结束。然后紧接着一段（<code>output_processor.py:735-738</code>）：</p>
+<pre><code>self._finish_request(req_state)
+if not engine_core_output.finished:
+    # If req not finished in EngineCore, but Detokenizer
+    # detected stop string, abort needed in EngineCore.
+    reqs_to_abort.append(req_id)</code></pre>
+<p>翻译过来：引擎那边还不知道这条请求该停了，得专门发一条取消消息回去。这条消息由 <code>async_llm.py:795</code> 送出。</p>
+<p>于是有了一个可以直接说给别人听的事实：<strong>token id 的停在引擎里判，字符串的停在前端判</strong>，后者比前者多花一个来回。在这个来回结束之前，引擎会照常再算至少一步——那一步的结果会被丢掉。</p>
+<p>这不是设计缺陷，是"引擎不碰文字"这个决定的必然代价。要让引擎自己判停止串，就得把分词器搬进引擎进程，整套隔离也就没了。</p>
+
+<h4>13. 为什么不能每来一个 token 就整段重解</h4>
+<p class="lead">把 token id 变回文字，最直接的写法是什么？</p>
+<p>把从头到现在所有的 token id 一起丢给分词器，让它解出完整的一段文字，然后减掉上一次已经吐出去的部分。正确，而且好写。</p>
+<p>问题是每一步都要重解一遍越来越长的序列。第 4096 步要解 4096 个 token，前面 4095 个上一步刚解过。总的开销是长度的平方。</p>
+<p>vLLM 的做法是只解一个窗口。它维护两个下标，一个叫 <code>prefix_offset</code>，一个叫 <code>read_offset</code>，每次只解 <code>[prefix_offset, 末尾]</code> 这一小段，再减掉 <code>[prefix_offset, read_offset]</code> 那一段解出来的文字，剩下的就是这一步新增的字。这个做法叫 <span class="term">增量解码（incremental detokenization）</span>，那两个下标是它的 <span class="term">解码窗口（prefix_offset / read_offset）</span>。</p>
+<p>两种写法在同一串 token 上各跑一遍，词表是按 utf-8 字节随机切出来的字节片词表。</p>
+<div class="scroll">
+<table>
+<tr><th>输出多少个 token</th><th>整段重解 ms</th><th>只解窗口 ms</th><th>倍数</th></tr>
+<tr><td>256</td><td>1.9</td><td>0.5</td><td>3.6</td></tr>
+<tr><td>1024</td><td>30.7</td><td>2.0</td><td>15.6</td></tr>
+<tr><td>4096</td><td>476.4</td><td>7.8</td><td>61.3</td></tr>
+</table>
+</div>
+<p>长度每翻两番，整段重解的耗时翻四番多（1.9 → 30.7 → 476.4），窗口解法基本是线性（0.5 → 2.0 → 7.8）。到 4096 个 token 时差了六十一倍。一次长回答就在这个量级上。</p>
+<p>那为什么不干脆"每个 token 各自解成一小段字，拼起来"？因为一个字可能被切在两个 token 中间。用 utf-8 演示最直观：一个汉字占三个字节，如果这三个字节分在三个 token 里，前两步解出来是这样。</p>
+<div class="scroll">
+<table>
+<tr><th>已经收到几个字节</th><th>解出来是什么</th><th>是不是替换符</th></tr>
+<tr><td>1</td><td>�</td><td>是</td></tr>
+<tr><td>2</td><td>�</td><td>是</td></tr>
+<tr><td>3</td><td>调</td><td>否</td></tr>
+</table>
+</div>
+<p>那个 <code>�</code> 叫 <span class="term">替换符（replacement character，U+FFFD）</span>，是解码器遇到凑不成一个完整字符的字节时吐出来的占位符。源码里专门有一行盯着它（<code>vllm/tokenizers/detokenizer_utils.py:260</code>）：</p>
+<pre><code>if len(new_text) &lt;= len(prefix_text) or new_text.endswith("�"):
+    # utf-8 char at the end means it's a potential unfinished byte sequence
+    # from byte fallback tokenization.
+    return new_tokens, "", prefix_offset, read_offset</code></pre>
+<p>解出来的东西以替换符结尾，就返回空字符串，而且两个下标原样退回去——这一步什么都不吐，下一步连着这几个字节一起再试。<strong>窗口解法从不吐出一个还没凑齐的字</strong>。</p>
+<p>这带来一个实测能看见的差别。上面那张表里，256 个 token 那一档两种写法解出来的文字并不一样：那串字节正好停在一个汉字的中间，整段重解在末尾吐了一个 <code>�</code>，窗口解法把它压住没吐。1024 和 4096 那两档正好停在字的边界上，两种写法结果完全相同。</p>
+<p>所以流式接口上偶尔看到一个 <code>�</code>，多半不是模型出了问题，是某一层解码没做这个检查。</p>
+<div class="card key">
+<span class="tag">关键结论</span>
+<p>"引擎只认整数，文字只存在于前端"这一条决定，一路决定了后面三件事：停止串必须在前端判并且要多发一条取消消息回去；解码必须做成增量的，否则开销是长度的平方；而增量解码又必须处理"字节还没凑齐"这个状态，于是有了那个替换符检查。</p>
+<p>三件事看起来互不相干，其实是同一个决定的三个分支。</p>
+</div>
+
+<h4>14. 把整条路合起来看</h4>
+<p>十六个站点按顺序排一遍，就是一条请求的完整旅程。第一列是它住在哪一侧。</p>
+<div class="scroll">
+<table>
+<tr><th>#</th><th>住在哪</th><th>发生了什么</th><th>源码位置</th></tr>
+<tr><td>1</td><td>前端</td><td>HTTP 层收到请求，起一个 <code>generate()</code> 协程</td><td>async_llm.py:618</td></tr>
+<tr><td>2</td><td>前端 · 线程池</td><td>文本切成 token id，不占事件循环</td><td>async_llm.py:435</td></tr>
+<tr><td>3</td><td>前端</td><td>先在输出处理器登记，再送过河</td><td>async_llm.py:501-504</td></tr>
+<tr><td>4</td><td>引擎 · IO 线程</td><td>收到字节，解包，放进 <code>input_queue</code></td><td>core.py:1694</td></tr>
+<tr><td>5</td><td>引擎 · 主线程</td><td>忙循环取出请求，交给调度器</td><td>core.py:1437 / 452</td></tr>
+<tr><td>6</td><td>引擎 · 主线程</td><td>先给正在跑的分 token 预算</td><td>scheduler.py:558</td></tr>
+<tr><td>7</td><td>引擎 · 主线程</td><td>轮到等待队列，查一次前缀缓存</td><td>scheduler.py:845</td></tr>
+<tr><td>8</td><td>引擎 · 主线程</td><td>按还差多少去要块</td><td>scheduler.py:1085</td></tr>
+<tr><td>9</td><td>引擎 · 主线程</td><td>装成一张单子：新人全量，老人差量</td><td>scheduler.py:1343</td></tr>
+<tr><td>10</td><td>引擎 → 模型</td><td>单子交给执行器，拿回一批 token id</td><td>core.py:609</td></tr>
+<tr><td>11</td><td>引擎 · 主线程</td><td>token 挂到各条请求上，判 token 级的停止</td><td>scheduler.py:2278</td></tr>
+<tr><td>12</td><td>引擎 · IO 线程</td><td>结果打包，从 <code>output_queue</code> 发出</td><td>core.py:1797</td></tr>
+<tr><td>13</td><td>前端</td><td><code>output_handler</code> 收到，按每批 128 条切开处理</td><td>async_llm.py:758</td></tr>
+<tr><td>14</td><td>前端</td><td>摊给各条请求，增量解码成文字</td><td>output_processor.py:695</td></tr>
+<tr><td>15</td><td>前端</td><td>命中停止串就发一条取消回引擎</td><td>async_llm.py:795</td></tr>
+<tr><td>16</td><td>前端</td><td>文字放进这条请求自己的队列，<code>generate()</code> 取走并交给调用方</td><td>async_llm.py:675</td></tr>
+</table>
+</div>
+<p>第 13 行那个"每批 128 条"来自一个环境变量 <code>VLLM_V1_OUTPUT_PROC_CHUNK_SIZE</code>，默认 128（<code>vllm/envs.py:168</code>）。前端每处理完 128 条就主动让出一次事件循环，好让别的协程有机会跑。这是 Day 4 那条规矩的又一次应用：一段纯 Python 的循环如果一次跑太久，整个前端就卡在那儿。</p>
+<p>看第二列的分布：<strong>这条路上唯一带着文字的两段，都在前端进程里</strong>——第 2 行把文字变成整数，第 14 行把整数变回文字。中间的十一步全部在整数上进行。这就是那条分界线的实际位置。</p>
+<h2>板块 3 · 动手任务</h2>
+<p>两个任务，约两小时。任务 A 把今天这套东西在你自己机器上跑一遍，任务 B 把这套读法用到你手上的代码上。</p>
+
+<h3>任务 A（必做，约 70 分钟）· 自己把这条路走一遍</h3>
+<h4>第 1 步：拉源码，对齐提交</h4>
+<p>行号会随版本漂。要让本页每一条引用都对得上，先切到同一个提交：</p>
+<pre><code>git clone --filter=blob:none https://github.com/vllm-project/vllm.git ~/vllm
+cd ~/vllm && git checkout 80389cf
+# 随手验一条：这一行应该正好是 "# Get already-cached tokens."
+sed -n '845p' vllm/v1/core/sched/scheduler.py</code></pre>
+<p>如果这一行对不上，说明提交没切对，后面所有行号都会错位。别往下走，先把这一步弄对。</p>
+
+<h4>第 2 步：把清点器跑出来</h4>
+<p>这段程序只读源码，不装 vLLM，不需要显卡。它做两件事：报出主路径上每个函数的位置和长度；用 <code>ast</code> 检查"某个函数里确实调用了某个方法"这条边是否存在。第二件事很重要——它让你不必相信本页的任何一句话，你可以自己验。</p>
+<pre><code>"""P1 · 源码路径静态清点器　用法: python3 p1_trace.py ~/vllm"""
+import ast, os, sys
+
+ROOT = sys.argv[1] if len(sys.argv) &gt; 1 else "/tmp/vllm"
+
+PATH = [   # (住在哪, 文件简称, 类名, 函数名)
+    ("前端", "async_llm.py",       "AsyncLLM",        "generate"),
+    ("前端", "async_llm.py",       "AsyncLLM",        "add_request"),
+    ("前端", "async_llm.py",       "AsyncLLM",        "_add_request"),
+    ("前端", "core.py",            "EngineCoreProc",  "process_input_sockets"),
+    ("引擎", "core.py",            "EngineCoreProc",  "run_busy_loop"),
+    ("引擎", "core.py",            "EngineCoreProc",  "_process_input_queue"),
+    ("引擎", "core.py",            "EngineCore",      "add_request"),
+    ("引擎", "core.py",            "EngineCoreProc",  "_process_engine_step"),
+    ("引擎", "core.py",            "EngineCore",      "step"),
+    ("引擎", "scheduler.py",       "Scheduler",       "schedule"),
+    ("引擎", "kv_cache_manager.py","KVCacheManager",  "allocate_slots"),
+    ("引擎", "scheduler.py",       "Scheduler",       "update_from_output"),
+    ("引擎", "core.py",            "EngineCoreProc",  "process_output_sockets"),
+    ("前端", "async_llm.py",       "AsyncLLM",        "_run_output_handler"),
+    ("前端", "output_processor.py","OutputProcessor", "process_outputs"),
+    ("前端", "detokenizer.py",     "BaseIncrementalDetokenizer", "update"),
+]
+FILES = {
+    "async_llm.py":        "vllm/v1/engine/async_llm.py",
+    "core.py":             "vllm/v1/engine/core.py",
+    "output_processor.py": "vllm/v1/engine/output_processor.py",
+    "detokenizer.py":      "vllm/v1/engine/detokenizer.py",
+    "scheduler.py":        "vllm/v1/core/sched/scheduler.py",
+    "kv_cache_manager.py": "vllm/v1/core/kv_cache_manager.py",
+}
+_cache = {}
+def tree(short):
+    if short not in _cache:
+        p = os.path.join(ROOT, FILES[short])
+        _cache[short] = (ast.parse(open(p, encoding="utf-8").read()), p)
+    return _cache[short]
+
+def find(short, cls, fn):
+    t, path = tree(short)
+    for node in ast.walk(t):
+        if cls and not (isinstance(node, ast.ClassDef) and node.name == cls):
+            continue
+        for c in (node.body if cls else t.body):
+            if isinstance(c, (ast.FunctionDef, ast.AsyncFunctionDef)) and c.name == fn:
+                return c, path
+    return None, path
+
+def calls_in(node):
+    """这个函数体里出现过的被调用者名字（obj.method 只取 method 那一段）。"""
+    out = set()
+    for n in ast.walk(node):
+        if isinstance(n, ast.Call):
+            f = n.func
+            if isinstance(f, ast.Attribute): out.add(f.attr)
+            elif isinstance(f, ast.Name):    out.add(f.id)
+    return out
+
+print("=== 表一 · 主路径上的十六个站点 ===")
+for proc, short, cls, fn in PATH:
+    node, _ = find(short, cls, fn)
+    if node is None:
+        print(f"!! 没找到 {cls}.{fn}"); continue
+    print(f"{proc:&lt;6}{short:&lt;22}{cls+'.'+fn:&lt;46}"
+          f"{node.lineno}-{node.end_lineno:&lt;11}{node.end_lineno-node.lineno+1}")
+
+print("\n=== 表二 · 交接边是否真的存在 ===")
+EDGES = [
+    ("async_llm.py", "AsyncLLM", "_add_request",         "add_request_async",   "前端把请求交给引擎进程"),
+    ("core.py", "EngineCoreProc", "run_busy_loop",       "_process_input_queue","忙循环先收信"),
+    ("core.py", "EngineCoreProc", "run_busy_loop",       "_process_engine_step","忙循环再走一步"),
+    ("core.py", "EngineCoreProc", "_process_engine_step","step_fn",             "走一步就是调 step"),
+    ("core.py", "EngineCore",     "step",                "schedule",            "step 先调度"),
+    ("core.py", "EngineCore",     "step",                "execute_model",       "step 再执行"),
+    ("core.py", "EngineCore",     "step",                "update_from_output",  "step 最后回收结果"),
+    ("scheduler.py", "Scheduler", "schedule",            "allocate_slots",      "调度里向内存要块"),
+    ("scheduler.py", "Scheduler", "schedule",            "SchedulerOutput",     "调度产出那张单子"),
+    ("output_processor.py", "OutputProcessor", "process_outputs", "update",     "前端做增量解码"),
+]
+for short, cls, fn, callee, why in EDGES:
+    node, _ = find(short, cls, fn)
+    print(f"{'有' if callee in calls_in(node) else '无':&lt;3} "
+          f"{cls}.{fn:&lt;24} -&gt; {callee:&lt;22} {why}")
+
+print("\n=== 表三 · 请求状态枚举 ===")
+req = ast.parse(open(os.path.join(ROOT, "vllm/v1/request.py"), encoding="utf-8").read())
+for node in ast.walk(req):
+    if isinstance(node, ast.ClassDef) and node.name == "RequestStatus":
+        names, i = [], 0
+        for c in node.body:
+            if isinstance(c, ast.Assign) and isinstance(c.targets[0], ast.Name):
+                i += 1; names.append((c.targets[0].id, i, c.lineno))
+        pre = dict((n, v) for n, v, _ in names)["PREEMPTED"]
+        print(f"定义于 request.py:{node.lineno}，{len(names)} 个取值，PREEMPTED 序号 {pre}")
+        for n, v, ln in names:
+            print(f"  {v:&gt;2}  {n:&lt;40} 行{ln:&lt;5} is_finished -&gt; {v &gt; pre}")</code></pre>
+<p>跑出来应该看到三张表，表二那一列全是"有"。如果某一行是"无"，要么是你切错了提交，要么是这条边在新版本里换了写法——两种情况都值得点开那个函数看一眼，这比读本页有用得多。</p>
+
+<h4>第 3 步：把过河的账量出来</h4>
+<p>这段程序用的两个库和 vLLM 用的是同两个。装不上也不要紧，把 <code>msgspec.msgpack</code> 换成标准库的 <code>pickle</code>、把 zmq 换成 <code>multiprocessing.connection</code>，形状不变，绝对值会不一样但倍数关系一样。</p>
+<pre><code>pip install msgspec pyzmq</code></pre>
+<p>程序在下面这个位置：把 2.2 节那三种消息按源码的字段摆出来，量字节数、打包解包耗时；来回耗时单独量，只起一个子进程，四种尺寸在同一个循环里轮着发。</p>
+<pre><code>"""P2 · 过河账台　用法: python3 p2_wire.py"""
+import json, os, statistics, time, multiprocessing as mp
+import msgspec, zmq
+
+REPEAT_CODEC = 2000   # 打包/解包各重复多少次
+RTT_ROUNDS   = 800    # 每种尺寸各走多少个来回
+PROMPT_LEN   = 1024   # 一条新请求的 prompt 有多少 token
+BATCHES      = [1, 8, 32, 128]
+BLOCK_SIZE   = 16     # 取自 vllm/config/cache.py:80
+
+enc = msgspec.msgpack.Encoder(); dec = msgspec.msgpack.Decoder()
+
+def us(fn, n):
+    """跑 n 次取单次平均微秒。先空跑 200 次热身，免得把首次开销算进去。"""
+    for _ in range(200): fn()
+    t0 = time.perf_counter()
+    for _ in range(n): fn()
+    return round((time.perf_counter() - t0) / n * 1e6, 2)
+
+def engine_core_request(rid, plen):        # vllm/v1/engine/__init__.py:107
+    return [rid, list(range(1000, 1000 + plen)), None,
+            {"temperature": 0.7, "top_p": 0.9, "max_tokens": 256, "stop": []},
+            None, time.time(), None]
+
+def engine_core_outputs(batch):            # vllm/v1/engine/__init__.py:196
+    return [[[f"req-{i:06d}", [31337], None, None, None, None, None]
+             for i in range(batch)], None]
+
+def new_request_data(rid, plen, nblocks):  # 全量单子 output.py:36
+    return [rid, list(range(1000, 1000 + plen)), [], {"temperature": 0.7}, None,
+            [list(range(nblocks))], 0, None]
+
+def cached_request_data(batch, nblocks_new):   # 差量单子 output.py:132
+    return [[f"req-{i:06d}" for i in range(batch)], [], [[] for _ in range(batch)], {},
+            [[list(range(nblocks_new))] for _ in range(batch)],
+            [PROMPT_LEN + 7] * batch, [7] * batch]
+
+ADDR = "ipc:///tmp/day17_rtt.sock"
+def echo(addr, ready):
+    ctx = zmq.Context(); s = ctx.socket(zmq.REP); s.bind(addr); ready.set()
+    while True:
+        m = s.recv()
+        if m == b"BYE": s.send(b"BYE"); break
+        s.send(m)
+    s.close(); ctx.term()
+
+def measure_rtt(payloads):
+    if os.path.exists(ADDR[6:]): os.unlink(ADDR[6:])
+    ready = mp.Event()
+    p = mp.Process(target=echo, args=(ADDR, ready), daemon=True); p.start(); ready.wait()
+    ctx = zmq.Context(); s = ctx.socket(zmq.REQ); s.connect(ADDR)
+    for k in payloads:
+        for _ in range(200): s.send(payloads[k]); s.recv()      # 热身
+    samples = {k: [] for k in payloads}
+    for _ in range(RTT_ROUNDS):
+        for k in payloads:                                      # 轮着发，四种尺寸条件一致
+            t0 = time.perf_counter(); s.send(payloads[k]); s.recv()
+            samples[k].append((time.perf_counter() - t0) * 1e6)
+    s.send(b"BYE"); s.recv(); s.close(); ctx.term(); p.join()
+    out = {}
+    for k, v in samples.items():
+        v.sort()
+        out[k] = {"p50_us": round(statistics.median(v), 1),
+                  "p90_us": round(v[int(0.90 * len(v))], 1),
+                  "p99_us": round(v[int(0.99 * len(v))], 1)}
+    return out
+
+a = engine_core_request("req-000000", PROMPT_LEN); ab = enc.encode(a)
+print("A 进门 ", json.dumps({"bytes": len(ab),
+      "encode_us": us(lambda: enc.encode(a), REPEAT_CODEC),
+      "decode_us": us(lambda: dec.decode(ab), REPEAT_CODEC)}))
+
+outs = {b: enc.encode(engine_core_outputs(b)) for b in BATCHES}
+rtt = measure_rtt(dict(outs))
+for b in BATCHES:
+    o = engine_core_outputs(b)
+    print("B 出门 ", json.dumps({"batch": b, "bytes": len(outs[b]),
+          "encode_us": us(lambda: enc.encode(o), REPEAT_CODEC),
+          "decode_us": us(lambda: dec.decode(outs[b]), REPEAT_CODEC), **rtt[b]}))
+
+NB_FULL, NB_NEW = PROMPT_LEN // BLOCK_SIZE, 1
+for b in BATCHES:
+    full = [new_request_data(f"req-{i:06d}", PROMPT_LEN, NB_FULL) for i in range(b)]
+    diff = cached_request_data(b, NB_NEW)
+    fb, db_ = enc.encode(full), enc.encode(diff)
+    print("C 单子 ", json.dumps({"batch": b, "full_bytes": len(fb), "diff_bytes": len(db_),
+          "ratio": round(len(fb) / len(db_), 1),
+          "full_encode_us": us(lambda: enc.encode(full), 400),
+          "diff_encode_us": us(lambda: enc.encode(diff), 400)}))</code></pre>
+<p>跑出来应该看到：一来一回落在一两百微秒；四种尺寸的 P50 差不多；全量差量的倍数在一百以上。如果一来一回是几毫秒而不是几百微秒，先怀疑机器上有别的东西在抢核；如果四种尺寸的 P50 差得很远，多半是没用"轮着发"那个写法，各尺寸经历的机器状态不一样。</p>
+
+<h4>第 4 步：把标尺放上去</h4>
+<p>没有标尺，微秒是个没有意义的数。这一段就是 Day 8 起一直用的那副权重，跑出"一步大概多久"。</p>
+<pre><code>"""P3 · 前向标尺　用法: OPENBLAS_NUM_THREADS=1 python3 p3_ruler.py"""
+import statistics, time
+import numpy as np
+
+N, L = 4096, 8                       # 8 层 4096x4096 float32 = 512 MiB
+W = [np.random.rand(N, N).astype(np.float32) for _ in range(L)]
+
+def one_pass(S):
+    X = np.random.rand(N, S).astype(np.float32)
+    t0 = time.perf_counter()
+    for w in W: w @ X                # 一次调用 = 把 512 MiB 权重完整读一遍
+    return (time.perf_counter() - t0) * 1e3
+
+for S, tag, reps in [(32, "一步 decode，批量 32", 12), (1024, "一次 prefill，1024 token", 5)]:
+    one_pass(S)                      # 热身一次
+    ms = sorted(one_pass(S) for _ in range(reps))
+    print(f"{tag}: 中位数 {statistics.median(ms):.1f} ms  "
+          f"最快 {ms[0]:.1f}  最慢 {ms[-1]:.1f}")</code></pre>
+<p>内存不到 4 GB 就把 <code>L</code> 从 8 改成 4，量出来的数会小一半，倍数关系不变。<code>OPENBLAS_NUM_THREADS=1</code> 不能省——不锁死线程数，这个数会随机器负载乱跳。</p>
+
+<h4>要交出来的东西</h4>
+<ul>
+<li>一张图：横轴是消息字节数（24 / 171 / 677 / 2693），纵轴是一来一回的 P50。你要能指着这条线说出它为什么几乎是平的。</li>
+<li>一句话：在你的机器上，一个引擎步里过河这一段占多少。用你自己量出来的两个数算，不要抄本页的。</li>
+<li>P1 表二的输出原样贴出来，十行全是"有"。</li>
+</ul>
+<h4>验收标准</h4>
+<ul>
+<li>四种消息尺寸的一来一回 P50 彼此相差在两成以内。差得更多说明测量条件没控住，回去看是不是每种尺寸单独起了子进程。</li>
+<li>全量单子和差量单子的字节比在 100 倍以上，并且这个比值随并发条数上升。上升不了说明你的差量单子里混进了不该有的字段。</li>
+<li>你能不看本页，只凭 P1 的输出，说出"查前缀"这个动作在 <code>schedule</code> 的第几段。</li>
+</ul>
+<h4>常见坑</h4>
+<ul>
+<li>行号对不上就往下读。版本一漂，本页每一条引用都会错位几十行，而错位之后你读到的是别的代码，还会以为自己理解错了。先把第 1 步那条 <code>sed</code> 验过。</li>
+<li>拿第一次跑的数当结果。前几次调用要装载库、要让分支预测器热身，慢得离谱。本页所有程序都空跑了几百次才开始计时。</li>
+<li>在跑着别的东西的机器上量微秒。这台机器只有两个核，多开一个浏览器标签页就能把 P99 抬上去一倍。</li>
+</ul>
+
+<h3>任务 B（约 40 分钟）· 给你自己的服务画同一张表</h3>
+<p>挑一个你手上真在维护的服务，最好是有后台工作进程或者队列消费者的那种。给它画一张和第 14 节一样的表：一次请求从进门到出门，依次经过哪些函数，每一段住在哪个进程或线程。</p>
+<p>三条要求。第一，每一行都要有文件名加行号，不许写"大概在某某模块里"。第二，标出每一次跨进程或跨线程的交接，以及交接靠的是什么（队列、socket、共享内存、数据库）。第三，标出哪些段带着"重"的数据结构，哪些段只带 id。</p>
+<p>画完问自己一个问题：有没有哪一次交接，两边传的东西明显比它需要的多？第 10 节那张全量差量的表，就是这个问题在 vLLM 上的答案。</p>
+<h4>验收标准</h4>
+<p>你能拿这张表向一个没读过这份代码的人解释清楚"某个请求慢了，我该去哪一侧找"。如果表画完你自己还是答不上来，通常是漏了交接点——两个函数之间隔着一次队列而你把它们画成了直接调用。</p>
+
+<h3>加分题</h3>
+<ul>
+<li>把"一步多久"当成变量。第 10 节里 128 条全量单子打包要 476 微秒，在一步 125.9 毫秒的机器上占千分之四。写一段十行的脚本，横轴取一步的时长从 1 毫秒到 200 毫秒，纵轴画这个占比，找出它穿过百分之一的那个步长。这个步长就是"差量这件事从什么时候开始真正要紧"。</li>
+<li>找出过河成本开始按字节收费的那个尺寸。第 7 节里 24 到 2693 字节几乎是平的。把消息尺寸继续往上扫：10 KB、100 KB、1 MB、10 MB，画出一来一回随字节数的曲线（第 10 节那张表里 128 条的全量单子是 407 KB，正好落在这个区间里），标出它从"平的"变成"斜的"的拐点。</li>
+<li>验一遍替换符那个检查。把 P4 里 <code>new_text.endswith("�")</code> 这个条件去掉，重跑一遍，看看输出里多出来多少个 <code>�</code>，以及它们出现在什么位置。</li>
+<li>数一数 <code>schedule</code> 那 884 行都在管什么。用 <code>ast</code> 把这个函数里的 <code>if</code> 分支全抓出来，按它们提到的名字归类：投机解码、多模态、KV 连接器、结构化输出各占多少行。剩下的那部分才是 Day 9 讲的核心调度。</li>
+<li>把停止串那一个来回量出来。改一下 P5，模拟"前端第 N 步才发现命中停止串、发一条取消回去、引擎又白算了一步"这个过程，算出这一步被浪费的计算在整条请求里占多少。输出越短，这个比例越大。</li>
+</ul>
+<h4>第 5 步：把出门那一段也量出来</h4>
+<p>还剩两段没量：一是 2.4 节那张分段表，二是第 13 节那两张解码表。两段程序都很短。</p>
+<pre><code>"""P5 · 跟着一条消息走一遍　用法: python3 p5_trace_one.py"""
+import statistics, time, os, multiprocessing as mp
+import msgspec, zmq
+
+ADDR = "ipc:///tmp/day17_trace.sock"
+BATCH, ROUNDS = 32, 600          # 批量 32：和 P3 标尺那一步的列数对齐
+enc = msgspec.msgpack.Encoder(); dec = msgspec.msgpack.Decoder()
+VOCAB = {31337: "字"}            # 一个只有一项的词表，够把 token id 变成一个字符
+
+def outputs(batch):
+    return [[[f"req-{i:06d}", [31337], None, None, None, None, None]
+             for i in range(batch)], None]
+
+def engine_side(addr, ready):
+    """引擎进程：等一声令下，打包这一步的结果，发出去。"""
+    ctx = zmq.Context(); s = ctx.socket(zmq.REP); s.bind(addr); ready.set()
+    payload = outputs(BATCH)
+    while True:
+        if s.recv() == b"BYE": s.send(b"BYE"); break
+        s.send(enc.encode(payload))
+    s.close(); ctx.term()
+
+if os.path.exists(ADDR[6:]): os.unlink(ADDR[6:])
+ready = mp.Event()
+p = mp.Process(target=engine_side, args=(ADDR, ready), daemon=True); p.start(); ready.wait()
+ctx = zmq.Context(); s = ctx.socket(zmq.REQ); s.connect(ADDR)
+
+queues = {f"req-{i:06d}": [] for i in range(BATCH)}
+recs = []
+for r in range(ROUNDS + 200):                  # 前 200 次热身，不记
+    t0 = time.perf_counter()
+    s.send(b"STEP"); raw = s.recv()            # 引擎打包 + 过河
+    t1 = time.perf_counter()
+    outs, _ = dec.decode(raw)                  # 前端解包
+    t2 = time.perf_counter()
+    texts = [(o[0], "".join(VOCAB[t] for t in o[1])) for o in outs]   # id 变成字
+    t3 = time.perf_counter()
+    for rid, txt in texts: queues[rid].append(txt)                    # 放进各自队列
+    t4 = time.perf_counter()
+    if r &gt;= 200:
+        recs.append({"过河（含引擎侧打包）": (t1-t0)*1e6, "前端解包": (t2-t1)*1e6,
+                     "id 变成字": (t3-t2)*1e6, "放进各自队列": (t4-t3)*1e6,
+                     "合计": (t4-t0)*1e6})
+s.send(b"BYE"); s.recv(); s.close(); ctx.term(); p.join()
+
+keys = list(recs[0].keys())
+mid = sorted(recs, key=lambda x: x["合计"])[len(recs)//2]
+print(f"批量 {BATCH}，记了 {len(recs)} 次，下面是合计取中位数的那一次（微秒）：")
+acc = 0.0
+for k in keys[:-1]:
+    acc += mid[k]; print(f"  {k:&lt;22}{mid[k]:8.1f}   累计 {acc:8.1f}")
+print(f"  {'合计':&lt;22}{mid['合计']:8.1f}")</code></pre>
+<p>四行的耗时加起来应该正好等于最后那个合计。对不上就是某一段的计时点放错了地方。</p>
+<pre><code>"""P4 · 解码账台　用法: python3 p4_detok.py"""
+import random, time
+
+TEXT = "推理服务把请求排进队列，调度器每一步决定谁上车。" * 400
+
+def build_vocab(text):
+    """把整段文字按 utf-8 字节切成 1~3 字节一片，做成 id -&gt; bytes 的词表。
+    这正是 byte-fallback 类分词器的形状，所以"字节没凑齐"是真会发生的。"""
+    b = text.encode("utf-8")
+    rnd, pieces, i = random.Random(7), [], 0
+    while i &lt; len(b):
+        k = rnd.choice([1, 2, 3]); pieces.append(b[i:i + k]); i += k
+    return {i: p for i, p in enumerate(pieces)}, list(range(len(pieces)))
+
+VOCAB, IDS = build_vocab(TEXT)
+def decode_all(ids): return b"".join(VOCAB[i] for i in ids).decode("utf-8", errors="replace")
+
+def run_full(ids):
+    """每来一个 token，把从头到现在的所有片重解一遍。"""
+    text = ""
+    for k in range(1, len(ids) + 1):
+        text = decode_all(ids[:k])
+    return text
+
+def run_window(ids):
+    """只解 [prefix_offset, 末尾] 这个窗口，减掉 prefix 那一段。
+    照 vllm/tokenizers/detokenizer_utils.py:240-268 的形状写。"""
+    out, prefix_offset, read_offset = "", 0, 0
+    for k in range(1, len(ids) + 1):
+        prefix_text = decode_all(ids[prefix_offset:read_offset])
+        new_text    = decode_all(ids[prefix_offset:k])
+        if len(new_text) &lt;= len(prefix_text) or new_text.endswith("�"):
+            continue                  # 字节还没凑齐：这一步不吐字，两个下标也不动
+        out += new_text[len(prefix_text):]
+        prefix_offset, read_offset = read_offset, k
+    return out
+
+for n in [256, 1024, 4096]:
+    ids = IDS[:n]
+    t0 = time.perf_counter(); a = run_full(ids);   t_full = (time.perf_counter() - t0) * 1e3
+    t0 = time.perf_counter(); b = run_window(ids); t_win  = (time.perf_counter() - t0) * 1e3
+    print(f"n={n:5d}  整段重解 {t_full:7.1f} ms  只解窗口 {t_win:6.1f} ms  "
+          f"倍数 {t_full/t_win:5.1f}  两种写法结果相同: {a == b}")
+
+ch = "调"; b = ch.encode("utf-8")
+for k in range(1, len(b) + 1):
+    s = b[:k].decode("utf-8", errors="replace")
+    print(f"收到 {k} 个字节 -&gt; {s!r}  是替换符: {s.endswith(chr(0xFFFD))}")</code></pre>
+<p>最后那三行输出是本页第 13 节那张字节表。注意 <code>n=256</code> 那一行的"两种写法结果相同"是 <code>False</code>，另外两行是 <code>True</code>——原因第 13 节讲过，那串字节正好停在一个汉字中间。</p>
+<h2>板块 4 · 工作现场</h2>
+
+<h3>场景一 · 「首 token 延迟的 P99 有毛刺，但 GPU 利用率很平」</h3>
+<p>指标上看不出问题，用户就是偶尔等两秒才出第一个字。GPU 曲线平滑，说明计算那一侧没有异常。</p>
+<p>第 14 节那张表告诉你该去哪儿找：从请求进门到第一个 token 出去，中间有六段不在 GPU 上——HTTP 解析、分词、打包、过河、排队、以及回程的解码。前两段和最后一段住在前端进程，那个进程只有一个事件循环。</p>
+<p>最常见的两个原因都在那一侧。一是有人往事件循环里塞了同步的活儿——比如加了一段日志要去查数据库，或者自己写的中间件里做了一次同步的模板渲染。第 4 节那个 <code>run_in_executor</code> 就是为了防这个，但只有 vLLM 自己的代码走了这条路，你加的没有。二是超长 prompt 的分词本身把线程池占满了。</p>
+<p>排查顺序：先看这些毛刺发不发生在特定的 prompt 长度上；再在前端进程上挂一个采样式剖析器（Day 3 那把工具），看火焰图里有没有不该出现的同步调用。不要一上来就调 <code>max_num_batched_tokens</code>——那是引擎侧的旋钮，改它对前端一点用都没有。</p>
+
+<h3>场景二 · 「加了 stop 字符串之后，成本没降反升」</h3>
+<p>产品发现回答经常带一段多余的尾巴，于是给所有请求加上 stop 字符串。上线后账单没降。</p>
+<p>第 12 节解释了一半：停止串在前端判，判出来之后要发一条取消消息回引擎，这中间引擎至少还会再算一步，那一步的结果被丢掉。这是固定的额外开销，输出越短占比越大。</p>
+<p>但只靠这一条解释不了"没降"。另一半通常在别处：加 stop 之后每条请求确实短了，于是同一时刻能塞下更多请求，实际批量上去了，机器反而更忙。这时候该看的不是总成本，是每条请求的平均 token 数——如果这个数明显降了，改动是有效的，账单没降是因为吞吐上去了，那是好事。</p>
+<p>能给出的建议是：能用 token 表达的停止条件就别用字符串。<code>stop_token_ids</code> 走的是引擎侧那条路，当场就停，没有这个来回。</p>
+
+<h3>场景三 · 「想在推理服务上加一个自己的功能，不知道该改哪儿」</h3>
+<p>这是最常见的一类活儿：加一个按租户的配额、加一段自定义的采样后处理、给每条请求打一段自定义的追踪记录。</p>
+<p>第 14 节那张表就是决策表，问三个问题。这个功能需不需要看到文字？需要就只能放前端。它需不需要知道调度决定（这一步谁上车、块表怎么分）？需要就只能放引擎。它会不会引入阻塞调用？会就必须甩进线程池，否则整个前端跟着停。</p>
+<p>举例：按租户限流不需要文字也不需要调度信息，放在最前面拦住就好，别往引擎里塞；而"某个租户的请求优先调度"必须进引擎，因为那是 <code>schedule()</code> 里的事——Day 9 讲过它有一个按优先级抢占的分支。</p>
+<p>还有一条经验：任何要跨那条进程边界的新数据，都得先能被 msgpack 序列化。往 <code>EngineCoreRequest</code> 上挂一个复杂对象，第一个报错会出现在 socket 线程里，而不是你加代码的那一行。</p>
+
+<h3>同事和面试官常问的</h3>
+<ul>
+<li>「vLLM 为什么要拆成两个进程？」——答"避免 GIL 争抢"只答了一半。完整的说法是：HTTP、分词、解码这些活儿全是纯 Python，和引擎循环抢同一把解释器锁；拆开之后各自一把锁。而拆开的代价是每个引擎步多一次进程往返，量下来是一步的千分之一，划得来。</li>
+<li>「一条请求进来到吐出第一个字，经过了哪些环节？」——按第 14 节那十六行讲，重点讲清楚两次跨进程和两次文字与整数之间的转换。能说出"引擎进程从头到尾不碰一个字符"就说明你真读过。</li>
+<li>「设置了 stop 字符串的请求怎么停下来的？」——前端解码出文字之后才能判，判出来发一条取消消息回引擎。追问"为什么不在引擎里判"，答：引擎手上只有整数，而且一个停止串可能横跨两个 token，不拼成文字找不到。</li>
+<li>「为什么解码要做成增量的？」——整段重解的开销是输出长度的平方，一次四千 token 的回答实测差六十倍。追问"那为什么不每个 token 各自解一小段拼起来"，答：一个字符可能被切在两个 token 中间，凑不齐的时候解出来是替换符，得压住不吐。</li>
+<li>「<code>SchedulerOutput</code> 里为什么要分新请求和老请求两个列表？」——老请求的数据已经在执行侧缓存着了，每步只发变化。实测差一百六十倍，而且这个倍数随并发上升。</li>
+</ul>
+
+<h2>板块 5 · 自检问题</h2>
+
+<details><summary>1. 有人提议把分词也搬进引擎进程，理由是"少一次跨进程"。这个提议有什么问题？</summary>
+<p>先算它省下什么。分词发生在请求进门时，一条请求只发生一次。而跨进程这件事，进门发生一次、之后每个引擎步发生一次。搬走分词省掉的是那一次，占比极小。</p>
+<p>再算它带来什么。分词是纯 Python 加 C 扩展的同步操作，几十毫秒起步。搬进引擎进程之后，它和引擎循环抢同一把解释器锁——每来一条新请求，正在生成的所有请求都要停几十毫秒。这正是第一部分开头那个"一个进程"的写法会出的毛病。</p>
+<p>还有第三笔账：引擎进程从此要装分词器，也就要装模型的 tokenizer 文件、要处理不同模型的词表。今天这条路上"引擎只认整数"这条边界一破，第 12 节和第 13 节那两件事的位置全都要重新讨论。</p>
+<p>更好的方向是反过来：分词已经在线程池里了，如果它还是瓶颈，加线程池的大小，或者把它挪到更前面的一层。</p>
+</details>
+
+<details><summary>2. 你在 <code>RequestStatus</code> 枚举里加了一个新状态 <code>WAITING_FOR_TOOL_RESULT</code>，加在了末尾。上线后发现有些请求莫名其妙就结束了。为什么？</summary>
+<p>因为"结束了没有"这个判断是 <code>status &gt; RequestStatus.PREEMPTED</code>，一次整数比较。PREEMPTED 的序号是 6，你加在末尾就是 13 号，比 6 大，所以被当成已经结束。</p>
+<p>这个状态本意是"在等工具返回，还没结束"，应该加在 PREEMPTED 之前，和另外三个 <code>WAITING_FOR_*</code> 排在一起。枚举定义里那行注释就是在防这件事：排在 PREEMPTED 后面的都算结束。</p>
+<p>这类 bug 的共同点是：语义编在顺序里，而顺序不受任何检查保护。加一个成员是一行改动，编译器和类型检查器都不会说话，直到运行时才出问题。</p>
+<p>发现之后除了挪位置，值得顺手加一个测试：把枚举的每个成员和 <code>is_finished</code> 的期望值列成一张表比对，这样下次再有人加错，测试会说话。</p>
+</details>
+
+<details><summary>3. 第 7 节量到"消息大一百一十二倍，来回时间几乎不变"。这个结论能不能推广成"进程间通信不用在意消息大小"？</summary>
+<p>不能。这个结论有一个明确的适用区间，就是被测的那个区间：24 字节到 2693 字节。</p>
+<p>在这个区间里，一个来回的一百三十微秒基本花在固定的动作上——两次系统调用、一次进程唤醒、一次调度器把对方叫醒。搬两千多字节这件事在这些动作面前不值一提。</p>
+<p>但第 10 节那张表里已经出现了 407 KB 的消息，比这个区间的上界大了一百五十倍。到那个尺度，拷贝和内存带宽就开始说话了。再往上，几 MB 的消息还会碰到 socket 缓冲区放不下、要分多次发的问题，那时候曲线的形状完全不同。</p>
+<p>怎么判断自己在哪个区间：把消息尺寸扫一遍，画出来。曲线平的那一段是固定开销主导，开始往上斜的那一段是字节主导。拐点在哪台机器上都不一样。</p>
+</details>
+
+<details><summary>4. 一个同事说："既然增量解码这么好，那把它也用在 prompt 上——用户提交的长 prompt 也可以边收边分词。"这个类比成立吗？</summary>
+<p>方向上有道理，但两件事的约束不一样，直接搬过去会出错。</p>
+<p>增量解码之所以能成立，是因为输出 token 是一个一个产生的，而且顺序确定、只往后长。第 k 步的结果不会改变前 k−1 步已经吐出去的字（唯一的例外就是那个替换符，所以才要压住不吐）。</p>
+<p>分词不满足这个条件。分词器是贪心地找最长匹配的，后面来的字符会改变前面的切分结果。举个例子：先看到 "in"，可能切成一个 token；再看到 "g"，"ing" 就变成另一个 token 了。边收边分词，前面切好的随时可能要推翻。</p>
+<p>所以流式输入在 vLLM 里是另一套机制（第 8 节那个枚举里的 <code>WAITING_FOR_STREAMING_REQ</code> 就是给它的），它是按用户提交的分段来处理，不是按字符流增量切分。</p>
+<p>这道题真正要练的是：看到"A 那边这么做很好"的时候，先问 A 成立的前提是什么，再看 B 满不满足。</p>
+</details>
+
+<h2>板块 6 · 今日新词</h2>
+<p>前六个是这两个进程的骨架，中间五个是它们之间传的东西，最后五个属于出门那一段。</p>
+<div class="scroll">
+<table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>前端进程</td><td>frontend process</td><td>装着 HTTP 接口和事件循环的那个进程；文字只存在于这一侧</td></tr>
+<tr><td>引擎核心 / 引擎核心进程</td><td>EngineCore / EngineCoreProc</td><td>另一个进程，里面是调度器、KV 管理器和模型执行；它从头到尾只处理整数</td></tr>
+<tr><td>输入处理器</td><td>input processor</td><td>前端里做分词和多模态预处理的那一段，通过 <code>run_in_executor</code> 跑在线程池里</td></tr>
+<tr><td>输出处理器</td><td>output processor</td><td>前端里把引擎回来的 token 摊给各条请求、顺便解码和判停止串的那一段</td></tr>
+<tr><td>忙循环</td><td>busy loop</td><td>引擎进程主线程那个循环：先收信，再走一个引擎步，回到开头</td></tr>
+<tr><td>输入队列 / 输出队列</td><td>input_queue / output_queue</td><td>socket 线程和忙循环之间的两个普通队列，线程之间靠它们交接</td></tr>
+<tr><td>打包 / 解包</td><td>serialize / deserialize</td><td>把一个对象压成一串字节送上 socket，以及反过来；vLLM 用的是 msgpack</td></tr>
+<tr><td>请求状态</td><td>RequestStatus</td><td>一条请求在引擎里的身份，十二个取值；"结束了没有"是一次和 PREEMPTED 的比大小</td></tr>
+<tr><td>调度单</td><td>SchedulerOutput</td><td>调度器每一步交出去的那张单子：这一步谁上车、各分几个 token、块表怎么改</td></tr>
+<tr><td>全量与差量</td><td>NewRequestData / CachedRequestData</td><td>第一次被调度的请求发整份数据，之后只发这一步的变化。实测差一百六十倍</td></tr>
+<tr><td>执行结果</td><td>ModelRunnerOutput</td><td>模型那一侧交回来的东西，核心字段是每条请求这一步新采出的 token id</td></tr>
+<tr><td>执行器</td><td>Executor</td><td>引擎和模型之间那一层，把调度单送到干活的进程上并把结果收回来</td></tr>
+<tr><td>增量解码</td><td>incremental detokenization</td><td>每步只把新 token 那一小段解成文字，而不是把整段重解一遍</td></tr>
+<tr><td>解码窗口</td><td>prefix_offset / read_offset</td><td>增量解码维护的两个下标，划出"这一次要解哪一段"</td></tr>
+<tr><td>停止串</td><td>stop string</td><td>采样参数里"看到这几个字就停"的那串文本；判定在前端，不在引擎</td></tr>
+<tr><td>替换符</td><td>replacement character (U+FFFD)</td><td>字节还没凑成完整字符时解出来的那个 �；增量解码拿它当"先别吐"的信号</td></tr>
+</table>
+</div>
+<p>这十六个词长在同一件事上：一条请求怎么在两个进程之间走完一趟。分开几天学反而更费劲。</p>
+<h2>板块 7 · 已学词表</h2>
+<p>Day 1 到今天引入过的全部术语，标注首次引入是哪一天。下一次遇到其中任何一个，都不会再重新定义。</p>
+<details><summary>展开全部 198 个词</summary>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>引入于</th></tr>
+<tr><td>延迟</td><td><code>latency</code></td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td><code>throughput / queries per second</code></td><td>Day 1</td></tr>
+<tr><td>百分位</td><td><code>percentile (P50 / P95 / P99)</code></td><td>Day 1</td></tr>
+<tr><td>压测器</td><td><code>load generator</code></td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td><code>closed loop</code></td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td><code>open loop</code></td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td><code>hyper-threading / logical core</code></td><td>Day 1</td></tr>
+<tr><td>基线</td><td><code>baseline</code></td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td><code>service time</code></td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td><code>queueing time / queueing delay</code></td><td>Day 2</td></tr>
+<tr><td>利用率</td><td><code>utilization</code></td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td><code>Little's Law</code></td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td><code>tail latency</code></td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td><code>coordinated omission</code></td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td><code>profiler</code></td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td><code>sampling / sampling frequency</code></td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td><code>sampling profiler</code></td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td><code>instrumenting profiler</code></td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td><code>flame graph</code></td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td><code>self time</code></td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td><code>on-CPU analysis</code></td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td><code>off-CPU analysis</code></td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td><code>event loop</code></td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td><code>CPU-bound / IO-bound</code></td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td><code>blocking the event loop</code></td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td><code>GIL (global interpreter lock)</code></td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td><code>releasing the GIL</code></td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td><code>run_in_executor</code></td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td><code>event loop lag</code></td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td><code>sampling bias</code></td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td><code>suspended coroutine</code></td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td><code>phase timing</code></td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td><code>effective capacity</code></td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td><code>bottleneck hypothesis table</code></td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td><code>bimodal distribution</code></td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td><code>client-side queuing</code></td><td>Day 6</td></tr>
+<tr><td>锁相</td><td><code>phase locking</code></td><td>Day 6</td></tr>
+<tr><td>抖动</td><td><code>jitter</code></td><td>Day 6</td></tr>
+<tr><td>预热</td><td><code>warm-up</code></td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td><code>send backlog</code></td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td><code>cache / cache hierarchy</code></td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td><code>cache line</code></td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td><code>hardware prefetcher</code></td><td>Day 7</td></tr>
+<tr><td>内存页</td><td><code>page</code></td><td>Day 7</td></tr>
+<tr><td>缺页</td><td><code>page fault</code></td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td><code>translation lookaside buffer</code></td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td><code>huge page / THP</code></td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td><code>memory bandwidth</code></td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td><code>FLOP / GFLOP⁄s</code></td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td><code>arithmetic intensity</code></td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td><code>machine balance</code></td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td><code>roofline model</code></td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td><code>basic linear algebra subprograms</code></td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td><code>token</code></td><td>Day 8</td></tr>
+<tr><td>自回归</td><td><code>autoregressive</code></td><td>Day 8</td></tr>
+<tr><td>预填充</td><td><code>prefill</code></td><td>Day 8</td></tr>
+<tr><td>解码</td><td><code>decode</code></td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td><code>TTFT / time to first token</code></td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td><code>TPOT / time per output token</code></td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td><code>ITL / inter-token latency</code></td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td><code>goodput</code></td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td><code>engine step / iteration</code></td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td><code>static batching</code></td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td><code>continuous batching / in-flight batching</code></td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td><code>chunked prefill</code></td><td>Day 9</td></tr>
+<tr><td>混合批</td><td><code>mixed batch</code></td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td><code>token budget</code></td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td><code>max_num_seqs</code></td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td><code>max_num_batched_tokens</code></td><td>Day 9</td></tr>
+<tr><td>抢占</td><td><code>preemption</code></td><td>Day 9</td></tr>
+<tr><td>重算</td><td><code>recompute</code></td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td><code>sandbox</code></td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td><code>namespace</code></td><td>Day 10</td></tr>
+<tr><td>能力</td><td><code>capabilities</code></td><td>Day 10</td></tr>
+<tr><td>换根</td><td><code>chroot / pivot_root</code></td><td>Day 10</td></tr>
+<tr><td>控制组</td><td><code>cgroup / control group</code></td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td><code>quota / period</code></td><td>Day 10</td></tr>
+<tr><td>节流</td><td><code>throttling</code></td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td><code>OOM killer</code></td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td><code>pids.max</code></td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td><code>syscall number</code></td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td><code>secure computing mode</code></td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td><code>seccomp-bpf filter</code></td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td><code>NO_NEW_PRIVS</code></td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td><code>attack surface</code></td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td><code>container escape</code></td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td><code>application kernel</code></td><td>Day 10</td></tr>
+<tr><td>microVM</td><td><code>microVM</code></td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td><code>hypervisor / VMM</code></td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td><code>rootfs / root filesystem</code></td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td><code>bind mount</code></td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td><code>mount propagation</code></td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td><code>MS_SHARED / shared</code></td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td><code>MS_PRIVATE / private</code></td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td><code>MS_SLAVE / slave</code></td><td>Day 11</td></tr>
+<tr><td>对等组</td><td><code>peer group</code></td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td><code>lazy unmount / MNT_DETACH</code></td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td><code>PID 1 / init process</code></td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td><code>cold start</code></td><td>Day 11</td></tr>
+<tr><td>叠加文件系统</td><td><code>overlayfs / overlay filesystem</code></td><td>Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td><code>lowerdir / upperdir / workdir</code></td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td><code>copy-on-write / copy_up</code></td><td>Day 12</td></tr>
+<tr><td>白障</td><td><code>whiteout</code></td><td>Day 12</td></tr>
+<tr><td>只读根</td><td><code>read-only rootfs</code></td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td><code>tmpfs</code></td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td><code>page cache</code></td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td><code>shmem</code></td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td><code>inode</code></td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td><code>size= / nr_inodes=</code></td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td><code>buffered write</code></td><td>Day 12</td></tr>
+<tr><td>直写</td><td><code>direct I/O (O_DIRECT)</code></td><td>Day 12</td></tr>
+<tr><td>回写</td><td><code>writeback</code></td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td><code>blkio throttle / io.max</code></td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td><code>major:minor</code></td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td><code>veth pair</code></td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td><code>SNAT / MASQUERADE</code></td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td><code>packet filter / netfilter (iptables)</code></td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td><code>DROP / REJECT</code></td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td><code>egress allowlist</code></td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td><code>capability bounding set</code></td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td><code>masking</code></td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td><code>least privilege</code></td><td>Day 12</td></tr>
+<tr><td>开放容器倡议</td><td><code>OCI / Open Container Initiative</code></td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td><code>runtime-spec</code></td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td><code>image-spec</code></td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td><code>distribution-spec</code></td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td><code>filesystem bundle</code></td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td><code>config.json</code></td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td><code>low-level runtime / runtime engine</code></td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td><code>high-level runtime</code></td><td>Day 13</td></tr>
+<tr><td>libcontainer</td><td><code>libcontainer</code></td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td><code>runc init</code></td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td><code>binary cloning / exeseal</code></td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td><code>__attribute__((constructor))</code></td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td><code>nsexec stage 0 / 1 / 2</code></td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td><code>exec fifo</code></td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td><code>creating / created / running / stopped</code></td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td><code>lifecycle hooks</code></td><td>Day 13</td></tr>
+<tr><td>垫片</td><td><code>shim</code></td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td><code>ttRPC</code></td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td><code>subreaper / PR_SET_CHILD_SUBREAPER</code></td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td><code>zombie process</code></td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td><code>CRI / Container Runtime Interface</code></td><td>Day 13</td></tr>
+<tr><td>预热池</td><td><code>warm pool</code></td><td>Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td><code>zygote / fork server</code></td><td>Day 14</td></tr>
+<tr><td>懒加载</td><td><code>lazy loading / lazy pulling</code></td><td>Day 14</td></tr>
+<tr><td>并发上限</td><td><code>concurrency limit</code></td><td>Day 14</td></tr>
+<tr><td>许可</td><td><code>semaphore</code></td><td>Day 14</td></tr>
+<tr><td>准入控制</td><td><code>admission control</code></td><td>Day 14</td></tr>
+<tr><td>背压</td><td><code>backpressure</code></td><td>Day 14</td></tr>
+<tr><td>泊松到达</td><td><code>Poisson arrivals</code></td><td>Day 14</td></tr>
+<tr><td>宽限期</td><td><code>grace period</code></td><td>Day 14</td></tr>
+<tr><td>请求路径</td><td><code>request path</code></td><td>Day 14</td></tr>
+<tr><td>异步回收</td><td><code>deferred cleanup</code></td><td>Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td><code>KV cache</code></td><td>Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td><code>query head / KV head</code></td><td>Day 15</td></tr>
+<tr><td>每头维度</td><td><code>head_dim / head size</code></td><td>Day 15</td></tr>
+<tr><td>分组查询注意力</td><td><code>GQA / grouped-query attention</code></td><td>Day 15</td></tr>
+<tr><td>内部碎片</td><td><code>internal fragmentation</code></td><td>Day 15</td></tr>
+<tr><td>外部碎片</td><td><code>external fragmentation</code></td><td>Day 15</td></tr>
+<tr><td>紧凑</td><td><code>compaction</code></td><td>Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td><code>block</code></td><td>Day 15</td></tr>
+<tr><td>块表</td><td><code>block table</code></td><td>Day 15</td></tr>
+<tr><td>分页注意力</td><td><code>PagedAttention</code></td><td>Day 15</td></tr>
+<tr><td>每块字节数</td><td><code>page_size_bytes</code></td><td>Day 15</td></tr>
+<tr><td>空闲块队列</td><td><code>free block queue</code></td><td>Day 15</td></tr>
+<tr><td>上下文长度上限</td><td><code>max_model_len</code></td><td>Day 15</td></tr>
+<tr><td>显存占用比例</td><td><code>gpu_memory_utilization</code></td><td>Day 15</td></tr>
+<tr><td>因果注意力</td><td><code>causal attention</code></td><td>Day 16</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td><code>prefix caching / APC</code></td><td>Day 16</td></tr>
+<tr><td>token 级前缀命中率</td><td><code>prefix cache hit rate</code></td><td>Day 16</td></tr>
+<tr><td>块 hash 链</td><td><code>chained block hash</code></td><td>Day 16</td></tr>
+<tr><td>基数树 / 前缀树</td><td><code>radix tree / RadixAttention</code></td><td>Day 16</td></tr>
+<tr><td>节点分裂</td><td><code>node split</code></td><td>Day 16</td></tr>
+<tr><td>最近最少使用</td><td><code>LRU / least recently used</code></td><td>Day 16</td></tr>
+<tr><td>复用距离</td><td><code>reuse distance</code></td><td>Day 16</td></tr>
+<tr><td>缓存盐</td><td><code>cache salt</code></td><td>Day 16</td></tr>
+<tr><td>卸载</td><td><code>offloading</code></td><td>Day 16</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td><code>tiering / primary tier / secondary tier</code></td><td>Day 16</td></tr>
+<tr><td>提升</td><td><code>promotion</code></td><td>Day 16</td></tr>
+<tr><td>写入门槛</td><td><code>store threshold</code></td><td>Day 16</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td><code>PCIe</code></td><td>Day 16</td></tr>
+<tr><td>前端进程</td><td><code>frontend process</code></td><td>Day 17</td></tr>
+<tr><td>引擎核心 / 引擎核心进程</td><td><code>EngineCore / EngineCoreProc</code></td><td>Day 17</td></tr>
+<tr><td>输入处理器</td><td><code>input processor</code></td><td>Day 17</td></tr>
+<tr><td>输出处理器</td><td><code>output processor</code></td><td>Day 17</td></tr>
+<tr><td>忙循环</td><td><code>busy loop</code></td><td>Day 17</td></tr>
+<tr><td>输入队列 / 输出队列</td><td><code>input_queue / output_queue</code></td><td>Day 17</td></tr>
+<tr><td>打包 / 解包</td><td><code>serialize / deserialize (msgpack)</code></td><td>Day 17</td></tr>
+<tr><td>请求状态</td><td><code>RequestStatus</code></td><td>Day 17</td></tr>
+<tr><td>调度单</td><td><code>SchedulerOutput</code></td><td>Day 17</td></tr>
+<tr><td>全量与差量</td><td><code>NewRequestData / CachedRequestData</code></td><td>Day 17</td></tr>
+<tr><td>执行结果</td><td><code>ModelRunnerOutput</code></td><td>Day 17</td></tr>
+<tr><td>执行器</td><td><code>Executor</code></td><td>Day 17</td></tr>
+<tr><td>增量解码</td><td><code>incremental detokenization</code></td><td>Day 17</td></tr>
+<tr><td>解码窗口</td><td><code>prefix_offset / read_offset</code></td><td>Day 17</td></tr>
+<tr><td>停止串</td><td><code>stop string</code></td><td>Day 17</td></tr>
+<tr><td>替换符</td><td><code>replacement character (U+FFFD)</code></td><td>Day 17</td></tr>
+</table></div></details>
+<h2>板块 8 · 专项深挖</h2>
+<p>今天这条路上有三个岔口，每个都够单独学一天。想深挖哪个，把下面对应的一段整段粘给 Claude。</p>
+
+<blockquote style="border-left:3px solid var(--line2); margin:1.2em 0; padding:.2em 0 .2em 16px; color:var(--ink2)">
+<p>我已经读过 vLLM V1 的主路径：AsyncLLM 在前端进程做分词和解码，EngineCore 在另一个进程跑忙循环，两边通过 msgpack + ZMQ 交换 EngineCoreRequest 和 EngineCoreOutputs，SchedulerOutput 对新请求发全量、对老请求发差量。我也知道 Scheduler.schedule 先给 RUNNING 分 token 预算、再处理 WAITING，中间会查一次前缀缓存。</p>
+<p>现在我想把 <code>Scheduler.schedule</code> 这 884 行拆开看。请以 vLLM 仓库 commit 80389cf 为准，把这个函数按功能切成若干段，每段给出行号区间、它在处理什么特性（核心调度 / 投机解码 / 多模态编码器 / KV 连接器 / 结构化输出 / 混合注意力），并说明如果我把某一类特性全部关掉，哪些行会变成死代码。产出用一张表加一段说明，不要贴大段源码，只给行号和一句话。</p>
+</blockquote>
+
+<blockquote style="border-left:3px solid var(--line2); margin:1.2em 0; padding:.2em 0 .2em 16px; color:var(--ink2)">
+<p>我已经知道 vLLM 的引擎核心跑在单独的进程里，前端通过 ZMQ 送 EngineCoreRequest 过去，回程是 EngineCoreOutputs；引擎进程内部有输入 socket 线程、输出 socket 线程和跑忙循环的主线程，靠两个普通队列交接。我量过一个来回大约一百三十微秒，占一步计算的千分之一。</p>
+<p>现在我想弄清楚多个 API server 进程和多个 EngineCore 进程是怎么连起来的：DP coordinator 是什么、请求怎么被分到某个 engine、engine 之间为什么需要"波"（wave）这个概念、以及负载不均时会发生什么。请以 vLLM 仓库 commit 80389cf 为准，给出关键文件和行号，画一张进程拓扑图（用文字方框图即可），并说明单机多卡和多机两种部署下这张图的差别。</p>
+</blockquote>
+
+<blockquote style="border-left:3px solid var(--line2); margin:1.2em 0; padding:.2em 0 .2em 16px; color:var(--ink2)">
+<p>我已经理解增量解码：维护 prefix_offset 和 read_offset 两个下标，每步只解一个窗口，遇到解出来以 U+FFFD 结尾就不吐字、下标不动。我也知道停止串是在前端判的，判出来要发一条 abort 回引擎。</p>
+<p>现在我想搞清楚这套东西在流式接口上的完整行为：delta 模式和累积模式分别怎么算"这次新增的文字"；include_stop_str_in_output 打开和关闭时截断发生在哪一步；以及当一个停止串横跨两次 chunk 边界时，check_stop_strings 里那个 <code>1 - new_char_count - stop_string_len</code> 的搜索起点为什么能保证不漏。请以 vLLM 仓库 commit 80389cf 为准，给出行号，并为每种情况写一个可以自己跑的小例子。</p>
+</blockquote>
+
+<h2>板块 9 · 延伸材料</h2>
+<ul>
+<li><b>vLLM 仓库里的 <code>docs/design/multiprocessing.md</code></b>（<a href="https://docs.vllm.ai/en/latest/design/multiprocessing.html">docs.vllm.ai/en/latest/design/multiprocessing.html</a>）——把 fork、spawn、forkserver 三种起进程方式的取舍讲透了，也解释了为什么 vLLM 作为一个库被别人 import 时这件事特别麻烦。难度中等，读完你会明白第一部分那个"两个进程"在启动阶段要绕多少弯。</li>
+<li><b><code>docs/design/arch_overview.md</code></b>（<a href="https://docs.vllm.ai/en/latest/design/arch_overview.html">docs.vllm.ai/en/latest/design/arch_overview.html</a>）——官方的架构总览，有 V1 的进程拓扑图，能补上今天没画的那两块：多个对外服务进程，和真正跑模型的那些进程。难度偏低，适合今天读完顺手看一遍对照。</li>
+<li><b>vLLM V1 的发布公告</b>（<a href="https://vllm.ai/blog/2025-01-27-v1-alpha-release">vllm.ai/blog/2025-01-27-v1-alpha-release</a>）——把"为什么要重写"这件事说清楚了，第 10 节那个"只发差量"的设计在里面有一段专门的说明。难度低，一杯咖啡的时间，但它给的是动机，不是机制。</li>
+<li><b><code>docs/design/metrics.md</code></b>（<a href="https://docs.vllm.ai/en/latest/design/metrics.html">docs.vllm.ai/en/latest/design/metrics.html</a>）——今天那条路上每一段能报出什么指标、在哪一侧统计、为什么有些指标必须在引擎侧算。难度中等，和 Day 23 的可观测性直接接得上，提前看一遍不亏。</li>
+<li><b>仓库里的 <code>vllm/v1/core/sched/scheduler.py</code> 本身</b>——今天引用了它九个位置，但只读了不到一百行。建议的读法是：只看所有以 <code>#</code> 开头的注释，跳过代码。这个文件的注释密度很高，光读注释就能拼出调度器的完整意图。难度高，但收益也最大。</li>
+</ul>
+
+<h2>板块 10 · 今日五句话</h2>
+<div class="card five">
+<span class="tag">合上页面，用自己的话写</span>
+<p>1. vLLM 为什么要把服务拆成两个操作系统进程？拆开的代价是什么，量级是多少？</p>
+<div class="write"></div>
+<p>2. 一条请求从进门到吐出第一个字，"文字"这个东西在哪两个位置出现过？中间那一段是什么？</p>
+<div class="write"></div>
+<p>3. 调度器交给执行器的那张单子，为什么要分成两个列表？省下了什么？</p>
+<div class="write"></div>
+<p>4. 一条请求设置了 stop 字符串，它比一条正常吐出 EOS 的请求多花了什么？</p>
+<div class="write"></div>
+<p>5. 增量解码在什么情况下会选择"这一步一个字都不吐"？为什么必须这样？</p>
+<div class="write"></div>
+</div>
+<h4>逐句自查标准</h4>
+<ul>
+<li>第 1 句如果只写成"为了性能"就错了。要点名是解释器锁：HTTP、分词、解码这些纯 Python 的活儿和引擎循环抢同一把锁。代价要给数：每个引擎步多一次进程往返，这台机器上是一百三十微秒对一步一百二十多毫秒。</li>
+<li>第 2 句如果写成"进来是文字，出去是文字"，只说了一半。要点出这两个位置都在前端进程，中间十一步全在整数上进行——正是这条边界决定了后面停止串和解码的位置。</li>
+<li>第 3 句如果写成"为了省带宽"就太泛了。要点出老请求的数据已经在执行侧缓存着，每步只发变化；省下的主要是那份从头到尾不变的 prompt token 列表。有个数更好：实测差一百六十倍。</li>
+<li>第 4 句如果写成"多一次判断"就漏了关键。要点出多的是一整个来回：前端判出来之后要发一条取消消息回引擎，而在这条消息到达之前引擎至少还会再算一步，那一步白算。</li>
+<li>第 5 句如果只写"字节没凑齐"，还差半步。要补上判据和后果：解出来的文字以替换符结尾就不吐，而且两个下标原样退回，等下一步连着这几个字节一起再试。如果写成"下标照常前进"就错了——那样这几个字节就永远丢了。</li>
+</ul>
+
+<h2>板块 11 · 明日预告</h2>
+<p>今天走的这条路上，有一处一直没停下来看：第 14 节第 10 行，"单子交给执行器，拿回一批 token id"。那一行背后是模型和显存，今天绕开了。</p>
+<p>明天不往那边走，往另一边走。Day 18 开始一个八天的项目：自己写一个 agent 运行时。第一天先立项——把交付物的规格定下来，画出一个 agent 循环的完整链路，然后搭出一个能跑通"单轮、无工具"的骨架。</p>
+<p>今天这一页会立刻用上：一个 agent 运行时的形状和今天这条路很像——外面一层收请求、里面一层转循环、中间隔着一次交接。今天量过的那笔账，明天你要为自己的设计再算一遍：你的两层之间多久交接一次，一次多少钱。</p>
+<footer>
+<div class="id">AI Infra · Day 17 / 28 · 2026-09-03 · 阶段二 · 推理服务与 KV Cache</div>
+<p>实验条件：2 核 Intel Xeon @ 2.80 GHz，L1d 64 KiB、L2 2 MiB、L3 33 MiB，7.84 GiB 内存，页大小 4096 字节；Linux 6.18.44；Python 3.11.15，numpy 2.4.4，msgspec 0.21.1，pyzmq 27.2.0。矩阵乘法全程 <code>OPENBLAS_NUM_THREADS=1</code>，进程间通信走 Unix 域套接字（<code>ipc://</code>）。</p>
+<p>源码引用取自 vLLM 仓库 commit <code>80389cf</code>，文中所有行号以这个提交为准。前向标尺沿用 Day 8 起的设定：8 层、hidden 4096、float32，权重合计 512 MiB，不含注意力与 KV cache。</p>
+</footer>
+</main>
+</body>
+</html>
