@@ -1,0 +1,1224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 23</title>
+<style>
+:root{
+  --bg:#faf6ef; --fg:#2c2622; --muted:#6d6259; --line:#e2d8c9;
+  --card:#fffdf8; --code-bg:#2b2724; --code-fg:#eee5d8;
+  --a1:#a8622f; --a2:#4f6f52; --a3:#7a5a8f; --a4:#8a6a1f;
+  --th:#f2ebdd; --zebra:#f7f2e8; --termbg:#f0e5d2; --termfg:#7a4a1c;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17140f; --fg:#e8e0d4; --muted:#a89b8b; --line:#3a332a;
+    --card:#1f1b15; --code-bg:#0e0c0a; --code-fg:#e6dcc9;
+    --a1:#e0965c; --a2:#8fc094; --a3:#c0a0d8; --a4:#d8b45c;
+    --th:#262119; --zebra:#1c1811; --termbg:#33291a; --termfg:#e8c58a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17140f; --fg:#e8e0d4; --muted:#a89b8b; --line:#3a332a;
+  --card:#1f1b15; --code-bg:#0e0c0a; --code-fg:#e6dcc9;
+  --a1:#e0965c; --a2:#8fc094; --a3:#c0a0d8; --a4:#d8b45c;
+  --th:#262119; --zebra:#1c1811; --termbg:#33291a; --termfg:#e8c58a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  line-height:1.78;font-size:16.5px;-webkit-text-size-adjust:100%}
+.bar{position:sticky;top:0;z-index:50;background:var(--card);border-bottom:1px solid var(--line);
+  padding:.5rem 1rem;display:flex;gap:.9rem;flex-wrap:wrap;align-items:baseline;font-size:.83rem;color:var(--muted)}
+.bar b{color:var(--a1);font-weight:650;letter-spacing:.02em}
+main{max-width:820px;margin:0 auto;padding:1.6rem 1.1rem 4rem}
+h1{font-size:1.62rem;line-height:1.45;margin:1.2rem 0 .5rem;letter-spacing:-.01em}
+h2{font-size:1.2rem;margin:2.9rem 0 .3rem;padding-top:1.1rem;border-top:2px solid var(--line)}
+h2 .sec{display:block;font-size:.74rem;color:var(--muted);font-weight:500;letter-spacing:.12em;margin-bottom:.15rem}
+h3{font-size:1.04rem;margin:2rem 0 .5rem;color:var(--a1)}
+h4{font-size:.97rem;margin:1.4rem 0 .4rem}
+p{margin:.75rem 0}
+.sub{color:var(--muted);font-size:.95rem;margin-top:-.2rem}
+.lead{font-size:1.06rem;color:var(--a1);font-weight:600;margin:1.1rem 0 .3rem}
+.term{background:var(--termbg);color:var(--termfg);padding:0 .22em;border-radius:3px;font-weight:600}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.87em;background:var(--th);padding:.08em .32em;border-radius:3px;overflow-wrap:anywhere}
+pre{background:var(--code-bg);color:var(--code-fg);padding:.9rem 1rem;border-radius:7px;
+  overflow-x:auto;line-height:1.62;font-size:.83rem;margin:.8rem 0}
+pre code{background:none;padding:0;color:inherit;font-size:1em;overflow-wrap:normal}
+.scroll{overflow-x:auto;margin:1rem 0;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:.86rem;min-width:min(100%,520px)}
+th,td{border:1px solid var(--line);padding:.4rem .55rem;text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:650;white-space:nowrap}
+tbody tr:nth-child(even){background:var(--zebra)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.cap{font-size:.82rem;color:var(--muted);margin:.55rem 0 .2rem}
+.card{border-left:4px solid var(--a1);background:var(--card);padding:.75rem 1rem;border-radius:0 7px 7px 0;margin:1.2rem 0}
+.card>:first-child{margin-top:0}.card>:last-child{margin-bottom:0}
+.card .tag{font-size:.74rem;letter-spacing:.13em;color:var(--a1);font-weight:700;display:block;margin-bottom:.25rem}
+.recall{border-left-color:var(--a3)} .recall .tag{color:var(--a3)}
+.pred{border-left-color:var(--a4)} .pred .tag{color:var(--a4)}
+.kk{border-left-color:var(--a2)} .kk .tag{color:var(--a2)}
+.five{border-left-color:var(--a3)} .five .tag{color:var(--a3)}
+.write{border:1px dashed var(--line);border-radius:6px;min-height:2.6rem;margin:.5rem 0;background:var(--bg)}
+details{border:1px solid var(--line);border-radius:6px;padding:.5rem .8rem;margin:.7rem 0;background:var(--card)}
+details[open]{padding-bottom:.8rem}
+summary{cursor:pointer;font-weight:600;font-size:.92rem;color:var(--a1)}
+ul,ol{padding-left:1.35rem;margin:.7rem 0}
+li{margin:.3rem 0}
+figure{margin:1.2rem 0}
+svg{display:block;height:auto;color:var(--fg)}
+.map td:first-child{white-space:nowrap;font-weight:600}
+footer{margin-top:3.5rem;padding-top:1rem;border-top:2px solid var(--line);font-size:.83rem;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
+.q{color:var(--a3);font-weight:600}
+.breathe{color:var(--muted);font-style:normal;border-left:3px solid var(--line);padding-left:.85rem;margin:1.1rem 0}
+</style>
+</head>
+<body>
+<div class="bar"><b>AI Infra · Day 23 / 28</b><span>阶段四 · Agent Runtime（八天项目 · 第 6 天 · 交付）</span><span>2026-09-03</span></div>
+<main>
+
+<h1>一轮里三个子 span 加起来 1213 毫秒，可这一轮总共只有 982 毫秒</h1>
+<p class="sub">昨天那个装置在一次执行上留了 16 个打点，那已经是一条手写的 trace。今天把它变成能落到线上的东西，然后发现：一旦时间开始重叠、钱开始跨轮次结算，"每一段多长"和"这段钱算谁的"就不再是同一个问题。</p>
+<h2><span class="sec">板块 0</span>温故 · 闭卷</h2>
+<p>三道题，间隔分别是 1 天、3 天、7 天。先在心里答一遍，答不上来再展开。</p>
+
+<div class="card recall">
+<span class="tag">第 1 题 · Day 22 · 杀干净与读得到</span>
+<p>昨天那张四种杀法的表里，「只杀直接子进程」剩 2 个后台进程，「杀整个进程组」剩 1 个，而后两种做法都剩 0 个。前两行报出来的 <code>duration_ms</code> 是 4019 和 4022，后两行是 1018 和 1083，超时预算都是 1000 毫秒。</p>
+<p>一段模型生成的代码用 <code>start_new_session=True</code> 起了一个后台进程，它躲开了按进程组发的信号。为什么它躲不开后两种做法？另外，前两行多出来的那三秒是在等什么，为什么这一等会让已经打印出来的那行日志一起消失？</p>
+</div>
+<details><summary>展开答案</summary>
+<p><code>setsid</code> 改的是这个进程属于哪个进程组和哪个进程会话，它改不了两件事：这个进程在哪个进程号命名空间里，以及它被记在哪个 cgroup 的名单上。第三种做法杀的是命名空间里的 1 号进程，内核会把这个命名空间里剩下的全部收走；第四种做法读的是 cgroup 的名单，而新建的子孙自动继承父进程的 cgroup，退不出去。两条路都不经过「分组」这个可以被被杀方自己改掉的东西。</p>
+<p>那三秒是读回 stdout 的二次超时被用满了。子进程的标准输出是一根管道，读端在执行服务手里。管道读到结尾的条件不是「写的那个进程死了」，而是「所有持有写端的进程都关掉了它」。<code>fork</code> 会把父进程打开的每个文件描述符原样复制给孩子，所以两个还活着的后台进程手里各握着一份写端。对照实验把后台进程的 stdout 指到 <code>/dev/null</code>，同样的杀法，杀完之后的读只花了 19.3 毫秒。</p>
+<p>那行 <code>started</code> 消失，是因为读的那一侧等满三秒之后整个放弃了，已经躺在管道缓冲区里的字节跟着一起被丢掉——不是被截断，是一个字都没有。</p>
+<p class="cap">接今天：昨天问的是这三秒怎么来的，今天问的是它记在谁的账上。第 8 节会看到，同样一批调用，这三秒放在哪一段里，会让你的指标板指向两个完全不同的地方。</p>
+</details>
+
+<div class="card recall">
+<span class="tag">第 2 题 · Day 20 · 窗口开大之后</span>
+<p>一条 30 轮会话，头部 1024 个 token，用「每一轮都丢掉最早的那一轮」这种滑动窗口裁法。窗口从 4096 换成 8192，别的一个字不动。</p>
+<p>这条策略真正要算的 token 会变多还是变少？给出两档的数字。再解释：为什么「满了就丢掉一半」在同样的改动下走势完全不同？</p>
+</div>
+<details><summary>展开答案</summary>
+<p>变多，从 56806 涨到 89187，涨了将近六成。窗口 2048 那一档是 22455，所以这条线是单调往上的。</p>
+<p>机制是一句话：每一次断点之后要重算的量等于「窗口减头部」。滑动窗口每一轮都在上下文最前面动刀，每一轮都制造一个断点；断点之后能对上的只有头部那 1024 个 token，这个数跟窗口多大没有关系。而每轮的 prompt 长度因为始终贴着上限，约等于窗口。窗口翻倍，单次断点的代价跟着翻，断点次数又不下降，总量就往上走。</p>
+<p>「满了就丢掉一半」那三档是 10667 / 12567 / 15750，也在涨，但从一万涨到一万六，很温和。它的断点次数随窗口下降——窗口越大越晚顶破、顶破得越少，单次变贵和次数变少两个方向抵消掉大部分。</p>
+<p class="cap">接今天：那天把 token 折成了时间，用的是一条前向耗时曲线的斜率。今天折的是另一样东西——钱。同一批 token 数，换一张单价表，结论会不会跟着变，第 12 节有答案。</p>
+</details>
+
+<div class="card recall">
+<span class="tag">第 3 题 · Day 16 · 顺序换了一下</span>
+<p>40 个任务各 6 轮，共 240 条请求。缓存开到 8192 个 token 位、块大小 16，按「一个任务从头做到尾」的顺序重放，token 级前缀命中率是 84.5%。一个 token 都不改，只把顺序换成「40 个任务轮流各推进一轮」，命中率变成 31.9%。</p>
+<p>这 52.6 个百分点丢在什么机制上？要追平 84.5%，缓存得开到 131072 个 token 位——这个数不是试出来的，它是怎么算出来的？</p>
+</div>
+<details><summary>展开答案</summary>
+<p>丢在复用距离上：一份数据被用过之后，到它下一次被用之前，中间来过多少别的数据。成组顺序下，一个任务的第 2 轮紧跟着第 1 轮，中间没有别人，所以缓存只要装得下一条会话的上下文就够了；交错顺序下，两轮之间隔着另外 39 个任务将近十万个 token 的块，LRU 把先前那些块全挤掉了。</p>
+<p>131072 的来历：40 个任务各自跑完最后一轮时的上下文加起来是 126856 个 token，131072 是扫描点里第一个大于它的值。也就是说交错顺序下，缓存必须同时装得下所有在途会话的全部上下文。中间几档正好演示了「差一点」的后果——32768 只到 35.7%，65536 也才 51.0%。</p>
+<p class="cap">接今天：那天量的是命中率，一个比例。今天要把这个比例挂到账单上——命中的那部分 token 不是不要钱，是换了一档单价。第 11 节会看到这一档在一条 agent 会话里占多大。</p>
+</details>
+<h2><span class="sec">板块 1</span>今日概览</h2>
+<div class="scroll"><table>
+<tbody>
+<tr><th>进度</th><td>Day 23 / 28 · 阶段四 · Agent Runtime（八天项目的第 6 天，交付）</td></tr>
+<tr><th>今日主题</th><td>把一条会话在机器上留下的痕迹，从「一堆带时间戳的日志行」变成「一棵能问问题的树」：这棵树怎么建、怎么跨进程接上、每一段的时间该记在谁头上、每一分钱该记在哪个节点上，以及这套东西自己要花多少钱</td></tr>
+<tr><th>时间预算</th><td>3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><th>今天不讲</th><td>
+<p style="margin:.2rem 0">指标与告警那一套（计数器、直方图、分位数怎么在多台机器上聚合），以及日志收集管道本身怎么搭。这两样都属于「数据出了你的进程之后」的题目，而今天整天在进程里面——决定一条 trace 有没有用的，是它在被产生的那一刻带了什么，不是它后来存在哪里。</p>
+<p style="margin:.2rem 0">采样率具体该定多少。第 10 节会把「采什么、什么时候决定采」这两件事讲清楚，但定一个数需要知道你的流量分布和你的存储预算，那是两个今天这台机器上没有的输入。</p>
+<p style="margin:.2rem 0">多台机器之间的路由与会话粘性。Day 20 量到过它值 28 个百分点的命中率，Day 25 一整天做这件事。今天只把「命中率这一档在账单上占多少」摆出来。</p>
+</td></tr>
+</tbody>
+</table></div>
+
+<h4>今天收工的时候，你应该能做到这三件</h4>
+<ol>
+<li>给一条 agent 会话设计 span 的切法：哪几段各自成一个 span、每个 span 上挂哪些字段、字段名从哪儿抄，并说得出为什么某一段必须单独成一个 span 而不能并进上一段。</li>
+<li>拿到一棵 span 树，算出每个节点的自身耗时和整条会话的关键路径——包括子 span 时间互相重叠的情况，并说得出为什么直接相加会得到一个负数。</li>
+<li>把一条会话的账单拆到轮次一级，指出哪一笔钱是某一次工具调用引起的，即使那笔钱一分都没落在那个工具的 span 上。</li>
+</ol>
+
+<h4>今天这一页怎么走</h4>
+<div class="scroll"><table class="map">
+<thead><tr><th>部分</th><th>它回答的问题</th></tr></thead>
+<tbody>
+<tr><td>第一部分 · 从一行日志到一棵树</td><td>你现在会怎么查一条慢会话？这个查法在哪儿断掉？补上什么之后它变成一棵树？</td></tr>
+<tr><td>第二部分 · 今天的台子</td><td>两个进程、一棵 28 个节点的树、一条真实会话的每一段各多长？</td></tr>
+<tr><td>第三部分 · 时间摊回去</td><td>时间重叠的时候「这一段自己花了多久」怎么算？等待该算谁的？埋点自己要花多少？</td></tr>
+<tr><td>第四部分 · 钱摊回去</td><td>usage 该挂在哪个节点上？一次工具调用真正花的钱在哪儿？该往指标板上报哪几条？</td></tr>
+</tbody>
+</table></div>
+
+<h2><span class="sec">板块 2 · 第一部分</span>从一行日志到一棵树</h2>
+<p class="sub">先把你现在的查法摆出来，再逐条说明它在哪儿不够，最后给不够的那几处各配一样东西。</p>
+
+<h3>1. 你现在会怎么查一条慢会话</h3>
+<p class="lead">线上有人说「我那个任务转了快一分钟」。你手上有这个运行时的日志，你会怎么办？</p>
+<p>作为后端工程师，第一反应大概是这样：在循环的每一步前后各打一行日志，带上时间戳，出了事去日志里 <code>grep</code> 一下，把相邻两行的时间戳一减，就知道哪一段慢。这个办法在你过去写的接口上一直很好用，因为那些接口一次请求做一件事，日志是一条一条挨着的。</p>
+<p>放到 agent 运行时上，它会在四个地方断掉。</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">#</th><th>断在哪儿</th><th>为什么</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td>日志行不再挨着</td><td>几十条会话同时在跑，每条都在往同一个文件里写。你 <code>grep</code> 出来的相邻两行，很可能属于两条不同的会话。</td></tr>
+<tr><td class="n">2</td><td>一条会话不止一个进程</td><td>Day 17 那天推理服务自己就拆成了前端和引擎两个进程；再往外还有工具执行那一侧。日志分散在几台机器几个文件里，时间戳还未必对得齐。</td></tr>
+<tr><td class="n">3</td><td>轮数事先不知道</td><td>你没法预先写死「第几行减第几行」。一条会话可能转 3 轮，也可能转 30 轮。</td></tr>
+<tr><td class="n">4</td><td>有些段是套在一起的</td><td>「执行工具」这一段里面还套着「起沙箱」「跑代码」「读回输出」。两个时间戳一减只给你最外面那一层。</td></tr>
+</tbody>
+</table></div>
+<p>第 1 条最好办，也最能说明补法的形状。</p>
+
+<h3>2. 给每条记录配一个号，再配一个「谁生的」</h3>
+<p>要让同一条会话的日志行能被挑出来，最省事的做法是给每条会话生成一个随机的号，这条会话产生的每一行都带上它。查的时候不再 <code>grep</code> 关键字，而是按这个号筛。这个号在业内叫 <span class="term">关联 ID（correlation id）</span>。</p>
+<p>光有它还解不了第 4 条：同一条会话里，「执行工具」和「跑代码」都带着同一个号，你还是不知道后者是套在前者里面的。所以再给每条记录配第二样东西：它自己的一个号，以及生它的那条记录的号。</p>
+<p>有了这两样，一条会话的所有记录就不再是一串，而是一棵树。这种「一段有始有终、带着自己的号和父亲的号」的记录，就叫一个 <span class="term">span（跨度）</span>；同一条会话的全部 span 合起来叫一条 <span class="term">trace（追踪）</span>；那个原来叫关联 ID 的东西，在这套说法里叫 <span class="term">trace_id</span>，每个 span 自己那个号叫 <span class="term">span_id</span>，父亲那个叫 <span class="term">parent_span_id</span>。</p>
+<p>一个 span 上除了这三个号和起止时刻，还挂三类东西：</p>
+<div class="scroll"><table>
+<thead><tr><th>挂什么</th><th>叫什么</th><th>放什么进去</th></tr></thead>
+<tbody>
+<tr><td>键值对</td><td><span class="term">属性（attributes）</span></td><td>整段期间都成立的事实：模型名、工具名、这一轮是第几轮、用了多少 token</td></tr>
+<tr><td>带时刻的一行字</td><td><span class="term">事件（events）</span></td><td>段里某个瞬间发生的事：第一个 token 到了、重试了一次、抛了个异常</td></tr>
+<tr><td>成/败</td><td><span class="term">状态（status）</span></td><td>这一段是正常结束还是出错结束</td></tr>
+</tbody>
+</table></div>
+<p class="breathe">这三样的分工可以这么记：属性回答「这一段是什么」，事件回答「这一段里什么时候发生了什么」，状态回答「这一段成了没有」。属性挂错成事件，你就失去了按它筛选的能力；事件挂错成属性，你就失去了它发生的时刻。</p>
+<p>把这套记录装到一个系统上，让你能事后从它吐出来的数据里，问出没有预先设想过的问题——这个能力叫 <span class="term">可观测性（observability）</span>。它和监控的分界就在「没有预先设想过」这几个字上：监控回答你事先想好要问的那几个问题，可观测性要求你在数据被产生的那一刻，就把足够多的东西记下来。</p>
+<p>给已有的代码加上这些记录的动作，叫 <span class="term">埋点 / 插桩（instrumentation）</span>。这个词 Day 3 出现过一次——那天区分采样式剖析器和插桩式剖析器，插桩指的是「在每个函数出入口塞代码」。是同一个词同一个意思，只是这次塞的位置由你自己挑，不是工具替你塞满全部函数。</p>
+<h3>3. 号怎么跨进程传过去</h3>
+<p>第 2 条断点还没补：一条会话横跨好几个进程。运行时调模型是一次 HTTP 请求，执行工具可能是另一次。对面那个进程要想把自己的 span 挂到你这棵树上，它得先知道你的 trace_id 和当前那个 span 的 span_id。</p>
+<p>做法是把这两个号写进请求头，跟着请求一起过去。这个动作叫 <span class="term">上下文传播（context propagation）</span>，头的格式由 W3C 定死了一份，叫 <span class="term">W3C Trace Context</span>，头名 <code>traceparent</code>。</p>
+<p>下面这一行是今天这台机器上真的注入出来的一个头，跟着它逐段拆开：</p>
+<pre><code>traceparent: 00-349c643473fb49eb7b36015af3d6ae84-916a4272db2f5ef5-03
+             ^^ ^------------------------------^ ^--------------^ ^^
+             |  |                                |                |
+             |  trace_id：32 个十六进制字符        span_id：16 个    采样标志
+             版本号，目前恒为 00                   （父给的）        01 = 采，00 = 不采</code></pre>
+<p>格式在 SDK 里就是一条正则，写在 <code>opentelemetry/trace/propagation/tracecontext.py:18-21</code>：版本 2 位、trace_id 32 位、span_id 16 位、标志 2 位，用短横线隔开。收到请求的那一侧解析这一行，把里面的 span_id 当成自己那个 span 的父亲，一棵树就跨过进程边界接上了。</p>
+<p>最后那两位是采样标志。上面那个例子是 <code>03</code> 而不是 <code>01</code>，因为最低位是「采样与否」、次低位是另一个标志位；只有最低位跟采样有关。这一位在整条链路上是跟着传的，所以采不采这个决定是在链路的<em>最前面</em>做完的，后面每一跳照办——这叫 <span class="term">头部采样（head sampling）</span>，第 10 节还会回到它。</p>
+
+<h3>4. 字段名不能自己发明</h3>
+<p>树建起来了，属性该叫什么名字？你可以叫 <code>model</code>，也可以叫 <code>llm_model</code>，也可以叫 <code>gen_ai.request.model</code>。三种都能跑。</p>
+<p>但只有第三种能让别人写的仪表板认得出来。这类「大家约好某类东西叫什么名字」的清单叫 <span class="term">语义约定（semantic conventions）</span>，OpenTelemetry 为大模型这一类专门出了一组，前缀是 <code>gen_ai.</code>。这些名字在装好的包里就是一堆常量，可以直接打开看：</p>
+<pre><code># opentelemetry/semconv/_incubating/attributes/gen_ai_attributes.py
+GEN_AI_OPERATION_NAME              = "gen_ai.operation.name"              # 第 107 行
+GEN_AI_REQUEST_MODEL               = "gen_ai.request.model"               # 第 157 行
+GEN_AI_CONVERSATION_ID             = "gen_ai.conversation.id"             # 第 34 行
+GEN_AI_TOOL_NAME                   = "gen_ai.tool.name"                   # 第 269 行
+GEN_AI_TOOL_CALL_ID                = "gen_ai.tool.call.id"                # 第 249 行
+GEN_AI_USAGE_INPUT_TOKENS          = "gen_ai.usage.input_tokens"          # 第 298 行
+GEN_AI_USAGE_OUTPUT_TOKENS         = "gen_ai.usage.output_tokens"         # 第 303 行
+GEN_AI_USAGE_CACHE_READ_INPUT_TOKENS  = "gen_ai.usage.cache_read.input_tokens"    # 第 286 行
+GEN_AI_USAGE_CACHE_CREATION_INPUT_TOKENS = "gen_ai.usage.cache_creation.input_tokens"  # 第 279 行</code></pre>
+<p>最后那两行值得单独看一眼。约定里 token 的用量不是一个数，是<strong>四个数</strong>：整价的输入、命中缓存的输入、写进缓存的输入、输出。这四个数一开始就是分开的，因为它们的单价本来就不一样——这一点第 11 节整节在讲。</p>
+<p>同一个文件里，<code>gen_ai.usage.prompt_tokens</code>（第 308 行）和 <code>gen_ai.usage.completion_tokens</code>（第 293 行）都标着 Deprecated，各自指向 <code>input_tokens</code> 和 <code>output_tokens</code>。这类改名在这套约定里很常见，抄的时候要看一眼包里的注释，别照着两年前的博客写。</p>
+<p>所以属性名不是内部实现细节，它是接口。自己发明一套名字，意味着所有现成的仪表板、告警规则、成本分析工具对你的 trace 一句话都看不懂，全都要重写；而抄约定的成本，不过是打开这个文件查一次。</p>
+<h2><span class="sec">板块 2 · 第二部分</span>今天的台子</h2>
+<p class="sub">两个真进程、一棵 28 个节点的树、五个各量一件事的小程序。台子先摆清楚，后面每个数字都追得回来。</p>
+
+<h3>5. 实验装置</h3>
+<p>今天没有真模型，也没有加速器。被测的是运行时这一侧的埋点与账本；模型那一侧是一个只会按设定时序 sleep 的服务，它存在的意义是给运行时一个真实的等待对象和一份真实的 usage 回报。</p>
+
+<h4>5.1 两个进程、五个账台</h4>
+<figure><div class="scroll">
+<svg viewBox="0 0 800 470" width="800" role="img" aria-label="装置结构图：运行时进程与假模型服务，以及各账台读哪一侧">
+<defs>
+<marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="currentColor"/></marker>
+</defs>
+<g fill="none" stroke="currentColor" stroke-width="1.4">
+<rect x="12" y="34" width="352" height="228" rx="8"/>
+<rect x="480" y="34" width="308" height="150" rx="8"/>
+<rect x="28" y="70" width="320" height="62" rx="5" stroke-dasharray="4 3"/>
+<rect x="28" y="142" width="152" height="44" rx="5" stroke-dasharray="4 3"/>
+<rect x="196" y="142" width="152" height="44" rx="5" stroke-dasharray="4 3"/>
+<rect x="28" y="196" width="320" height="52" rx="5" stroke-dasharray="4 3"/>
+<rect x="496" y="70" width="276" height="100" rx="5" stroke-dasharray="4 3"/>
+<rect x="12" y="304" width="352" height="150" rx="8"/>
+<rect x="452" y="304" width="336" height="150" rx="8"/>
+<path d="M364 92 L478 92" marker-end="url(#ar)"/>
+<path d="M478 122 L364 122" marker-end="url(#ar)"/>
+</g>
+<g font-size="13" font-weight="700" fill="currentColor">
+<text x="24" y="54">P1 · agent 运行时（被测）</text>
+<text x="492" y="54">P0 · 假模型服务（uvicorn）</text>
+<text x="24" y="324">P5 / P6 · 埋点自身的账台</text>
+<text x="464" y="324">P7 · 归因边界账台</text>
+</g>
+<g font-size="11.5" fill="currentColor">
+<text x="38" y="90">agent 循环：session → turn →</text>
+<text x="38" y="106">　　　　{ chat, execute_tool × 3 }</text>
+<text x="38" y="122">工具用 asyncio.TaskGroup 并发派出</text>
+<text x="38" y="162">OTel TracerProvider</text>
+<text x="38" y="178">真的 SDK，1.44.0</text>
+<text x="206" y="162">内存导出器</text>
+<text x="206" y="178">span 收在一个列表里</text>
+<text x="38" y="216">进程 CPU 时钟探针：每个叶子 span</text>
+<text x="38" y="234">两端各读一次 time.process_time()</text>
+<text x="506" y="90">纯 sleep：首 token 前 100 毫秒，</text>
+<text x="506" y="106">之后每个 token 5 毫秒</text>
+<text x="506" y="122">按 n_out 拼一段定长文本返回</text>
+<text x="506" y="142">usage 簿记：字符数 ÷ 4 折 token；</text>
+<text x="506" y="158">与上一轮的公共前缀取整到 16 的整块</text>
+<text x="24" y="346">P5：脱开运行时，只数一个 span 要</text>
+<text x="24" y="364">多少微秒、一条会话的 trace 有多少</text>
+<text x="24" y="382">字节、队列满了丢掉哪几条</text>
+<text x="24" y="410">P6：在运行时里开关埋点，量它占掉</text>
+<text x="24" y="428">多少 CPU</text>
+<text x="464" y="346">真起子进程，子进程再起一个 setsid</text>
+<text x="464" y="364">的后台进程，后台进程握着 stdout</text>
+<text x="464" y="382">那根管道的写端。</text>
+<text x="464" y="410">不接运行时，也不接模型服务，</text>
+<text x="464" y="428">单独跑。</text>
+</g>
+<g font-size="10.5" fill="currentColor">
+<text x="368" y="86">POST /v1/generate</text>
+<text x="368" y="136">text + usage</text>
+</g>
+<g font-size="11" fill="currentColor">
+<text x="24" y="284">指标全部在 P1 这一侧算出来：span 的起止时刻、CPU 差值、token 计数</text>
+</g>
+</svg>
+</div>
+<figcaption class="cap">P1 是被测对象。P0 故意做成纯 sleep，这样运行时那一侧量到的 CPU 才干净。P5、P6、P7 各自独立跑，不和上面两个同时开。</figcaption>
+</figure>
+
+<h4>5.2 一次交互长什么样</h4>
+<p>运行时发给模型的是这一行。<code>prompt</code> 是到这一轮为止的全部上下文，已经拼成一整段文本：</p>
+<pre><code>POST /v1/generate
+{"session_id":"S1","prompt":"[user] 任务 S1\n[assistant] {\"tool\":\"call\"}词词…\n[tool] …",
+ "n_out":128,"reply_head":"{\"tool\":\"call\"}"}</code></pre>
+<p>模型回的是这一行。<code>usage</code> 里三个数就是后面所有账单的原料：</p>
+<pre><code>{"text":"{\"tool\":\"call\"}词词词…（共 512 个字符）",
+ "usage":{"input_tokens":597,"cache_read_input_tokens":288,"output_tokens":128}}</code></pre>
+<p>运行时把这三个数原样挂在这个 <code>chat</code> span 的属性上，用的就是第 4 节那几个约定里的名字。</p>
+
+<h4>5.3 台子上哪几样是假的</h4>
+<p>左边是被简化掉的东西，右边是它换来的一句「今天不能说的话」。两列一一对应。</p>
+<div class="scroll"><table>
+<thead><tr><th>简化掉的地方</th><th>后果</th></tr></thead>
+<tbody>
+<tr><td>模型是假的，只按设定时序 sleep，不做任何计算</td><td>不下任何关于真实模型延迟、首 token 分布、显存的结论。模型那一侧的时序在今天只是横轴</td></tr>
+<tr><td>没有分词器，token 数用「字符数 ÷ 4」的近似计数算出来（Day 20 那个常数）</td><td>不下任何关于中英文 token 密度、某个模型词表的结论。所有 token 数都是「按这个近似口径数出来的 token」</td></tr>
+<tr><td>命中缓存那一档由模型服务自己按「与上一轮 prompt 的公共前缀」算，块大小 16</td><td>机制和 Day 16 那套块 hash 链一致，但没有容量、没有淘汰、没有别人来抢。所以今天的命中比例是理想值，只用来看账单的形状，不用来预测线上命中率</td></tr>
+<tr><td>单价表是写死在程序里的三个数，不是任何厂商的真实价格</td><td>不下任何关于某家服务贵不贵的结论。第 11、12 节的结论全部写成比值和形状，第 12 节末尾会把单价当变量再扫一遍</td></tr>
+<tr><td>工具是一次 <code>asyncio.sleep</code>，三个工具的时长写死为 80 / 150 / 240 毫秒</td><td>不下任何关于真实工具执行本身的结论。这三个数存在的意义只有一个：让它们互相重叠，好把第 7 节那件事逼出来</td></tr>
+<tr><td>「每个流式事件一个 span」那一档不是真跑流式，是在每轮里按 129 个事件各建一个 span，模型那一侧的时序完全不动</td><td>它量的是这个粒度的<em>埋点成本</em>，不是流式本身的成本。流式本身的成本 Day 18 第 8 节量过</td></tr>
+<tr><td>两个进程在同一台 2 核机器上，导出器是内存里的一个列表，不走网络</td><td>不下关于导出链路、收集器（把各个进程送出来的 span 收在一起、再转存出去的那个中间服务）、存储的结论。队列满了丢东西那一节是拿一个故意变慢的导出器逼出来的，不是网络实测</td></tr>
+</tbody>
+</table></div>
+<h4>5.4 跟着走一遍</h4>
+<p>下面是一条真实会话跑完之后，内存导出器里那 28 个 span，按开始时刻排好，缩进表示父子关系。时刻是从 <code>session</code> 这个 span 开始算起的毫秒数。</p>
+<p class="cap">表 A · 一条 6 轮会话的完整 span 树。出自 <code>exp_tree.py</code> 的一次运行。</p>
+<div class="scroll"><table><thead><tr><th>span</th><th class="n">开始 ms</th><th class="n">结束 ms</th><th class="n">时长 ms</th><th>父 span</th></tr></thead><tbody>
+<tr><td>session</td><td class="n">0.00</td><td class="n">5652.46</td><td class="n">5652.46</td><td>—</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;turn（第 1 轮）</td><td class="n">0.07</td><td class="n">981.72</td><td class="n">981.65</td><td>session</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;chat</td><td class="n">0.10</td><td class="n">740.01</td><td class="n">739.91</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">740.20</td><td class="n">820.67</td><td class="n">80.47</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">740.26</td><td class="n">891.11</td><td class="n">150.85</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">740.30</td><td class="n">981.61</td><td class="n">241.31</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;turn（第 2 轮）</td><td class="n">981.84</td><td class="n">1964.67</td><td class="n">982.84</td><td>session</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;chat</td><td class="n">981.89</td><td class="n">1723.05</td><td class="n">741.16</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">1723.21</td><td class="n">1803.71</td><td class="n">80.50</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">1723.27</td><td class="n">1874.13</td><td class="n">150.86</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">1723.30</td><td class="n">1964.58</td><td class="n">241.28</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;turn（第 3 轮）</td><td class="n">1964.77</td><td class="n">2946.56</td><td class="n">981.78</td><td>session</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;chat</td><td class="n">1964.81</td><td class="n">2704.95</td><td class="n">740.15</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">2705.10</td><td class="n">2785.51</td><td class="n">80.41</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">2705.15</td><td class="n">2855.94</td><td class="n">150.79</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">2705.18</td><td class="n">2946.45</td><td class="n">241.28</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;turn（第 4 轮）</td><td class="n">2946.65</td><td class="n">3928.35</td><td class="n">981.70</td><td>session</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;chat</td><td class="n">2946.68</td><td class="n">3686.57</td><td class="n">739.89</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">3686.76</td><td class="n">3767.23</td><td class="n">80.47</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">3686.83</td><td class="n">3837.68</td><td class="n">150.85</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">3686.88</td><td class="n">3928.23</td><td class="n">241.35</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;turn（第 5 轮）</td><td class="n">3928.47</td><td class="n">4910.45</td><td class="n">981.98</td><td>session</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;chat</td><td class="n">3928.50</td><td class="n">4668.65</td><td class="n">740.14</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">4668.83</td><td class="n">4749.34</td><td class="n">80.51</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">4668.90</td><td class="n">4819.82</td><td class="n">150.91</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execute_tool</td><td class="n">4668.94</td><td class="n">4910.32</td><td class="n">241.38</td><td>turn</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;turn（第 6 轮）</td><td class="n">4910.55</td><td class="n">5652.44</td><td class="n">741.89</td><td>session</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;chat</td><td class="n">4910.62</td><td class="n">5652.40</td><td class="n">741.78</td><td>turn</td></tr>
+</tbody></table></div>
+<p>这张表有一件事必须先说清楚，否则后面读不下去：<em>把一个 turn 的四个孩子的时长加起来，不等于这个 turn 的时长</em>。第 1 轮的四个孩子是 739.91、80.47、150.85、241.31，加起来 1212.54，而这个 turn 只有 981.65。这不是记错了，第 7 节整节在讲它。</p>
+<p>能对上的是另一条路：沿着 <code>session</code> 的孩子从头到尾走一遍，把每个 turn 的时长和相邻两个 turn 之间的空隙依次加起来。这条路上没有任何重叠，所以加法一定成立。</p>
+<p class="cap">表 B · 顺着 session 的孩子走一遍。同一次运行，同一个程序打印。</p>
+<div class="scroll"><table><thead><tr><th>这一段</th><th class="n">多长 ms</th></tr></thead><tbody>
+<tr><td>运行时：组装上下文 / 追加工具结果</td><td class="n">0.07</td></tr>
+<tr><td>turn 1</td><td class="n">981.65</td></tr>
+<tr><td>运行时：组装上下文 / 追加工具结果</td><td class="n">0.12</td></tr>
+<tr><td>turn 2</td><td class="n">982.84</td></tr>
+<tr><td>运行时：组装上下文 / 追加工具结果</td><td class="n">0.10</td></tr>
+<tr><td>turn 3</td><td class="n">981.78</td></tr>
+<tr><td>运行时：组装上下文 / 追加工具结果</td><td class="n">0.10</td></tr>
+<tr><td>turn 4</td><td class="n">981.70</td></tr>
+<tr><td>运行时：组装上下文 / 追加工具结果</td><td class="n">0.12</td></tr>
+<tr><td>turn 5</td><td class="n">981.98</td></tr>
+<tr><td>运行时：组装上下文 / 追加工具结果</td><td class="n">0.10</td></tr>
+<tr><td>turn 6</td><td class="n">741.89</td></tr>
+<tr><td>运行时：收尾</td><td class="n">0.02</td></tr>
+<tr><th>合计</th><th class="n">5652.46</th></tr>
+<tr><th>session span 自己报的时长</th><th class="n">5652.46</th></tr>
+</tbody></table></div>
+<p>请自己把第二列加一遍。那些 0.07、0.10、0.12 是运行时自己在组装上下文、把三个工具的结果追加到末尾——六轮加起来 0.63 毫秒，占整条会话的万分之一。这个比例和 Day 18 那条 29 段轨迹上量到的一模一样，也和那天得出的教训一模一样：它小，不是因为运行时不干活，是因为墙上时钟分不出「在等」和「在干活」。第 9 节换一把秤再量一次。</p>
+<h4>5.5 每个旋钮是怎么定出来的</h4>
+<div class="scroll"><table>
+<thead><tr><th>旋钮</th><th>取值</th><th>这个值怎么定出来的</th><th>哪一节动它</th></tr></thead>
+<tbody>
+<tr><td>模型首 token 前的等待<br>token 之间的间隔</td><td>100 毫秒<br>5 毫秒</td><td>沿用 Day 18 那两个设定值，好让今天的分段账和那天横着比。这台机器没有加速器，拿真模型当被测对象一轮就要几十秒。这两个数只决定横轴</td><td>不动</td></tr>
+<tr><td>每轮吐几个 token</td><td>128</td><td>一次工具调用的量级：一个函数名加几个参数。同样沿用 Day 18</td><td>不动</td></tr>
+<tr><td>一条会话几轮</td><td>6</td><td>和 Day 16 / 18 / 19 / 20 那几批负载对齐，都是 6 轮</td><td>第 12 节扫到 24 轮</td></tr>
+<tr><td>一轮派几个工具、各多久</td><td>3 个：80 / 150 / 240 毫秒</td><td>三个数必须两两不等，否则重叠区间算出来是一个特例。240 取在「明显小于一轮模型调用的 740 毫秒」这一档，这样一轮的时长仍由模型主导，工具重叠这件事才不至于被放大成假问题。三个之和 470 毫秒明显大于最长那个 240 毫秒，这个差正是第 7 节要量的东西</td><td>不动</td></tr>
+<tr><td>工具返回多少字符</td><td>200，对照档 2000</td><td>200 大致对应一行搜索结果；2000 取在 Day 22 那个输出上限 4000 字符的一半，代表「一次读文件返回了一大段」。三个工具同时返回 2000 字符，一轮就是 6000 字符，正好越过那个上限——第 12 节用它说明上限该定在哪儿</td><td>第 12 节</td></tr>
+<tr><td>同时在跑的会话数</td><td>1 / 8 / 32</td><td>1 是对照，用来验证「不并发的时候这个口径是对的」；32 取 Day 18 量到的健康工作点（那天 32 条并发时事件循环延迟还只有 0.35 毫秒，离墙很远），这样量到的偏差不能推给「机器已经压塌了」</td><td>第 9 节</td></tr>
+<tr><td>每轮塞几个流式事件 span</td><td>129</td><td>128 个 token 加一个结束事件，就是 Day 18 第 8 节流式那一档的交接次数。用同一个数，好让两天的账能接上</td><td>第 10 节</td></tr>
+<tr><td>批量导出的队列上限<br>一批最多导几条<br>攒多久导一次</td><td>2048<br>512<br>5000 毫秒</td><td>三个都是 SDK 的默认值，不是我挑的。<code>opentelemetry/sdk/trace/export/__init__.py</code> 第 41 到 44 行写着这四个常量。第 10 节要看的正是「默认值在什么流量下开始丢东西」</td><td>第 10 节</td></tr>
+<tr><td>单个 span 的开销测多少次</td><td>2 万次，先热身 2000 次</td><td>单个 span 是十几微秒，要测到两位有效数字就得攒到秒级。热身是 Day 6 那条「扔掉开头」——第一次走这条代码路径要付导入和分支预测的钱</td><td>第 10 节</td></tr>
+<tr><td>工具超时预算<br>读回输出的二次超时</td><td>1.0 秒<br>3.0 秒</td><td>两个都沿用 Day 22 的取值，这样今天量到的分段能和昨天那张表直接对上</td><td>第 8 节</td></tr>
+<tr><td>单价：整价输入 / 命中缓存的输入 / 输出</td><td>每百万 token 3.00 / 0.30 / 15.00</td><td>写死在程序里的设定值，不对应任何厂商。三个数之间的比例（缓存那一档比整价便宜十倍、输出比整价贵五倍）取自这类定价表常见的量级。第 12 节末尾把比例当变量扫一遍，看结论稳不稳</td><td>第 12 节</td></tr>
+<tr><td>每档跑几遍</td><td>并发扫描每档 3 遍取中位；单次调用 3 次取中位</td><td>这台机器上还有别的进程，单遍会有一两成浮动</td><td>全页</td></tr>
+</tbody>
+</table></div>
+
+<p>想知道某一个数是谁打印的，查下面这张。今天的程序都很短，一个程序只量一件事，且不同时开。</p>
+<div class="scroll"><table>
+<thead><tr><th>表</th><th>出自</th><th>怎么读到</th></tr></thead>
+<tbody>
+<tr><td>表 A、表 B（span 树与关键路径）</td><td><code>exp_tree.py</code> + <code>rt.py</code> + <code>svc_model.py</code></td><td>标准输出前两段</td></tr>
+<tr><td>表 C（父减子）</td><td><code>exp_tree.py</code></td><td>标准输出 <code>---AGG---</code> 那一段</td></tr>
+<tr><td>表 D、表 E（归因边界）</td><td><code>exp_attr.py</code> + <code>kids/*.py</code></td><td>标准输出两段</td></tr>
+<tr><td>表 F（CPU 按 span 摊）</td><td><code>exp_cpu.py</code></td><td>标准输出</td></tr>
+<tr><td>表 G（埋点在运行时里的开销）</td><td><code>exp_ovh.py</code></td><td>标准输出</td></tr>
+<tr><td>表 H、表 I、表 J（单 span 开销、体积、丢弃）</td><td><code>exp_span.py</code></td><td>标准输出三段</td></tr>
+<tr><td>表 K、表 L、表 M（账单）</td><td><code>exp_bill.py</code></td><td>标准输出三段</td></tr>
+</tbody>
+</table></div>
+
+<h3>6. 往下翻之前，先把三个数落在纸上</h3>
+<p>这三个问题的答案都在第三部分，而且前面二十二天一天都没碰过。别去翻记忆，照着装置推。</p>
+<div class="card pred"><span class="tag">预测 · 落笔再翻页</span>
+<p>问题一　表 A 里第 1 轮那个 turn：它有四个孩子，一次 <code>chat</code>（739.91 毫秒）和三个并发的 <code>execute_tool</code>（80.47 / 150.85 / 241.31 毫秒），turn 自己是 981.65 毫秒。仿照剖析器里那个「自身耗时」的算法——父的时长减去所有孩子的时长之和——这一轮运行时自己花了多少毫秒？</p>
+<div class="write"></div>
+<p>问题二　32 条会话同时跑，在每个叶子 span 的两端各读一次 <code>time.process_time()</code>，差出「这一段期间进程烧了多少 CPU」。把全部叶子 span 的差值加起来，这个和是这批会话真正消耗掉的 CPU 的几倍？</p>
+<div class="write"></div>
+<p>问题三　把 trace 的粒度从「每轮三层」改成「每个流式事件一个 span」，一条会话的 span 从 28 条涨到 802 条，涨了 28 倍。运行时自己烧的 CPU 会涨几倍？</p>
+<div class="write"></div>
+</div>
+<h2><span class="sec">板块 2 · 第三部分</span>时间摊回去</h2>
+<p class="sub">树建好了，问题才刚开始：一段时间该记在哪个节点上。这一部分有三个答案会跟直觉反着来。</p>
+
+<h3>7. 揭晓（一）：父减子等于负两百三十一毫秒</h3>
+<p>问题一的答案是 −230.89 毫秒。六轮里有五轮都是这个量级，稳定得像个常数。</p>
+<p class="cap">表 C · 六个 turn 各自的四笔账。出自 <code>exp_tree.py</code> 与表 A 同一次运行。第 6 轮没有工具，所以那一行是正常的。</p>
+<div class="scroll"><table><thead><tr><th>turn</th><th class="n">turn 自己多长</th><th class="n">四个孩子时长之和</th><th class="n">父减子</th><th class="n">孩子覆盖的区间并集</th><th class="n">父减并集</th></tr></thead><tbody>
+<tr><td>第 1 轮</td><td class="n">981.65</td><td class="n">1212.54</td><td class="n">-230.89</td><td class="n">981.32</td><td class="n">0.33</td></tr>
+<tr><td>第 2 轮</td><td class="n">982.84</td><td class="n">1213.79</td><td class="n">-230.95</td><td class="n">982.52</td><td class="n">0.31</td></tr>
+<tr><td>第 3 轮</td><td class="n">981.78</td><td class="n">1212.62</td><td class="n">-230.84</td><td class="n">981.50</td><td class="n">0.28</td></tr>
+<tr><td>第 4 轮</td><td class="n">981.70</td><td class="n">1212.56</td><td class="n">-230.87</td><td class="n">981.36</td><td class="n">0.33</td></tr>
+<tr><td>第 5 轮</td><td class="n">981.98</td><td class="n">1212.95</td><td class="n">-230.97</td><td class="n">981.63</td><td class="n">0.35</td></tr>
+<tr><td>第 6 轮</td><td class="n">741.89</td><td class="n">741.78</td><td class="n">0.11</td><td class="n">741.78</td><td class="n">0.11</td></tr>
+</tbody></table></div>
+<p>第四列全是负数，第六列全是零点几毫秒。同一个 turn、同一批 span、同一次运行，两个算法差了两百多毫秒和一个正负号。</p>
+<p>原因在表 A 的时刻列里已经摆着了。第 1 轮那三个 <code>execute_tool</code> 的开始时刻是 740.20、740.26、740.30——它们几乎同时开始，然后各跑各的，先后在 820.67、891.11、981.61 结束。它们在时间上是叠着的，不是排着的。</p>
+<figure><div class="scroll">
+<svg viewBox="0 0 760 200" width="760" role="img" aria-label="第一轮四个子 span 在时间轴上的位置，三个工具互相重叠">
+<g stroke="currentColor" stroke-width="1.2" fill="none">
+<rect x="40" y="18" width="700" height="22" rx="3"/>
+<rect x="40" y="48" width="527" height="22" rx="3"/>
+<rect x="568" y="82" width="57" height="20" rx="3"/>
+<rect x="568" y="108" width="108" height="20" rx="3"/>
+<rect x="568" y="134" width="172" height="20" rx="3"/>
+<line x1="40" y1="172" x2="740" y2="172"/>
+<line x1="40" y1="168" x2="40" y2="176"/><line x1="568" y1="168" x2="568" y2="176"/><line x1="740" y1="168" x2="740" y2="176"/>
+</g>
+<g font-size="11.5" fill="currentColor">
+<text x="48" y="33">turn（第 1 轮）　981.65 ms</text>
+<text x="48" y="63">chat　739.91 ms</text>
+<text x="350" y="96">execute_tool　80.47 ms</text>
+<text x="350" y="122">execute_tool　150.85 ms</text>
+<text x="350" y="148">execute_tool　241.31 ms</text>
+</g>
+<g font-size="10.5" fill="currentColor">
+<text x="30" y="190">0 ms</text><text x="543" y="190">740 ms</text><text x="712" y="190">982 ms</text>
+</g>
+</svg>
+</div>
+<figcaption class="cap">三个 <code>execute_tool</code> 从同一时刻起跑，在时间轴上占的是同一段。把它们的长度加起来，等于把 740 到 982 这一段数了三遍。</figcaption>
+</figure>
+<p>把三个工具的长度加起来是 472.63 毫秒，可它们在时间轴上一共只盖住了 241.41 毫秒。多出来的 231.22 毫秒，就是被重复数掉的那一截——和第四列那个 −230.89 差 0.33 毫秒，那 0.33 正好是这一轮运行时自己的活儿，也就是第六列。</p>
+<p>所以正确的算法不是减「时长之和」，是减「这些孩子在时间轴上盖住的那些区间的并集」。做法很直接：把所有孩子的 <code>[开始, 结束]</code> 按开始时刻排序，从左往右扫，重叠的合并成一段，最后把每段的长度加起来。这个量叫 <span class="term">区间并集（interval union）</span>，父 span 时长减去它，才是这个节点<span class="term">自身耗时（self time）</span>的正确口径。自身耗时这个词 Day 3 讲火焰图时引过，那天所有的调用都是排着的、不重叠的，所以那天减和减并集是一回事。</p>
+<div class="card kk"><span class="tag">关键结论</span>
+<p>一旦一个节点的孩子里出现并发，「父减子之和」这个式子就失效，而且失效的方式很好认：它会给出负数。看到负的自身耗时不要去查代码有没有打错点，那通常是对的——它在告诉你这一层有并发。真正要换的是算法。</p></div>
+<p>再往上看一层。整条会话的 <code>session</code> span 是 5652.46 毫秒，而 27 个后代的时长加起来是 12458.08 毫秒，是它的 2.2 倍。这个 2.2 倍没有任何物理含义，它只是「重叠被数了几遍」的一个副产物。任何把一棵 trace 里所有 span 时长加起来当「总耗时」的仪表板，都在报这个数。</p>
+<p class="breathe">换个说法：span 树是一份空间上的包含关系，不是一份时间上的划分。父亲包着孩子，说的是「孩子这段活儿是在父亲这段期间发生的」，不是「父亲的时间被孩子们分掉了」。加法要成立，得先保证被加的那些段两两不重叠——表 B 那条路成立，正是因为它沿着同一层从左到右走，不跨层。</p>
+<p>一条会话真正的「时间去哪了」，要顺着另一条路读：从根出发，每一层挑那个决定了父亲何时结束的孩子，一路走到叶子。这条路叫 <span class="term">关键路径（critical path）</span>。第 1 轮的关键路径是 <code>chat</code>（739.91）接上最长的那个工具（241.31）；三个工具里另外两个再快也不会让这一轮变短，只有 240 毫秒那个会。所以「该优化哪个工具」这个问题，答案不在三个工具的平均耗时里，在关键路径上出现的次数里。</p>
+<h3>8. 那三秒该记在谁头上</h3>
+<p>第 7 节处理的是重叠。这一节处理另一件事：一段时间明明发生了，问题是它该被划进哪个 span。</p>
+<p>昨天那个装置留了一个具体的口子。一次工具执行的超时预算是 1000 毫秒，报出去的却是 4019 毫秒，多出来那三秒是在等两个跟这次调用毫无关系的后台进程放开管道的写端。今天把同一个形状搭得更小一点，只留必要的部分：一个子进程，它起一个 <code>setsid</code> 的后台进程，然后自己卡住；超时到点只杀直接子进程；杀完再读 stdout，二次超时 3 秒。</p>
+<p>三个脚本的差别只有一处：后台进程的 stdout 指向哪里，以及主进程会不会自己结束。</p>
+<p class="cap">表 D · 一次调用里两段各多长。出自 <code>exp_attr.py</code>，3 次取中位。</p>
+<div class="scroll"><table>
+<thead><tr><th>脚本</th><th>做了什么</th><th class="n">执行段 ms</th><th class="n">拿回输出段 ms</th><th class="n">合计 ms</th><th>拿回来的 stdout</th></tr></thead>
+<tbody>
+<tr><td><code>fast.py</code></td><td>睡 0.15 秒就正常退出</td><td class="n">164.4</td><td class="n">0.6</td><td class="n">165.0</td><td><code>done</code></td></tr>
+<tr><td><code>leaky.py</code></td><td>后台进程继承 stdout，主进程卡住</td><td class="n">1000.3</td><td class="n">3000.5</td><td class="n">4000.8</td><td>（空）</td></tr>
+<tr><td><code>clean.py</code></td><td>后台进程的 stdout 指到 <code>/dev/null</code>，主进程一样卡住</td><td class="n">1000.4</td><td class="n">0.8</td><td class="n">1001.2</td><td><code>started</code></td></tr>
+</tbody>
+</table></div>
+<p>这三行把昨天那两个数原样复现了：4000.8 对昨天的 4019，3000.5 对昨天的 3019.7。第三行是对照——只把后台进程的 stdout 挪开，同样的杀法，读立刻到结尾，那行 <code>started</code> 也回来了。</p>
+<p>现在换个问法。这三秒既不是工具在算，也不是工具在等外部服务，它是执行服务自己在等一根管道。把它记在哪个 span 上？两种划法，同一批调用——八次正常的加两次泄漏的——指标长成两个样子。</p>
+<p class="cap">表 E · 十次调用的工具延迟。同一批数据，两种 span 划法。</p>
+<div class="scroll"><table>
+<thead><tr><th>span 怎么划</th><th class="n">P50 ms</th><th class="n">P90 ms</th><th class="n">最大 ms</th><th>你看着这条曲线会去做什么</th></tr></thead>
+<tbody>
+<tr><td>整段记在 <code>execute_tool</code> 上</td><td class="n">164.8</td><td class="n">4000.7</td><td class="n">4000.7</td><td>「工具的尾延迟炸了」——去查那两个工具本身，查不到东西</td></tr>
+<tr><td>拆出来：<code>execute_tool</code></td><td class="n">164.4</td><td class="n">1000.2</td><td class="n">1000.3</td><td>工具正常，超时按 1000 毫秒的预算准时生效</td></tr>
+<tr><td>拆出来：<code>release_output</code></td><td class="n">0.4</td><td class="n">3000.4</td><td class="n">3000.4</td><td>直接指向「有人没放开写端」，而且指向的是清理逻辑，不是工具</td></tr>
+</tbody>
+</table></div>
+<p>第一行那个 P90 是 4000.7，它在告诉你「工具很慢」。可这句话是假的：工具那一段在两种划法下都是 1000 毫秒，一毫秒没差，而且这 1000 毫秒还是你自己设的超时预算，本来就该是这个数。四秒里有三秒根本不在工具身上。</p>
+<p>更要紧的是第三行那个 P50：0.4 毫秒。正常情况下这个 span 短到几乎不存在。一条平时贴着零、偶尔跳到三秒的曲线，是最容易设告警的形状；而第一行那条曲线本来就在一百多毫秒上下抖，三秒混进去只是把 P90 抬起来，抬多少取决于泄漏的比例，看不出是两种不同的东西叠在一起。</p>
+<div class="card kk"><span class="tag">关键结论</span>
+<p>span 的边界不是记账格式，它就是你将来能问出口的问题的边界。合在一起的两段，事后再也分不开——你手上只有一个总时长。所以划 span 的判据不是「代码里这是不是一个函数」，是「这两段坏掉的原因是不是同一类」。工具本身慢和管道没放开，修法完全不同，就得是两个 span。</p></div>
+<p>顺着这条判据回去看第 5 节那棵树，<code>chat</code> 和 <code>execute_tool</code> 分开是对的，因为一个坏了要去找模型服务、另一个坏了要去找工具。而按这条判据，那棵树还缺至少两刀：<code>chat</code> 里应该再切出「等首 token」和「收完剩下的」，因为前者慢是排队、后者慢是生成；<code>execute_tool</code> 里应该再切出「建沙箱」和「跑代码」和「回收」，昨天那 16 个打点已经把这三段量得清清楚楚了。</p>
+<h3>9. 揭晓（二）：CPU 没法按 span 摊</h3>
+<p>表 B 底下留了一句话：墙上时钟说运行时自己只花了 0.63 毫秒，而 Day 18 已经证明这个数是假的——那天换成进程 CPU 时钟量，同一条会话的运行时开销从 0.65 毫秒变成 12.94 毫秒，差二十倍。</p>
+<p>既然如此，把那把秤直接搬到 span 上不就行了？<code>time.process_time()</code> 在每个 span 的两端各读一次，一减，就得到「这个 span 期间进程烧了多少 CPU」。听起来天经地义。</p>
+<p>做出来是这样。只统计叶子 span（<code>chat</code> 和 <code>execute_tool</code>），避免父子嵌套本身造成的重复。</p>
+<p class="cap">表 F · 叶子 span 的 CPU 差值之和，对比这批会话真正消耗的 CPU。出自 <code>exp_cpu.py</code>，每档 3 遍取中位。</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">同时在跑</th><th class="n">这批会话真实 CPU ms</th><th class="n">叶子 span 差值之和 ms</th><th class="n">倍数</th><th class="n">叶子 span 条数</th><th class="n">墙上秒</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td class="n">21.6</td><td class="n">22.7</td><td class="n">1.05</td><td class="n">21</td><td class="n">5.65</td></tr>
+<tr><td class="n">8</td><td class="n">89.1</td><td class="n">847.3</td><td class="n">9.51</td><td class="n">168</td><td class="n">5.67</td></tr>
+<tr><td class="n">32</td><td class="n">516.2</td><td class="n">21834.6</td><td class="n">42.30</td><td class="n">672</td><td class="n">5.73</td></tr>
+</tbody>
+</table></div>
+<p>问题二的答案是 42.3 倍。先看第一行：并发为 1 的时候这个口径几乎是准的，1.05 倍，多出来那 5% 是循环里没被任何叶子 span 盖住的那点组装工作——本来就该在外面。所以这把秤没坏。</p>
+<p>坏的是并发一上来。第二列和第三列之间的差不是精度问题，是量级问题：8 条并发时已经差了 9.5 倍，32 条时 42.3 倍。而第五列和第一列的比值恰好也是这个量级——8 条并发下每条会话有 21 个叶子 span，32 条下有 21 个，总条数分别是 168 和 672。</p>
+<p>机制一句话就能说清，而且和 Day 4 那件事是同一件。<code>time.process_time()</code> 返回的是<em>整个进程</em>消耗的 CPU 时间，不是当前这个协程消耗的。asyncio 是单线程的：一个 <code>chat</code> span 期间，这个协程绝大部分时候挂在 <code>await</code> 上，而事件循环正在跑别的会话的回调。那些回调烧掉的 CPU，全部落进了这个 span 的两次读数之间。32 条会话同时开着，每一份 CPU 就同时落进大约 32 个 span 的区间里，被记了三十几遍。</p>
+<div class="card kk"><span class="tag">关键结论</span>
+<p>「这一段花了多少 CPU」和「这一段花了多少墙上时间」在异步运行时里不是同一类问题。墙上时间可以按区间归因，因为一个时刻只有一段区间在往前走；CPU 不行，因为一个时刻只有一个协程在真正跑，而它是谁，两次时钟读数之间的差告诉不了你。</p></div>
+<p>能怎么办？三条路，代价各不相同：</p>
+<div class="scroll"><table>
+<thead><tr><th>路子</th><th>它给你什么</th><th>代价</th></tr></thead>
+<tbody>
+<tr><td>只在并发为 1 的压测里量 CPU</td><td>准的单条开销，可以拿来算「一次交接值多少 CPU」</td><td>Day 18 第 9 节量过：拿低并发的单条开销外推容量，高估了大约四倍。这个数只能用来看构成，不能用来算容量</td></tr>
+<tr><td>不按 span 摊，按整个进程报</td><td>一条「进程 CPU 占核比例」的曲线，随时可读、永远是对的</td><td>它不告诉你钱花在哪一段上。要定位得另开一把工具</td></tr>
+<tr><td>用采样式剖析器定位</td><td>函数级的自身耗时，Day 3 那把火焰图</td><td>它给不出「这条 trace 的这一段」，只给「这段时间窗口里全体」。两者要靠时间窗口对齐着看</td></tr>
+</tbody>
+</table></div>
+<p>写进设计文档的那一条是：trace 上只放时间，不放 CPU。CPU 归因交给进程级指标加剖析器，两者用时间窗口对起来看。</p>
+
+<h3>10. 揭晓（三）：埋点自己的账</h3>
+<p>前两节都在说 trace 能告诉你什么。这一节说它要收多少钱。</p>
+<p>先脱开运行时单量：造一个 span，挂几个属性，结束它，从头到尾多少微秒。</p>
+<p class="cap">表 G · 单个 span 的开销。出自 <code>exp_span.py</code>，2 万次平均，先热身 2000 次；导出器是一个什么都不做的空实现，所以这一列不含导出的钱。</p>
+<div class="scroll"><table>
+<thead><tr><th>导出处理器</th><th class="n">不挂属性</th><th class="n">挂 3 个属性</th><th class="n">挂 8 个属性</th></tr></thead>
+<tbody>
+<tr><td>逐条导出（SimpleSpanProcessor）</td><td class="n">14.58 µs</td><td class="n">15.70 µs</td><td class="n">21.58 µs</td></tr>
+<tr><td>攒批导出（BatchSpanProcessor）</td><td class="n">18.96 µs</td><td class="n">22.12 µs</td><td class="n">25.61 µs</td></tr>
+</tbody>
+</table></div>
+<p>十几到二十几微秒，对一个 740 毫秒的模型调用来说完全可以忽略。可这个判断只在「span 数量和轮数同一个量级」的时候成立。把它放回运行时里，改一个旋钮——每轮塞进 129 个流式事件的 span——量级就变了。</p>
+<p class="cap">表 H · 埋点在运行时里的实际开销。出自 <code>exp_ovh.py</code>，32 条并发，每档 3 遍取中位。「不打点」那一行用的是一个什么都不做的假 tracer，代码路径其余部分完全一样。</p>
+<div class="scroll"><table>
+<thead><tr><th>埋点粒度</th><th class="n">每条会话 span 数</th><th class="n">运行时 CPU ms／条会话</th><th class="n">占一个核</th><th class="n">会话墙上秒</th><th class="n">相对不打点</th></tr></thead>
+<tbody>
+<tr><td>不打点</td><td class="n">0</td><td class="n">13.22</td><td class="n">7.4%</td><td class="n">5.73</td><td class="n">1.00x</td></tr>
+<tr><td>每轮三层（今天这套）</td><td class="n">28</td><td class="n">15.47</td><td class="n">8.6%</td><td class="n">5.74</td><td class="n">1.17x</td></tr>
+<tr><td>每个流式事件一个 span</td><td class="n">802</td><td class="n">33.76</td><td class="n">18.3%</td><td class="n">5.91</td><td class="n">2.55x</td></tr>
+</tbody>
+</table></div>
+<p>问题三的答案是 2.55 倍。28 个 span 只要 17%，很便宜；802 个 span 要 155%，也就是说这个运行时为了描述自己，花掉了比干活本身还多的 CPU。</p>
+<p>倍数背后是一条乘法：802 减 28 等于 774 个多出来的 span，乘以表 G 里攒批那一行的二十几微秒，大约 18 毫秒，正好就是 33.76 减 15.47 那一截。两张表是分开量的，结果对得上，说明这条乘法可以拿来估算——你要新增一批 span，先数一数会多几条，乘二十几微秒。</p>
+<p>第一列还有另一笔账，占的不是 CPU 是网络和存储：</p>
+<p class="cap">表 I · 一条 6 轮会话导出多少字节。出自 <code>exp_span.py</code>，按每个 span 一行 JSON 估，字段是 trace_id、span_id、parent、起止时刻、状态和若干属性。</p>
+<div class="scroll"><table>
+<thead><tr><th>粒度</th><th class="n">span 条数</th><th class="n">导出字节</th><th class="n">相对最粗一档</th></tr></thead>
+<tbody>
+<tr><td>整条会话一个 span</td><td class="n">1</td><td class="n">395</td><td class="n">1.0x</td></tr>
+<tr><td>每轮三层（今天这套）</td><td class="n">28</td><td class="n">10388</td><td class="n">26.3x</td></tr>
+<tr><td>每个流式事件一个 span</td><td class="n">802</td><td class="n">278294</td><td class="n">704.5x</td></tr>
+</tbody>
+</table></div>
+<p>一条会话 272 KB。拿今天这条会话自己的业务数据比一比：它累计发给模型 4473 个 token，按「四个字符一个 token」那个口径折回去是 17892 个字符。最细那一档打点，trace 是业务数据本身的十五倍。</p>
+<p>所以要少打一些。少打的办法叫 <span class="term">采样（sampling）</span>，这个词 Day 3 出现过，那天采的是调用栈，今天采的是 trace。SDK 的默认采样器写在 <code>opentelemetry/sdk/trace/sampling.py:375</code>，一行：<code>DEFAULT_ON = ParentBased(ALWAYS_ON)</code>。拆开看是两件事：根 span 全采；非根 span 照父亲的决定办（同一文件 301 行起那个类的五个参数就是「父亲在本地／远程、采了／没采」这四种情况各配一个采样器）。</p>
+<p>把 <code>ALWAYS_ON</code> 换成按比例的那个，采样率就落在 <code>TraceIdRatioBased</code> 上（同文件 265 行起）：它把采样率乘上 trace_id 的取值上限得到一个门槛，再拿 trace_id 本身去比。用 trace_id 而不是随机数，是为了让链路上每一跳算出同一个答案——这就是 <code>traceparent</code> 最后那两位存在的理由。这种「在根上决定、往下传」的做法叫头部采样，它的问题是决定做得太早：出错的那条会话恰恰是你最想留下的，而它出错的时候采样决定已经做完两分钟了。留到出错之后再决定的做法叫 <span class="term">尾部采样（tail sampling）</span>，代价是所有 span 得先被攒在某个地方等齐。</p>
+<p>还有一条路根本不采样，只是把粒度调粗：129 个流式事件不各成一个 span，而是变成这个 <code>chat</code> span 上的两个属性——首 token 的时刻、事件总数。Day 18 那天关心的每一轮首 token 延迟，两个属性就够了，用不着 774 个 span。</p>
+<h4>队列满了，丢的是最老的那一批</h4>
+<p>不采样、也不调粗，会怎么样？攒批导出那一侧有一个队列，SDK 的默认值在 <code>opentelemetry/sdk/trace/export/__init__.py</code> 第 41 到 44 行：队列最多 2048 条、一批最多导 512 条、每 5000 毫秒导一次。队列满了的处理写在 <code>opentelemetry/sdk/_shared_internal/__init__.py</code> 第 204 到 208 行：</p>
+<pre><code># _shared_internal/__init__.py:104
+self._queue = collections.deque([], max_queue_size)   # 定长双端队列
+
+# _shared_internal/__init__.py:204 起
+if len(self._queue) == self._max_queue_size:
+    _logger.warning("Queue full, dropping %s.", self._exporting)
+    self._metrics.drop_items(1)
+# This will drop a log from the right side if the queue is at _max_queue_size.
+self._queue.appendleft(data)                          # 新的从左边进
+
+# _shared_internal/__init__.py:184，导出线程那一侧
+# Oldest records are at the back, so pop from there.
+self._queue.pop()                                     # 导出从右边取</code></pre>
+<p>新 span 从左边进，导出线程从右边取，队列是定长的——所以队列满的时候，被挤掉的是最右边那条，也就是<em>最老的那条</em>。拿一个故意慢下来的导出器把这件事逼出来：</p>
+<p class="cap">表 J · 队列满了之后丢的是哪几条。出自 <code>exp_span.py</code>，导出器每批睡 0.5 秒，span 按顺序编号。</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">产生条数</th><th class="n">队列上限</th><th class="n">导出条数</th><th class="n">丢掉条数</th><th>丢掉的编号区间</th></tr></thead>
+<tbody>
+<tr><td class="n">1000</td><td class="n">2048</td><td class="n">1000</td><td class="n">0</td><td>—</td></tr>
+<tr><td class="n">5000</td><td class="n">2048</td><td class="n">2560</td><td class="n">2440</td><td>512 ~ 2951（连续的一整段）</td></tr>
+</tbody>
+</table></div>
+<p>第二行值得看仔细。丢掉的不是零散的两千多条，是编号 512 到 2951 这一整段连续的。原因在上面那段源码里：0 到 511 是第一批，导出线程在变慢之前已经取走了；从 512 开始队列一直是满的，新来的每挤进一个就从右边推掉一个最老的；等到产生速度停下来，队列里剩下的正好是最后那 2048 条加上第一批。</p>
+<div class="card kk"><span class="tag">关键结论</span>
+<p>丢 span 不是均匀地丢，是丢掉一整段时间窗口。落到你眼前的样子是：一条 trace 的树上缺了中间一层，剩下的孩子挂不到父亲身上，成了没有父亲的 <span class="term">孤儿 span（orphan span）</span>。而这段缺口最容易出现在流量突增的时候——也就是你最需要看这些 trace 的时候。</p></div>
+<p class="breathe">这一节三张表说的是同一件事的三个面：CPU、字节、以及丢弃。三者都是「span 太多」的后果，而 span 太多这件事在代码里看起来无害得很——不过是多写了一层 <code>with</code>。</p>
+<h2><span class="sec">板块 2 · 第四部分</span>钱摊回去</h2>
+<p class="sub">时间那一侧摊完了。钱这一侧有它自己的一套麻烦：数字不是你测出来的，是对方告诉你的；而且它跨轮次结算。</p>
+
+<h3>11. usage 是模型回来之后才有的东西</h3>
+<p>时间可以自己掐表，token 不行。一段文本折成几个 token，取决于对方用的词表；Day 20 那个「四个字符一个 token」的近似计数，是在拿不到词表的时候的估法，函数自己的文档就写着那个 4 是常见英文文本的经验值。所以记账要用的数只有一个来源：模型返回体里那份 usage。</p>
+<p>这份 usage 有几个数，第 4 节那几个约定的名字已经说了：整价的输入、命中缓存的输入、写进缓存的输入、输出。把今天这条 6 轮会话的逐轮 usage 摊开来看：</p>
+<p class="cap">表 K · 一条 6 轮会话的逐轮 usage 与账单，工具返回 200 字符。出自 <code>exp_bill.py</code>。单价见 5.5 节，钱的单位是微元（百万分之一元）。</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">轮</th><th class="n">input_tokens</th><th class="n">其中命中缓存</th><th class="n">按整价算的 input</th><th class="n">output_tokens</th><th class="n">这一轮的钱</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td class="n">3</td><td class="n">0</td><td class="n">3</td><td class="n">128</td><td class="n">1929.0</td></tr>
+<tr><td class="n">2</td><td class="n">300</td><td class="n">0</td><td class="n">300</td><td class="n">128</td><td class="n">2820.0</td></tr>
+<tr><td class="n">3</td><td class="n">597</td><td class="n">288</td><td class="n">309</td><td class="n">128</td><td class="n">2933.4</td></tr>
+<tr><td class="n">4</td><td class="n">894</td><td class="n">592</td><td class="n">302</td><td class="n">128</td><td class="n">3003.6</td></tr>
+<tr><td class="n">5</td><td class="n">1191</td><td class="n">880</td><td class="n">311</td><td class="n">128</td><td class="n">3117.0</td></tr>
+<tr><td class="n">6</td><td class="n">1488</td><td class="n">1184</td><td class="n">304</td><td class="n">128</td><td class="n">3187.2</td></tr>
+<tr><th>合计</th><th class="n">4473</th><th class="n">2944</th><th class="n">1529</th><th class="n">768</th><th class="n">16990.2</th></tr>
+</tbody>
+</table></div>
+<p>第二列和第三列的关系，比第二列本身好用。整条会话累计送进去 4473 个 token，其中 2944 个命中缓存，占 65.8%；真正按整价付钱的只有 1529 个。而第四列每一行都在 300 上下——那正好是「这一轮比上一轮多出来的那一截」：模型上一轮吐的 128 个 token，加三个工具各 200 字符折成的 150 个 token，再加一点结构字符。</p>
+<p class="breathe">换句话说，前缀缓存在账单上的样子是：一条 agent 会话不管转多少轮，每一轮按整价付的都只是<em>新增的那一截</em>。这就是 Day 16 那句「agent 的上下文只往后长、不改前面」在财务报表上的形状。而 Day 20 那天量的是同一件事的另一面——一旦你在上下文前面动了刀，这一列立刻从 300 跳到几千。</p>
+<p>usage 要挂在哪个 span 上？只能是那个 <code>chat</code> span，而且只能在它结束之前挂。SDK 里的 <code>Span.end()</code> 写在 <code>opentelemetry/sdk/trace/__init__.py:986</code>，倒数第二行是 <code>self._attributes._immutable = True</code>——span 一旦结束，属性就冻住了，再 <code>set_attribute</code> 什么也不会发生。</p>
+<p>这条约束和流式撞在一起会出事。流式返回时，usage 通常放在最后一个事件里；如果这条会话在中途被取消、超时、或者客户端断开，你收到的事件里就没有 usage 那一条。而钱是照付的——模型那一侧已经把这些 token 算完了。所以流式那条路上，取消处理和账单是同一个问题：取消的时候必须把「到此为止已经吐了多少个 token」自己数下来记上，不能指望那份最终 usage。</p>
+<div class="card kk"><span class="tag">关键结论</span>
+<p>账上最容易漏的不是算错，是漏记。正常结束的会话账都对得上，出错和被取消的那些会话最容易一分钱都不上账——恰恰它们花的钱一分不少。判断一套成本核算做没做对，看的不是总额，是「失败的会话在不在账上」。</p></div>
+
+<h3>12. 揭晓（四）：一次工具调用的钱，一分都不在它自己那个 span 上</h3>
+<p class="lead">工具调用不调模型，那它是不是免费的？</p>
+<p>表 K 那条会话里，三个 <code>execute_tool</code> span 上的 token 数确实是零。按 span 读账，这三次调用一分钱没花。</p>
+<p>把工具返回的长度从 200 字符改成 2000 字符，别的一个字不动，再跑一条：</p>
+<p class="cap">表 L · 只改一个旋钮：工具返回多少字符。同一个程序、同样 6 轮、同样每轮 128 个输出 token。</p>
+<div class="scroll"><table>
+<thead><tr><th>工具返回</th><th class="n">累计 input</th><th class="n">其中命中缓存</th><th class="n">按整价算的 input</th><th class="n">累计 output</th><th class="n">整条会话的钱（微元）</th></tr></thead>
+<tbody>
+<tr><td>200 字符</td><td class="n">4473</td><td class="n">2944</td><td class="n">1529</td><td class="n">768</td><td class="n">16990.2</td></tr>
+<tr><td>2000 字符</td><td class="n">24729</td><td class="n">16480</td><td class="n">8249</td><td class="n">768</td><td class="n">41211.0</td></tr>
+<tr><th>差</th><th class="n">+20256</th><th class="n">+13536</th><th class="n">+6720</th><th class="n">0</th><th class="n">+24220.8（2.43 倍）</th></tr>
+</tbody>
+</table></div>
+<p>多出来的 24220.8 微元，全部落在六个 <code>chat</code> span 上，三个 <code>execute_tool</code> span 上依然是零。差额可以逐项对上：整价那一档多了 6720 个 token，乘 3.00 是 20160；缓存那一档多了 13536 个，乘 0.30 是 4060.8；两项相加正好 24220.8。</p>
+<p>把这笔账按「这段内容是哪一轮进的上下文」摊回去，形状就清楚了：</p>
+<p class="cap">表 M · 每一段内容在整条会话账单上一共花了多少。出自 <code>exp_owner.py</code>，读的是表 L 那两条会话的逐轮 usage，单位微元。</p>
+<div class="scroll"><table>
+<thead><tr><th>这段内容什么时候进的上下文</th><th class="n">200 字符：自己那次</th><th class="n">200 字符：后面重发</th><th class="n">2000 字符：自己那次</th><th class="n">2000 字符：后面重发</th></tr></thead>
+<tbody>
+<tr><td>会话开头，用户那一句</td><td class="n">9.0</td><td class="n">13.2</td><td class="n">12.0</td><td class="n">16.8</td></tr>
+<tr><td>第 1 轮末尾（模型输出 + 三个工具结果）</td><td class="n">891.0</td><td class="n">412.5</td><td class="n">4941.0</td><td class="n">1988.1</td></tr>
+<tr><td>第 2 轮末尾</td><td class="n">891.0</td><td class="n">291.3</td><td class="n">4941.0</td><td class="n">1485.9</td></tr>
+<tr><td>第 3 轮末尾</td><td class="n">891.0</td><td class="n">195.5</td><td class="n">4941.0</td><td class="n">989.1</td></tr>
+<tr><td>第 4 轮末尾</td><td class="n">891.0</td><td class="n">93.8</td><td class="n">4941.0</td><td class="n">494.1</td></tr>
+<tr><td>第 5 轮末尾</td><td class="n">891.0</td><td class="n">0.0</td><td class="n">4941.0</td><td class="n">0.0</td></tr>
+<tr><td>输出那一档（六轮的 output_tokens）</td><td colspan="2" class="n">11520.0（占 67.8%）</td><td colspan="2" class="n">11520.0（占 28.0%）</td></tr>
+</tbody>
+</table></div>
+<p>第 1 轮末尾那一行，2000 字符那一档一共花了 6929.1 微元，其中 4941.0 是它第一次被送进去时按整价付的，另外 1988.1 是它在后面四轮里被反复重发时按缓存价付的——多付了 40%。越早进上下文的内容，尾巴越长；最后一轮末尾进来的那一份就没有尾巴，因为没有下一轮了。</p>
+<p>最后一行是这张表里最值得停一下的地方。工具返回短的时候，整条会话的账有 67.8% 是输出那一档；返回一长，同样的 11520 微元只剩 28.0%。一条会话的钱花在哪儿，会随着「工具往上下文里塞多少」整个换一副面孔——而这两条会话的模型输出一个 token 都没变。</p>
+<div class="card kk"><span class="tag">关键结论</span>
+<p>一次工具调用真正的成本，是它往上下文里塞进去的那些 token，乘以它之后还要被重发几轮。这笔钱一分都不出现在它自己那个 span 上，全部出现在后面每一个 <code>chat</code> span 上。所以「哪个工具最贵」这个问题，按 span 上的时长排序永远答不出来；要按「它引入了多少 token × 它之后还剩几轮」排。</p></div>
+<p>Day 22 给工具结果定的那个输出上限是 4000 字符，定它的方法是倒推：一轮里允许几个工具结果、总共愿意给多少上下文预算，除一下。今天这两条会话给这个倒推补上了后半段：三个工具各返回 2000 字符，一轮就是 6000 字符，越过那个上限；而越过的代价不是「上下文长了 6000 字符」这么一次性，是这 6000 字符要在剩下的每一轮里再被送一遍。上限这个旋钮拧下去省的钱，也要按同一个乘法算。</p>
+<h4>换一张单价表，结论还成立吗</h4>
+<p>上面所有数字都建立在一张写死的单价表上。把两个比例当变量扫一遍：缓存那一档占整价多少、输出那一档是整价的几倍。</p>
+<p class="cap">表 N · 单价比例变化时，2000 字符相对 200 字符贵几倍。出自 <code>exp_owner.py</code>，用的是同样那两条会话的 usage。</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">缓存档占整价</th><th class="n">输出档 = 整价 × 1</th><th class="n">输出档 = 整价 × 5</th></tr></thead>
+<tbody>
+<tr><td class="n">0%（缓存完全免费）</td><td class="n">3.93x</td><td class="n">2.25x</td></tr>
+<tr><td class="n">10%（今天用的这档）</td><td class="n">4.12x</td><td class="n">2.43x</td></tr>
+<tr><td class="n">50%</td><td class="n">4.58x</td><td class="n">2.97x</td></tr>
+<tr><td class="n">100%（没有缓存折扣）</td><td class="n">4.86x</td><td class="n">3.44x</td></tr>
+</tbody>
+</table></div>
+<p>八格里最小的一格是 2.25 倍。也就是说，哪怕命中缓存完全不要钱、输出还贵到整价的五倍，把工具输出放大十倍仍然让这条会话的账单翻了一倍多。结论不依赖那张单价表，依赖的是「上下文只往后长」这个性质。</p>
+<p>顺带把轮数也扫一遍，因为它决定了那条尾巴有多长：</p>
+<p class="cap">表 O · 同一条会话跑更多轮。工具返回 200 字符，出自 <code>exp_bill.py</code>。</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">轮数</th><th class="n">累计 input_tokens</th><th class="n">会话结束时的上下文</th><th class="n">倍数</th><th class="n">账单（微元）</th></tr></thead>
+<tbody>
+<tr><td class="n">3</td><td class="n">900</td><td class="n">597</td><td class="n">1.51</td><td class="n">7682.4</td></tr>
+<tr><td class="n">6</td><td class="n">4473</td><td class="n">1488</td><td class="n">3.01</td><td class="n">16990.2</td></tr>
+<tr><td class="n">12</td><td class="n">19638</td><td class="n">3270</td><td class="n">6.01</td><td class="n">37976.4</td></tr>
+<tr><td class="n">24</td><td class="n">82044</td><td class="n">6834</td><td class="n">12.01</td><td class="n">89604.0</td></tr>
+</tbody>
+</table></div>
+<p>第四列是轮数的一半，一位小数都不差。Day 18 那天用字节量到过同一条关系，今天换成 token 原样成立。它在账单上的用法是一句可以带走的话：拿「会话结束时上下文有多长」去估一条会话的钱，估出来的数会小掉「轮数除以二」这么多倍——24 轮那条会话，估出来只有实际的十二分之一。</p>
+<h3>13. 该报哪几条，怎么报</h3>
+<p>立项那天的设计文档留了一行空着：「每一轮打哪几个数——先把字段名定下来，具体怎么串成一条链留到今天」。现在把它填上。</p>
+<p>填法遵循两条今天量出来的判据。一条来自第 8 节：两段坏掉的原因不同，就得是两个 span。另一条来自第 9 节和第 10 节：能放进属性的就别新开 span，能放进进程级指标的就别放进 trace。</p>
+<div class="scroll"><table>
+<thead><tr><th>层</th><th>span 名</th><th>挂哪些属性</th><th>为什么是这一刀</th></tr></thead>
+<tbody>
+<tr><td>会话</td><td><code>session</code></td><td><code>gen_ai.conversation.id</code>、轮数、结束原因（完成／超时／取消／出错）</td><td>结束原因必须在这一层，因为只有它知道整条会话最后怎么了。第 11 节那条「失败的会话要在账上」靠的就是它</td></tr>
+<tr><td>一轮</td><td><code>turn</code></td><td>第几轮、这一轮派了几个工具</td><td>它是账单的自然结算单位——表 K 每一行就是一个 turn</td></tr>
+<tr><td>模型调用</td><td><code>chat</code></td><td><code>gen_ai.request.model</code>、<code>gen_ai.operation.name</code>、四档 usage、首 token 时刻（当事件打）、流式事件总数（当属性打）</td><td>钱全在这一层。第 10 节那 774 个 span 换成这里的两个字段</td></tr>
+<tr><td>模型调用（细分）</td><td><code>chat</code> 下再切一刀</td><td>—</td><td>等首 token 慢是排队，收完剩下的慢是生成，两种修法不同</td></tr>
+<tr><td>工具</td><td><code>execute_tool</code></td><td><code>gen_ai.tool.name</code>、<code>gen_ai.tool.call.id</code>、返回了多少字符、是否被上限截断</td><td>「返回了多少字符」是第 12 节那笔账的原料。没有它，工具的真实成本永远算不出来</td></tr>
+<tr><td>工具（细分）</td><td><code>release_output</code> 单独一个</td><td>—</td><td>第 8 节那三秒。合进去就永远分不出来了</td></tr>
+</tbody>
+</table></div>
+<p>放在 trace 之外的两样：进程 CPU 占核比例和事件循环延迟。前者因为第 9 节——CPU 没法按 span 摊；后者因为 Day 18 第 7 节——它比 CPU 使用率早两档报警，而它是进程级的，跟哪条会话没关系。</p>
+<p>最后是三条派生出来的口径，它们不是字段，是算法，写进文档是为了防止两个人算出两个数：</p>
+<ul>
+<li>自身耗时：父 span 时长减孩子区间并集，不是减时长之和（第 7 节）。</li>
+<li>一条会话的成本：把这条 trace 上所有 <code>chat</code> span 的四档 usage 各自求和，再乘各自的单价，不是拿最后一轮的 input 估（表 O）。</li>
+<li>一次工具调用的成本：它引入的 token 数乘以它之后剩余的轮数，按缓存那一档计价，加上它第一次进上下文时那一份整价（表 M）。</li>
+</ul>
+<h2><span class="sec">板块 3</span>动手任务</h2>
+<p>两个任务，约两小时。任务 A 给 Day 18 那个运行时装上今天这套；任务 B 把归因的读法用到你手上已经有的东西上。</p>
+
+<h3>任务 A（必做，约 85 分钟）· 给运行时装上 trace，然后拿它算三笔账</h3>
+
+<h4>第 1 步：先有一个会返回 usage 的假模型</h4>
+<p>今天要量的东西不需要真模型，需要的是「一个会按某个时序返回文本、并且会告诉你它数了多少 token 的东西」。做成独立进程，是为了让它的开销记在它自己头上。</p>
+<pre><code># svc_model.py —— 装上 fastapi 和 uvicorn 之后 uvicorn svc_model:app --port 8801
+CHARS_PER_TOKEN = 4.0        # Day 20 那个近似计数的常数
+BLOCK = 16                   # Day 15/16 那个块大小
+_last_prompt = {}            # session_id -> 上一轮送进来的 prompt 全文
+
+@app.post("/v1/generate")
+async def generate(req: Request):
+    body = await req.json()
+    sid, prompt, n_out = body["session_id"], body["prompt"], int(body["n_out"])
+    last = _last_prompt.get(sid, "")
+    # 命中缓存那一档：和上一轮的公共前缀，向下取整到 16 个 token 的整块
+    hit_tok = (approx_tokens(prompt[:common_prefix_chars(prompt, last)]) // BLOCK) * BLOCK
+    _last_prompt[sid] = prompt
+
+    await asyncio.sleep(TTFT_MS / 1000.0)                    # 首 token 之前
+    if n_out > 1:
+        await asyncio.sleep(ITL_MS * (n_out - 1) / 1000.0)   # 之后每个 token
+
+    head = body["reply_head"]
+    text = head + "词" * max(0, n_out * 4 - len(head))       # 正好折成 n_out 个 token
+    inp = approx_tokens(prompt)
+    return {"text": text, "usage": {
+        "input_tokens": inp,
+        "cache_read_input_tokens": min(hit_tok, inp),
+        "output_tokens": approx_tokens(text)}}</code></pre>
+<p>跑起来之后 <code>curl</code> 一下，应该看到 <code>output_tokens</code> 正好等于你传的 <code>n_out</code>。如果不等，多半是 <code>reply_head</code> 比 <code>n_out × 4</code> 还长，说明这两个参数配得不对。</p>
+
+<h4>第 2 步：把 span 打进循环</h4>
+<p>三层：<code>session</code> 包 <code>turn</code>，<code>turn</code> 包 <code>chat</code> 和若干 <code>execute_tool</code>。属性名照第 4 节那份约定抄。</p>
+<pre><code># rt.py 里的两个叶子。注意 usage 是在 span 结束之前挂上去的
+async def _tool(self, client, turn, i, ms):
+    with self.tr.start_as_current_span("execute_tool") as sp:
+        c0 = time.process_time_ns()                          # 第 4 步要用
+        sp.set_attribute("gen_ai.tool.name", f"tool_{i}")
+        sp.set_attribute("gen_ai.tool.call.id", f"{self.sid}-{turn}-{i}")
+        await asyncio.sleep(ms / 1000.0)
+        out = f"[tool_{i} 的返回] " + "果" * self.tool_out_chars
+        sp.set_attribute("agent.tool.output_chars", len(out))  # 第 5 步要用
+        if self.record_cpu:
+            CPU_MARKS.append(("execute_tool", c0, time.process_time_ns()))
+        return out
+
+async def _chat(self, client, turn):
+    with self.tr.start_as_current_span("chat") as sp:
+        sp.set_attribute("gen_ai.operation.name", "chat")
+        sp.set_attribute("gen_ai.request.model", "fake-1")
+        sp.set_attribute("gen_ai.conversation.id", self.sid)
+        r = await client.post(MODEL_URL, json={...})
+        u = r.json()["usage"]
+        sp.set_attribute("gen_ai.usage.input_tokens", u["input_tokens"])
+        sp.set_attribute("gen_ai.usage.cache_read.input_tokens", u["cache_read_input_tokens"])
+        sp.set_attribute("gen_ai.usage.output_tokens", u["output_tokens"])
+        self.usage.append(u)
+        return r.json()["text"]</code></pre>
+<p>工具用 <code>asyncio.TaskGroup</code> 并发派出去（Day 19 那个任务组）。三个工具的时长必须两两不等，否则第 3 步算出来的重叠是个特例。</p>
+<p>验收标准：导出的 span 有 28 条，父子关系接得上，每个 <code>chat</code> 上都有三个 <code>gen_ai.usage.*</code> 属性。<strong>常见坑</strong>：把 <code>set_attribute</code> 写在 <code>with</code> 块外面——span 已经结束，属性被冻住了，这一行不报错也不生效。</p>
+
+<h4>第 3 步：算自身耗时，看到那个负数</h4>
+<pre><code>def union_ms(ivs):                    # ivs 是 [(开始纳秒, 结束纳秒), ...]
+    ivs = sorted(ivs); tot = 0; cs, ce = None, None
+    for a, b in ivs:
+        if cs is None:      cs, ce = a, b
+        elif a &lt;= ce:       ce = max(ce, b)      # 和当前这段重叠，合并
+        else:               tot += ce - cs; cs, ce = a, b
+    if cs is not None: tot += ce - cs
+    return tot / 1e6</code></pre>
+<p>对每个 <code>turn</code> 打两个数：父时长减孩子时长之和，父时长减孩子区间并集。前者应该是一个稳定的负数，后者应该是零点几毫秒。</p>
+<p>验收标准：两个数的差，等于「三个工具时长之和减去它们的区间并集」。这个等式对得上，说明你的并集算对了。</p>
+
+<h4>第 4 步：把 CPU 那把秤按到 span 上，看它怎么崩</h4>
+<p>并发跑 1 条、8 条、32 条，每档在叶子 span 两端读 <code>time.process_time_ns()</code>，把差值全加起来，和整批会话真实消耗的 CPU 比。</p>
+<p>验收标准：并发 1 那一档倍数应该接近 1，并发 32 那一档应该是几十倍。<span class="cap">常见坑：如果并发 1 那一档也偏得很多，检查一下是不是把父 span 也算进去了——嵌套本身就会重复计一遍。</span></p>
+
+<h4>第 5 步：把账拆到「哪一轮引入的内容」</h4>
+<p>用第 2 步收下来的逐轮 usage，做两件事：按单价折成钱；再把每一轮的钱按「这段内容是哪一轮进的上下文」摊回去。然后把工具返回的字符数从 200 改成 2000，重跑，比较两条会话。</p>
+<p>验收标准：<code>execute_tool</code> 那些 span 上的 token 数是 0，而两条会话的账单差了两倍以上。差额要能逐项对上——整价那一档的增量乘整价，加上缓存那一档的增量乘缓存价，等于总差额。对不上说明你把某一档记重了。</p>
+
+<h3>任务 B（约 40 分钟）· 用到你自己手上的东西</h3>
+<p>挑一个你自己写过的、内部有并发的服务或脚本——批量抓取、并发调几个下游、多线程处理一批文件都行。给它打三层 span：一次请求／一个批次／每个并发单元。然后只算一件事：每一层的自身耗时，用区间并集那个口径。</p>
+<p>验收标准：你能指着某一层说出「这一层自己花了多少、剩下的都在等孩子」，并且指得出关键路径上是哪几个孩子。如果关键路径上反复出现同一个下游，那就是你该优化的那个；如果每次都不一样，说明瓶颈是并发度而不是某个具体下游。</p>
+
+<h4>加分题</h4>
+<ul>
+<li>把第 3 步那个并集算法换个输入：让三个工具串行执行（<code>await</code> 一个再 <code>await</code> 下一个）。两种算法这时候应该给出同一个答案。给不出的话，是哪个算法错了？</li>
+<li>今天没量的一件事：那 28 个 span 里，有多少是在<em>并发</em>状态下创建的？把表 G 那个单 span 开销放到 32 条并发下重测一遍，看它涨不涨。如果涨，是哪一部分在涨（属性的字典操作、锁、还是导出队列）？</li>
+<li>表 J 那个丢弃实验用的是故意变慢的导出器。换个逼法：导出器不变，改成同时跑很多条会话，把队列压满。要多少条并发才能让默认的 2048 开始丢？这个数和你打点的粒度是什么关系？</li>
+<li>今天所有 token 数都来自那个近似计数。找一个你能拿到的真分词器，对同一段中英混排的文本各数一遍，看这个「四个字符一个 token」偏多少。然后回答：如果它系统性地少算，你按它做的成本告警会以什么方式出事？</li>
+<li>把表 M 那个摊法反过来用：给定一条真实会话的逐轮 usage，写一个程序找出「引入成本最高的那一段内容」。再想一层——如果这段内容是某个工具返回的，你能自动把它和那个工具的 span 关联上吗？需要在 span 上多打哪个字段？</li>
+</ul>
+<h2><span class="sec">板块 4</span>工作现场</h2>
+
+<h4>场景一 · 「工具调用的 P99 是 4 秒，可每个工具单独拿出来测都在 200 毫秒以内」</h4>
+<p>有人拿着指标板来找你：工具执行这条曲线的尾巴很长，可挨个工具压测都很快。</p>
+<p>先问一句：这条曲线是从哪个 span 上读出来的？如果 <code>execute_tool</code> 这个 span 从「派出去」一直包到「结果拿回来、进程清理完」，那它里面至少混着三样东西——工具自己算的时间、超时预算被用满的时间、以及杀完之后等资源放手的时间。第 8 节那张表就是这个形状：同一批调用，整段记在一起是 4000.7 毫秒，拆开之后工具那一段是 1000.2，剩下 3000.4 在等管道。</p>
+<p>动作是把 span 切开，切法照「坏掉的原因是不是同一类」这条判据。切完之后大概率会看到：工具那一段的 P99 正好等于你设的超时预算——那说明它不是慢，是被超时打断的；真正的尾巴在清理那一段上，而清理慢的原因昨天讲过，是某个后台进程还握着管道的写端。</p>
+
+<h4>场景二 · 「这个月的账单涨了三倍，请求数一条没多」</h4>
+<p>会话数没变，账单翻了三倍。三个方向，按能证伪的顺序查。</p>
+<p>第一个方向是轮数。表 O 那条关系是：累计 input 大约是最终上下文的「轮数除以二」倍，所以平均轮数从 6 涨到 12，账就翻一倍——而轮数是模型每一轮的输出决定的，换个提示词、换个模型版本都可能让它变。这个数应该直接从 <code>session</code> span 的属性里读出来，不用猜。</p>
+<p>第二个方向是工具往上下文里塞了多少。表 L 那两行：只把工具返回从 200 字符改到 2000，账单 2.43 倍。查法是把 <code>execute_tool</code> 上那个「返回了多少字符」的属性按工具名分组看分布——通常是某一个工具在某类输入下开始返回巨大的结果，比如一次搜索命中了一大堆。</p>
+<p>第三个方向是命中缓存那一档的比例掉了。表 K 里它占 65.8%，如果掉到接近零，同样的 token 数账单会按整价和缓存价的比值往上跳。掉下去的原因 Day 16 和 Day 20 各讲了一半：可能是路由把同一条会话打散了，也可能是有人在上下文前面动了刀。分辨方法是看 <code>gen_ai.usage.cache_read.input_tokens</code> 是「所有会话一起掉」还是「只有某些会话掉」——前者指向路由和容量，后者指向那些会话触发了截断。</p>
+
+<h4>场景三 · 「出问题那条会话的 trace，中间少了一层」</h4>
+<p>一条超时的会话，trace 上 <code>session</code> 和几个 <code>execute_tool</code> 都在，中间的 <code>turn</code> 没了，几个孩子挂不上父亲。</p>
+<p>先排除「那段代码没执行」——如果没执行，孩子也不会有。孩子在、父亲不在，说明这些 span 被产生出来了，只是没能送出去。第 10 节那张丢弃表给出了形状：丢的不是随机几条，是一整段连续的时间窗口，因为定长队列满了之后从最老的那头挤。而队列满，最容易发生在流量突增的时候。</p>
+<p>能确认的办法是找 <code>Queue full, dropping</code> 那行警告，它就在丢弃发生的那一刻打出来。确认之后有三条路：把粒度调粗（第 10 节那个「129 个事件换成两个属性」）、把队列上限调大（代价是内存和一次丢得更多）、或者上尾部采样（代价是所有 span 得先攒齐）。三条路里最先该试的是第一条，因为它同时降的是 CPU、字节和丢弃概率。</p>
+
+<h4>同事和面试官常问的</h4>
+<ul>
+<li><span class="q">「你们的 trace 采样率是多少？」</span>——这个问题真正在问的是你知不知道采样决定在哪里做。默认是头部采样，根 span 上决定完了往下传，靠 <code>traceparent</code> 最后两位。它的问题是出错的会话最想留却留不住，所以答案通常是两段：普通流量按比例头部采样，出错和超长的会话另走一条尾部采样的路。只答一个百分比等于没答。</li>
+<li><span class="q">「一条会话的成本你怎么算？」</span>——把这条 trace 上所有 <code>chat</code> span 的四档 usage 各自求和再乘单价。要点是「四档」不是「一个总 token 数」，以及「所有 chat」不是「最后一轮」。拿最后一轮的 input 估，24 轮的会话会估成实际的十二分之一。</li>
+<li><span class="q">「trace 打细一点有什么坏处？」</span>——三笔账一起涨：CPU（每个 span 二十几微秒，802 个 span 让运行时的 CPU 涨到 2.55 倍）、字节（同一条会话从 10 KB 涨到 272 KB）、以及丢弃概率（队列是定长的）。而且丢起来是丢一整段时间窗口，正好在你最需要的时候。</li>
+<li><span class="q">「自身耗时怎么算？」</span>——父 span 时长减去孩子们区间的并集。如果对方说「减去孩子时长之和」，一个反例就够了：三个并发的工具，那个式子会给出负数。</li>
+<li><span class="q">「为什么不把每个 span 的 CPU 也记上？」</span>——因为进程 CPU 时钟是全进程的，异步单线程下一个 span 的两次读数之间跑的可能全是别人的回调。32 条并发时按 span 摊出来的 CPU 之和是真实值的 42 倍。CPU 归因交给进程级指标加剖析器。</li>
+<li><span class="q">「属性名为什么要用那么长的 <code>gen_ai.</code> 前缀？」</span>——因为它是接口不是实现。用约定的名字，现成的仪表板和成本分析工具直接认；自己发明，这些全要自己写一遍，而且换一个工具再写一遍。</li>
+</ul>
+<h2><span class="sec">板块 5</span>自检问题</h2>
+
+<details><summary>1. 某个 turn 的自身耗时，用区间并集那个口径算出来是 180 毫秒。这一轮只有一次 chat 和两个并发工具，运行时的代码里没有任何重活。这 180 毫秒可能是什么？</summary>
+<p>两种可能，而且分辨方法不一样。</p>
+<p>第一种：运行时真的在这一轮里干了 180 毫秒的活。最可能的地方是把上下文序列化成 JSON——表 O 那条关系告诉你，第 24 轮的 prompt 有六千多个 token，折成字符是两万多，序列化和拼接都不是零成本。这一种的特征是它随轮数增长。</p>
+<p>第二种：有一段时间没有被任何子 span 盖住。并集口径算的是「孩子们盖住了多少」，没盖住的全部落进父亲的自身耗时里。典型的漏点是等许可（Day 14 那个并发上限）、等连接池（把建好的 TCP 连接留着复用的那个池子）给一条连接、以及队列里排队——这些都是真的在等，但没人给它开一个 span。这一种的特征是它随并发数增长，跟轮数无关。</p>
+<p>分辨办法有两个。便宜的那个：把这个数按轮数和按并发数各画一条曲线，看它跟着哪个变。彻底的那个：给怀疑的那一段补一个 span，补完之后父亲的自身耗时应该塌回零点几毫秒——塌不回去说明还有别的洞。</p>
+<p>错在哪：最常见的错是看到自身耗时不为零就去优化运行时的代码。第二种情况下运行时一行代码都没多跑，它只是在排队。</p>
+</details>
+
+<details><summary>2. 为了降账单，有人把上下文改成「每轮丢掉最早的一轮」。trace 上 input_tokens 明显下降了，账单却涨了。为什么？</summary>
+<p>因为账单不是按 <code>input_tokens</code> 收的，是按拆开的四档分别收的，而这个改动把其中两档整个搬了家。</p>
+<p>Day 20 量过这件事的 token 那一面：滑动窗口让发出量降到不裁剪的四成三，可要算的 token 变成 5.3 倍。今天的账单是同一件事的钱那一面。在上下文最前面动刀，从断点往后所有的块都对不上了（Day 16 那条块 hash 链），于是原本躺在 <code>cache_read_input_tokens</code> 那一档、只按十分之一单价付的 token，全部搬到整价那一档去了。</p>
+<p>拿今天的比例估一下量级：表 K 里命中缓存那一档占 65.8%，单价是整价的十分之一。假设裁剪之后它塌到接近零，同样一份 token 的钱大约要乘上 <code>1 / (0.342 + 0.658 × 0.1)</code>，也就是两倍半左右。而 <code>input_tokens</code> 这个总数只降了不到一半。两个方向一叠，账单往上走。</p>
+<p>错在哪：把 <code>input_tokens</code> 当成账单的代理指标。它不是。真正该盯的是「整价那一档」这一列，它才是钱。</p>
+</details>
+
+<details><summary>3. 表 H 说 28 个 span 只让运行时的 CPU 涨 17%。有人据此说「埋点开销可以忽略，粒度想打多细打多细」。哪儿错了？</summary>
+<p>错在把一个百分比当成了结论，而它其实是一个乘法的结果。</p>
+<p>那 17% 的构成是：28 个 span 乘每个二十几微秒，约 0.6 毫秒，落在一条会话 13.22 毫秒的 CPU 上。同一条乘法用在 802 个 span 上就是 18 毫秒，占比变成 155%。表 H 第三行量到的 2.55 倍，正是这条乘法算出来的。所以能忽略的不是「埋点」，是「28 个 span 这个量级的埋点」。</p>
+<p>而且 CPU 只是三笔账里的一笔。字节那一笔从 10 KB 涨到 272 KB，是 26 倍；丢弃那一笔更不线性——队列上限是 2048 条，粒度乘 28 倍意味着能撑住的并发会话数除以 28，超过之后丢的是一整段连续的时间窗口。</p>
+<p>错在哪：判据不该是「埋点占了百分之几」，该是「这条链路一秒钟产生多少个 span」。前者随你现在的流量变，后者是设计的性质。</p>
+</details>
+
+<details><summary>4. 一条会话超时失败了，成本报表里没有它。有人说这挺合理——失败不该收钱。哪儿错了？</summary>
+<p>钱和成功与否没关系。这条会话在失败之前已经调了几轮模型，每一轮的 token 模型那一侧都算过了，账照收。报表上没有它，只说明你的代码把 usage 记在了「正常返回」那条路径上，异常路径直接跳过了。</p>
+<p>这个漏法有两个后果。一是总额系统性偏低，而且偏多少取决于失败率——失败率一涨，报表反而显得更省钱。二是它漏掉的恰恰是最贵的那一类：失败的会话通常伴随重试，而重试意味着同一段上下文再送一遍，Day 18 那六种崩溃组合已经量过这件事的形状。</p>
+<p>修法在第 13 节那张表的第一行：结束原因是 <code>session</code> 这一层的属性，成本汇总按 trace 走而不是按返回值走。判断一套核算做没做对，看的不是总额，是失败的会话在不在账上。</p>
+</details>
+
+<h2><span class="sec">板块 6</span>今日新词</h2>
+<p>前八个是「一棵树由什么构成」，接着四个是「这棵树怎么跨进程接上、字段怎么起名」，再四个是归因和采样的口径，最后四个是这套东西自己的账和钱这一侧。它们本来就长在同一件事上。</p>
+<div class="scroll"><table>
+<thead><tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr></thead>
+<tbody>
+<tr><td>可观测性</td><td>observability</td><td>能事后从系统吐出来的数据里，问出没有预先设想过的问题</td></tr>
+<tr><td>关联 ID</td><td>correlation id</td><td>同一条会话产生的每一行记录都带上的同一个随机号，用来把它们挑出来</td></tr>
+<tr><td>span / 跨度</td><td>span</td><td>一段有始有终的工作，带着自己的号、父亲的号、起止时刻，以及挂在上面的属性</td></tr>
+<tr><td>trace / 一条追踪</td><td>trace</td><td>同一条会话的全部 span 合起来，靠父子关系组成一棵树</td></tr>
+<tr><td>trace_id / span_id / parent_span_id</td><td>trace id / span id / parent span id</td><td>三个号：这棵树的号、这个节点的号、它父亲的号</td></tr>
+<tr><td>属性</td><td>attributes</td><td>span 上的键值对，记整段期间都成立的事实；span 结束之后就冻住了</td></tr>
+<tr><td>事件（span 上的）</td><td>events</td><td>span 上带时刻的一行记录，记段里某个瞬间发生的事</td></tr>
+<tr><td>状态（span 上的）</td><td>status</td><td>这一段是正常结束还是出错结束</td></tr>
+<tr><td>埋点 / 插桩</td><td>instrumentation</td><td>在已有代码里塞进产生这些记录的动作。Day 3 那个「插桩式剖析器」是同一个词，区别只在塞的位置由谁挑</td></tr>
+<tr><td>上下文传播</td><td>context propagation</td><td>把 trace_id 和当前 span_id 随请求带到下一个进程，让对面能把自己的 span 接上来</td></tr>
+<tr><td>W3C Trace Context · traceparent 头</td><td>W3C Trace Context / traceparent</td><td>传播用的那个 HTTP 头的标准格式：版本、trace_id、span_id、采样标志，用短横线隔开</td></tr>
+<tr><td>语义约定</td><td>semantic conventions</td><td>大家约好某类东西的属性该叫什么名字的清单，大模型这一类的前缀是 <code>gen_ai.</code></td></tr>
+<tr><td>用量回报</td><td>usage</td><td>模型返回体里那份 token 计数，分整价输入／命中缓存的输入／写入缓存的输入／输出四档</td></tr>
+<tr><td>区间并集</td><td>interval union</td><td>把若干可能重叠的时间段合并之后一共盖住多长；自身耗时要减的是它，不是时长之和</td></tr>
+<tr><td>关键路径</td><td>critical path</td><td>从根出发，每层挑那个决定了父亲何时结束的孩子，一路走到叶子的那条路</td></tr>
+<tr><td>头部采样</td><td>head sampling</td><td>在链路最前面就决定这条 trace 采不采，决定随 traceparent 往下传，每一跳照办</td></tr>
+<tr><td>尾部采样</td><td>tail sampling</td><td>等这条 trace 的 span 都齐了、知道它出没出错之后再决定留不留</td></tr>
+<tr><td>攒批导出</td><td>BatchSpanProcessor / batch span processor</td><td>span 先进一个定长队列，攒够一批或者到点了再一起送走</td></tr>
+<tr><td>孤儿 span</td><td>orphan span</td><td>父亲那条记录丢了、自己挂不上树的 span</td></tr>
+<tr><td>成本归因</td><td>cost attribution</td><td>把一条会话的账拆开，摊回到「是哪一段内容、哪一次调用引起的」</td></tr>
+</tbody>
+</table></div>
+
+<h2><span class="sec">板块 7</span>已学词表</h2>
+<p>Day 1 到今天的全部术语，标注首次引入于第几天。今天用到但标着更早日期的，说明那天已经讲过，今天只是回调。</p>
+<details><summary>展开全部 304 个（Day 1 ~ Day 23）</summary>
+<div class="scroll"><table><thead><tr><th>中文</th><th>英文原词</th><th>引入于</th></tr></thead><tbody>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>利特尔法则</td><td>Little's Law</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>Day 10</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>Day 10</td></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td>Day 11</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td>Day 11</td></tr>
+<tr><td>对等组</td><td>peer group</td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount / MNT_DETACH</td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td>Day 11</td></tr>
+<tr><td>叠加文件系统</td><td>overlayfs / overlay filesystem</td><td>Day 12</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td>lowerdir / upperdir / workdir</td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td>copy-on-write / copy_up</td><td>Day 12</td></tr>
+<tr><td>白障</td><td>whiteout</td><td>Day 12</td></tr>
+<tr><td>只读根</td><td>read-only rootfs</td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td>tmpfs</td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td>page cache</td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td>shmem</td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td>inode</td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td>size= / nr_inodes=</td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td>buffered write</td><td>Day 12</td></tr>
+<tr><td>直写</td><td>direct I/O (O_DIRECT)</td><td>Day 12</td></tr>
+<tr><td>回写</td><td>writeback</td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td>blkio throttle / io.max</td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td>major:minor</td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td>veth pair</td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td>SNAT / MASQUERADE</td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td>packet filter / netfilter (iptables)</td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td>DROP / REJECT</td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td>egress allowlist</td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td>capability bounding set</td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td>masking</td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td>least privilege</td><td>Day 12</td></tr>
+<tr><td>开放容器倡议</td><td>OCI / Open Container Initiative</td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td>runtime-spec</td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td>image-spec</td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td>distribution-spec</td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td>filesystem bundle</td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td>config.json</td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td>low-level runtime / runtime engine</td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td>high-level runtime</td><td>Day 13</td></tr>
+<tr><td>libcontainer</td><td>libcontainer</td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td>runc init</td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td>binary cloning / exeseal</td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td>__attribute__((constructor))</td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td>nsexec stage 0 / 1 / 2</td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td>exec fifo</td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td>creating / created / running / stopped</td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td>lifecycle hooks</td><td>Day 13</td></tr>
+<tr><td>垫片</td><td>shim</td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td>ttRPC</td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td>subreaper / PR_SET_CHILD_SUBREAPER</td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td>zombie process</td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td>CRI / Container Runtime Interface</td><td>Day 13</td></tr>
+<tr><td>预热池</td><td>warm pool</td><td>Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td>zygote / fork server</td><td>Day 14</td></tr>
+<tr><td>懒加载</td><td>lazy loading / lazy pulling</td><td>Day 14</td></tr>
+<tr><td>并发上限</td><td>concurrency limit</td><td>Day 14</td></tr>
+<tr><td>许可</td><td>semaphore</td><td>Day 14</td></tr>
+<tr><td>准入控制</td><td>admission control</td><td>Day 14</td></tr>
+<tr><td>背压</td><td>backpressure</td><td>Day 14</td></tr>
+<tr><td>泊松到达</td><td>Poisson arrivals</td><td>Day 14</td></tr>
+<tr><td>宽限期</td><td>grace period</td><td>Day 14</td></tr>
+<tr><td>请求路径</td><td>request path</td><td>Day 14</td></tr>
+<tr><td>异步回收</td><td>deferred cleanup</td><td>Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td>KV cache</td><td>Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td>query head / KV head</td><td>Day 15</td></tr>
+<tr><td>每头维度</td><td>head_dim / head size</td><td>Day 15</td></tr>
+<tr><td>分组查询注意力</td><td>GQA / grouped-query attention</td><td>Day 15</td></tr>
+<tr><td>内部碎片</td><td>internal fragmentation</td><td>Day 15</td></tr>
+<tr><td>外部碎片</td><td>external fragmentation</td><td>Day 15</td></tr>
+<tr><td>紧凑</td><td>compaction</td><td>Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td>block</td><td>Day 15</td></tr>
+<tr><td>块表</td><td>block table</td><td>Day 15</td></tr>
+<tr><td>分页注意力</td><td>PagedAttention</td><td>Day 15</td></tr>
+<tr><td>每块字节数</td><td>page_size_bytes</td><td>Day 15</td></tr>
+<tr><td>空闲块队列</td><td>free block queue</td><td>Day 15</td></tr>
+<tr><td>上下文长度上限</td><td>max_model_len</td><td>Day 15</td></tr>
+<tr><td>显存占用比例</td><td>gpu_memory_utilization</td><td>Day 15</td></tr>
+<tr><td>因果注意力</td><td>causal attention</td><td>Day 16</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td>prefix caching / APC</td><td>Day 16</td></tr>
+<tr><td>token 级前缀命中率</td><td>prefix cache hit rate</td><td>Day 16</td></tr>
+<tr><td>块 hash 链</td><td>chained block hash</td><td>Day 16</td></tr>
+<tr><td>基数树 / 前缀树</td><td>radix tree / RadixAttention</td><td>Day 16</td></tr>
+<tr><td>节点分裂</td><td>node split</td><td>Day 16</td></tr>
+<tr><td>最近最少使用</td><td>LRU / least recently used</td><td>Day 16</td></tr>
+<tr><td>复用距离</td><td>reuse distance</td><td>Day 16</td></tr>
+<tr><td>缓存盐</td><td>cache salt</td><td>Day 16</td></tr>
+<tr><td>卸载</td><td>offloading</td><td>Day 16</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td>tiering / primary tier / secondary tier</td><td>Day 16</td></tr>
+<tr><td>提升</td><td>promotion</td><td>Day 16</td></tr>
+<tr><td>写入门槛</td><td>store threshold</td><td>Day 16</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td>PCIe</td><td>Day 16</td></tr>
+<tr><td>前端进程</td><td>frontend process</td><td>Day 17</td></tr>
+<tr><td>引擎核心 / 引擎核心进程</td><td>EngineCore / EngineCoreProc</td><td>Day 17</td></tr>
+<tr><td>输入处理器</td><td>input processor</td><td>Day 17</td></tr>
+<tr><td>输出处理器</td><td>output processor</td><td>Day 17</td></tr>
+<tr><td>忙循环</td><td>busy loop</td><td>Day 17</td></tr>
+<tr><td>输入队列 / 输出队列</td><td>input_queue / output_queue</td><td>Day 17</td></tr>
+<tr><td>打包 / 解包 · 序列化 / 反序列化</td><td>serialize / deserialize</td><td>Day 17</td></tr>
+<tr><td>请求状态</td><td>RequestStatus</td><td>Day 17</td></tr>
+<tr><td>调度单</td><td>SchedulerOutput</td><td>Day 17</td></tr>
+<tr><td>全量与差量</td><td>NewRequestData / CachedRequestData</td><td>Day 17</td></tr>
+<tr><td>执行结果</td><td>ModelRunnerOutput</td><td>Day 17</td></tr>
+<tr><td>执行器</td><td>Executor</td><td>Day 17</td></tr>
+<tr><td>增量解码</td><td>incremental detokenization</td><td>Day 17</td></tr>
+<tr><td>解码窗口</td><td>prefix_offset / read_offset</td><td>Day 17</td></tr>
+<tr><td>停止串</td><td>stop string</td><td>Day 17</td></tr>
+<tr><td>替换符</td><td>replacement character (U+FFFD)</td><td>Day 17</td></tr>
+<tr><td>agent 循环</td><td>agent loop</td><td>Day 18</td></tr>
+<tr><td>一轮</td><td>turn</td><td>Day 18</td></tr>
+<tr><td>会话</td><td>session</td><td>Day 18</td></tr>
+<tr><td>工具调用</td><td>tool call</td><td>Day 18</td></tr>
+<tr><td>副作用</td><td>side effect</td><td>Day 18</td></tr>
+<tr><td>服务端推送事件</td><td>SSE / server-sent events</td><td>Day 18</td></tr>
+<tr><td>交接</td><td>handoff</td><td>Day 18</td></tr>
+<tr><td>在途会话</td><td>in-flight session</td><td>Day 18</td></tr>
+<tr><td>进程 CPU 时钟</td><td>process CPU clock (time.process_time)</td><td>Day 18</td></tr>
+<tr><td>幂等</td><td>idempotent / idempotence</td><td>Day 18</td></tr>
+<tr><td>幂等键</td><td>idempotency key</td><td>Day 18</td></tr>
+<tr><td>至少一次 / 恰好一次</td><td>at-least-once / exactly-once</td><td>Day 18</td></tr>
+<tr><td>检查点</td><td>checkpoint</td><td>Day 18</td></tr>
+<tr><td>追加式日志</td><td>append-only log</td><td>Day 18</td></tr>
+<tr><td>写前记录</td><td>write-ahead logging (WAL)</td><td>Day 18</td></tr>
+<tr><td>工具注册</td><td>tool registration</td><td>Day 19</td></tr>
+<tr><td>参数模式</td><td>input schema</td><td>Day 19</td></tr>
+<tr><td>JSON Schema</td><td>JSON Schema</td><td>Day 19</td></tr>
+<tr><td>附加属性</td><td>additionalProperties</td><td>Day 19</td></tr>
+<tr><td>结构化输出</td><td>structuredContent / outputSchema</td><td>Day 19</td></tr>
+<tr><td>工具注解</td><td>tool annotations</td><td>Day 19</td></tr>
+<tr><td>模型上下文协议</td><td>MCP / Model Context Protocol</td><td>Day 19</td></tr>
+<tr><td>JSON-RPC 2.0</td><td>JSON-RPC 2.0</td><td>Day 19</td></tr>
+<tr><td>请求编号</td><td>request id</td><td>Day 19</td></tr>
+<tr><td>工具清单</td><td>tools/list</td><td>Day 19</td></tr>
+<tr><td>工具调用请求</td><td>tools/call</td><td>Day 19</td></tr>
+<tr><td>内容块</td><td>content block</td><td>Day 19</td></tr>
+<tr><td>协议错误 / 工具错误</td><td>protocol error / tool error</td><td>Day 19</td></tr>
+<tr><td>错误标志</td><td>isError</td><td>Day 19</td></tr>
+<tr><td>部分结果</td><td>partial results</td><td>Day 19</td></tr>
+<tr><td>任务组</td><td>asyncio.TaskGroup</td><td>Day 19</td></tr>
+<tr><td>兄弟任务取消</td><td>sibling cancellation</td><td>Day 19</td></tr>
+<tr><td>异常组</td><td>ExceptionGroup / except*</td><td>Day 19</td></tr>
+<tr><td>协作式取消</td><td>cooperative cancellation</td><td>Day 19</td></tr>
+<tr><td>取消通知</td><td>notifications/cancelled</td><td>Day 19</td></tr>
+<tr><td>截止时间传递</td><td>deadline propagation</td><td>Day 19</td></tr>
+<tr><td>上下文污染</td><td>context pollution</td><td>Day 19</td></tr>
+<tr><td>上下文预算</td><td>context budget</td><td>Day 20</td></tr>
+<tr><td>截断</td><td>truncation</td><td>Day 20</td></tr>
+<tr><td>滑动窗口</td><td>sliding window</td><td>Day 20</td></tr>
+<tr><td>末端保留 / 首端保留</td><td>trim strategy "last" / "first"</td><td>Day 20</td></tr>
+<tr><td>保住系统消息</td><td>include_system</td><td>Day 20</td></tr>
+<tr><td>悬空的工具结果</td><td>dangling tool result</td><td>Day 20</td></tr>
+<tr><td>上下文压缩</td><td>context compaction</td><td>Day 20</td></tr>
+<tr><td>压缩阈值</td><td>compaction threshold</td><td>Day 20</td></tr>
+<tr><td>前缀失效 / 断点</td><td>prefix invalidation</td><td>Day 20</td></tr>
+<tr><td>近似计数</td><td>approximate token counting</td><td>Day 20</td></tr>
+<tr><td>边际成本</td><td>marginal cost</td><td>Day 20</td></tr>
+<tr><td>会话存储</td><td>session store</td><td>Day 20</td></tr>
+<tr><td>隐式截断</td><td>implicit truncation</td><td>Day 20</td></tr>
+<tr><td>会话亲和 / 粘性会话</td><td>session affinity / sticky session</td><td>Day 20</td></tr>
+<tr><td>任务队列</td><td>task queue</td><td>Day 21</td></tr>
+<tr><td>投递语义</td><td>delivery semantics</td><td>Day 21</td></tr>
+<tr><td>至多一次</td><td>at-most-once</td><td>Day 21</td></tr>
+<tr><td>租约</td><td>lease</td><td>Day 21</td></tr>
+<tr><td>可见性超时</td><td>visibility timeout</td><td>Day 21</td></tr>
+<tr><td>续租 / 心跳续租</td><td>lease renewal / heartbeat</td><td>Day 21</td></tr>
+<tr><td>孤儿任务</td><td>orphaned task</td><td>Day 21</td></tr>
+<tr><td>重投标记</td><td>redelivered flag</td><td>Day 21</td></tr>
+<tr><td>重试退避</td><td>retry backoff</td><td>Day 21</td></tr>
+<tr><td>死信队列</td><td>dead-letter queue</td><td>Day 21</td></tr>
+<tr><td>毒丸任务</td><td>poison-pill task</td><td>Day 21</td></tr>
+<tr><td>意图记录</td><td>intent record</td><td>Day 21</td></tr>
+<tr><td>不确定态</td><td>in-doubt</td><td>Day 21</td></tr>
+<tr><td>对账</td><td>reconciliation</td><td>Day 21</td></tr>
+<tr><td>检查点粒度</td><td>checkpoint granularity</td><td>Day 21</td></tr>
+<tr><td>租户</td><td>tenant</td><td>Day 21</td></tr>
+<tr><td>队头阻塞</td><td>head-of-line blocking</td><td>Day 21</td></tr>
+<tr><td>公平排队 / 轮转</td><td>fair queuing / round-robin</td><td>Day 21</td></tr>
+<tr><td>每租户并发配额</td><td>per-tenant concurrency quota</td><td>Day 21</td></tr>
+<tr><td>工作保全</td><td>work-conserving</td><td>Day 21</td></tr>
+<tr><td>进程组</td><td>process group</td><td>Day 22</td></tr>
+<tr><td>进程会话</td><td>process session / setsid</td><td>Day 22</td></tr>
+<tr><td>文件描述符</td><td>file descriptor</td><td>Day 22</td></tr>
+<tr><td>管道的写端</td><td>pipe write end</td><td>Day 22</td></tr>
+<tr><td>孤儿进程</td><td>orphan process</td><td>Day 22</td></tr>
+<tr><td>冻结再杀</td><td>freeze-then-kill</td><td>Day 22</td></tr>
+<tr><td>cgroup.kill</td><td>cgroup.kill</td><td>Day 22</td></tr>
+<tr><td>遮罩路径 / 只读路径</td><td>maskedPaths / readonlyPaths</td><td>Day 22</td></tr>
+<tr><td>退出钩子</td><td>atexit hook</td><td>Day 22</td></tr>
+<tr><td>所有权记录</td><td>ownership record</td><td>Day 22</td></tr>
+<tr><td>回收器</td><td>reaper</td><td>Day 22</td></tr>
+<tr><td>混淆代理</td><td>confused deputy</td><td>Day 22</td></tr>
+<tr><td>会话级沙箱 / 每调用沙箱</td><td>session-scoped / per-call sandbox</td><td>Day 22</td></tr>
+<tr><td>输出上限</td><td>output cap</td><td>Day 22</td></tr>
+<tr><td>间接提示注入</td><td>indirect prompt injection</td><td>Day 22</td></tr>
+<tr><td>可观测性</td><td>observability</td><td>Day 23</td></tr>
+<tr><td>关联 ID</td><td>correlation id</td><td>Day 23</td></tr>
+<tr><td>span / 跨度</td><td>span</td><td>Day 23</td></tr>
+<tr><td>trace / 一条追踪</td><td>trace</td><td>Day 23</td></tr>
+<tr><td>trace_id / span_id / parent_span_id</td><td>trace id / span id / parent span id</td><td>Day 23</td></tr>
+<tr><td>属性</td><td>attributes</td><td>Day 23</td></tr>
+<tr><td>事件（span 上的）</td><td>events</td><td>Day 23</td></tr>
+<tr><td>状态（span 上的）</td><td>status</td><td>Day 23</td></tr>
+<tr><td>埋点 / 插桩</td><td>instrumentation</td><td>Day 23</td></tr>
+<tr><td>上下文传播</td><td>context propagation</td><td>Day 23</td></tr>
+<tr><td>W3C Trace Context · traceparent 头</td><td>W3C Trace Context / traceparent</td><td>Day 23</td></tr>
+<tr><td>语义约定</td><td>semantic conventions</td><td>Day 23</td></tr>
+<tr><td>用量回报</td><td>usage</td><td>Day 23</td></tr>
+<tr><td>区间并集</td><td>interval union</td><td>Day 23</td></tr>
+<tr><td>关键路径</td><td>critical path</td><td>Day 23</td></tr>
+<tr><td>头部采样</td><td>head sampling</td><td>Day 23</td></tr>
+<tr><td>尾部采样</td><td>tail sampling</td><td>Day 23</td></tr>
+<tr><td>攒批导出</td><td>BatchSpanProcessor / batch span processor</td><td>Day 23</td></tr>
+<tr><td>孤儿 span</td><td>orphan span</td><td>Day 23</td></tr>
+<tr><td>成本归因</td><td>cost attribution</td><td>Day 23</td></tr>
+</tbody></table></div></details>
+<!-- total 304 old 284 -->
+<h2><span class="sec">板块 8</span>专项深挖</h2>
+<p>今天没放下、但值得单独占一个晚上的三件事。每一段都可以直接粘给 Claude。</p>
+
+<blockquote style="border-left:3px solid var(--line);padding-left:1rem;margin:1rem 0;color:var(--muted)">
+<p>「我在 CPU 上做 agent 运行时，已经掌握：OpenTelemetry 的 span / trace / 属性 / 事件 / 状态，W3C traceparent 的格式与头部采样，<code>gen_ai.*</code> 语义约定里的四档 usage，以及自身耗时要用区间并集算。现在我要处理采样这一块，重点是尾部采样。请讲透：一条 trace 的 span 在收集器那一侧是怎么被攒齐的、判断『齐了』的依据是什么（没有一个 span 说自己是最后一个）、等待窗口该按什么定、窗口内存放不下时先丢谁；再讲清尾部采样的三种常见判据（出错、超过某个时长、按属性命中）各自的实现代价。产出形式：一份决策表，每一行是一种流量特征，配上该用头部还是尾部、以及为什么。不要贴大段收集器配置。」</p>
+</blockquote>
+
+<blockquote style="border-left:3px solid var(--line);padding-left:1rem;margin:1rem 0;color:var(--muted)">
+<p>「我已经量过：单个 span 十几微秒，802 个 span 让运行时的 CPU 涨到 2.55 倍，一条会话的 trace 从 10 KB 涨到 272 KB。现在我想把这套东西从 trace 扩到指标那一侧。请讲透 OpenTelemetry 的指标模型：计数器、直方图、上下计数器各自适合记什么；直方图的桶边界该怎么定（我要记的是首 token 延迟和一条会话的成本，两者的量级差好几个数量级）；以及『基数』这件事——把 <code>gen_ai.conversation.id</code> 当成指标的标签会发生什么，为什么同一个字段在 trace 上没问题、在指标上是灾难。产出形式：一张表，每一行是我想报的一个数，写清它该是 trace 的属性、指标的哪一种、还是两边都要。」</p>
+</blockquote>
+
+<blockquote style="border-left:3px solid var(--line);padding-left:1rem;margin:1rem 0;color:var(--muted)">
+<p>「我已经能把一条 agent 会话的账拆到轮次一级，也知道一次工具调用的真实成本要按『它引入的 token × 之后还剩几轮』算。现在我要把这套核算做成能对外结算的东西。请讲透：多租户下 token 成本怎么归到租户头上（一条会话可能跨多个租户的工具）；命中缓存那一档的折扣该算谁的（缓存是共享资源，是先来的那个租户替后面的人付的钱）；预算与限流怎么接（按 token 还是按钱做配额、超了之后是拒绝还是降级）；以及对账——你自己算的账和服务商账单对不上的时候，通常差在哪几处。产出形式：一份核算口径文档的骨架，每一条写清它的争议点在哪。」</p>
+</blockquote>
+
+<h2><span class="sec">板块 9</span>延伸材料</h2>
+<ul>
+<li><span class="q">W3C Trace Context 规范</span> —— <code>https://www.w3.org/TR/trace-context/</code>。今天第 3 节那一行头的完整定义，包括 <code>tracestate</code> 那一半（今天没讲，它用来在多个厂商的系统之间传各自的私有状态）。规范很短，一小时能读完，读完你会明白为什么采样标志必须在头里而不能靠收集器事后判断。难度：低，但需要边读边对着 <code>tracecontext.py</code> 那段正则看。</li>
+<li><span class="q">OpenTelemetry 的大模型语义约定</span> —— 仓库地址在装好的包里就写着：<code>https://github.com/open-telemetry/semantic-conventions-genai</code>。今天只用了六七个属性，那里有完整的一份，包括每个属性是必填还是选填、以及 span 该起什么名字。难度：低，属于查阅型材料，但值得整份扫一遍，因为「有哪些字段」本身就是一份检查清单。</li>
+<li><span class="q">本机 site-packages 里的 <code>opentelemetry-sdk</code> 源码</span> —— 今天引的四处（<code>trace/__init__.py:986</code> 的 <code>end</code>、<code>trace/export/__init__.py:41-44</code> 的默认值、<code>_shared_internal/__init__.py:104,184,204</code> 的队列、<code>trace/sampling.py:265,301,375</code> 的采样器）全部在这一份里。这个库的量很小，一个下午能把 trace 那一块读完。难度：中等，读法照 Day 17 那天的路子——想验证哪一点，就去那个文件里找那一行。</li>
+<li><span class="q">《Dapper, a Large-Scale Distributed Systems Tracing Infrastructure》</span>，Benjamin H. Sigelman 等（Google，2010）—— 今天用的这套东西的源头。特别值得读的是它对采样率的讨论：那个系统在生产环境上跑的采样率低到千分之一，论文里解释了为什么这样仍然够用，以及什么样的问题会因此看不见。难度：中等，一个半小时。检索标题即可找到。</li>
+<li><span class="q">《Observability Engineering》</span>，Charity Majors / Liz Fong-Jones / George Miranda —— 讲「高基数字段为什么是可观测性的核心，而它恰恰是指标系统承受不了的东西」的一本书。今天第 13 节把 <code>conversation.id</code> 放进 trace 属性、把 CPU 留给进程级指标，背后就是这条分界。难度：低，偏观念，可以只读前三分之一。</li>
+</ul>
+
+<h2><span class="sec">板块 10</span>今日五句话</h2>
+<div class="card five"><span class="tag">合上页面，用自己的话写</span>
+<p>1. 一个 turn 的自身耗时为什么不能用「父时长减去孩子时长之和」算？正确的算法是什么？</p><div class="write"></div>
+<p>2. 为什么在异步运行时里，不能靠 <code>time.process_time()</code> 在 span 两端读两次来给这个 span 归因 CPU？</p><div class="write"></div>
+<p>3. 一次工具调用真正的成本由哪两个因素相乘决定？为什么这笔钱不出现在它自己那个 span 上？</p><div class="write"></div>
+<p>4. 攒批导出的队列满了的时候，被丢掉的是哪些 span？这件事落到你眼前是什么样子？</p><div class="write"></div>
+<p>5. 决定「这两段该不该合成一个 span」的判据是什么？举一个今天见过的例子。</p><div class="write"></div>
+</div>
+<h4>逐句自查</h4>
+<ul>
+<li>第 1 句如果写成「因为孩子的时间没算全」就错了，方向反了——是算重了，同一段时间被几个并发的孩子各数了一遍，所以减出来是负数。正确算法要点是「区间并集」，不是「取最大的那个孩子」；取最大的那个只在「孩子们全部同时开始」时才碰巧对。</li>
+<li>第 2 句如果只写「因为有并发」就不够。要点是<em>为什么</em>并发会坏事：这个时钟返回的是整个进程的 CPU，而 asyncio 是单线程的，一个 span 挂在 <code>await</code> 上的时候事件循环正在跑别人的回调，那些 CPU 全落进了这两次读数之间。补一句量级会更好：32 条并发下加起来是真实值的 42 倍。</li>
+<li>第 3 句如果只答「它引入了多少 token」就少了一半。另一半是「它之后还剩几轮」——同样一段内容，第 1 轮引入和第 5 轮引入，尾巴长度差四轮。不出现在自己那个 span 上，是因为工具本身不调模型，那笔钱在后面每一个 <code>chat</code> span 上。</li>
+<li>第 4 句如果写成「丢掉最新的」就错了，正好反过来：队列是定长的、新的从左边进，挤掉的是最右边最老的那条。落到眼前的样子是一整段连续时间窗口的 span 集体消失，剩下的孩子成了孤儿——不是随机零星地缺几条。</li>
+<li>第 5 句如果答「按代码里的函数边界切」就错了。判据是「这两段坏掉的原因是不是同一类」。今天的例子是 <code>execute_tool</code> 和 <code>release_output</code>：一个坏了要去查工具，一个坏了要去查有谁还握着管道的写端，修法完全不同，所以必须分开。</li>
+</ul>
+
+<h2><span class="sec">板块 11</span>明日预告</h2>
+<p>明天是这个八天项目的第七天，验收日：给运行时压一次力，找出一处瓶颈把它修掉，然后对着立项那天写的设计文档逐条复盘。</p>
+<p>今天顺手留下了一个口子。第 9 节的结论是「trace 上只放时间，不放 CPU」，可明天要找的瓶颈恰恰是一段 CPU——Day 18 第 7 节量到，每次交接的成本从 32 条并发时的 1.86 毫秒涨到 128 条时的 23.84 毫秒，多出来那 22 毫秒至今没人说得清去哪儿了。手上有一棵不含 CPU 的 trace，和一把不认识会话的剖析器，明天要用这两样对上同一段时间。</p>
+<footer>
+<p>AI Infra · Day 23 / 28 · 2026-09-03 · 阶段四 · Agent Runtime（八天项目 · 第 6 天 · 交付）</p>
+<p>实验条件：2 核 Intel Xeon @ 2.10 GHz，L1d 96 KiB、L2 4 MiB、L3 260 MiB，7.8 GiB 内存，Linux 6.18.44。Python 3.11.15、opentelemetry-sdk 1.44.0、opentelemetry-api 1.44.0、opentelemetry-semantic-conventions 0.65b0、httpx 0.28.1、uvicorn 0.46.0、fastapi 0.141.1。</p>
+<p>假模型服务的时序由环境变量 <code>TTFT_MS=100</code>、<code>ITL_MS=5</code> 控制；批量导出的三个默认值（队列 2048、一批 512、间隔 5000 毫秒）全部取自 SDK，未做覆盖。并发扫描每档 3 遍取中位；单次调用 3 次取中位。表 A 与表 B、表 C 出自同一次运行。页面上引用的所有源码行号，以本机 <code>site-packages</code> 下这几个版本为准。</p>
+</footer>
+</main>
+</body>
+</html>
