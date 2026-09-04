@@ -1,0 +1,1413 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra Day 25</title>
+<style>
+:root{
+  --bg:#faf6ef; --fg:#2b2723; --mut:#6d6459; --line:#e2d8c8; --card:#fffdf8;
+  --acc:#a8642a; --acc2:#3f6f5f; --acc3:#6b5aa6; --acc4:#8a5b2f;
+  --codebg:#241f1b; --codefg:#e9e0d2; --mark:#f0e2c8;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#171513; --fg:#e6ded2; --mut:#a2988a; --line:#3a3430; --card:#201d1a;
+    --acc:#d99457; --acc2:#7fb8a3; --acc3:#a897dd; --acc4:#c9955f;
+    --codebg:#0f0d0c; --codefg:#e2d9cb; --mark:#3d3323;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171513; --fg:#e6ded2; --mut:#a2988a; --line:#3a3430; --card:#201d1a;
+  --acc:#d99457; --acc2:#7fb8a3; --acc3:#a897dd; --acc4:#c9955f;
+  --codebg:#0f0d0c; --codefg:#e2d9cb; --mark:#3d3323;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);margin:0;
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",
+    system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  line-height:1.78;font-size:16.5px;-webkit-text-size-adjust:100%;overflow-x:hidden}
+.bar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);
+  padding:8px 16px;display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;font-size:13.5px;color:var(--mut)}
+.bar b{color:var(--acc);font-size:14.5px;letter-spacing:.02em}
+main{max-width:820px;margin:0 auto;padding:26px 18px 70px}
+h1{font-size:27px;line-height:1.4;margin:.4em 0 .25em;letter-spacing:-.01em}
+.sub{color:var(--mut);font-size:15.5px;margin:0 0 2em}
+h2{font-size:21px;margin:2.4em 0 .7em;padding-bottom:.3em;border-bottom:2px solid var(--line)}
+h3{font-size:18.5px;margin:2em 0 .5em;color:var(--acc4)}
+h4{font-size:16.5px;margin:1.5em 0 .4em}
+p{margin:.85em 0}
+a{color:var(--acc);text-decoration-thickness:1px;text-underline-offset:2px}
+.lead{font-size:17.5px;color:var(--acc2);font-weight:600;margin:1.4em 0 .6em}
+.term{background:var(--mark);border-radius:3px;padding:0 4px;font-weight:600;
+  box-decoration-break:clone;-webkit-box-decoration-break:clone}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em;background:var(--mark);border-radius:3px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--codebg);color:var(--codefg);border-radius:8px;padding:14px 16px;
+  overflow-x:auto;line-height:1.62;font-size:13.5px;margin:1em 0}
+pre code{background:none;padding:0;color:inherit;font-size:13.5px;white-space:pre;overflow-wrap:normal}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:1.1em 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:min-content}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:15em}
+th{background:var(--card);font-weight:600;color:var(--acc4)}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--card) 60%,transparent)}
+.cap{color:var(--mut);font-size:13.5px;margin:.3em 0 1.4em}
+.card{border-left:4px solid var(--acc);background:var(--card);border-radius:0 8px 8px 0;
+  padding:14px 18px;margin:1.5em 0}
+.card>:first-child{margin-top:0}.card>:last-child{margin-bottom:0}
+.card .hd{font-weight:700;color:var(--acc);font-size:14px;letter-spacing:.06em;margin-bottom:.4em}
+.recall{border-left-color:var(--acc2)}.recall .hd{color:var(--acc2)}
+.pred{border-left-color:var(--acc3)}.pred .hd{color:var(--acc3)}
+.five{border-left-color:var(--acc2)}.five .hd{color:var(--acc2)}
+.key{border-left-color:var(--acc4);background:color-mix(in srgb,var(--mark) 45%,var(--card))}
+.key .hd{color:var(--acc4)}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:.9em 0;background:var(--card)}
+summary{cursor:pointer;font-weight:600;color:var(--acc2);font-size:15px}
+details[open] summary{margin-bottom:.5em;border-bottom:1px dashed var(--line);padding-bottom:.4em}
+.write{border:1px dashed var(--line);border-radius:8px;min-height:76px;margin:.8em 0;
+  background:repeating-linear-gradient(transparent,transparent 33px,var(--line) 33px,var(--line) 34px)}
+svg{display:block;max-width:100%;height:auto;color:var(--fg)}
+.svgbox{overflow-x:auto;border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--card);margin:1.2em 0}
+.svgbox svg{min-width:600px}
+footer{margin-top:3.5em;padding-top:1.2em;border-top:1px solid var(--line);color:var(--mut);font-size:13.5px}
+ol,ul{padding-left:1.35em}li{margin:.35em 0}
+hr{border:0;border-top:1px dashed var(--line);margin:2.4em 0}
+.note{color:var(--mut);font-size:14.5px}
+.lbl{font-weight:700;color:var(--acc4)}
+</style>
+</head>
+<body>
+<div class="bar"><b>AI Infra &nbsp;Day 25 / 28</b><span>阶段四 · Agent Runtime（八天项目 · 第 8 天 · 回收）</span><span>2026-09-04</span></div>
+<main>
+
+<h1>命中率最高的那条规则，尾延迟是最差的</h1>
+<p class="sub">会话该回到哪一台机器：亲和要求「回原来那台」，均衡要求「哪台闲去哪台」。今天把这两边的价钱放在同一张表上，再看看工业界的路由器是用哪一个旋钮把它们调和掉的。</p>
+
+<h2>板块 0 · 温故 · 闭卷</h2>
+<p>三道题，间隔一天、三天、七天。合上前面几页，先自己答一遍再展开。</p>
+
+<div class="card recall">
+<div class="hd">第 1 题 · 来自 Day 24</div>
+<p>昨天把一个连接池切成八个小池，那个平方级的扫描就便宜下来了；八个再往上切到三十二个，占核只从二成六走到二成二，会话耗时完全不动，收益已经耗尽。当时还顺手记了一句：会话按序号分池这条规则，以后可能会和别的分派规则打架。</p>
+<p>今天那个「别的分派规则」来了：请求要按会话分到四台不同的推理服务上去。如果你顺手把连接池也改成「一台目标副本一个池」，昨天那条收益耗尽曲线还成立吗？</p>
+<details><summary>展开答案</summary>
+<p>不成立了，因为池数这个旋钮不再由你拧。</p>
+<p>昨天池数是自由变量，你想切几份就切几份，所以能一直切到收益耗尽的那个点上。改成按目标副本分池之后，池数等于副本数——四台副本就是四个池，每个池装三十几条连接。昨天那张池数扫描表里，四个池那一行占核是三成二，八个池那一行是二成六，中间还差着六个百分点。也就是说你会被停在曲线还没走平的地方。</p>
+<p>两条分法要同时满足，办法是让它们分层：按副本分组是外层，因为这一层是正确性要求（连接必须通到那台机器）；每个副本内部再切成几个小池是内层，这一层才是性能旋钮。层数变成两层之后，昨天那条曲线要在「每个副本内部」重新扫一遍。</p>
+<p>接今天：今天整页都在动最外层那条分法——一条请求到底该去哪台副本。</p>
+</details>
+</div>
+
+<div class="card recall">
+<div class="hd">第 2 题 · 来自 Day 22</div>
+<p>那天量到：同一个三步任务，每次调用都起一个新沙箱要一秒一，整条会话共用一个沙箱只要零点三五秒，差三点二倍，而差额的八成八来自「把第一步重做了一遍」。当时还补了一句：会话级沙箱意味着这条会话被钉在了一台机器上。</p>
+<p>现在把两样跨调用留在机器上的东西并排看：一台副本上的 KV cache，和这台机器上那个还活着的沙箱。假设某一轮请求被送到了别的机器上，这两样东西的后果差在哪？</p>
+<details><summary>展开答案</summary>
+<p>差在能不能自己长回来。</p>
+<p>KV cache 那一份丢了，后果是要重新算一遍。慢，但结果一模一样——Day 16 验到过，复用一段前缀和把它重算一遍给出的是逐位相同的数值。所以走错机器在这一侧只是性能损失，而且是一次性的：算完之后新机器上就有了这一份，下一轮又能命中。</p>
+<p>沙箱那一份丢了，后果是那个 <code>rows</code> 变量不存在了，而模型写的第二步代码里就是要用它。没有任何办法在新机器上「重算」出一个别处进程的内存。所以这一侧走错机器不是慢，是错。</p>
+<p>一句话概括这两种约束的差别：一个是软的，走错了赔时间；一个是硬的，走错了赔正确性。今天大部分篇幅在算软的那一侧值多少钱，但真到了要写分派规则的时候，硬的那一侧没有商量余地，它决定了规则的骨架，软的那一侧只能在骨架里做优化。</p>
+</details>
+</div>
+
+<div class="card recall">
+<div class="hd">第 3 题 · 来自 Day 18</div>
+<p>立项那天给运行时的并发上限列了三条约束：一是下游模型服务的容量，那是别人的机器；二是每条在途会话在内存里的上下文，那随轮数涨；三是本进程每秒能处理多少次交接。当时的结论是三条里哪一条先撞上不能推，只能扫。</p>
+<p>今天把下游从一台推理服务变成四台。这三条约束里，哪几条跟着变，哪一条一个字都不动？为什么？</p>
+<details><summary>展开答案</summary>
+<p>第一条变，而且变的方式不是简单地乘四。四台机器合起来的容量确实是四倍，但你能不能吃到这四倍，取决于请求分得匀不匀——今天整页量的就是这件事。分得不匀的时候，四台的实际容量会明显小于四倍，而且平均利用率还会显得很低。</p>
+<p>第二条不动。在途会话的上下文躺在运行时自己的内存里，跟下游有几台机器毫无关系。</p>
+<p>第三条也变，但方向容易看反。交接次数没变（还是一轮一次），变的是每次交接要往哪儿发——连接池现在要维护到四个不同下游的连接。Day 24 量到的那个平方级开销跟池里连接数有关，池怎么切，正好就是第 1 题的题目。</p>
+<p>接今天：三条里第一条是今天的正题，它现在多了一个以前不存在的自变量——分派规则。</p>
+</details>
+</div>
+
+<h2>板块 1 · 今日概览</h2>
+<div class="scroll"><table>
+<tr><th>项</th><th>内容</th></tr>
+<tr><td>进度</td><td class="w">Day 25 / 28 · 阶段四 · Agent Runtime（八天项目的第 8 天，回收）</td></tr>
+<tr><td>今日主题</td><td class="w">一条会话的第 n 轮该发给哪一台推理副本：怎么让「回到原来那台」在扩缩容之后还成立、亲和换来的命中率值多少台机器、它同时赔进去的负载倾斜值多少尾延迟，以及工业界的路由器用哪一个旋钮把两者调和掉</td></tr>
+<tr><td>时间预算</td><td class="w">3 ~ 4 小时（阅读约 1.5 小时，动手约 2 小时）</td></tr>
+<tr><td>今天不讲</td><td class="w">
+<p>把 prefill 和 decode 拆到两组机器上跑。它确实也是一种「请求该去哪儿」，但它拆的是一条请求内部的两个阶段，而今天讲的是一条会话的多轮之间怎么落位——两件事的自变量完全不同，混在一天里会把两边都讲浅。Day 16 的页尾已经给了它一段可以直接用的题目。</p>
+<p>让几十台机器共享同一份 KV 缓存池（LMCache、Mooncake Store 这一路）。那是把今天这个问题从根上取消掉的一条路，代价是一整套网络和一致性设施。今天的位置是「缓存各自为政」这个前提下能做到什么，把这条路的价钱先量清楚，再谈值不值得上那套设施。</p>
+<p>扩缩容策略本身——什么时候该加机器、加几台。今天只回答「加了之后会话怎么重新落位」，那是扩缩容的下半场，也是唯一和缓存有关的那一半。</p>
+</td></tr>
+</table></div>
+
+<p>今天结束后你应该能做到这三件事。</p>
+<ul>
+<li>面对「我们给推理服务加了粘性会话」这句话，能问出该问的两个问题：一台机器挂掉的时候会话去哪儿，以及这条粘性在多少台机器的规模上会带来多大的负载倾斜。</li>
+<li>拿到一份「命中率上去了但用户没觉得快」的报告，能分辨这是命中率本来就没兑现，还是兑现了却被队列吃掉了，并且说得出该看哪一列。</li>
+<li>看懂一个真实路由器的两条判据（匹配率门槛和失衡判据），说得出各自的默认值是给什么规模定的，以及在你的规模上哪一条根本不会开火。</li>
+</ul>
+
+<p>今天这一页怎么走。</p>
+<div class="scroll"><table>
+<tr><th>部分</th><th>它回答的问题</th></tr>
+<tr><td>第一部分 · 分派这一步在决定什么</td><td class="w">你手上那套粘性会话搬过来要改哪三处？扩缩容的时候，会话怎么才能尽量待在原地？</td></tr>
+<tr><td>第二部分 · 今天的台子</td><td class="w">四台副本、一个路由器、一批会话，在模拟器里各是什么？哪些是真的？</td></tr>
+<tr><td>第三部分 · 亲和保住的命中率，账记在别处</td><td class="w">七种分派规则摆在同一张表上，命中率最高的那一行为什么尾延迟最差？折成时间是多少台机器？</td></tr>
+<tr><td>第四部分 · 软亲和：门槛这个旋钮</td><td class="w">真实路由器怎么在两者之间摇摆？那两个默认值是怎么来的？负载多高的时候差别才显出来？</td></tr>
+</table></div>
+
+<h2>板块 2 · 核心讲解</h2>
+
+<h3>第一部分 · 分派这一步在决定什么</h3>
+
+<h4>1. 你手上那套粘性会话，搬过来要改三处</h4>
+
+<p class="lead">同一条会话的第二轮该发给哪台机器，这个问题你以前是怎么答的？</p>
+
+<p>作为后端工程师，你八成已经在生产上配过一次粘性会话了。做法是在负载均衡器上按某个字段（cookie、用户 ID、URL 里的某一段）算一个值，同一个值永远落到同一台后端上，这样那台后端内存里的登录态、购物车、分片索引就都还在。</p>
+
+<p>方向完全对，今天要做的就是这件事。但把它搬到推理服务前面，有三处不一样，而且每一处都会改变你该怎么配它。</p>
+
+<p>第一处是「粘的是什么」。以前粘的是一份只有那台机器有的状态，别处没有，所以必须回去。现在粘的是一份缓存——回不去只是要重算，答案一个字都不会变。这一点 Day 16 验到了逐位相同。于是亲和从「必须」降级成了「划算」，而划算是可以被别的东西盖过去的。</p>
+
+<p>第二处是「粘住之后能省多少」。以前省的是一次数据库查询，几毫秒。现在省的是一整段 prefill，Day 16 那张表给的量级是几百到几千毫秒。收益大了两三个数量级，所以值得为它多花力气。</p>
+
+<p>第三处最容易被漏掉：这份状态会自己消失。购物车放在内存里不会因为别的用户来了就没了，KV cache 会——Day 21 量过，一条会话的两轮之间插进来别人的请求足够多的时候，属于它的那一段命中直接归零，只剩所有人共用的头部。所以「回到原来那台」这件事，只有在你回得够快的时候才值钱。</p>
+
+<p>把这三处放在一起，今天要造的东西就有形状了：一个坐在运行时和推理服务之间的角色，它拿到一条请求，决定发给哪一台副本。这个动作叫 <span class="term">请求分派（request routing）</span>，做这件事的那个组件通常就叫路由器。它手上能有的信息只有两类——每台副本现在有多少请求没做完，以及每台副本的缓存里大概有些什么。今天整页在回答的问题是：这两类信息该怎么合起来用。</p>
+
+<h4>2. 一致性哈希：让「回到原来那台」在扩缩容之后还成立</h4>
+
+<p>先把最朴素的做法写出来，因为它能跑，而且很多地方就是这么开始的：把会话号哈希成一个整数，对副本数取模，得到几就发给第几台。</p>
+
+<pre><code>rep = sha256(session_id) % len(replicas)     # 能跑，但副本数一变就全乱</code></pre>
+
+<p>问题出在最后那个除数上。副本从四台加到五台，除数从 4 变成 5，几乎每一条会话算出来的余数都变了。这不是「有些会话要挪」，是「大部分会话都要挪」，而每挪一条就意味着新机器上没有它的任何一块，整条上下文要从头算一遍。</p>
+
+<p>解决这件事的办法叫 <span class="term">一致性哈希（consistent hashing）</span>。把哈希值的取值范围首尾相接看成一个圆环，这个环叫 <span class="term">哈希环（hash ring）</span>。每台副本按自己名字的哈希值在环上占一个位置；一条会话也按会话号的哈希值落到环上某个点，然后顺时针走，遇到的第一台副本就是它的归宿。</p>
+
+<p>这个结构的好处在拿掉一台副本的时候才看得出来：只有原本属于那台机器的那一段圆弧会改主人，交给顺时针方向的下一台；环上其他所有位置一动不动，落在那些位置上的会话完全不受影响。</p>
+
+<div class="svgbox">
+<svg viewBox="0 0 700 340" role="img" aria-label="哈希环示意：左边四台副本各占若干段圆弧，右边 r2 摘掉之后只有它那三段改了主人">
+<g fill="none" stroke="currentColor" stroke-linecap="round">
+<g stroke-width="10" opacity="0.22">
+<path d="M 151.8 54.0 A 86 86 0 0 1 191.4 64.6"/><path d="M 225.4 98.6 A 86 86 0 0 1 236.0 138.2"/>
+<path d="M 236.0 141.8 A 86 86 0 0 1 225.4 181.4"/><path d="M 191.4 215.4 A 86 86 0 0 1 151.8 226.0"/>
+<path d="M 148.2 226.0 A 86 86 0 0 1 108.6 215.4"/><path d="M 105.4 213.6 A 86 86 0 0 1 76.4 184.6"/>
+<path d="M 74.6 181.4 A 86 86 0 0 1 64.0 141.8"/><path d="M 76.4 95.4 A 86 86 0 0 1 105.4 66.4"/>
+<path d="M 108.6 64.6 A 86 86 0 0 1 148.2 54.0"/>
+</g>
+<g stroke-width="10" opacity="0.85">
+<path d="M 194.6 66.4 A 86 86 0 0 1 223.6 95.4"/><path d="M 223.6 184.6 A 86 86 0 0 1 194.6 213.6"/>
+<path d="M 64.0 138.2 A 86 86 0 0 1 74.6 98.6"/>
+</g>
+<g stroke-width="10" opacity="0.22">
+<path d="M 471.8 54.0 A 86 86 0 0 1 511.4 64.6"/><path d="M 545.4 98.6 A 86 86 0 0 1 556.0 138.2"/>
+<path d="M 556.0 141.8 A 86 86 0 0 1 545.4 181.4"/><path d="M 511.4 215.4 A 86 86 0 0 1 471.8 226.0"/>
+<path d="M 468.2 226.0 A 86 86 0 0 1 428.6 215.4"/><path d="M 425.4 213.6 A 86 86 0 0 1 396.4 184.6"/>
+<path d="M 394.6 181.4 A 86 86 0 0 1 384.0 141.8"/><path d="M 396.4 95.4 A 86 86 0 0 1 425.4 66.4"/>
+<path d="M 428.6 64.6 A 86 86 0 0 1 468.2 54.0"/>
+</g>
+<g stroke-width="10" opacity="0.85" stroke-dasharray="4 7">
+<path d="M 514.6 66.4 A 86 86 0 0 1 543.6 95.4"/><path d="M 543.6 184.6 A 86 86 0 0 1 514.6 213.6"/>
+<path d="M 384.0 138.2 A 86 86 0 0 1 394.6 98.6"/>
+</g>
+</g>
+<g font-size="12.5" fill="currentColor" text-anchor="middle" font-family="system-ui,sans-serif">
+<text x="177" y="44">r0</text><text x="224" y="70">r2</text><text x="250" y="117">r1</text><text x="250" y="171">r3</text>
+<text x="224" y="218">r2</text><text x="177" y="244">r0</text><text x="123" y="244">r3</text><text x="76" y="218">r1</text>
+<text x="50" y="171">r0</text><text x="50" y="117">r2</text><text x="76" y="70">r3</text><text x="123" y="44">r1</text>
+<text x="497" y="44">r0</text><text x="544" y="70">r1</text><text x="570" y="117">r1</text><text x="570" y="171">r3</text>
+<text x="544" y="218">r0</text><text x="497" y="244">r0</text><text x="443" y="244">r3</text><text x="396" y="218">r1</text>
+<text x="370" y="171">r0</text><text x="370" y="117">r3</text><text x="396" y="70">r3</text><text x="443" y="44">r1</text>
+<text x="150" y="136" font-size="13">四台都在</text>
+<text x="150" y="156" font-size="11.5" opacity="0.7">深色那三段属于 r2</text>
+<text x="470" y="136" font-size="13">r2 摘掉之后</text>
+<text x="470" y="156" font-size="11.5" opacity="0.7">只有虚线那三段换了主人</text>
+<text x="150" y="292" font-size="13">会话号哈希到环上一点，顺时针走，</text>
+<text x="150" y="310" font-size="13">遇到的第一台副本就是它的归宿</text>
+<text x="470" y="292" font-size="13">其余九段一个字没改，</text>
+<text x="470" y="310" font-size="13">落在那些段上的会话完全不受影响</text>
+</g>
+<g stroke="currentColor" fill="none" stroke-width="1.6">
+<path d="M 268 140 L 352 140" stroke-dasharray="5 5"/><path d="M 344 135 L 352 140 L 344 145"/>
+</g>
+</svg>
+</div>
+<p class="cap">环上每一段圆弧代表一个位置区间，标签是这段区间归哪台副本。左边四台都在，深色那三段属于 r2；右边 r2 摘掉，只有那三段顺时针交给了下一台，画成虚线。真实的环上一台副本占的不是三段而是上百段，画三段是为了看得清。</p>
+
+<p>一台副本在环上只占一个位置的话，四台副本把整个环切成四段，而这四段的长度是它们名字的哈希值随手决定的，很可能一台占掉一大截、另一台只分到一点点。所以真实实现会给每台副本在环上放很多个位置，这些位置叫 <span class="term">虚拟节点（virtual node）</span>——同一台机器在环上撒开成上百个小段，各段长度的抖动就被平均掉了。</p>
+
+<p>SGLang 的那个路由网关就是这么做的，虚拟节点数写死在一个常量里：</p>
+
+<pre><code>// sgl-model-gateway/src/core/worker_registry.rs:29-31
+/// Number of virtual nodes per physical worker for even distribution.
+/// 150 is a common choice that provides good balance between memory and distribution.
+const VIRTUAL_NODES_PER_WORKER: usize = 150;</code></pre>
+
+<p>环是在副本增减的时候建一次，不是每条请求建一次。建的时候把每台副本的地址和虚拟节点编号一起喂进哈希函数，得到的位置排好序；查的时候二分找到第一个不小于会话哈希值的位置，然后顺时针走，跳过所有不健康的副本：</p>
+
+<pre><code>// sgl-model-gateway/src/core/worker_registry.rs:63-75
+for vnode in 0..VIRTUAL_NODES_PER_WORKER {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(url_bytes);            // 副本地址
+    hasher.update(b"#");
+    hasher.update(&(vnode as u64).to_le_bytes());   // 加上虚拟节点编号
+    let pos = u64::from_le_bytes(hash.as_bytes()[..8].try_into().unwrap());
+    entries.push((pos, Arc::clone(&url)));
+}
+entries.sort_unstable_by_key(|(pos, _)| *pos);       // 排好序，查的时候二分</code></pre>
+
+<p>「跳过不健康的副本」这一句顺手把故障转移也办了：一台机器挂掉，落在它那些段上的会话继续顺时针走一步，落到下一台活着的机器上；等它回来，这些会话又走回去。这条路径上没有任何需要人参与的重新分配。</p>
+
+<p>到这里为止全是机制，一个数都还没有。取模到底有多糟、一百五十个虚拟节点到底够不够匀，得量。</p>
+
+<h3>第二部分 · 今天的台子</h3>
+
+<h4>3. 实验装置</h4>
+
+<p>今天没有模型，也没有真的推理服务。被量的是分派规则本身，所以台子分成两半：一半是真跑的矩阵乘，它只负责回答「算 n 个 token 要多久」；另一半是一个确定性的模拟器，它按那个答案把时间摆出来。中间还有一个完全独立的小账台，只管哈希环。</p>
+
+<div class="svgbox">
+<svg viewBox="0 0 860 442" role="img" aria-label="装置图：会话发生器、路由器、四台副本，以及两个独立的账台">
+<g fill="none" stroke="currentColor" stroke-width="1.5">
+<rect x="8" y="56" width="190" height="108" rx="8"/>
+<rect x="228" y="56" width="214" height="108" rx="8"/>
+<rect x="482" y="14" width="290" height="66" rx="6"/>
+<rect x="482" y="84" width="290" height="66" rx="6"/>
+<rect x="482" y="154" width="290" height="66" rx="6"/>
+<rect x="482" y="224" width="290" height="66" rx="6"/>
+<rect x="8" y="336" width="380" height="98" rx="8" stroke-dasharray="6 5"/>
+<rect x="420" y="336" width="352" height="98" rx="8" stroke-dasharray="6 5"/>
+<path d="M 198 110 L 224 110"/><path d="M 216 105 L 224 110 L 216 115"/>
+<path d="M 442 100 L 478 47"/><path d="M 470 47 L 478 47 L 475 54"/>
+<path d="M 442 106 L 478 117"/><path d="M 470 112 L 478 117 L 469 121"/>
+<path d="M 442 114 L 478 187"/><path d="M 471 180 L 478 187 L 469 189"/>
+<path d="M 442 120 L 478 257"/><path d="M 472 249 L 478 257 L 469 258"/>
+<path d="M 772 257 L 800 257 L 800 312 L 103 312 L 103 172" stroke-dasharray="5 4"/>
+<path d="M 98 180 L 103 172 L 108 180"/>
+</g>
+<g fill="currentColor" font-size="12.5" font-family="system-ui,sans-serif">
+<text x="18" y="80" font-weight="600">会话发生器</text>
+<text x="18" y="100">120 条会话，每条 6~12 轮</text>
+<text x="18" y="120">泊松到达，速率 λ</text>
+<text x="18" y="140">头部 1024 token 全体共用</text>
+<text x="238" y="80" font-weight="600">路由器（被测对象）</text>
+<text x="238" y="100">看得见：各副本在途条数</text>
+<text x="238" y="120">看得见：各副本缓存里有什么</text>
+<text x="238" y="140">输出：这条发给哪一台</text>
+<text x="492" y="36" font-weight="600">副本 r0</text>
+<text x="492" y="55">前缀缓存 32768 token 位，LRU 淘汰</text>
+<text x="492" y="73">FIFO 队列，一次只跑一条</text>
+<text x="492" y="110" font-weight="600">副本 r1</text><text x="492" y="129">同上，缓存各自独立</text>
+<text x="492" y="180" font-weight="600">副本 r2</text><text x="492" y="199">同上，缓存各自独立</text>
+<text x="492" y="250" font-weight="600">副本 r3</text><text x="492" y="269">同上，缓存各自独立</text>
+<text x="300" y="307" font-size="12">一条做完，240 ms 之后这条会话的下一轮回到发生器</text>
+<text x="18" y="360" font-weight="600">P1 前向账台（真跑）</text>
+<text x="18" y="380">8 层 4096×4096 float32，合计 512 MiB</text>
+<text x="18" y="400">量出斜率、截距、单步解码耗时</text>
+<text x="18" y="420">这三个数是模拟器里唯一的时间来源</text>
+<text x="430" y="360" font-weight="600">P2 环账台（真跑，与上面无关）</text>
+<text x="430" y="380">2 万个会话号 × 取模 / 一致性哈希</text>
+<text x="430" y="400">量换机器的比例、虚拟节点的均匀度</text>
+<text x="430" y="420">不参与任何时间的计算</text>
+</g>
+</svg>
+</div>
+<p class="cap">实线框是主线：会话发生器把请求交给路由器，路由器挑一台副本。虚线框的两个账台各自独立跑，其中 P1 的三个输出被模拟器当成时间单价用，P2 和时间完全无关。底下那条虚线是 agent 循环的下一轮。首 token 延迟＝在队列里等的时间＋prefill，整轮耗时再加上 decode，两个数都在副本这一侧算出来。</p>
+
+<h4>3.1 一条请求里有什么</h4>
+
+<p>没有文字，没有分词器。一条请求就是会话号加一串整数，跟 Day 16 和 Day 20 那两个模拟器同一个形状：</p>
+
+<pre><code>("s007", 第 2 轮, prompt=[8134, 291, 30028, ... 共 1776 个],  gen=[4471, ... 共 142 个])
+         ^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^
+         路由器唯一   头部 1024 个 + 前面各轮攒下来的 + 这一轮   这一轮模型吐出来的，
+         能看的标识   新送进去的那一截                          下一轮会被原样包在里面</code></pre>
+
+<p>路由器拿到这条请求之后，可以做两件事：数一数每台副本手上还有几条没做完，以及拿这串 token 去每台副本的缓存里试一次，看能对上几块。它做完决定，请求就进那台副本的队列。</p>
+
+<h4>3.2 哪些是真的，哪些是假的</h4>
+
+<p>左边写这个台子在哪儿偷了懒，右边写这个懒换来的一句今天不能说的话。</p>
+
+<div class="scroll"><table>
+<tr><th>简化掉的地方</th><th>后果</th></tr>
+<tr><td class="w">四台「副本」是模拟器里的四个对象，没有真进程，也没有网络往返</td><td class="w">今天所有毫秒数都是按 P1 那三个单价算出来的，不是端到端实测。它们之间的比例可信，绝对值只在这台两核机器这副骨架上成立</td></tr>
+<tr><td class="w">一台副本一次只跑一条请求，没有连续批处理</td><td class="w">今天不下任何关于批处理、混合批、token 预算的结论。真实引擎会把几条请求拼进同一步，那会让排队这一侧的形状完全不同——今天量到的排队代价是它的上界</td></tr>
+<tr><td class="w">路由器直接查每台副本的真实缓存，能对上几块一清二楚</td><td class="w">这是缓存感知路由的上限。真实路由器手上只有一棵近似的树，是按请求历史自己维护的，会比真相乐观也会比真相悲观。所以今天不下关于「近似到什么程度还够用」的结论</td></tr>
+<tr><td class="w">没有分词器，token 是随机整数，每一段的长度是随机数</td><td class="w">不下任何关于中英文、某个词表、某段真实文本的结论。所有长度单位都是 token 位</td></tr>
+<tr><td class="w">没有引用计数——一条正在跑的请求，它的那些块在真实引擎里是被占住、淘汰不掉的</td><td class="w">命中率是「没有别人跟你抢缓存」的理想值。这一处和 Day 16、Day 20 是同一个简化，三天的命中率因此可以横着比</td></tr>
+<tr><td class="w">哈希环用 sha256，工业实现用的是 blake3</td><td class="w">换哈希函数只换环上的位置，不换这个结构的性质。所以环那两张表读的是趋势和量级，某一位小数换个哈希函数就会变</td></tr>
+<tr><td class="w">副本永远在线，除了第 12 节那一次故意调慢</td><td class="w">不下任何关于故障转移、健康检查抖动、副本反复上下线的结论</td></tr>
+<tr><td class="w">P1 那副骨架是八层矩阵乘，不含注意力</td><td class="w">它给的是「算这么多 token 至少要多久」的下限，和 Day 8、9、15、16、20 同一副骨架、同一句话</td></tr>
+</table></div>
+
+<p>第三行是今天最大的一处简化，要单独记一笔。让路由器看见真相，等于假设那棵近似树永远是对的。真实系统里这棵树会漂移，而漂移的方向是有偏的——它记得自己发过什么，不知道对面淘汰了什么。所以今天缓存感知那几行的命中率，是它在现场能拿到的上限。</p>
+
+<h4>3.3 跟着一条会话走一遍</h4>
+
+<p>下面是 s007 这条会话的八轮，走的是第四部分那条混合规则。每一行你都能自己验：命中 token 等于命中块乘十六；要算的 token 等于 prompt 长度减去命中 token；首 token 延迟等于排队加 prefill；整轮耗时等于首 token 延迟加 decode。</p>
+
+<div class="scroll"><table>
+<tr><th>轮</th><th>落在</th><th>路由器为什么这么选</th><th>匹配率</th><th>prompt</th><th>满块</th><th>命中块</th><th>命中 token</th><th>要算 token</th><th>生成</th><th>排队 ms</th><th>prefill ms</th><th>decode ms</th><th>首 token ms</th><th>整轮 ms</th></tr>
+<tr><td>1</td><td>r1</td><td>匹配率不够 → 给最闲的</td><td>0.749</td><td>1368</td><td>85</td><td>64</td><td>1024</td><td>344</td><td>161</td><td>846.0</td><td>886.0</td><td>7088.2</td><td>1732.0</td><td>8820.2</td></tr>
+<tr><td>2</td><td>r1</td><td>命中前缀</td><td>0.856</td><td>1776</td><td>111</td><td>95</td><td>1520</td><td>256</td><td>142</td><td>7292.7</td><td>679.7</td><td>6251.7</td><td>7972.3</td><td>14224.1</td></tr>
+<tr><td>3</td><td>r1</td><td>命中前缀</td><td>0.860</td><td>2214</td><td>138</td><td>119</td><td>1904</td><td>310</td><td>143</td><td>5363.3</td><td>806.3</td><td>6295.8</td><td>6169.6</td><td>12465.4</td></tr>
+<tr><td>4</td><td>r1</td><td>命中前缀</td><td>0.865</td><td>2720</td><td>170</td><td>147</td><td>2352</td><td>368</td><td>154</td><td>6080.5</td><td>942.3</td><td>6780.1</td><td>7022.8</td><td>13802.8</td></tr>
+<tr><td>5</td><td>r1</td><td>命中前缀</td><td>0.922</td><td>3106</td><td>194</td><td>179</td><td>2864</td><td>242</td><td>113</td><td>6018.5</td><td>646.9</td><td>4975.0</td><td>6665.4</td><td>11640.4</td></tr>
+<tr><td>6</td><td>r1</td><td>命中前缀</td><td>0.907</td><td>3547</td><td>221</td><td>201</td><td>3216</td><td>331</td><td>177</td><td>6744.6</td><td>855.5</td><td>7792.7</td><td>7600.1</td><td>15392.7</td></tr>
+<tr><td>7</td><td>r1</td><td>命中前缀</td><td>0.894</td><td>4153</td><td>259</td><td>232</td><td>3712</td><td>441</td><td>150</td><td>6569.5</td><td>1113.4</td><td>6603.9</td><td>7682.9</td><td>14286.8</td></tr>
+<tr><td>8</td><td>r1</td><td>命中前缀</td><td>0.948</td><td>4521</td><td>282</td><td>268</td><td>4288</td><td>233</td><td>142</td><td>0.0</td><td>625.8</td><td>6251.7</td><td>625.8</td><td>6877.5</td></tr>
+</table></div>
+<p class="cap">出自 p6_trace.py，随机种子 25。「匹配率」是路由器算出来的那个比值：在所有副本里能对上最多的那一台上，命中的 token 占这条 prompt 的比例。</p>
+
+<p>拿第一行做一遍完整的加法。这条 prompt 有 1368 个 token，其中头部那 1024 个在四台副本上都有（每台第一次接到请求时就存下了），所以最大的匹配率是 1024 除以 1368，等于 0.749。这个数没到门槛，路由器于是不看缓存，把它发给了当时最闲的 r1。发到 r1 之后照样命中了 64 块——那 64 块正是头部。剩下 344 个 token 要算，按 P1 的单价是 79.50 加上 2.3445 乘 344，等于 886.0 毫秒。</p>
+
+<p>第二行起匹配率就过门槛了，因为这一轮的 prompt 里只有最后那一截是新的。这正是 Day 16 那句话在路由这一侧的样子：agent 的上下文只往后长，所以每一轮的匹配率都很高，而且越往后越高。</p>
+
+<p>还有一条跨行的验算最值得自己做一遍：某一行的命中块，等于上一行的 prompt 长度加上一行的生成长度，再整除十六。第一行 1368 加 161 等于 1529，整除十六是 95，正好是第二行的命中块；第二行 1776 加 142 等于 1918，整除十六是 119，正好是第三行。这条链子一断，就说明缓存那一侧对不上了——Day 20 整页都在讲它什么时候会断。</p>
+
+<h4>3.4 每个旋钮是怎么定出来的</h4>
+
+<div class="scroll"><table>
+<tr><th>旋钮</th><th>取值</th><th>这个值怎么定出来的</th><th>哪一节动它</th></tr>
+<tr><td>块大小</td><td>16 个 token</td><td class="w">vLLM 的默认值，和 Day 15、16、20、21 同一个取值，好让几天的命中率横着比</td><td>不动</td></tr>
+<tr><td>头部长度</td><td>1024 个 token 位</td><td class="w">64 个整块，和 Day 20、21 同值。取整块是为了让「头部对得上」这件事不受零头干扰——Day 16 量过零头平均半块，会污染读数</td><td>不动</td></tr>
+<tr><td>每轮送进去 / 吐出来</td><td>200~500 / 96~192</td><td class="w">沿用 Day 16 第 2.4 节那张参数表的量级：一次工具返回的长度，和一次工具调用的长度</td><td>不动</td></tr>
+<tr><td>一条会话几轮</td><td>6 ~ 12 轮</td><td class="w">不取定值是故意的。会话长短不一才会产生负载倾斜，而倾斜正是今天要量的东西；下界 6 和前面几天那批负载对齐，上界 12 和 Day 20 路由那张表对齐</td><td>不动</td></tr>
+<tr><td>会话条数</td><td>120 条</td><td class="w">四台副本上平均每台三十条。少于这个数，哈希环的抖动会盖过一切；多得多的话每次扫描要跑很久，而趋势在一百多条上已经看得全</td><td>不动</td></tr>
+<tr><td>副本数</td><td>4 台</td><td class="w">最小的「有分派问题」的规模。一台没有分派问题，两台看不出倾斜的形状，四台既看得出又画得下</td><td>第 5 节扫 3/4/5</td></tr>
+<tr><td>每台副本的缓存容量</td><td>32768 个 token 位</td><td class="w">Day 16 第 10 节那条扫描线上的一档。往上加到 131072 命中率不再动，往下减到 8192 才开始压命中率；取 32768 是为了让容量不成为今天任何一条结论的解释</td><td>不动</td></tr>
+<tr><td>虚拟节点数</td><td>150 个</td><td class="w">照 sgl-model-gateway 那个常量取的，第 5 节会把它从 1 扫到 500 看这个默认值落在哪儿</td><td>第 5 节</td></tr>
+<tr><td>到达速率 λ</td><td>0.04 条会话每秒</td><td class="w">分子是新开的会话数，分母是墙上时钟的秒数。主档取 0.04，因为它让四台副本的平均利用率落在六成上下——有负载但离塌还远，是 Day 24 说的那个工作点。第 11 节从 0.02 扫到 0.06</td><td>第 11 节</td></tr>
+<tr><td>一轮工具执行</td><td>240 毫秒</td><td class="w">Day 24 那三个工具里最长的那个。它是一条会话两轮之间的间隔，决定了同一条会话回头有多快</td><td>不动</td></tr>
+<tr><td>匹配率门槛</td><td>0.8</td><td class="w">sgl-model-gateway 的默认值（config/types.rs:810）。第 10 节从 0 扫到 1.01，两端分别是纯缓存感知和纯均衡</td><td>第 10 节</td></tr>
+<tr><td>失衡判据</td><td>绝对差 10、相对比 1.5</td><td class="w">同一处默认值（config/types.rs:811-812）。第 11 节把绝对差从 0 扫到 10</td><td>第 11 节</td></tr>
+<tr><td>P1 每档跑几次</td><td>7 ~ 21 次取中位</td><td class="w">越贵的档跑得越少：一次 1024 列的前向要两秒半。最小最大都报在表里，好知道噪声有多大</td><td>第 3.5 节</td></tr>
+<tr><td>模拟器的随机种子</td><td>25</td><td class="w">页面上每一张模拟器的表都出自这个种子的那一次运行。另外四个种子只用来报噪声底，见第 6 节末尾</td><td>第 6 节</td></tr>
+</table></div>
+
+<p>后面每一节说「只改了一个变量」的时候，都可以回到这张表看改的是哪一行。反过来，想知道某个数是谁打印的，查下面这张。</p>
+
+<div class="scroll"><table>
+<tr><th>表</th><th>出自</th><th>怎么读到</th></tr>
+<tr><td>第 3.5 节 算 n 个 token 要多久</td><td>p1_forward.py</td><td class="w"><code>python3 p1_forward.py</code>，标准输出；它把斜率、截距、单步解码写进 slope.json</td></tr>
+<tr><td>第 5 节 换机器的比例、虚拟节点</td><td>p2_ring.py</td><td class="w"><code>python3 p2_ring.py</code>，纯整数运算，没有计时</td></tr>
+<tr><td>3.3 节那条轨迹</td><td>p6_trace.py</td><td class="w">调 p3_route.py 的 run(policy="hybrid", trace_sid="s007")</td></tr>
+<tr><td>第 6、7、8、10、11、12 节的全部表</td><td>p9_final.py</td><td class="w">它调 p3_route.py，读 slope.json 里那三个单价；确定性程序，同一个种子重跑结果完全一样</td></tr>
+<tr><td>第 6 节末尾的噪声底</td><td>p10_noise.py</td><td class="w">同一套配置换五个种子，报最小和最大</td></tr>
+</table></div>
+
+<h4>3.5 时间从哪儿来</h4>
+
+<p>模拟器里所有毫秒数都出自下面这一张表，别的地方没有第二个时间来源。量的是 Day 8 以来那副同样的骨架：八层四千零九十六见方的权重，一次前向就是八次矩阵乘法。</p>
+
+<div class="scroll"><table>
+<tr><th>一次喂几列</th><th>中位耗时 ms</th><th>最小</th><th>最大</th><th>每列 ms</th></tr>
+<tr><td>1</td><td>44.03</td><td>43.29</td><td>46.91</td><td>44.026</td></tr>
+<tr><td>16</td><td>114.19</td><td>112.30</td><td>116.89</td><td>7.137</td></tr>
+<tr><td>64</td><td>229.55</td><td>223.90</td><td>234.27</td><td>3.587</td></tr>
+<tr><td>256</td><td>695.83</td><td>684.85</td><td>705.47</td><td>2.718</td></tr>
+<tr><td>1024</td><td>2480.23</td><td>2444.99</td><td>2524.05</td><td>2.422</td></tr>
+</table></div>
+<p class="cap">出自 p1_forward.py，每档热身一次后跑 7 到 21 遍取中位。最大值和中位差不到一成，这是这台机器上的噪声尺度。</p>
+
+<p>要的不是最后一列，是这条线的斜率——多喂一列额外要花多少，Day 20 给过它名字，叫边际成本。用 64 列和 1024 列这两档算：耗时差 2250.68 毫秒，列数差 960，斜率是每列 2.3445 毫秒；把直线延回零列，截距 79.50 毫秒，那一截就是读那 512 兆字节权重的钱。解码那一侧每步喂一列，用第一行的 44.026 毫秒。</p>
+
+<p>于是模拟器里一条请求的服务时间就是三段相加：读一遍权重的 79.50 毫秒，加上要算的 token 数乘 2.3445，加上生成的 token 数乘 44.026。三个数都能在上面这张表里指出来源。</p>
+
+<h4>4. 翻页之前，先押三个数</h4>
+
+<div class="card pred">
+<div class="hd">预测 · 落笔再翻页</div>
+<p><span class="lbl">问题一</span>　两万条会话，四台副本。现在加到五台。用「哈希对副本数取模」的做法，有多少比例的会话会换到另一台机器上？换成一致性哈希（每台 150 个虚拟节点）呢？</p>
+<div class="write"></div>
+<p><span class="lbl">问题二</span>　把会话亲和（一致性哈希，永远回原来那台）和最少在途（哪台手上没做完的请求最少就发哪台）放在一起跑。亲和那一行的前缀命中率明显更高，这一点没有悬念。问的是首 token 延迟的 P99：谁更好，差多少？</p>
+<div class="write"></div>
+<p><span class="lbl">问题三</span>　一条规则：请求发给「缓存里能对上最多的那一台」，没有别的条件。四台副本、一百二十条会话，跑完之后每台副本各处理了多少条请求？给个形状就行。</p>
+<div class="write"></div>
+<p class="note">提示：问题二和问题三是同一件事的两个强度——把「偏向缓存」这个倾向从温和调到极端，会发生什么。问题一可以自己估：想想取模那个除数变了之后，余数还有多大概率不变。</p>
+</div>
+
+<h3>第三部分 · 亲和保住的命中率，账记在别处</h3>
+
+<h4>5. 揭晓（一）：加一台机器，取模让八成会话搬了家</h4>
+
+<p>先把问题一的答案摆出来。两万条会话，四台副本，然后动一动副本数。</p>
+
+<div class="scroll"><table>
+<tr><th>副本数怎么变</th><th>取模</th><th>一致性哈希（150 个虚拟节点）</th><th>躲不掉的下界</th></tr>
+<tr><td>4 台 → 5 台</td><td>80.3%</td><td>22.9%</td><td>20.0%</td></tr>
+<tr><td>4 台 → 3 台（r2 挂了）</td><td>74.9%</td><td>24.5%</td><td>25.0%</td></tr>
+<tr><td>4 台 → 8 台（翻一倍）</td><td>50.1%</td><td>50.2%</td><td>50.0%</td></tr>
+</table></div>
+<p class="cap">出自 p2_ring.py，数的是「换了一台机器」的会话占两万条的比例。最后一列是理论下界：加到五台，至少有五分之一的会话得挪到新机器上去，否则新机器就是空的；挂掉一台，本来在那台上的四分之一必须走。</p>
+
+<p><b>取模那一列的两个数，比下界大了三倍多。</b>原因在余数上：除数从 4 变成 5，一个数除以 4 的余数和它除以 5 的余数几乎没有关系，能碰巧相等的只有五分之一左右。一致性哈希那一列则贴着下界，多出来的两三个百分点是环上位置分布不完全均匀留下的。</p>
+
+<p>第三行是这张表里唯一的例外，值得单独记一笔：副本数正好翻倍的时候，取模和一致性哈希一样好，两者都贴着 50% 这个下界。原因是二进制上的巧合——一个数除以 8 的余数如果小于 4，那它除以 4 的余数就正好相等，这种情况占一半。所以「我们每次扩容都是翻倍，取模一直没出过事」这句话是真的，而它只在翻倍的时候是真的：同一套配置从四台加到五台，换机器的比例立刻跳到八成。</p>
+
+<p>把挂机那一行再拆一层，两种做法的差别会更刺眼。一致性哈希下，原本落在 r2 上的会话占两成四，它们全部要挪，而剩下那七成六的会话被连累到的比例是 0。取模下，原本在 r2 上的会话占两成五，剩下那七成五里有整整一半跟着改了归宿——它们和这次故障毫无关系，只是因为除数变了。</p>
+
+<p>那么虚拟节点该开多少个。把它从 1 扫到 500，看四台副本分到的会话数有多不匀：</p>
+
+<div class="scroll"><table>
+<tr><th>每台副本的虚拟节点数</th><th>最多的一台占</th><th>最少的一台占</th><th>最多 ÷ 平均</th></tr>
+<tr><td>1</td><td>43.7%</td><td>1.9%</td><td>1.748</td></tr>
+<tr><td>5</td><td>33.4%</td><td>18.8%</td><td>1.336</td></tr>
+<tr><td>20</td><td>27.3%</td><td>22.9%</td><td>1.092</td></tr>
+<tr><td>50</td><td>29.1%</td><td>22.5%</td><td>1.165</td></tr>
+<tr><td>150</td><td>28.4%</td><td>22.4%</td><td>1.135</td></tr>
+<tr><td>500</td><td>26.0%</td><td>23.9%</td><td>1.039</td></tr>
+</table></div>
+<p class="cap">同样出自 p2_ring.py。四台副本、两万条会话、副本名字固定为 r0 到 r3。理想情况下每台占 25.0%。</p>
+
+<p>第一行说明了为什么必须有虚拟节点：一台副本在环上只占一个位置的时候，四台把环切成四段，而这四段的长度是名字的哈希值随手切出来的——最大的那一台拿到了四成三，最小的那一台不到百分之二。</p>
+
+<p>但中间几行不是单调往下的：20 个虚拟节点那一行比 50 个和 150 个都更匀。这不是测错了，这是这张表最该记住的一句话——同一个虚拟节点数，换一组副本名字，倾斜程度是会变的。把名字换十组各跑一遍就看得清：</p>
+
+<div class="scroll"><table>
+<tr><th>每台副本的虚拟节点数</th><th>十组名字里最匀的</th><th>中位</th><th>最歪的</th></tr>
+<tr><td>1</td><td>1.556</td><td>2.066</td><td>2.543</td></tr>
+<tr><td>20</td><td>1.137</td><td>1.281</td><td>1.460</td></tr>
+<tr><td>150</td><td>1.034</td><td>1.122</td><td>1.159</td></tr>
+<tr><td>500</td><td>1.023</td><td>1.053</td><td>1.076</td></tr>
+</table></div>
+<p class="cap">十组副本名字各建一次环，报「最多 ÷ 平均」这一个数的最小、中位、最大。同一行的三个数只差在副本叫什么名字上。</p>
+
+<p>这样读就清楚了：虚拟节点数决定的是倾斜的分布有多宽，不是某一次能拿到多匀。150 这个默认值把这个分布收到了一成六以内，再往上收得很慢，代价却是环上的条目数线性涨（四台机器就是六百个条目，四十台就是六千个，每次查都要在里面二分）。</p>
+
+<p>最后一件事，它是后面所有表的前提。今天模拟器里只有一百二十条会话，不是两万条。同样是 150 个虚拟节点，会话少的时候抖动大得多：</p>
+
+<div class="scroll"><table>
+<tr><th>每台副本分到</th><th>r0</th><th>r1</th><th>r2</th><th>r3</th><th>最多 ÷ 平均</th></tr>
+<tr><td>会话条数</td><td>33</td><td>21</td><td>26</td><td>40</td><td>1.333</td></tr>
+</table></div>
+<p class="cap">出自 p7_detail.py。这个分法是会话号和副本名字一起决定的，换随机种子、重启进程都不会变——五个种子跑出来是同一组数。</p>
+
+<div class="card key">
+<div class="hd">关键结论</div>
+<p>一致性哈希解决的是「扩缩容的时候尽量别动」这一件事，它解决得很干净。它一点都没解决的是「这次分得匀不匀」——那是另一件事，而且在会话数只有几十上百条、每条长短还不一样的规模上，不匀的程度会相当可观。后面几节量的全是这个不匀值多少钱。</p>
+</div>
+
+<h4>6. 揭晓（二）：命中率最高的那一行，尾延迟是倒数第二</h4>
+
+<p>同一批会话、同一套到达时刻、同样四台副本，只换路由器那一行判断。六条规则，差别全在「看什么」上，先用大白话把它们说清楚。</p>
+
+<ul>
+<li>谁也不看，挨个轮着发，这是轮询。</li>
+<li>看每台手上还有几条没做完，发给最少的那台。这条规则叫 <span class="term">最少在途（least outstanding requests）</span>，也叫最短队列。</li>
+<li>不看全部，随机挑两台，把请求给其中较闲的那一台。这个做法叫 <span class="term">二选一（power of two choices）</span>，它存在的理由是省事：机器上千台的时候，问一遍所有机器的负载本身就是笔开销。</li>
+<li>按会话号查一次哈希环，永远回原来那台。这就是第 2 节那条会话亲和。</li>
+<li>只看缓存：拿这条 prompt 去每台副本试一遍，给能对上最多的那台。这种把「哪台机器上已经有这条请求的前缀」当成依据的做法，叫 <span class="term">缓存感知路由（cache-aware routing）</span>。</li>
+<li>最后一条两样都看，第四部分整章在讲它，这里先把结果摆出来。</li>
+</ul>
+
+<div class="scroll"><table>
+<tr><th>分派规则</th><th>命中率</th><th>其中头部</th><th>其中会话私有</th><th>要算 token</th><th>平均利用率</th><th>忙时最多 ÷ 平均</th><th>首 token P50</th><th>首 token P99</th><th>整轮 P99</th></tr>
+<tr><td>轮询</td><td>63.3%</td><td>29.5%</td><td>33.8%</td><td>1381720</td><td>79.3%</td><td>1.026</td><td>5973</td><td>41347</td><td>48334</td></tr>
+<tr><td>最少在途</td><td>72.4%</td><td>29.5%</td><td>42.9%</td><td>1038184</td><td>73.0%</td><td>1.011</td><td>3132</td><td>22938</td><td>30455</td></tr>
+<tr><td>二选一</td><td>65.2%</td><td>29.5%</td><td>35.6%</td><td>1311496</td><td>77.6%</td><td>1.044</td><td>7460</td><td>36331</td><td>42197</td></tr>
+<tr><td>会话亲和</td><td>89.6%</td><td>29.5%</td><td>60.1%</td><td>391816</td><td>60.6%</td><td>1.327</td><td>7434</td><td>44223</td><td>51548</td></tr>
+<tr><td>缓存感知（只看谁对得最多）</td><td>32.1%</td><td>29.6%</td><td>2.5%</td><td>2556968</td><td>25.0%</td><td>4.000</td><td>1004671</td><td>1251972</td><td>1258489</td></tr>
+<tr><td>混合（第四部分那条）</td><td>89.3%</td><td>29.5%</td><td>59.8%</td><td>401912</td><td>61.0%</td><td>1.048</td><td>1088</td><td>17060</td><td>24734</td></tr>
+</table></div>
+<p class="cap">出自 p9_final.py，随机种子 25，λ=0.04。命中率的分子分母沿用 Day 16 的口径：分母是所有请求的 prompt token 总数，分子是被判定命中因而不必算的 token 数。「忙时最多 ÷ 平均」是四台副本各自累计忙了多少毫秒，最大的除以平均。延迟单位毫秒。</p>
+
+<p>先看第三列。四行的头部命中率都是 29.5%，一个百分点都不差——那份所有会话共用的头部，在每一台副本上都存着，任何一条规则都不会漏掉它。这一列是这张表的自检项：它要是随规则变了，说明模拟器有问题。掉下来的全是第四列，也就是会话私有的那一半。这个读法 Day 20 和 Day 21 各用过一次，今天第三次用它。</p>
+
+<p>再看会话亲和那一行和最少在途那一行的对比，这两行是今天真正的对手。亲和把私有那一半从四成三提到了六成，要算的 token 少了六成二。代价写在倒数第四列：四台副本各自累计忙了多久，最忙的那台除以平均，从 1.011 涨到 1.327。这个比值叫 <span class="term">负载倾斜（load skew）</span>，后面每一张表都有它。</p>
+
+<p>而右边那三列延迟，亲和一列都没赢。</p>
+
+<p>问题二的答案就在这里：亲和的首 token P99 比最少在途更差，而不是更好。</p>
+
+<p>混合那一行说明这两件事不是非此即彼的。<b>它的命中率和亲和只差 0.3 个百分点，忙时倾斜却和最少在途一样平。</b>两列延迟因此同时是全表最好的。这条规则长什么样，第四部分整章在讲。</p>
+
+<p>这几个数有多稳，得先说清楚，否则上面每一句比较都站不住。同一套配置换五个随机种子各跑一遍，把三种规则在同一个种子下并排放：</p>
+
+<div class="scroll"><table>
+<tr><th>随机种子</th><th>最少在途 P99</th><th>会话亲和 P99</th><th>混合 P99</th><th>最少在途 P50</th><th>会话亲和 P50</th><th>混合 P50</th></tr>
+<tr><td>25</td><td>22938</td><td>44223</td><td>17060</td><td>3132</td><td>7434</td><td>1088</td></tr>
+<tr><td>26</td><td>47778</td><td>66502</td><td>24058</td><td>9660</td><td>13438</td><td>1217</td></tr>
+<tr><td>27</td><td>21184</td><td>36345</td><td>14751</td><td>3165</td><td>6551</td><td>1067</td></tr>
+<tr><td>28</td><td>21545</td><td>42714</td><td>16404</td><td>2084</td><td>7511</td><td>991</td></tr>
+<tr><td>29</td><td>32600</td><td>96904</td><td>17452</td><td>7976</td><td>9242</td><td>1214</td></tr>
+</table></div>
+<p class="cap">出自 p12_pairs.py，首 token 延迟，单位毫秒。种子换的是会话长短和到达时刻，别的一律不动；同一行里三种规则拿到的是同一批会话、同一套到达时刻。</p>
+
+<p>这张表要横着读，不能竖着读。横着读，五行的顺序一模一样：亲和最差、最少在途居中、混合最好，一次都没翻过来，亲和比最少在途差 1.4 到 3.0 倍。竖着读就会出事——最少在途那一列自己从两万一走到四万八，翻了一倍多，比它和亲和之间的差还大。</p>
+
+<p>这条读法值得单独记住，因为它决定了什么样的结论能下。同一个种子下的对比是可信的，因为两边面对的是同一批会话；跨种子拿绝对值去比，量到的是会话本身的随机性。今天所有横向比较都在同一个种子里完成，页面上不会出现「这台机器上的 P99 是多少毫秒」这种脱离对照的说法。</p>
+
+<div class="card key">
+<div class="hd">关键结论</div>
+<p>「命中率上去了」不等于「用户等得少了」。命中率省的是每条请求自己的计算量，而用户等的时间里还有一段是排队，排队由分得匀不匀决定。一条把命中率做到全表最高的规则，可以同时把尾延迟做到全表倒数第二——这两件事各有各的自变量，中间没有换算关系。</p>
+</div>
+
+<h4>7. 揭晓（三）：为什么「谁对得最多给谁」会把四台变成一台</h4>
+
+<p class="lead">一条只看缓存的规则，会出什么事？</p>
+
+<p>上一张表里最刺眼的是缓存感知那一行：利用率 25.0%，忙时倾斜 4.000。四台副本，倾斜正好等于 4，这不是巧合。把每台副本分到几条请求打出来就明白了：</p>
+
+<div class="scroll"><table>
+<tr><th>分派规则</th><th>r0</th><th>r1</th><th>r2</th><th>r3</th></tr>
+<tr><td>最少在途</td><td>279</td><td>272</td><td>270</td><td>269</td></tr>
+<tr><td>会话亲和</td><td>299</td><td>178</td><td>253</td><td>360</td></tr>
+<tr><td>缓存感知（只看谁对得最多）</td><td>0</td><td>1090</td><td>0</td><td>0</td></tr>
+<tr><td>混合</td><td>261</td><td>287</td><td>268</td><td>274</td></tr>
+</table></div>
+<p class="cap">出自 p7_detail.py，同一次运行里每台副本处理的请求条数，一共 1090 条。</p>
+
+<p>问题三的答案是：一台接了全部一千零九十条，另外三台一条都没有。</p>
+
+<p>机制只有三步，而且每一步都很自然。</p>
+
+<div class="svgbox">
+<svg viewBox="0 0 720 250" role="img" aria-label="三步说明：第一条请求随机落到一台，那台有了头部，之后每条请求都只有它能对上">
+<g fill="none" stroke="currentColor" stroke-width="1.5" font-family="system-ui,sans-serif">
+<rect x="10" y="40" width="210" height="150" rx="8"/>
+<rect x="255" y="40" width="210" height="150" rx="8"/>
+<rect x="500" y="40" width="210" height="150" rx="8"/>
+<path d="M 222 115 L 253 115"/><path d="M 245 110 L 253 115 L 245 120"/>
+<path d="M 467 115 L 498 115"/><path d="M 490 110 L 498 115 L 490 120"/>
+<rect x="26" y="92" width="40" height="26" rx="4" stroke-dasharray="3 3"/>
+<rect x="76" y="92" width="40" height="26" rx="4" stroke-dasharray="3 3"/>
+<rect x="126" y="92" width="40" height="26" rx="4" stroke-dasharray="3 3"/>
+<rect x="176" y="92" width="34" height="26" rx="4" stroke-dasharray="3 3"/>
+<rect x="271" y="92" width="40" height="26" rx="4" stroke-dasharray="3 3"/>
+<rect x="321" y="92" width="40" height="26" rx="4" stroke-width="3"/>
+<rect x="371" y="92" width="40" height="26" rx="4" stroke-dasharray="3 3"/>
+<rect x="421" y="92" width="34" height="26" rx="4" stroke-dasharray="3 3"/>
+<rect x="516" y="92" width="40" height="26" rx="4" stroke-dasharray="3 3"/>
+<rect x="566" y="92" width="40" height="26" rx="4" stroke-width="3"/>
+<rect x="616" y="92" width="40" height="26" rx="4" stroke-dasharray="3 3"/>
+<rect x="666" y="92" width="34" height="26" rx="4" stroke-dasharray="3 3"/>
+<path d="M 586 62 L 586 86"/><path d="M 581 78 L 586 86 L 591 78"/>
+<path d="M 512 52 L 580 60" stroke-dasharray="3 3"/>
+<path d="M 648 50 L 592 60" stroke-dasharray="3 3"/>
+<path d="M 704 56 L 594 61" stroke-dasharray="3 3"/>
+</g>
+<g fill="currentColor" font-size="12.5" font-family="system-ui,sans-serif">
+<text x="20" y="30" font-weight="600">第一步 · 四台都是空的</text>
+<text x="265" y="30" font-weight="600">第二步 · 随手挑一台</text>
+<text x="510" y="30" font-weight="600">第三步 · 后来的请求全汇到它</text>
+<text x="34" y="110" font-size="11">r0</text><text x="84" y="110" font-size="11">r1</text>
+<text x="134" y="110" font-size="11">r2</text><text x="184" y="110" font-size="11">r3</text>
+<text x="279" y="110" font-size="11">r0</text><text x="329" y="110" font-size="11">r1</text>
+<text x="379" y="110" font-size="11">r2</text><text x="429" y="110" font-size="11">r3</text>
+<text x="524" y="110" font-size="11">r0</text><text x="574" y="110" font-size="11">r1</text>
+<text x="624" y="110" font-size="11">r2</text><text x="674" y="110" font-size="11">r3</text>
+<text x="20" y="150" font-size="12">谁都对不上，</text><text x="20" y="168" font-size="12">四台并列第一</text>
+<text x="265" y="150" font-size="12">r1 存下了头部</text><text x="265" y="168" font-size="12">和这条会话的全文</text>
+<text x="510" y="150" font-size="12">新会话在 r1 能对上头部，</text>
+<text x="510" y="168" font-size="12">在别处是零 → 还是 r1</text>
+<text x="510" y="186" font-size="12">别的三台永远没有第一次</text>
+</g>
+</svg>
+</div>
+<p class="cap">粗框是缓存里有东西的副本。第三步那三条虚线是后来的请求：它们各自去四台上试一遍，只有 r1 能对上，于是全都汇到 r1。</p>
+
+<p>第一条请求进来的时候，四台副本的缓存都是空的，能对上的块数都是零，规则只能随手挑一台，这里挑中了 r1。跑完之后 r1 存下了这条请求的全部块，包括那 1024 个 token 的共用头部。</p>
+
+<p>第二条请求进来，它和第一条共用头部。在 r1 上能对上 64 块，在另外三台上一块都对不上。规则说「给对得最多的那台」，于是又是 r1。之后每一条都一样：别的三台永远等不到自己的第一条请求，也就永远进不了这个循环。</p>
+
+<p>这种把所有流量吸过去的副本叫 <span class="term">热点副本（hotspot）</span>。它的成因不是负载不均衡没被处理，是规则里根本没有任何一项会随负载变化——它只读缓存状态，而缓存状态本身是被它自己的决定写出来的。这是一个正反馈：赢过一次就更容易赢下一次。</p>
+
+<p>再看命中率那一列，32.1%，比轮询还低。这一点值得停一下：全部请求都落在同一台机器上，缓存应该最热才对。低的原因在 Day 16 那个词上——复用距离。一百二十条会话全挤在一台副本的 32768 个 token 位里，一条会话的两轮之间插进来的是另外一百多条会话的块，属于它自己的那一段早被 LRU 挤没了。所以私有那一半只剩 2.5%，命中的几乎全是头部。</p>
+
+<div class="card key">
+<div class="hd">关键结论</div>
+<p>一条只看缓存的分派规则不是「偏向缓存」，它会退化成单机。工业界的路由器里没有这条规则的纯粹形式，全都配了一个逃生口——这不是稳健性上的锦上添花，是让这条规则能用的前提。第四部分那两个默认值就是这两个逃生口。</p>
+</div>
+
+<h4>8. 折成时间：这条规则值 0.63 台机器</h4>
+
+<p>上面全是 token 数和比例。要知道它们值不值得管，得换成机器时间。用第 3.5 节那三个单价把每条规则的账拆开：</p>
+
+<div class="scroll"><table>
+<tr><th>分派规则</th><th>要算 token</th><th>prefill 计算（秒）</th><th>读权重（秒）</th><th>decode（秒）</th><th>四台合计忙（秒）</th><th>相当于用了几台</th></tr>
+<tr><td>轮询</td><td>1381720</td><td>3239.4</td><td>86.7</td><td>6912.3</td><td>10238.3</td><td>4.34</td></tr>
+<tr><td>最少在途</td><td>1038184</td><td>2434.0</td><td>86.7</td><td>6912.3</td><td>9432.9</td><td>4.00</td></tr>
+<tr><td>二选一</td><td>1311496</td><td>3074.8</td><td>86.7</td><td>6912.3</td><td>10073.7</td><td>4.27</td></tr>
+<tr><td>会话亲和</td><td>391816</td><td>918.6</td><td>86.7</td><td>6912.3</td><td>7917.5</td><td>3.36</td></tr>
+<tr><td>缓存感知</td><td>2556968</td><td>5994.7</td><td>86.7</td><td>6912.3</td><td>12993.6</td><td>5.51</td></tr>
+<tr><td>混合</td><td>401912</td><td>942.3</td><td>86.7</td><td>6912.3</td><td>7941.2</td><td>3.37</td></tr>
+</table></div>
+<p class="cap">出自 p9_final.py。prefill 计算＝要算 token × 2.3445 毫秒；读权重＝请求条数 × 79.50 毫秒；decode＝生成 token 数 × 44.026 毫秒。最后一列以「最少在途」为 4.00 台折算。</p>
+
+<p>中间两列先看，它们是这张表的自检项：读权重和 decode 这两列六行完全相同。请求条数没变、每条要生成多少 token 也没变，所以这两笔钱和分派规则毫无关系。会动的只有 prefill 那一列，这正是 Day 16 反复说的那句话——前缀缓存只作用在 prefill 上。</p>
+
+<p><b>同一批活儿，最少在途要占满四台机器的忙时，混合只要三点三七台。</b>差出来的 0.63 台，就是分派规则这一行判断的价钱。换个说法：四台机器上换一条分派规则，等于白捡了大半台机器，而这半台机器不用采购、不用部署、不改一行推理服务的代码。</p>
+
+<p>最后一行是反面。只看缓存那条规则不但没省，还比最笨的轮询多花了将近三成——因为它把一百二十条会话的复用距离全塞进了一台机器的缓存里。这也说明「等价机器数」这一列和上一节那个倾斜是两件事：这一列量的是总共要干多少活，倾斜量的是这些活分得匀不匀。两件事都会推高用户等的时间，但要动的旋钮不是同一个。</p>
+
+<h3>第四部分 · 软亲和：门槛这个旋钮</h3>
+
+<h4>9. 真实路由器的两条判据</h4>
+
+<p>SGLang 的那个路由网关里，缓存感知这条策略的文件开头写着一段很长的注释，第一句就把它的立场说清楚了：这不是一条策略，是两条策略加一个开关。</p>
+
+<pre><code>// sgl-model-gateway/src/policies/cache_aware.rs:1-16
+    Cache-Aware Load Balancing Router
+    ...
+    The router dynamically switches between these strategies based on load conditions:
+    - Uses load balancing when the system is imbalanced
+    - Uses cache-aware routing when the system is balanced
+
+    A system is considered imbalanced if both conditions are met:
+    1. (max - min) &gt; abs_threshold
+    2. max &gt; rel_threshold * min</code></pre>
+
+<p>翻成大白话：先看四台副本手上没做完的请求数，最多的那台和最少的那台差得够远，就不管缓存了，直接发给最闲的那台；差得不远，才轮到缓存说话。这个判断是每条请求都做一次的。</p>
+
+<p>缓存说话的时候还有第二道门。注释里那几行写着：</p>
+
+<pre><code>// sgl-model-gateway/src/policies/cache_aware.rs:26-31
+    b. If match rate &gt; cache_threshold:
+       Route to the worker with highest match (likely has relevant data cached)
+    c. If match rate ≤ cache_threshold:
+       Route to the worker with smallest tree size (most available cache capacity)</code></pre>
+
+<p>这里的匹配率，就是 3.3 节那条轨迹里那一列：在能对上最多的那台副本上，命中的部分占这条请求的比例。<span class="term">匹配率门槛（cache_threshold）</span>过不去，就不按缓存分，按别的分。这一道门正是第 7 节那个热点副本的解药——四台都是空的时候匹配率是零，零过不了门槛，于是第一批请求会被摊开，每台都拿到属于自己的第一条。</p>
+
+<p>代码里那个分岔长这样，两条判据一前一后：</p>
+
+<pre><code>// sgl-model-gateway/src/policies/cache_aware.rs:410-419
+let is_imbalanced = max_load.saturating_sub(min_load) &gt; self.config.balance_abs_threshold
+    &amp;&amp; (max_load as f32) &gt; (min_load as f32 * self.config.balance_rel_threshold);
+
+if is_imbalanced {
+    return self.select_worker_min_load(...);   // 失衡：谁闲给谁，平局随机
+}
+// 没失衡才往下走，去那棵近似树里查最长匹配</code></pre>
+
+<p>这三个旋钮的默认值写在配置里，一处能全看到：</p>
+
+<pre><code>// sgl-model-gateway/src/config/types.rs:809-814
+cache_threshold: 0.8,
+balance_abs_threshold: 10,
+balance_rel_threshold: 1.5,
+eviction_interval_secs: 300,
+max_tree_size: 1000,</code></pre>
+
+<p>这种「优先回原来那台，但条件不合适就放弃」的做法，行业里叫 <span class="term">软亲和（soft affinity）</span>；与之相对的是 <span class="term">硬亲和（hard affinity）</span>——温故第 2 题里那个会话级沙箱就是硬的，走错了不是慢，是错。今天的模拟器里那条「混合」规则，就是把上面这两条判据照抄了一遍。</p>
+
+<h4>10. 匹配率门槛这个旋钮的两端</h4>
+
+<p>先把失衡判据关掉，只留匹配率门槛这一条，从 0 扫到 1.01。两端是两个退化情形：门槛为 0 时任何匹配率都过关，就是第 7 节那条纯缓存感知；门槛大于 1 时永远过不了关，就退化成最少在途。</p>
+
+<div class="scroll"><table>
+<tr><th>匹配率门槛</th><th>命中率</th><th>其中会话私有</th><th>要算 token</th><th>忙时最多 ÷ 平均</th><th>首 token P50</th><th>首 token P99</th></tr>
+<tr><td>0.00（纯缓存感知）</td><td>32.1%</td><td>2.5%</td><td>2556968</td><td>4.000</td><td>1004671</td><td>1251972</td></tr>
+<tr><td>0.30</td><td>89.3%</td><td>59.7%</td><td>402760</td><td>1.506</td><td>32620</td><td>79798</td></tr>
+<tr><td>0.50</td><td>89.3%</td><td>59.7%</td><td>403784</td><td>1.165</td><td>5614</td><td>79798</td></tr>
+<tr><td>0.70</td><td>89.6%</td><td>60.1%</td><td>391816</td><td>1.040</td><td>1095</td><td>23459</td></tr>
+<tr><td>0.80（这个网关的默认值）</td><td>89.3%</td><td>59.8%</td><td>401912</td><td>1.048</td><td>1088</td><td>17060</td></tr>
+<tr><td>0.90</td><td>83.5%</td><td>53.9%</td><td>623096</td><td>1.008</td><td>1170</td><td>19243</td></tr>
+<tr><td>0.95</td><td>72.7%</td><td>43.2%</td><td>1027384</td><td>1.012</td><td>2926</td><td>24907</td></tr>
+<tr><td>1.01（缓存从不说话）</td><td>72.0%</td><td>42.5%</td><td>1053736</td><td>1.009</td><td>3038</td><td>23017</td></tr>
+</table></div>
+<p class="cap">出自 p9_final.py，失衡判据关掉，随机种子 25，λ=0.04，其余旋钮全部锁死。延迟单位毫秒。</p>
+
+<p><b>这个旋钮的两端都很糟，中间有一段很宽的平地。</b>往下拧到 0.3 以下，缓存的引力压过一切，负载倾斜起来；往上拧到 0.9 以上，缓存基本不说话，命中率一路掉回最少在途那一档。0.7 到 0.8 之间那两行，命中率贴着上限、倾斜贴着下限，两头都占到了。这个网关的默认值正落在那里。</p>
+
+<p>最后一行是「缓存永远说不上话」的那一端，它本该和第 6 节最少在途那一行完全相同，实际差了 0.4 个百分点（72.0% 对 72.4%）。原因是两条代码路径在平局时用掉的随机数不一样，于是同样「谁闲给谁」也会挑到不同的机器。这个差落在换种子的浮动里（那一行五个种子跑出来是 71.4% 到 73.0%），所以它不承载任何结论——但它值得摆出来，因为「两条路径本该给出同一个数，实际差了一点」正是自检该抓的东西。</p>
+
+<p>为什么落在那儿，回到 3.3 节那条轨迹就明白了。一条会话第一轮的匹配率是 0.749——这一轮除了共用头部什么都没有；第二轮起就跳到 0.856 以上，因为除了新送进去的一小截，前面全是算过的。门槛卡在这两个数中间，就同时办成了两件事：第一轮被摊开，从第二轮起被粘住。这个位置不是通用常数，它由「头部有多长」和「每轮新增多少」的比值定，你的流量形状变了，这个数就要重扫。</p>
+
+<p>要算 token 那一列里藏着一个可以自己验的巧合：0.70 那一行是 391816，和第 6 节会话亲和那一行一模一样。两条规则的路径完全不同，怎么会一样？因为只要每条会话的所有轮都落在同一台副本上，而缓存又装得下，那么「要算多少 token」就只由这条会话自己的 token 流决定，跟落在哪一台完全无关。这个等式一旦对不上，就说明有会话被拆到了两台机器上——0.80 那一行的 401912 比它多出来的那一万，正是这么来的。</p>
+
+<h4>11. 失衡判据在你这个规模上根本不开火</h4>
+
+<p>另一条判据呢。把匹配率门槛锁死在 0.8，只扫绝对差那个门槛：</p>
+
+<div class="scroll"><table>
+<tr><th>balance_abs_threshold</th><th>命中率</th><th>忙时最多 ÷ 平均</th><th>首 token P50</th><th>首 token P99</th></tr>
+<tr><td>0</td><td>77.9%</td><td>1.017</td><td>1263</td><td>19136</td></tr>
+<tr><td>1</td><td>85.9%</td><td>1.011</td><td>1160</td><td>19259</td></tr>
+<tr><td>2</td><td>89.1%</td><td>1.060</td><td>1071</td><td>17266</td></tr>
+<tr><td>3</td><td>89.3%</td><td>1.048</td><td>1088</td><td>17060</td></tr>
+<tr><td>5</td><td>89.3%</td><td>1.048</td><td>1088</td><td>17060</td></tr>
+<tr><td>10（默认值）</td><td>89.3%</td><td>1.048</td><td>1088</td><td>17060</td></tr>
+</table></div>
+<p class="cap">同样出自 p9_final.py，同一次配置只改这一个旋钮。相对比那个门槛锁死在默认的 1.5。</p>
+
+<p>后三行一个数都不差，因为这条判据从来没有开火过。它要求最忙和最闲的副本相差超过十条在途请求，而这个模拟器在 λ=0.04 下每台副本手上通常只有一到五条——差十条这件事根本不可能发生。把门槛压到 2 以下它才开始起作用，而起作用的方向是把命中率往下压。</p>
+
+<p>这不是说默认值定错了。它是给另一个规模定的：一台真实的推理副本靠连续批处理同时跑着几十条请求，那时候「相差十条」是个很正常的差距。今天这台模拟器一次只跑一条，规模差了一个数量级，于是这条判据在整页里是哑的——第 6 节那张表里「混合」这一行，实际上全是匹配率门槛一条判据做出来的。</p>
+
+<p>顺着这个思路，负载到底要多高，三条规则才拉得开？把到达速率从 0.02 扫到 0.06：</p>
+
+<div class="scroll"><table>
+<tr><th>λ（条会话每秒）</th><th>规则</th><th>平均利用率</th><th>命中率</th><th>忙时最多 ÷ 平均</th><th>首 token P50</th><th>首 token P99</th></tr>
+<tr><td>0.02</td><td>最少在途</td><td>38.6%</td><td>68.2%</td><td>1.036</td><td>2042</td><td>16087</td></tr>
+<tr><td>0.02</td><td>会话亲和</td><td>31.1%</td><td>89.6%</td><td>1.327</td><td>1132</td><td>32924</td></tr>
+<tr><td>0.02</td><td>混合</td><td>31.4%</td><td>89.2%</td><td>1.030</td><td>963</td><td>10519</td></tr>
+<tr><td>0.03</td><td>最少在途</td><td>56.0%</td><td>70.9%</td><td>1.020</td><td>1899</td><td>22753</td></tr>
+<tr><td>0.03</td><td>会话亲和</td><td>46.1%</td><td>89.6%</td><td>1.327</td><td>1202</td><td>37129</td></tr>
+<tr><td>0.03</td><td>混合</td><td>46.7%</td><td>89.4%</td><td>1.111</td><td>1027</td><td>16153</td></tr>
+<tr><td>0.04</td><td>最少在途</td><td>73.0%</td><td>72.4%</td><td>1.011</td><td>3132</td><td>22938</td></tr>
+<tr><td>0.04</td><td>会话亲和</td><td>60.6%</td><td>89.6%</td><td>1.327</td><td>7434</td><td>44223</td></tr>
+<tr><td>0.04</td><td>混合</td><td>61.0%</td><td>89.3%</td><td>1.048</td><td>1088</td><td>17060</td></tr>
+<tr><td>0.05</td><td>最少在途</td><td>89.6%</td><td>73.7%</td><td>1.023</td><td>9809</td><td>37657</td></tr>
+<tr><td>0.05</td><td>会话亲和</td><td>71.7%</td><td>89.4%</td><td>1.333</td><td>16980</td><td>75040</td></tr>
+<tr><td>0.05</td><td>混合</td><td>76.9%</td><td>89.4%</td><td>1.068</td><td>1256</td><td>21261</td></tr>
+<tr><td>0.06</td><td>最少在途</td><td>98.4%</td><td>70.5%</td><td>1.010</td><td>41684</td><td>88201</td></tr>
+<tr><td>0.06</td><td>会话亲和</td><td>62.6%</td><td>76.5%</td><td>1.582</td><td>34989</td><td>232317</td></tr>
+<tr><td>0.06</td><td>混合</td><td>91.9%</td><td>89.2%</td><td>1.045</td><td>10892</td><td>32286</td></tr>
+</table></div>
+<p class="cap">出自 p9_final.py，随机种子 25。λ 的分子是新开的会话条数，分母是墙上时钟的秒数；每条会话有 6 到 12 轮，所以一条会话会产生 6 到 12 条请求。</p>
+
+<p>三行一组竖着比，能看出三条不同的曲线。最少在途那一组，利用率随负载一路涨到接近满，因为它省不下计算量，来多少活就得干多少。混合那一组在同样的负载下利用率总是低一截，差的那一截就是命中率省下来的计算——这就是第 8 节那 0.63 台机器在这张表上的样子。</p>
+
+<p>亲和那一组最值得看。它的利用率是三组里最低的，可它的尾延迟是三组里最差的，而且随负载恶化得最快。最后那一档尤其刺眼：<b>平均利用率只有六成二，首 token 的 P99 却是二十三万毫秒。</b>四台机器里有一台早已排满，另外几台在闲着，而「平均利用率」这个数把两者一平均，看起来一切正常。</p>
+
+<p>还有一件事只在最后一档出现：亲和的命中率自己掉了下来，从八成九掉到七成六。这是 Day 16 那个复用距离在多机上的样子——最忙那台副本上同时在跑的会话变多了，一条会话的两轮之间插进来的别人的块也就更多，属于它自己的那一段被 LRU 挤掉了。倾斜不只是让队列变长，它还会反过来把命中率吃掉，两笔账在这里合成了一笔。</p>
+
+<div class="card key">
+<div class="hd">关键结论</div>
+<p>平均利用率在多副本上和 CPU 使用率在单机上是同一类指标：它有天花板，而且是几台机器一平均出来的，所以它在塌之前很久就不带信息了。判断分派规则好不好，要看的是最忙那台除以平均——这个数只要明显大于 1，平均利用率就已经不能读了。</p>
+</div>
+
+<h4>12. 一台副本慢下来的时候</h4>
+
+<p class="lead">亲和和均衡真正打架的那一刻，长什么样？</p>
+
+<p>前面所有的表里，四台副本的能力完全一样。真实机房里不会这样：某一台的邻居在跑别的东西、某一台的散热出了问题、某一台刚重启缓存是冷的。把 r1 的服务时间乘以三，别的一律不动：</p>
+
+<div class="scroll"><table>
+<tr><th>分派规则</th><th>命中率</th><th>r1 分到几条</th><th>请求条数最多 ÷ 平均</th><th>忙时最多 ÷ 平均</th><th>首 token P50</th><th>首 token P99</th></tr>
+<tr><td>最少在途</td><td>73.5%</td><td>107</td><td>1.215</td><td>1.102</td><td>8285</td><td>82968</td></tr>
+<tr><td>会话亲和</td><td>89.6%</td><td>178</td><td>1.321</td><td>1.476</td><td>14376</td><td>136604</td></tr>
+<tr><td>混合</td><td>89.4%</td><td>138</td><td>1.273</td><td>1.213</td><td>3538</td><td>45104</td></tr>
+</table></div>
+<p class="cap">出自 p9_final.py，λ=0.04，随机种子 25。四台副本一共处理 1090 条请求，均分是 272 条。</p>
+
+<p><b>亲和给那台最慢的机器塞了 178 条请求，是最少在途给它的一点七倍。</b>它没有任何办法不这么做——会话号哈希到哪台就是哪台，机器快慢不在这个函数的输入里。最少在途那一行只给了 107 条，因为一台慢下来的机器，手上没做完的请求自然会堆起来，而「谁少给谁」这条规则一眼就能看见这个堆。混合那一行落在中间：匹配率过门槛的时候它跟着缓存走，过不去的时候它看负载，所以它躲开了一部分，但不是全部。</p>
+
+<p>这三行的延迟差别，落在种子之间的浮动里比第 6 节大得多，所以要用配对的读法：五个种子逐个比，混合每一次都是最好的，亲和每一次都是最差的，r1 分到的条数三组也没有交叉过（最少在途 106 到 115，混合 136 到 155，亲和 164 到 194）。</p>
+
+<p>值得记住的是三种规则都没有真正解决这件事。它们的「负载」都是数在途请求的条数，而条数认不出「慢」——一台慢三倍的机器，要等到请求堆起来之后条数才会反映出来，那时候已经有一批请求排在里面了。真正对症的做法是把负载换成一个带单位的量，比如这台副本手上还欠着多少个 token 没算完；那个网关里也留了这条路，二选一那条策略在有监控数据的时候用的就是 token 数，没有才退回条数。</p>
+
+<h4>13. 你手上能动的旋钮</h4>
+
+<p>把今天所有的量串成一条链：能不能回到原来那台由分派规则定（第 5 节），回去了能省多少由命中率定（第 6 节），省下来的能不能变成用户等的时间由倾斜定（第 11 节），而倾斜有一部分是分派规则自己造出来的（第 7 节）。链条上每一环都有一个旋钮。</p>
+
+<div class="scroll"><table>
+<tr><th>旋钮</th><th>它动的是链条哪一环</th><th>代价</th></tr>
+<tr><td>会话号能不能传到分派这一层</td><td class="w">总开关。传不下去，后面所有规则都无从谈起</td><td class="w">要改接口。Day 20 那份设计文档里已经写了这一条，今天是它的兑现日</td></tr>
+<tr><td>取模 → 一致性哈希</td><td class="w">扩缩容的时候有多少会话要搬家：八成 对 两成半</td><td class="w">几乎为零。环在副本增减时建一次，查一次是一个二分</td></tr>
+<tr><td>虚拟节点数</td><td class="w">倾斜分布的宽度，不是某一次的倾斜值</td><td class="w">环上条目数线性涨，每次查要二分的范围跟着涨</td></tr>
+<tr><td>匹配率门槛</td><td class="w">最要紧的一个。两端分别是热点副本和完全不用缓存，中间有一段宽平地</td><td class="w">这个值由你的流量形状定：头部多长、每轮新增多少。流量变了要重扫</td></tr>
+<tr><td>失衡判据（绝对差 / 相对比）</td><td class="w">副本手上排得太不均的时候放弃缓存</td><td class="w">默认值是给「一台副本同时跑几十条」定的。你的副本并发低于这个量级，这条判据不会开火</td></tr>
+<tr><td>负载怎么数（条数 / token 数）</td><td class="w">能不能认出一台变慢的副本</td><td class="w">数 token 要副本那一侧上报，多一条监控链路；这条链路断了要能退回数条数</td></tr>
+<tr><td>每台副本的缓存容量</td><td class="w">倾斜之后还能不能兜住复用距离</td><td class="w">Day 15 那笔账：给 KV 的显存多了，激活值和临时缓冲就少了</td></tr>
+<tr><td>副本数</td><td class="w">总算力，同时也是总缓存容量——每台副本的缓存是各自的，机器越多，一条会话的复用距离被摊得越薄</td><td class="w">会话总数不变的时候，机器越多每台上的会话越少，哈希环的倾斜跟着变大</td></tr>
+</table></div>
+
+<p>最后一行值得单独量一次，因为它有一个容易看反的地方。把副本数从 1 加到 16，分派规则锁死在混合那一条，别的一律不动：</p>
+
+<div class="scroll"><table>
+<tr><th>副本数</th><th>命中率</th><th>其中头部</th><th>其中会话私有</th><th>要算 token</th><th>忙时最多 ÷ 平均</th><th>首 token P99</th></tr>
+<tr><td>1</td><td>32.1%</td><td>29.6%</td><td>2.5%</td><td>2556968</td><td>1.000</td><td>1251972</td></tr>
+<tr><td>2</td><td>49.4%</td><td>29.6%</td><td>19.8%</td><td>1904328</td><td>1.001</td><td>401481</td></tr>
+<tr><td>4</td><td>89.3%</td><td>29.5%</td><td>59.8%</td><td>401912</td><td>1.048</td><td>17060</td></tr>
+<tr><td>8</td><td>89.0%</td><td>29.4%</td><td>59.5%</td><td>415576</td><td>1.242</td><td>8706</td></tr>
+<tr><td>16</td><td>88.7%</td><td>29.2%</td><td>59.4%</td><td>427208</td><td>1.310</td><td>3477</td></tr>
+</table></div>
+<p class="cap">出自 p14_nrep.py，λ=0.04，每台副本的缓存容量固定在 32768 个 token 位，随机种子 25。第一行只有一台副本，所以那一行的分派规则不起作用。</p>
+
+<p>头部那一列从头到尾几乎不动，从 29.6% 走到 29.2%——每加一台机器就多付一次头部的冷启动，但一千多条请求摊下来，这笔钱小到读不出来。真正在动的是私有那一列，而且动的方向是「机器越多越好」：一台副本装不下一百二十条会话的上下文，两台还是装不下，到四台才够。加机器在这里不只是加算力，它同时是在加缓存容量，而缓存容量决定了复用距离兜不兜得住。</p>
+
+<p>四台之后命中率就不再涨了，涨的换成了倾斜那一列。会话总数没变，机器越多，每台上摊到的会话越少，哈希环那点抖动就越显眼。所以这条曲线上有两段完全不同的形状：四台以前加机器是在买命中率，四台以后加机器是在买并行度，同时买回来一点倾斜。</p>
+
+<h2>板块 3 · 动手任务</h2>
+
+<p>两个任务，约两小时。任务 A 是今天的交付物：一个能回答「换这条分派规则值多少」的模拟器。任务 B 把同一套读法用到你手上已经有的东西上。</p>
+
+<h3>任务 A（必做，约 75 分钟）· 让四台副本和一个路由器跑起来</h3>
+
+<h4>第 1 步：一台副本 = 一份缓存 + 一个队列</h4>
+
+<p>缓存那一半 Day 16 和 Day 20 都写过，直接搬过来：切成十六个 token 一块，只对装满的块串 hash，查的时候从第 0 块起连续命中、遇到第一个不中就停。队列那一半是新的，而且只需要一个数：这台副本忙到什么时候。</p>
+
+<pre><code>class Replica:
+    def __init__(self, cap_tokens):
+        self.cache   = PrefixCache(cap_tokens)   # Day 16 那一套，一个字不改
+        self.free_at = 0.0                       # 忙到什么时候（毫秒）
+        self.out     = 0                         # 手上还有几条没做完 —— 路由器唯一看得见的负载
+
+    def admit(self, now, prompt, gen, slope, inter, dec):
+        nb   = self.cache.lookup(prompt, len(prompt) - 1)   # 留最后一个 token 不给命中
+        comp = len(prompt) - nb * BLOCK
+        self.cache.insert(prompt + gen)                     # 生成的那一截也进缓存
+        svc   = inter + slope * comp + dec * len(gen)
+        start = max(now, self.free_at)                      # 前面有人就得等
+        self.free_at = start + svc
+        return start - now, inter + slope * comp, svc       # 排队、prefill、整条服务时间</code></pre>
+
+<p>那个 <code>len(prompt) - 1</code> 不是笔误，是 Day 16 第 12 节那段源码注释里的规矩：哪怕一条请求全命中，也必须留最后一个 token 重算，因为采样下一个 token 需要最后那个位置的输出。</p>
+
+<p><span class="lbl">验收标准</span>：同一条 prompt 连着 admit 两次，第二次的 comp 应该正好是 16（一整块），不是 0，也不是 1。<span class="lbl">常见坑</span>：把 <code>insert</code> 写在 <code>lookup</code> 前面，于是每条请求都自己命中自己，命中率好得不像话。</p>
+
+<h4>第 2 步：一致性哈希环</h4>
+
+<p>照第 2 节那段源码写：每台副本 150 个虚拟节点，位置是「副本名 + 分隔符 + 虚拟节点编号」的哈希值，排好序；查的时候二分找第一个不小于会话哈希值的位置，找不到就绕回开头。</p>
+
+<p><span class="lbl">验收标准</span>：造两万个会话号，四台副本各分到多少条，最多的一台除以平均应该落在 1.0 到 1.2 之间。然后加第五台，重新分一遍，换了机器的会话应该在两成到两成五之间——如果这个数接近八成，说明你写的还是取模。</p>
+
+<p><span class="lbl">常见坑</span>：虚拟节点的位置只哈希了副本名，没把编号拼进去，于是一台副本的 150 个虚拟节点全落在同一个位置上，等于没有虚拟节点。症状是上面那个比值稳定在 1.7 附近下不来。</p>
+
+<h4>第 3 步：路由器和五条规则</h4>
+
+<p>五条规则写在同一个函数里，用一个字符串参数切换。轮询、最少在途、二选一各只有两三行；会话亲和是查一次环；混合那一条照第 9 节那两条判据写。</p>
+
+<pre><code>def route(policy, reps, sid, prompt, ring, abs_thr=10, rel_thr=1.5, cache_thr=0.8):
+    loads = [r.out for r in reps]
+    least = min(range(len(reps)), key=lambda i: loads[i])
+    if policy == "least":     return least
+    if policy == "affinity":  return ring.find(sid)
+    if policy == "hybrid":
+        mx, mn = max(loads), min(loads)
+        if mx - mn > abs_thr and mx > mn * rel_thr:   # 判据一：排得太不均，放弃缓存
+            return least
+        mb   = [r.cache.lookup(prompt, len(prompt) - 1) for r in reps]
+        best = max(range(len(reps)), key=lambda i: mb[i])
+        rate = mb[best] * BLOCK / len(prompt)          # 判据二：匹配率够不够
+        return best if rate > cache_thr else least
+    ...</code></pre>
+
+<p>写完先跑一次「只看最长匹配」的版本，也就是把最后一行改成无条件 <code>return best</code>。你应该看到第 7 节那个形状：一台接了全部，另外三台是零。看到这个形状再往下写，因为它是后面所有对照的起点。</p>
+
+<p><span class="lbl">验收标准</span>：把匹配率门槛设成大于 1 的数，混合那条规则跑出来的每一个数都必须和最少在途完全相同。不相同说明还有别的分支在偷偷用缓存。</p>
+
+<h4>第 4 步：泊松到达和事件循环</h4>
+
+<p>用一个小顶堆装事件，两种事件：一条请求到达、一条请求做完。到达时路由、算服务时间、把「做完」压回堆里；做完时把那台副本的在途数减一，并且在 240 毫秒之后把这条会话的下一轮压回堆里。同一时刻的两种事件，「做完」要排在「到达」前面，否则路由器看到的在途数会多算。</p>
+
+<p>报四组数：命中率（拆成头部和会话私有两半）、每台副本处理了几条和累计忙了多久、首 token 延迟的 P50 和 P99、四台合计忙了多少秒。最后一组是第 8 节那个「等价机器数」的原料。</p>
+
+<p><span class="lbl">验收标准</span>：头部那一半命中率在五条规则下应当基本相同（差在一个百分点以内）。它要是随规则变，说明你的头部没有被所有会话共用，后面所有的拆分都读不出东西。</p>
+
+<p><span class="lbl">常见坑</span>：把「做完」事件和「下一轮到达」事件安排在同一个时刻，然后按压栈顺序处理。这会让同一条会话的下一轮在自己还没释放许可的时候就被路由，看起来像是负载凭空多了一条。</p>
+
+<h3>任务 B（约 40 分钟）· 用到你自己手上的东西</h3>
+
+<p>挑一个你写过的、前面挂着负载均衡的服务，不一定和模型有关。做四件事。</p>
+
+<ul>
+<li>找出它现在的分派规则是什么。如果是轮询或者随机，问一句：后端有没有任何一份「这一次和上一次相关」的状态？有的话，它现在正在被浪费掉。</li>
+<li>如果它已经配了粘性会话，找出粘的那个键是什么，以及后端数量变化的时候这个键是怎么映射的。是取模就按第 5 节那两个数估一估扩容的代价。</li>
+<li>给它加一个指标：每台后端处理的请求数（或者忙时），报最大值除以平均值。这个数是今天整页的核心读数，而多数面板上没有它——面板通常只有平均值。</li>
+<li>回答一个问题：如果某一台后端慢了三倍，你现在这条规则要多久才会发现？发现的判据是什么？</li>
+</ul>
+
+<p><span class="lbl">验收标准</span>：你能指着一行配置说出「这里定的是分派规则」，并且说得出它在后端数量变化时会让多少比例的键换主人。</p>
+
+<h3>加分题</h3>
+
+<ul>
+<li>第 3.2 节写着路由器直接查了副本的真实缓存，而真实路由器手上只有一棵按请求历史自己维护的近似树。给模拟器加上这一层：路由器只记得自己发过什么，不知道副本淘汰了什么。命中率会掉多少？在什么条件下这棵树会漂移得最厉害？</li>
+<li>第 12 节的结论是「条数认不出慢」。把路由器看到的负载从「在途条数」换成「这台副本手上还欠着多少个 token 没算完」，重跑那张慢副本的表。r1 分到的条数会掉到多少？换成 token 之后，前面那些不慢的表有没有变差？</li>
+<li>今天的副本一次只跑一条请求。加上连续批处理：一台副本每一步从队列里取若干条拼成一批，一批的耗时按 Day 9 那套算。批处理会让排队的形状完全不同，先猜一下亲和和均衡的差距是变大还是变小，再跑。</li>
+<li>第 13 节那张表里，四台以后加机器只买到并行度。把每台副本的缓存容量同时按副本数往下调（总缓存不变），再扫一遍副本数。这条曲线的形状会变成什么样？</li>
+<li>今天所有会话的头部完全相同。造两种租户，各有各的头部，混在一起跑。匹配率门槛 0.8 还是最优的吗？如果不是，往哪个方向动？</li>
+</ul>
+
+<h2>板块 4 · 工作现场</h2>
+
+<h3>场景一 · 「开了粘性会话，命中率从七成上到九成，可 P99 更差了」</h3>
+
+<p>这句话在今天这一页上有完整的对应：第 6 节那张表里，亲和那一行的命中率是全表最高，首 token P99 是全表倒数第二。所以第一件事不是怀疑数据，是承认这两件事可以同时成立。</p>
+
+<p>要定位，去要一个多数面板上没有的数：每台副本处理的请求数或者忙时，报最大值除以平均值。这个数明显大于 1，问题就是倾斜；接近 1，那问题在别处，得换个方向查。</p>
+
+<p>倾斜的来源有两种，要分开。一种是会话本身长短不一，哈希环没法预知；另一种是环的位置本来就不匀，这一种可以直接看每台副本分到的会话条数——它和请求条数不是一回事。</p>
+
+<p>止血最快的一步是把硬亲和改成软亲和：加一条匹配率门槛，让第一轮和匹配率不高的请求走最闲的那台。第 10 节那张扫描表给了这个门槛的形状——两端都糟，中间有一段宽平地，先取 0.8 再按自己的流量往两边试。</p>
+
+<h3>场景二 · 「扩容加了一倍机器，命中率反而掉了」</h3>
+
+<p>先问一句这个服务的分派规则是不是对后端数量取模，再问一句这次扩容是不是正好翻倍。这两问的组合决定了代价：翻倍的时候取模只让一半的会话换机器，和一致性哈希一样好；不是翻倍的时候，同一套配置能让八成的会话换机器。而换机器等于整条上下文重算。</p>
+
+<p>这一类掉幅是一次性的，几分钟到几十分钟之后会自己恢复，但恢复期间的尾延迟会很难看，而且它会在下一次扩容时原样再来一遍。</p>
+
+<p>如果它已经是一致性哈希，那要看的就不是命中率总数，而是把它拆成头部和会话私有两半。头部那一半掉，说明副本变多之后每台都要为共用头部各冷启动一次——这一笔今天量过，一千多条请求摊下来小到读不出来，如果你的现场里它很大，说明请求总数相对副本数太少了，那是扩得过头了。私有那一半掉，说明会话被打散了，去查分派那一层拿到会话号没有。</p>
+
+<p>还有一种情况和分派规则无关：每台副本的缓存容量是固定的，机器变多、总缓存变大，本该更好；但如果扩容的同时并发也涨了，复用距离可能涨得比缓存快。第 13 节那张表的前两行就是这个形状，那里命中率掉到三成二，不是路由的问题，是容量真的不够。</p>
+
+<h3>场景三 · 「有一台机器一直在告警，别的几台闲着」</h3>
+
+<p>这个现象有两个成因，症状很像，修法完全相反。</p>
+
+<p>第一种是那台机器变慢了——邻居在抢核、盘在等、刚重启缓存是冷的。判据是它每条请求的服务时间比别人长，而分到的请求数不一定多。这时候要做的是把它摘出去，或者让路由器的负载改成带单位的量。</p>
+
+<p>第二种是它被规则吸过去了。判据是它每条请求的服务时间和别人一样，只是条数多。第 7 节那个热点副本是这种情形的极端形态，成因是规则里没有任何一项随负载变化。这时候摘机器没有用，摘掉之后下一台会变成新的热点。</p>
+
+<p>分辨这两种只要一个除法：那台机器的忙时除以它处理的条数，和别的机器比。今天第 12 节那张表里特意把「条数倾斜」和「忙时倾斜」分成两列，就是为了这个除法。</p>
+
+<h3>同事和面试官常问的</h3>
+
+<p>「同一个用户的请求要不要固定发到同一台机器？」——先反问是什么状态钉在那台机器上。是缓存，那是软亲和，走错了赔时间，值多少钱可以量；是进程内存里的东西（比如一个跨调用活着的沙箱），那是硬亲和，走错了赔正确性，没得商量。这两个答案对应的方案完全不同，混在一起答就说明没分清。</p>
+
+<p>「那软亲和该怎么做？」——不要做成「永远回原来那台」。给它一个逃生口：匹配率不够就走最闲的那台。可以给出实测的形状：只按最长匹配分派会让四台副本变成一台，加上一道 0.8 的匹配率门槛之后，命中率几乎不变而负载重新摊平。</p>
+
+<p>「我们的平均利用率才六成，为什么还慢？」——因为平均利用率是几台机器平均出来的。要看的是最忙那台除以平均。实测里有一档平均利用率只有六成二，而首 token 的 P99 是二十三万毫秒，因为其中一台早就排满了。这和 Day 24 那句「CPU 才用了一半为什么不能再多放点」是同一类错误，只是从单机换到了多机。</p>
+
+<p>「命中率是不是越高越好？」——不是。命中率省的是每条请求的计算量，用户等的时间里还有排队那一段。实测里命中率最高的那条规则，首 token 的尾延迟是全表倒数第二。正确的目标函数是延迟，命中率只是它的一个输入。</p>
+
+<p>「加机器能解决吗？」——要看卡在哪一段。如果是缓存装不下（命中率的私有那一半很低），加机器有用，因为每台副本各带一份缓存。如果是倾斜（最忙除以平均明显大于 1），加机器会让倾斜更大，因为会话总数不变、每台上摊到的更少。这两种情况在同一张监控图上长得一样。</p>
+
+<h2>板块 5 · 自检问题</h2>
+
+<details><summary>1. 有人提议：「把匹配率门槛从 0.8 调到 0.95，这样只有非常确定命中的时候才粘，更安全。」用今天的数评估。</summary>
+<p>「更安全」这个直觉的方向是对的——门槛越高，越少因为缓存而牺牲均衡，负载确实更平。第 10 节那张表里 0.95 那一行的忙时倾斜是 1.012，比 0.8 那一行的 1.048 还平一点点。</p>
+<p>问题在它同时把缓存关掉了。0.95 那一行的命中率是 72.7%，和门槛大于 1（也就是完全不用缓存）那一行的 72.0% 几乎一样。要算的 token 从四十万涨到一百零三万，按第 8 节的折算，四台机器的忙时会从 3.37 台涨回 4.00 台。</p>
+<p>原因在 3.3 节那条轨迹上：一条会话第二轮的匹配率是 0.856，第三轮 0.860。门槛设到 0.95，这些轮全都过不去，能过去的只剩最后几轮。所以这个旋钮不是「越高越保守」，是「越高越接近不用缓存」。</p>
+<p>错在哪：把一个双端旋钮当成了单向的安全度。它的两端是两种不同的坏，最优点在中间，而中间那段的位置由你的流量形状定。</p>
+</details>
+
+<details><summary>2. 你们的服务用一致性哈希做会话亲和，四台副本。监控显示命中率稳定在九成，但每周有一两次 P99 突然翻几倍，持续十几分钟然后自己好。命中率在这十几分钟里没掉。查什么？</summary>
+<p>命中率没掉是最强的线索：它排除了「会话被打散」和「缓存被挤掉」这两类原因——那两类都会让私有那一半的命中率跟着掉。</p>
+<p>剩下的方向是有一台副本变慢了，而亲和认不出这件事。第 12 节量过这个形状：r1 的服务时间乘以三，亲和照样给它塞了 178 条请求，而最少在途只给了 107 条；与此同时亲和的命中率是 89.6%，一点没掉。</p>
+<p>要查的是每台副本的「忙时除以处理条数」，也就是它每条请求平均要花多久。这个数在那十几分钟里如果有一台明显高出来，就定案了。至于它为什么慢，那是另一个问题——邻居、盘、刚重启缓存冷，都有可能。</p>
+<p>修法有两条。短期是把那台摘出去，一致性哈希会顺时针把它的会话交给下一台，别的会话完全不受影响（第 5 节量过，被连累的比例是 0）。长期是把路由器看到的负载从条数换成带单位的量。</p>
+<p>错在哪：看到 P99 涨先去查缓存。命中率这一列已经把缓存这条线排除掉了。</p>
+</details>
+
+<details><summary>3. 一个同事说：「第 7 节那个热点副本是模拟器的毛病。真实系统里第一条请求之后，别的副本迟早也会拿到请求，就不会一直是那一台了。」他说的对吗？</summary>
+<p>不对，而且他的推理里少了一步。别的副本要拿到请求，得先有一条请求被判给它；而在「只看谁对得最多」这条规则下，判给谁完全由缓存内容决定，跟负载、跟时间、跟已经积压了多少都没有关系。</p>
+<p>第一台副本存下共用头部之后，它在任何一条新请求上的匹配块数都至少是头部那 64 块，而别的副本是零。零永远不大于 64，所以别的副本永远等不到自己的第一条。这是一个自我封闭的循环，不会因为时间长就打破。</p>
+<p>真实系统里确实不会出现这个形状，但原因不是他说的那个，是真实路由器里根本没有这条规则的纯粹形式——它们都配了逃生口。SGLang 那个网关的逃生口是匹配率门槛，而且门槛过不去的时候它不是发给最闲的，是发给「树最小的那台」，也就是缓存最空的那台，方向是主动去喂那些还没热起来的副本。</p>
+<p>错在哪：默认「随机性迟早会打破对称」。这条规则里没有随机性，也没有任何随时间变化的量。</p>
+</details>
+
+<details><summary>4. 你把副本从四台加到八台，命中率几乎没变（89.3% → 89.0%），P99 却好了一倍。有人说这说明缓存不重要，加机器才有用。怎么回应？</summary>
+<p>这两个数都是第 13 节那张表里的，而它们说的是两件事，不能拿一件去否定另一件。</p>
+<p>命中率没变，说明四台的时候缓存已经够用了——它在这条曲线上已经走平。走平的地方再加容量当然看不出效果，这不等于缓存不重要。同一张表往回看两行：只有一台副本的时候命中率是 32.1%，两台是 49.4%，到四台才跳到 89.3%。前面那两行的缓存严重不够，加机器买到的正是缓存。</p>
+<p>P99 好了一倍，来自另一个自变量：同样的负载摊到更多台上，每台的利用率降下来，排队就短了。这一笔和命中率无关，它在关掉缓存的时候一样成立。</p>
+<p>还有一件反方向的事要一起报：同一张表里忙时倾斜从 1.048 涨到 1.242。会话总数没变，机器越多每台上摊到的会话越少，哈希环那点抖动就越显眼。所以这次扩容买到了并行度，同时买回来一点倾斜。</p>
+<p>错在哪：拿一条已经走平的曲线上的一个点，去证明这条曲线不重要。要证明这件事，得把容量往下调，看它掉不掉。</p>
+</details>
+
+<h2>板块 6 · 今日新词</h2>
+
+<p>前三个是「不看缓存的时候怎么分」，中间四个是「怎么让会话回到原来那台」，后五个是「回不去或者不该回去的时候怎么办」。它们长在同一件事上。</p>
+
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>一句话解释</th></tr>
+<tr><td>请求分派 / 路由</td><td>request routing / dispatch</td><td class="w">在若干台能干同样活的机器里挑一台，把这条请求交给它；做这件事的组件叫路由器</td></tr>
+<tr><td>最少在途</td><td>least outstanding requests / shortest queue</td><td class="w">一条分派规则：发给手上没做完的请求最少的那台，平局随机</td></tr>
+<tr><td>二选一</td><td>power of two choices</td><td class="w">一条分派规则：随机挑两台，把请求给其中负载较低的那台；不用看全部机器就能拿到接近最优的均衡</td></tr>
+<tr><td>一致性哈希</td><td>consistent hashing</td><td class="w">把哈希值域接成一个环，机器和键都落在环上，键顺时针找第一台机器；机器增减时只有相邻那一段的键改归属</td></tr>
+<tr><td>哈希环</td><td>hash ring</td><td class="w">上面那个首尾相接的取值范围，以及排好序的机器位置表；查一次是一个二分</td></tr>
+<tr><td>虚拟节点</td><td>virtual node</td><td class="w">同一台机器在环上占的多个位置，用来把「某一台分到的那一段太长」这种抖动平均掉</td></tr>
+<tr><td>负载倾斜</td><td>load skew</td><td class="w">最忙那台除以平均。它明显大于 1 的时候，平均利用率这个数就不能读了</td></tr>
+<tr><td>缓存感知路由</td><td>cache-aware routing</td><td class="w">分派时把「哪台机器上已经缓存了这条请求的前缀」当成依据</td></tr>
+<tr><td>匹配率门槛</td><td>cache_threshold</td><td class="w">命中的部分要占这条请求多大比例，才值得为它牺牲负载均衡；过不去就按负载分</td></tr>
+<tr><td>失衡判据</td><td>balance_abs_threshold / balance_rel_threshold</td><td class="w">最忙和最闲的机器同时满足「差得够多」和「倍数够大」时，这一轮就完全不看缓存</td></tr>
+<tr><td>热点副本</td><td>hotspot replica</td><td class="w">被规则的正反馈吸住、把绝大部分流量都接过去的那台机器</td></tr>
+<tr><td>软亲和 / 硬亲和</td><td>soft affinity / hard affinity</td><td class="w">回不到原来那台时，赔的是时间还是正确性；前者可以被负载盖过去，后者不行</td></tr>
+</table></div>
+
+<h2>板块 7 · 已学词表</h2>
+
+<p>Day 1 到今天引入过的全部术语，标注的一律是首次引入那一天，不是今天又用到的日子。</p>
+
+<details><summary>展开全部 330 个词</summary>
+<div class="scroll"><table>
+<tr><th>中文</th><th>英文原词</th><th>引入于</th></tr>
+<tr><td>压测器</td><td>load generator</td><td>Day 1</td></tr>
+<tr><td>吞吐 / QPS</td><td>throughput / queries per second</td><td>Day 1</td></tr>
+<tr><td>基线</td><td>baseline</td><td>Day 1</td></tr>
+<tr><td>延迟</td><td>latency</td><td>Day 1</td></tr>
+<tr><td>开环压测</td><td>open loop</td><td>Day 1</td></tr>
+<tr><td>百分位</td><td>percentile (P50 / P95 / P99)</td><td>Day 1</td></tr>
+<tr><td>超线程 / 逻辑核</td><td>hyper-threading / logical core</td><td>Day 1</td></tr>
+<tr><td>闭环压测</td><td>closed loop</td><td>Day 1</td></tr>
+<tr><td>利特尔法则</td><td>Little&amp;#x27;s Law</td><td>Day 2</td></tr>
+<tr><td>利用率</td><td>utilization</td><td>Day 2</td></tr>
+<tr><td>协调遗漏</td><td>coordinated omission</td><td>Day 2</td></tr>
+<tr><td>尾延迟</td><td>tail latency</td><td>Day 2</td></tr>
+<tr><td>排队时间 / 排队延迟</td><td>queueing time / queueing delay</td><td>Day 2</td></tr>
+<tr><td>服务时间</td><td>service time</td><td>Day 2</td></tr>
+<tr><td>off-CPU 分析</td><td>off-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>on-CPU 分析</td><td>on-CPU analysis</td><td>Day 3</td></tr>
+<tr><td>剖析器</td><td>profiler</td><td>Day 3</td></tr>
+<tr><td>插桩式剖析器</td><td>instrumenting profiler</td><td>Day 3</td></tr>
+<tr><td>火焰图</td><td>flame graph</td><td>Day 3</td></tr>
+<tr><td>自身耗时</td><td>self time</td><td>Day 3</td></tr>
+<tr><td>采样 / 采样频率</td><td>sampling / sampling frequency</td><td>Day 3</td></tr>
+<tr><td>采样式剖析器</td><td>sampling profiler</td><td>Day 3</td></tr>
+<tr><td>CPU 密集 / IO 密集</td><td>CPU-bound / IO-bound</td><td>Day 4</td></tr>
+<tr><td>事件循环</td><td>event loop</td><td>Day 4</td></tr>
+<tr><td>事件循环延迟</td><td>event loop lag</td><td>Day 4</td></tr>
+<tr><td>全局解释器锁</td><td>GIL (global interpreter lock)</td><td>Day 4</td></tr>
+<tr><td>放开 GIL</td><td>releasing the GIL</td><td>Day 4</td></tr>
+<tr><td>线程池外派</td><td>run_in_executor</td><td>Day 4</td></tr>
+<tr><td>采样偏差</td><td>sampling bias</td><td>Day 4</td></tr>
+<tr><td>阻塞事件循环</td><td>blocking the event loop</td><td>Day 4</td></tr>
+<tr><td>挂起的协程</td><td>suspended coroutine</td><td>Day 5</td></tr>
+<tr><td>有效容量</td><td>effective capacity</td><td>Day 5</td></tr>
+<tr><td>瓶颈假设表</td><td>bottleneck hypothesis table</td><td>Day 5</td></tr>
+<tr><td>阶段计时</td><td>phase timing</td><td>Day 5</td></tr>
+<tr><td>双峰分布</td><td>bimodal distribution</td><td>Day 6</td></tr>
+<tr><td>发送迟滞</td><td>send backlog</td><td>Day 6</td></tr>
+<tr><td>客户端排队</td><td>client-side queuing</td><td>Day 6</td></tr>
+<tr><td>抖动</td><td>jitter</td><td>Day 6</td></tr>
+<tr><td>锁相</td><td>phase locking</td><td>Day 6</td></tr>
+<tr><td>预热</td><td>warm-up</td><td>Day 6</td></tr>
+<tr><td>BLAS / GEMV / GEMM</td><td>basic linear algebra subprograms</td><td>Day 7</td></tr>
+<tr><td>TLB / 地址翻译缓存</td><td>translation lookaside buffer</td><td>Day 7</td></tr>
+<tr><td>内存带宽</td><td>memory bandwidth</td><td>Day 7</td></tr>
+<tr><td>内存页</td><td>page</td><td>Day 7</td></tr>
+<tr><td>大页 / 透明大页</td><td>huge page / THP</td><td>Day 7</td></tr>
+<tr><td>屋顶线模型</td><td>roofline model</td><td>Day 7</td></tr>
+<tr><td>机器平衡点</td><td>machine balance</td><td>Day 7</td></tr>
+<tr><td>浮点运算</td><td>FLOP / GFLOP⁄s</td><td>Day 7</td></tr>
+<tr><td>硬件预取器</td><td>hardware prefetcher</td><td>Day 7</td></tr>
+<tr><td>缓存 / 缓存层级</td><td>cache / cache hierarchy</td><td>Day 7</td></tr>
+<tr><td>缓存行</td><td>cache line</td><td>Day 7</td></tr>
+<tr><td>缺页</td><td>page fault</td><td>Day 7</td></tr>
+<tr><td>运算强度</td><td>arithmetic intensity</td><td>Day 7</td></tr>
+<tr><td>token / 词元</td><td>token</td><td>Day 8</td></tr>
+<tr><td>token 间延迟</td><td>ITL / inter-token latency</td><td>Day 8</td></tr>
+<tr><td>有效吞吐</td><td>goodput</td><td>Day 8</td></tr>
+<tr><td>每输出 token 耗时</td><td>TPOT / time per output token</td><td>Day 8</td></tr>
+<tr><td>自回归</td><td>autoregressive</td><td>Day 8</td></tr>
+<tr><td>解码</td><td>decode</td><td>Day 8</td></tr>
+<tr><td>预填充</td><td>prefill</td><td>Day 8</td></tr>
+<tr><td>首 token 延迟</td><td>TTFT / time to first token</td><td>Day 8</td></tr>
+<tr><td>max_num_batched_tokens</td><td>max_num_batched_tokens</td><td>Day 9</td></tr>
+<tr><td>max_num_seqs</td><td>max_num_seqs</td><td>Day 9</td></tr>
+<tr><td>token 预算</td><td>token budget</td><td>Day 9</td></tr>
+<tr><td>分块预填充</td><td>chunked prefill</td><td>Day 9</td></tr>
+<tr><td>引擎步 / 迭代</td><td>engine step / iteration</td><td>Day 9</td></tr>
+<tr><td>抢占</td><td>preemption</td><td>Day 9</td></tr>
+<tr><td>混合批</td><td>mixed batch</td><td>Day 9</td></tr>
+<tr><td>连续批处理</td><td>continuous batching / in-flight batching</td><td>Day 9</td></tr>
+<tr><td>重算</td><td>recompute</td><td>Day 9</td></tr>
+<tr><td>静态批处理</td><td>static batching</td><td>Day 9</td></tr>
+<tr><td>CPU 配额与周期</td><td>quota / period</td><td>Day 10</td></tr>
+<tr><td>OOM 杀手</td><td>OOM killer</td><td>Day 10</td></tr>
+<tr><td>microVM</td><td>microVM</td><td>Day 10</td></tr>
+<tr><td>seccomp</td><td>secure computing mode</td><td>Day 10</td></tr>
+<tr><td>seccomp-BPF 过滤器</td><td>seccomp-bpf filter</td><td>Day 10</td></tr>
+<tr><td>不再获得新权限</td><td>NO_NEW_PRIVS</td><td>Day 10</td></tr>
+<tr><td>命名空间</td><td>namespace</td><td>Day 10</td></tr>
+<tr><td>应用内核</td><td>application kernel</td><td>Day 10</td></tr>
+<tr><td>换根</td><td>chroot / pivot_root</td><td>Day 10</td></tr>
+<tr><td>控制组</td><td>cgroup / control group</td><td>Day 10</td></tr>
+<tr><td>攻击面</td><td>attack surface</td><td>Day 10</td></tr>
+<tr><td>沙箱</td><td>sandbox</td><td>Day 10</td></tr>
+<tr><td>系统调用号</td><td>syscall number</td><td>Day 10</td></tr>
+<tr><td>能力</td><td>capabilities</td><td>Day 10</td></tr>
+<tr><td>节流</td><td>throttling</td><td>Day 10</td></tr>
+<tr><td>虚拟机监视器</td><td>hypervisor / VMM</td><td>Day 10</td></tr>
+<tr><td>进程数上限</td><td>pids.max</td><td>Day 10</td></tr>
+<tr><td>逃逸</td><td>container escape</td><td>Day 10</td></tr>
+<tr><td>从属挂载</td><td>MS_SLAVE / slave</td><td>Day 11</td></tr>
+<tr><td>共享挂载</td><td>MS_SHARED / shared</td><td>Day 11</td></tr>
+<tr><td>冷启动</td><td>cold start</td><td>Day 11</td></tr>
+<tr><td>容器的 1 号进程</td><td>PID 1 / init process</td><td>Day 11</td></tr>
+<tr><td>对等组</td><td>peer group</td><td>Day 11</td></tr>
+<tr><td>惰性卸载</td><td>lazy unmount / MNT_DETACH</td><td>Day 11</td></tr>
+<tr><td>挂载传播</td><td>mount propagation</td><td>Day 11</td></tr>
+<tr><td>根文件系统</td><td>rootfs / root filesystem</td><td>Day 11</td></tr>
+<tr><td>私有挂载</td><td>MS_PRIVATE / private</td><td>Day 11</td></tr>
+<tr><td>绑定挂载</td><td>bind mount</td><td>Day 11</td></tr>
+<tr><td>下层 / 上层 / 工作目录</td><td>lowerdir / upperdir / workdir</td><td>Day 12</td></tr>
+<tr><td>丢弃 / 拒绝</td><td>DROP / REJECT</td><td>Day 12</td></tr>
+<tr><td>主设备号 / 次设备号</td><td>major:minor</td><td>Day 12</td></tr>
+<tr><td>共享内存页</td><td>shmem</td><td>Day 12</td></tr>
+<tr><td>内存文件系统</td><td>tmpfs</td><td>Day 12</td></tr>
+<tr><td>写时复制</td><td>copy-on-write / copy_up</td><td>Day 12</td></tr>
+<tr><td>出网白名单</td><td>egress allowlist</td><td>Day 12</td></tr>
+<tr><td>包过滤</td><td>packet filter / netfilter (iptables)</td><td>Day 12</td></tr>
+<tr><td>叠加文件系统</td><td>overlayfs / overlay filesystem</td><td>Day 12</td></tr>
+<tr><td>只读根</td><td>read-only rootfs</td><td>Day 12</td></tr>
+<tr><td>回写</td><td>writeback</td><td>Day 12</td></tr>
+<tr><td>块设备限速</td><td>blkio throttle / io.max</td><td>Day 12</td></tr>
+<tr><td>容量上限 / 文件数上限</td><td>size= / nr_inodes=</td><td>Day 12</td></tr>
+<tr><td>最小权限</td><td>least privilege</td><td>Day 12</td></tr>
+<tr><td>源地址伪装</td><td>SNAT / MASQUERADE</td><td>Day 12</td></tr>
+<tr><td>白障</td><td>whiteout</td><td>Day 12</td></tr>
+<tr><td>直写</td><td>direct I/O (O_DIRECT)</td><td>Day 12</td></tr>
+<tr><td>索引节点</td><td>inode</td><td>Day 12</td></tr>
+<tr><td>缓冲写</td><td>buffered write</td><td>Day 12</td></tr>
+<tr><td>能力边界集</td><td>capability bounding set</td><td>Day 12</td></tr>
+<tr><td>虚拟网卡对</td><td>veth pair</td><td>Day 12</td></tr>
+<tr><td>遮罩</td><td>masking</td><td>Day 12</td></tr>
+<tr><td>页缓存</td><td>page cache</td><td>Day 12</td></tr>
+<tr><td>libcontainer</td><td>libcontainer</td><td>Day 13</td></tr>
+<tr><td>ttRPC</td><td>ttRPC</td><td>Day 13</td></tr>
+<tr><td>三段式创建</td><td>nsexec stage 0 / 1 / 2</td><td>Day 13</td></tr>
+<tr><td>二进制自克隆</td><td>binary cloning / exeseal</td><td>Day 13</td></tr>
+<tr><td>低层运行时 / 运行时引擎</td><td>low-level runtime / runtime engine</td><td>Day 13</td></tr>
+<tr><td>僵尸进程</td><td>zombie process</td><td>Day 13</td></tr>
+<tr><td>分发规范</td><td>distribution-spec</td><td>Day 13</td></tr>
+<tr><td>初始化进程</td><td>runc init</td><td>Day 13</td></tr>
+<tr><td>垫片</td><td>shim</td><td>Day 13</td></tr>
+<tr><td>子收割者</td><td>subreaper / PR_SET_CHILD_SUBREAPER</td><td>Day 13</td></tr>
+<tr><td>容器状态</td><td>creating / created / running / stopped</td><td>Day 13</td></tr>
+<tr><td>容器运行时接口</td><td>CRI / Container Runtime Interface</td><td>Day 13</td></tr>
+<tr><td>开放容器倡议</td><td>OCI / Open Container Initiative</td><td>Day 13</td></tr>
+<tr><td>执行栅栏</td><td>exec fifo</td><td>Day 13</td></tr>
+<tr><td>文件系统包</td><td>filesystem bundle</td><td>Day 13</td></tr>
+<tr><td>构造函数钩子</td><td>__attribute__((constructor))</td><td>Day 13</td></tr>
+<tr><td>生命周期钩子</td><td>lifecycle hooks</td><td>Day 13</td></tr>
+<tr><td>运行时规范</td><td>runtime-spec</td><td>Day 13</td></tr>
+<tr><td>运行时配置文件</td><td>config.json</td><td>Day 13</td></tr>
+<tr><td>镜像规范</td><td>image-spec</td><td>Day 13</td></tr>
+<tr><td>高层运行时</td><td>high-level runtime</td><td>Day 13</td></tr>
+<tr><td>准入控制</td><td>admission control</td><td>Day 14</td></tr>
+<tr><td>受精卵进程 / fork 服务器</td><td>zygote / fork server</td><td>Day 14</td></tr>
+<tr><td>宽限期</td><td>grace period</td><td>Day 14</td></tr>
+<tr><td>并发上限</td><td>concurrency limit</td><td>Day 14</td></tr>
+<tr><td>异步回收</td><td>deferred cleanup</td><td>Day 14</td></tr>
+<tr><td>懒加载</td><td>lazy loading / lazy pulling</td><td>Day 14</td></tr>
+<tr><td>泊松到达</td><td>Poisson arrivals</td><td>Day 14</td></tr>
+<tr><td>背压</td><td>backpressure</td><td>Day 14</td></tr>
+<tr><td>许可</td><td>semaphore</td><td>Day 14</td></tr>
+<tr><td>请求路径</td><td>request path</td><td>Day 14</td></tr>
+<tr><td>预热池</td><td>warm pool</td><td>Day 14</td></tr>
+<tr><td>KV cache / 键值缓存</td><td>KV cache</td><td>Day 15</td></tr>
+<tr><td>上下文长度上限</td><td>max_model_len</td><td>Day 15</td></tr>
+<tr><td>内部碎片</td><td>internal fragmentation</td><td>Day 15</td></tr>
+<tr><td>分组查询注意力</td><td>GQA / grouped-query attention</td><td>Day 15</td></tr>
+<tr><td>分页注意力</td><td>PagedAttention</td><td>Day 15</td></tr>
+<tr><td>块表</td><td>block table</td><td>Day 15</td></tr>
+<tr><td>块（KV cache 的块）</td><td>block</td><td>Day 15</td></tr>
+<tr><td>外部碎片</td><td>external fragmentation</td><td>Day 15</td></tr>
+<tr><td>显存占用比例</td><td>gpu_memory_utilization</td><td>Day 15</td></tr>
+<tr><td>查询头 / 键值头</td><td>query head / KV head</td><td>Day 15</td></tr>
+<tr><td>每块字节数</td><td>page_size_bytes</td><td>Day 15</td></tr>
+<tr><td>每头维度</td><td>head_dim / head size</td><td>Day 15</td></tr>
+<tr><td>空闲块队列</td><td>free block queue</td><td>Day 15</td></tr>
+<tr><td>紧凑</td><td>compaction</td><td>Day 15</td></tr>
+<tr><td>PCIe · 外设互连总线</td><td>PCIe</td><td>Day 16</td></tr>
+<tr><td>token 级前缀命中率</td><td>prefix cache hit rate</td><td>Day 16</td></tr>
+<tr><td>写入门槛</td><td>store threshold</td><td>Day 16</td></tr>
+<tr><td>分级缓存 · 主层 · 次层</td><td>tiering / primary tier / secondary tier</td><td>Day 16</td></tr>
+<tr><td>前缀缓存 / 自动前缀缓存</td><td>prefix caching / APC</td><td>Day 16</td></tr>
+<tr><td>卸载</td><td>offloading</td><td>Day 16</td></tr>
+<tr><td>因果注意力</td><td>causal attention</td><td>Day 16</td></tr>
+<tr><td>块 hash 链</td><td>chained block hash</td><td>Day 16</td></tr>
+<tr><td>基数树 / 前缀树</td><td>radix tree / RadixAttention</td><td>Day 16</td></tr>
+<tr><td>复用距离</td><td>reuse distance</td><td>Day 16</td></tr>
+<tr><td>提升</td><td>promotion</td><td>Day 16</td></tr>
+<tr><td>最近最少使用</td><td>LRU / least recently used</td><td>Day 16</td></tr>
+<tr><td>缓存盐</td><td>cache salt</td><td>Day 16</td></tr>
+<tr><td>节点分裂</td><td>node split</td><td>Day 16</td></tr>
+<tr><td>停止串</td><td>stop string</td><td>Day 17</td></tr>
+<tr><td>全量与差量</td><td>NewRequestData / CachedRequestData</td><td>Day 17</td></tr>
+<tr><td>前端进程</td><td>frontend process</td><td>Day 17</td></tr>
+<tr><td>增量解码</td><td>incremental detokenization</td><td>Day 17</td></tr>
+<tr><td>引擎核心 / 引擎核心进程</td><td>EngineCore / EngineCoreProc</td><td>Day 17</td></tr>
+<tr><td>忙循环</td><td>busy loop</td><td>Day 17</td></tr>
+<tr><td>打包 / 解包 · 序列化 / 反序列化</td><td>serialize / deserialize</td><td>Day 17</td></tr>
+<tr><td>执行器</td><td>Executor</td><td>Day 17</td></tr>
+<tr><td>执行结果</td><td>ModelRunnerOutput</td><td>Day 17</td></tr>
+<tr><td>替换符</td><td>replacement character (U+FFFD)</td><td>Day 17</td></tr>
+<tr><td>解码窗口</td><td>prefix_offset / read_offset</td><td>Day 17</td></tr>
+<tr><td>请求状态</td><td>RequestStatus</td><td>Day 17</td></tr>
+<tr><td>调度单</td><td>SchedulerOutput</td><td>Day 17</td></tr>
+<tr><td>输入处理器</td><td>input processor</td><td>Day 17</td></tr>
+<tr><td>输入队列 / 输出队列</td><td>input_queue / output_queue</td><td>Day 17</td></tr>
+<tr><td>输出处理器</td><td>output processor</td><td>Day 17</td></tr>
+<tr><td>agent 循环</td><td>agent loop</td><td>Day 18</td></tr>
+<tr><td>一轮</td><td>turn</td><td>Day 18</td></tr>
+<tr><td>交接</td><td>handoff</td><td>Day 18</td></tr>
+<tr><td>会话</td><td>session</td><td>Day 18</td></tr>
+<tr><td>写前记录</td><td>write-ahead logging (WAL)</td><td>Day 18</td></tr>
+<tr><td>副作用</td><td>side effect</td><td>Day 18</td></tr>
+<tr><td>在途会话</td><td>in-flight session</td><td>Day 18</td></tr>
+<tr><td>工具调用</td><td>tool call</td><td>Day 18</td></tr>
+<tr><td>幂等</td><td>idempotent / idempotence</td><td>Day 18</td></tr>
+<tr><td>幂等键</td><td>idempotency key</td><td>Day 18</td></tr>
+<tr><td>服务端推送事件</td><td>SSE / server-sent events</td><td>Day 18</td></tr>
+<tr><td>检查点</td><td>checkpoint</td><td>Day 18</td></tr>
+<tr><td>至少一次 / 恰好一次</td><td>at-least-once / exactly-once</td><td>Day 18</td></tr>
+<tr><td>进程 CPU 时钟</td><td>process CPU clock (time.process_time)</td><td>Day 18</td></tr>
+<tr><td>连接池</td><td>connection pool</td><td>Day 18</td></tr>
+<tr><td>追加式日志</td><td>append-only log</td><td>Day 18</td></tr>
+<tr><td>JSON Schema</td><td>JSON Schema</td><td>Day 19</td></tr>
+<tr><td>JSON-RPC 2.0</td><td>JSON-RPC 2.0</td><td>Day 19</td></tr>
+<tr><td>上下文污染</td><td>context pollution</td><td>Day 19</td></tr>
+<tr><td>任务组</td><td>asyncio.TaskGroup</td><td>Day 19</td></tr>
+<tr><td>兄弟任务取消</td><td>sibling cancellation</td><td>Day 19</td></tr>
+<tr><td>内容块</td><td>content block</td><td>Day 19</td></tr>
+<tr><td>协作式取消</td><td>cooperative cancellation</td><td>Day 19</td></tr>
+<tr><td>协议错误 / 工具错误</td><td>protocol error / tool error</td><td>Day 19</td></tr>
+<tr><td>参数模式</td><td>input schema</td><td>Day 19</td></tr>
+<tr><td>取消通知</td><td>notifications/cancelled</td><td>Day 19</td></tr>
+<tr><td>工具注册</td><td>tool registration</td><td>Day 19</td></tr>
+<tr><td>工具注解</td><td>tool annotations</td><td>Day 19</td></tr>
+<tr><td>工具清单</td><td>tools/list</td><td>Day 19</td></tr>
+<tr><td>工具调用请求</td><td>tools/call</td><td>Day 19</td></tr>
+<tr><td>异常组</td><td>ExceptionGroup / except*</td><td>Day 19</td></tr>
+<tr><td>截止时间传递</td><td>deadline propagation</td><td>Day 19</td></tr>
+<tr><td>模型上下文协议</td><td>MCP / Model Context Protocol</td><td>Day 19</td></tr>
+<tr><td>结构化输出</td><td>structuredContent / outputSchema</td><td>Day 19</td></tr>
+<tr><td>请求编号</td><td>request id</td><td>Day 19</td></tr>
+<tr><td>部分结果</td><td>partial results</td><td>Day 19</td></tr>
+<tr><td>错误标志</td><td>isError</td><td>Day 19</td></tr>
+<tr><td>附加属性</td><td>additionalProperties</td><td>Day 19</td></tr>
+<tr><td>上下文压缩</td><td>context compaction</td><td>Day 20</td></tr>
+<tr><td>上下文预算</td><td>context budget</td><td>Day 20</td></tr>
+<tr><td>会话亲和 / 粘性会话</td><td>session affinity / sticky session</td><td>Day 20</td></tr>
+<tr><td>会话存储</td><td>session store</td><td>Day 20</td></tr>
+<tr><td>保住系统消息</td><td>include_system</td><td>Day 20</td></tr>
+<tr><td>前缀失效 / 断点</td><td>prefix invalidation</td><td>Day 20</td></tr>
+<tr><td>压缩阈值</td><td>compaction threshold</td><td>Day 20</td></tr>
+<tr><td>悬空的工具结果</td><td>dangling tool result</td><td>Day 20</td></tr>
+<tr><td>截断</td><td>truncation</td><td>Day 20</td></tr>
+<tr><td>末端保留 / 首端保留</td><td>trim strategy &amp;quot;last&amp;quot; / &amp;quot;first&amp;quot;</td><td>Day 20</td></tr>
+<tr><td>滑动窗口</td><td>sliding window</td><td>Day 20</td></tr>
+<tr><td>边际成本</td><td>marginal cost</td><td>Day 20</td></tr>
+<tr><td>近似计数</td><td>approximate token counting</td><td>Day 20</td></tr>
+<tr><td>隐式截断</td><td>implicit truncation</td><td>Day 20</td></tr>
+<tr><td>不确定态</td><td>in-doubt</td><td>Day 21</td></tr>
+<tr><td>任务队列</td><td>task queue</td><td>Day 21</td></tr>
+<tr><td>公平排队 / 轮转</td><td>fair queuing / round-robin</td><td>Day 21</td></tr>
+<tr><td>可见性超时</td><td>visibility timeout</td><td>Day 21</td></tr>
+<tr><td>孤儿任务</td><td>orphaned task</td><td>Day 21</td></tr>
+<tr><td>对账</td><td>reconciliation</td><td>Day 21</td></tr>
+<tr><td>工作保全</td><td>work-conserving</td><td>Day 21</td></tr>
+<tr><td>意图记录</td><td>intent record</td><td>Day 21</td></tr>
+<tr><td>投递语义</td><td>delivery semantics</td><td>Day 21</td></tr>
+<tr><td>检查点粒度</td><td>checkpoint granularity</td><td>Day 21</td></tr>
+<tr><td>死信队列</td><td>dead-letter queue</td><td>Day 21</td></tr>
+<tr><td>每租户并发配额</td><td>per-tenant concurrency quota</td><td>Day 21</td></tr>
+<tr><td>毒丸任务</td><td>poison-pill task</td><td>Day 21</td></tr>
+<tr><td>租户</td><td>tenant</td><td>Day 21</td></tr>
+<tr><td>租约</td><td>lease</td><td>Day 21</td></tr>
+<tr><td>续租 / 心跳续租</td><td>lease renewal / heartbeat</td><td>Day 21</td></tr>
+<tr><td>至多一次</td><td>at-most-once</td><td>Day 21</td></tr>
+<tr><td>重投标记</td><td>redelivered flag</td><td>Day 21</td></tr>
+<tr><td>重试退避</td><td>retry backoff</td><td>Day 21</td></tr>
+<tr><td>队头阻塞</td><td>head-of-line blocking</td><td>Day 21</td></tr>
+<tr><td>cgroup.kill</td><td>cgroup.kill</td><td>Day 22</td></tr>
+<tr><td>会话级沙箱 / 每调用沙箱</td><td>session-scoped / per-call sandbox</td><td>Day 22</td></tr>
+<tr><td>冻结再杀</td><td>freeze-then-kill</td><td>Day 22</td></tr>
+<tr><td>回收器</td><td>reaper</td><td>Day 22</td></tr>
+<tr><td>孤儿进程</td><td>orphan process</td><td>Day 22</td></tr>
+<tr><td>所有权记录</td><td>ownership record</td><td>Day 22</td></tr>
+<tr><td>文件描述符</td><td>file descriptor</td><td>Day 22</td></tr>
+<tr><td>混淆代理</td><td>confused deputy</td><td>Day 22</td></tr>
+<tr><td>管道的写端</td><td>pipe write end</td><td>Day 22</td></tr>
+<tr><td>输出上限</td><td>output cap</td><td>Day 22</td></tr>
+<tr><td>进程会话</td><td>process session / setsid</td><td>Day 22</td></tr>
+<tr><td>进程组</td><td>process group</td><td>Day 22</td></tr>
+<tr><td>退出钩子</td><td>atexit hook</td><td>Day 22</td></tr>
+<tr><td>遮罩路径 / 只读路径</td><td>maskedPaths / readonlyPaths</td><td>Day 22</td></tr>
+<tr><td>间接提示注入</td><td>indirect prompt injection</td><td>Day 22</td></tr>
+<tr><td>W3C Trace Context · traceparent 头</td><td>W3C Trace Context / traceparent</td><td>Day 23</td></tr>
+<tr><td>span / 跨度</td><td>span</td><td>Day 23</td></tr>
+<tr><td>trace / 一条追踪</td><td>trace</td><td>Day 23</td></tr>
+<tr><td>trace_id / span_id / parent_span_id</td><td>trace id / span id / parent span id</td><td>Day 23</td></tr>
+<tr><td>上下文传播</td><td>context propagation</td><td>Day 23</td></tr>
+<tr><td>事件（span 上的）</td><td>events</td><td>Day 23</td></tr>
+<tr><td>关联 ID</td><td>correlation id</td><td>Day 23</td></tr>
+<tr><td>关键路径</td><td>critical path</td><td>Day 23</td></tr>
+<tr><td>区间并集</td><td>interval union</td><td>Day 23</td></tr>
+<tr><td>可观测性</td><td>observability</td><td>Day 23</td></tr>
+<tr><td>埋点 / 插桩</td><td>instrumentation</td><td>Day 23</td></tr>
+<tr><td>头部采样</td><td>head sampling</td><td>Day 23</td></tr>
+<tr><td>孤儿 span</td><td>orphan span</td><td>Day 23</td></tr>
+<tr><td>尾部采样</td><td>tail sampling</td><td>Day 23</td></tr>
+<tr><td>属性</td><td>attributes</td><td>Day 23</td></tr>
+<tr><td>成本归因</td><td>cost attribution</td><td>Day 23</td></tr>
+<tr><td>攒批导出</td><td>BatchSpanProcessor / batch span processor</td><td>Day 23</td></tr>
+<tr><td>状态（span 上的）</td><td>status</td><td>Day 23</td></tr>
+<tr><td>用量回报</td><td>usage</td><td>Day 23</td></tr>
+<tr><td>语义约定</td><td>semantic conventions</td><td>Day 23</td></tr>
+<tr><td>容量外推</td><td>capacity extrapolation</td><td>Day 24</td></tr>
+<tr><td>容量扫描</td><td>capacity sweep</td><td>Day 24</td></tr>
+<tr><td>工作点</td><td>operating point</td><td>Day 24</td></tr>
+<tr><td>循环不变量外提</td><td>loop-invariant hoisting</td><td>Day 24</td></tr>
+<tr><td>拐点</td><td>knee point</td><td>Day 24</td></tr>
+<tr><td>猴子补丁</td><td>monkey patching</td><td>Day 24</td></tr>
+<tr><td>保活超时</td><td>keep-alive timeout</td><td>Day 24</td></tr>
+<tr><td>短路求值</td><td>short-circuit evaluation</td><td>Day 24</td></tr>
+<tr><td>绕行 / 上游修复</td><td>workaround / upstream fix</td><td>Day 24</td></tr>
+<tr><td>观察者效应</td><td>observer effect</td><td>Day 24</td></tr>
+<tr><td>超线性开销</td><td>superlinear overhead</td><td>Day 24</td></tr>
+<tr><td>连接池分片</td><td>pool sharding</td><td>Day 24</td></tr>
+<tr><td>逐项关掉 / 消融</td><td>ablation</td><td>Day 24</td></tr>
+<tr><td>请求分派 / 路由</td><td>request routing / dispatch</td><td>Day 25</td></tr>
+<tr><td>最少在途</td><td>least outstanding requests / shortest queue</td><td>Day 25</td></tr>
+<tr><td>二选一</td><td>power of two choices</td><td>Day 25</td></tr>
+<tr><td>一致性哈希</td><td>consistent hashing</td><td>Day 25</td></tr>
+<tr><td>哈希环</td><td>hash ring</td><td>Day 25</td></tr>
+<tr><td>虚拟节点</td><td>virtual node</td><td>Day 25</td></tr>
+<tr><td>负载倾斜</td><td>load skew</td><td>Day 25</td></tr>
+<tr><td>缓存感知路由</td><td>cache-aware routing</td><td>Day 25</td></tr>
+<tr><td>匹配率门槛</td><td>cache_threshold</td><td>Day 25</td></tr>
+<tr><td>失衡判据</td><td>balance_abs_threshold / balance_rel_threshold</td><td>Day 25</td></tr>
+<tr><td>热点副本</td><td>hotspot replica</td><td>Day 25</td></tr>
+<tr><td>软亲和 / 硬亲和</td><td>soft affinity / hard affinity</td><td>Day 25</td></tr>
+</table></div>
+</details>
+
+<h2>板块 8 · 专项深挖</h2>
+
+<p>今天没放下、但各自够花一晚上的三件事。每一段可以直接粘给 Claude。</p>
+
+<p>一 · 我在做通用 CPU 上的 AI 基础设施。已经量过：四台推理副本上，会话亲和（一致性哈希，150 个虚拟节点）的前缀命中率是八成九、最少在途是七成二，可亲和的负载倾斜是 1.33 而最少在途是 1.01，结果亲和的首 token P99 反而差 1.4 到 3.0 倍；加上一道 0.8 的匹配率门槛之后，命中率几乎不变而倾斜掉回 1.05。我也读过 SGLang 那个网关里 cache_aware 的两条判据和它们的默认值。现在我想弄清楚这条路上更强的做法：路由器怎么才能知道副本真实的缓存状态，而不是靠自己维护一棵近似树。请讲清楚推理引擎往外发布 KV 缓存事件这条路线的结构——事件里有什么、发布的开销、路由器怎么用它建索引、事件丢了或者延迟了会怎样，以及它和近似树相比在什么场景下才值回那套设施。产出用一张对比表加不超过一千二百字的说明，不要贴大段代码。</p>
+
+<p>二 · 我已经理解了排队和利用率的关系，也量过一个四副本的系统在平均利用率六成二的时候首 token P99 能到二十三万毫秒，因为其中一台被会话亲和塞满了而另外几台闲着。我现在想把「倾斜值多少延迟」这件事从实测上升到能估算。请系统地讲一遍：单台服务器的排队时间随利用率怎么涨（M/M/1 和 M/G/1 各自的式子和适用条件）、为什么服务时间的方差会显著放大尾延迟、把负载不均的 N 台机器合起来看时整体的等待时间怎么估、以及「二选一」为什么能把最大负载从对数级压到双对数级。每一条给出式子、它成立的前提，以及一个我能在两核机器上用纯 Python 验证的最小实验。我不要教科书式的推导，要能直接拿来估算生产系统的那几个式子和它们的失效条件。</p>
+
+<p>三 · 我在设计一个 agent 运行时的分派层。已经确定：KV 缓存那一侧是软亲和，走错机器只是重算；而会话级沙箱那一侧是硬亲和，走错机器等于状态丢失。现在我要把这两种约束放进同一个分派器里。请讲清楚这类「有状态服务的调度」在工业界的成熟做法——按会话把状态显式登记在一个注册表里、有状态服务在编排系统里怎么被调度和迁移、机器要下线时怎么把在途会话排空、以及硬亲和的那份状态该做成可迁移的还是可重建的（各自的代价和判断标准）。我想要的是决策框架加上每条路的失败模式，不是某个具体框架的使用教程。产出不超过一千五百字。</p>
+
+<h2>板块 9 · 延伸材料</h2>
+
+<ul>
+<li><span class="lbl">cache_aware.rs 开头那六十行注释，加上 select_worker 那一段</span>（在 SGLang 仓库的 <code>sgl-model-gateway/src/policies/</code> 下，仓库地址 <code>https://github.com/sgl-project/sglang</code>）。今天第 9 节引的每一句都出自这里。值得读的原因是它把两条策略、两条判据、五个参数的意图全写在了文件开头，而这种「设计意图和代码放在一起」的写法在真实仓库里不多见。难度低，二十分钟。</li>
+<li><span class="lbl">同一个仓库里 <code>src/core/worker_registry.rs</code> 的 HashRing</span>，约一百一十行。建环、二分、顺时针跳过不健康副本，一个完整的一致性哈希实现读得完。读之前先在纸上把环画一遍会轻松很多。难度低，半小时。</li>
+<li><span class="lbl">同一个目录下的 <code>prefix_hash.rs</code> 开头三十行</span>。它是 cache_aware 的轻量替代品，注释里自带一张和 cache_aware 的对比表（查找复杂度、内存、更新代价、精度四项）。读它是为了看清同一个问题的两种工程取舍。难度低，十五分钟。</li>
+<li><span class="lbl">Consistent Hashing and Random Trees</span>，Karger、Lehman、Leighton、Panigrahy、Levine、Lewin。一致性哈希的原始论文。今天第 5 节那两个数的理论解释在这里，它同时也解释了为什么虚拟节点是必需的而不是优化。难度偏高，前几节可以脱离全文单读。</li>
+<li><span class="lbl">The Power of Two Choices in Randomized Load Balancing</span>，Michael Mitzenmacher。今天表里「二选一」那一行的出处。它回答的是一个很反直觉的问题：随机挑两台取较优，为什么比随机挑一台好那么多，而挑三台却好不了多少。难度中等，结论比推导有用。</li>
+</ul>
+
+<h2>板块 10 · 今日五句话</h2>
+
+<div class="card five">
+<div class="hd">不看这一页，用自己的话答完下面五句</div>
+<p>1 · 为什么「命中率最高」和「用户等得最少」可以不是同一条规则？各自的自变量是什么？</p>
+<p>2 · 一条只看「谁缓存得最多」的分派规则会退化成什么？说清是哪一步开始出不去的。</p>
+<p>3 · 匹配率门槛这个旋钮的两端分别是什么？为什么它的最优值不是一个通用常数？</p>
+<p>4 · 副本从四台变成三台，取模和一致性哈希各有多少会话换了机器？被连累的那一部分差在哪儿？</p>
+<p>5 · 一台副本慢了三倍，「最少在途」这条规则能发现吗？为什么发现得晚？</p>
+<div class="write"></div>
+</div>
+
+<h4>逐句自查</h4>
+
+<p><span class="lbl">第 1 句</span>　如果只写「命中率高不代表快」，是复述不是回答。要说出两个自变量：命中率决定每条请求自己要算多少，倾斜决定它要排多久。实测里亲和的命中率是全表最高而首 token P99 是倒数第二，这两个数出自同一次运行。</p>
+
+<p><span class="lbl">第 2 句</span>　答「负载不均」不够。要说到自我封闭那一步：第一台副本存下共用头部之后，它在任何新请求上的匹配块数都至少是头部那些块，别的副本是零，所以别的副本永远等不到自己的第一条请求。实测是一台接了 1090 条，另外三台是 0。</p>
+
+<p><span class="lbl">第 3 句</span>　两端是「热点副本」和「完全不用缓存」。最优值不通用，是因为它由「共用头部有多长」和「每轮新增多少」的比值定——今天这批流量里第一轮的匹配率是 0.749、第二轮起是 0.856 以上，门槛要卡在这两个数之间。换一种流量，这两个数就变了。</p>
+
+<p><span class="lbl">第 4 句</span>　取模是七成半，一致性哈希是两成半。差别的关键不在这两个数本身，在被连累的那一部分：一致性哈希下，原本不在那台机器上的会话被影响的比例是 0；取模下，剩下那七成五里有一半跟着改了归宿，而它们和这次故障毫无关系。</p>
+
+<p><span class="lbl">第 5 句</span>　能发现，但发现得晚，而且是间接发现的。它数的是在途条数，而一台机器慢下来之后，要等到请求在它手上堆起来，条数才会涨。也就是说，判据本身滞后于原因。实测里最少在途最终只给了那台慢机器 107 条（均分是 272 条），说明它确实躲开了；但躲开之前已经有一批请求排在里面了。如果答成「发现不了」，看那一列的条数。</p>
+
+<h2>板块 11 · 明日预告</h2>
+
+<p>今天整页都在假设推理副本是一台干净的机器，上面只跑推理。温故第 2 题已经戳破了这个假设：会话级沙箱也钉在某一台机器上，而且它是硬的——KV 缓存走错机器只是重算，沙箱走错机器是状态没了。</p>
+
+<p>明天 Day 26 把三块产出放到同一台机器上：agent 运行时、沙箱、推理服务。它们抢的是同一份 CPU、同一份内存、同一份进程数配额，而且优先级不一样——一次沙箱里跑飞的循环能不能影响到旁边那条正在生成 token 的请求，取决于 Day 10 到 Day 13 那几道锁配得对不对。</p>
+
+<p>今天还留了一个钩子在这里。今天那条混合规则说「匹配率够就回原来那台，不够就给最闲的」，可如果这条会话的沙箱正好活在另一台机器上呢？两个亲和，一软一硬，指向不同的机器，谁让路。明天要回答的正是这一类问题。</p>
+
+<footer>
+<p>AI Infra · Day 25 / 28 · 2026-09-04 · 阶段四 · Agent Runtime（八天项目 · 第 8 天 · 回收）</p>
+<p>实验条件：2 核 Intel Xeon @ 2.80 GHz，L1d 64 KiB、L2 2 MiB、L3 33 MiB，7.8 GiB 内存，页大小 4096 字节；Linux 6.18.44；Python 3.11.15 + numpy 2.4.4，前向账台全程 OPENBLAS_NUM_THREADS=1、OMP_NUM_THREADS=1、MKL_NUM_THREADS=1。</p>
+<p>模型设定沿用 Day 15 以来那一副：8 层、hidden 4096、权重 float32、合计 512 MiB。前向账台每档热身一次后跑 7 到 21 遍取中位，斜率由 64 列和 1024 列两档算出。路由模拟器是确定性程序，随机种子 25；页面上每一张模拟器的表都出自这个种子的那一次运行，第 6 节和第 12 节另用 25 到 29 五个种子做配对对照。块大小 16、头部 1024 个 token 位、每台副本缓存 32768 个 token 位、虚拟节点 150 个，与 Day 15、16、20、21 的口径一致。</p>
+<p>源码引用取自 SGLang 仓库 commit ff1285cc28d6b3e0ad19c45e8b14a5966bc95c78，文中行号以这一提交为准；哈希环账台用 sha256 代替该实现里的 blake3。</p>
+</footer>
+</main>
+</body>
+</html>
